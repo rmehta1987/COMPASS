@@ -1,0 +1,2653 @@
+{
+ "schema": "compass_query_expansion_preregistration/1",
+ "registered": "2026-09-03",
+ "template_file": "src/query_expand.py",
+ "template_sha256": "5f890fa5791bdcaf1f8fa99d37dcf888fa89ace7ba6c43a03c9bc6c6139c29ee",
+ "negative_fields_file": "fixtures/negative_expansion_fields.json",
+ "negative_fields_sha256": "00fa0ba507bb7b650815f4cdf34bb27dc450d6cae7fa442449cf68b470574f8c",
+ "fixture_sha256": "8999c80317cdbf560204609c43e6af413930041cec66c4f86e35b85083b2b0da",
+ "negatives_sha256": "cc84aceacb5803193365442663799519bc4b66e70085f4a87fa29a783b2beb4e",
+ "targets_sha256": "22b0c37a90696f4efb2e763fca9cc87e39f414b37ecd4a8d09d378ec09585f56",
+ "dictionary_version_hash": "3dc8415eccfe",
+ "template": "[population] construct [timeframe][: instance, ...]  -- see src/query_expand.py docstring for every rule",
+ "arms": {
+  "S": "the row's own query, unchanged (control; must reproduce R@1 0.567 row for row)",
+  "P": "template with population only (instances slot disabled)",
+  "F": "template in full: population + instances. PRIMARY."
+ },
+ "field_sources_fixture": {
+  "construct": "row's own query verbatim",
+  "population": "POPULATION_BY_ROSTER_BLOCK[(module, block)] when the gold target is a roster repeat, else None",
+  "timeframe": "None on every row (no metadata source; UNTESTED here)",
+  "instances": "(gold option,) when matrix_col is non-null, else ()",
+  "role": "not rendered"
+ },
+ "field_sources_negatives": {
+  "construct": "the request verbatim",
+  "population": "from the request text; hand-authored, only where the request is about someone other than the participant",
+  "timeframe": "None on every row",
+  "instances": "1-3 concrete examples/synonyms an analyst would list, hand-authored from the request text alone, no corpus lookup, no score seen"
+ },
+ "decision_rule_recorded_before_running": "Arm F vs arm S on all 224 rows: if the item-clustered bootstrap 95% CI on delta R@1 excludes zero AND the point estimate exceeds +0.05, the template is justified and ships (subject to task 3). If the CI contains zero it does not ship regardless of the point estimate. Arm P is diagnostic only and does not decide.",
+ "predictions_recorded_before_running": [
+  "The 10 items at 0/4 stay at 0/4 unless the expansion supplies a discriminator; by construction only the roster/matrix ones can change.",
+  "The largest effect is in the 1-2 content-word subgroup.",
+  "Expanded negatives score higher than unexpanded; the shipped tau 0.7295 may reject fewer than 43/44 and need re-deriving once."
+ ],
+ "what_was_seen_before_registering": "FUSION.md and CHARACTERISATION.md in full (they name the 10 items at 0/4 and per-stratum recall); the 56 gold targets' metadata and stems listed once to design fields_from_target; the 44 negative requests to author their fields. NOT opened: out/char_pos_bge-small_ft.json rows, out/fusion_task1_overlap.json rows, any per-row rank or correctness, or the 224 queries beyond the first six.",
+ "counts": {
+  "positive_rows": 224,
+  "positive_rows_changed_F": 62,
+  "positive_rows_changed_P": 35,
+  "positive_items_changed_F": 18,
+  "positive_rows_with_population": 56,
+  "positive_rows_with_instances": 60,
+  "negative_rows": 44,
+  "negative_rows_changed_F": 44,
+  "negative_rows_changed_P": 1
+ },
+ "positives": [
+  {
+   "row": 0,
+   "gold_key": "m2:Q9.96",
+   "query": "exogenous hormone medication",
+   "population": null,
+   "instances": [],
+   "expanded_F": "exogenous hormone medication",
+   "expanded_P": "exogenous hormone medication"
+  },
+  {
+   "row": 1,
+   "gold_key": "m2:Q9.96",
+   "query": "prescription hormones taken",
+   "population": null,
+   "instances": [],
+   "expanded_F": "prescription hormones taken",
+   "expanded_P": "prescription hormones taken"
+  },
+  {
+   "row": 2,
+   "gold_key": "m2:Q9.96",
+   "query": "other hormones",
+   "population": null,
+   "instances": [],
+   "expanded_F": "other hormones",
+   "expanded_P": "other hormones"
+  },
+  {
+   "row": 3,
+   "gold_key": "m2:Q9.96",
+   "query": "types of hormone medication used",
+   "population": null,
+   "instances": [],
+   "expanded_F": "types of hormone medication used",
+   "expanded_P": "types of hormone medication used"
+  },
+  {
+   "row": 4,
+   "gold_key": "m2:Q9.74",
+   "query": "progestin monotherapy cycle days",
+   "population": null,
+   "instances": [],
+   "expanded_F": "progestin monotherapy cycle days",
+   "expanded_P": "progestin monotherapy cycle days"
+  },
+  {
+   "row": 5,
+   "gold_key": "m2:Q9.74",
+   "query": "days used progestin pill",
+   "population": null,
+   "instances": [],
+   "expanded_F": "days used progestin pill",
+   "expanded_P": "days used progestin pill"
+  },
+  {
+   "row": 6,
+   "gold_key": "m2:Q9.74",
+   "query": "progestin days",
+   "population": null,
+   "instances": [],
+   "expanded_F": "progestin days",
+   "expanded_P": "progestin days"
+  },
+  {
+   "row": 7,
+   "gold_key": "m2:Q9.74",
+   "query": "days per cycle progestin use",
+   "population": null,
+   "instances": [],
+   "expanded_F": "days per cycle progestin use",
+   "expanded_P": "days per cycle progestin use"
+  },
+  {
+   "row": 8,
+   "gold_key": "m3:Q15.18",
+   "query": "alcohol consumption wine daily",
+   "population": null,
+   "instances": [],
+   "expanded_F": "alcohol consumption wine daily",
+   "expanded_P": "alcohol consumption wine daily"
+  },
+  {
+   "row": 9,
+   "gold_key": "m3:Q15.18",
+   "query": "wine glasses per day",
+   "population": null,
+   "instances": [],
+   "expanded_F": "wine glasses per day",
+   "expanded_P": "wine glasses per day"
+  },
+  {
+   "row": 10,
+   "gold_key": "m3:Q15.18",
+   "query": "wine intake",
+   "population": null,
+   "instances": [],
+   "expanded_F": "wine intake",
+   "expanded_P": "wine intake"
+  },
+  {
+   "row": 11,
+   "gold_key": "m3:Q15.18",
+   "query": "daily wine consumption amount",
+   "population": null,
+   "instances": [],
+   "expanded_F": "daily wine consumption amount",
+   "expanded_P": "daily wine consumption amount"
+  },
+  {
+   "row": 12,
+   "gold_key": "m2:17_Q16.8#1_19",
+   "query": "family history prostate cancer",
+   "population": "sibling",
+   "instances": [
+    "Prostate cancer"
+   ],
+   "expanded_F": "sibling family history prostate cancer",
+   "expanded_P": "sibling family history prostate cancer"
+  },
+  {
+   "row": 13,
+   "gold_key": "m2:17_Q16.8#1_19",
+   "query": "sibling prostate cancer",
+   "population": "sibling",
+   "instances": [
+    "Prostate cancer"
+   ],
+   "expanded_F": "sibling prostate cancer",
+   "expanded_P": "sibling prostate cancer"
+  },
+  {
+   "row": 14,
+   "gold_key": "m2:17_Q16.8#1_19",
+   "query": "prostate sibling",
+   "population": "sibling",
+   "instances": [
+    "Prostate cancer"
+   ],
+   "expanded_F": "prostate sibling: Prostate cancer",
+   "expanded_P": "prostate sibling"
+  },
+  {
+   "row": 15,
+   "gold_key": "m2:17_Q16.8#1_19",
+   "query": "brother prostate diagnosis",
+   "population": "sibling",
+   "instances": [
+    "Prostate cancer"
+   ],
+   "expanded_F": "sibling brother prostate diagnosis: Prostate cancer",
+   "expanded_P": "sibling brother prostate diagnosis"
+  },
+  {
+   "row": 16,
+   "gold_key": "m2:Q13.30",
+   "query": "maternal cancer diagnosis age",
+   "population": null,
+   "instances": [],
+   "expanded_F": "maternal cancer diagnosis age",
+   "expanded_P": "maternal cancer diagnosis age"
+  },
+  {
+   "row": 17,
+   "gold_key": "m2:Q13.30",
+   "query": "mother cancer year diagnosed",
+   "population": null,
+   "instances": [],
+   "expanded_F": "mother cancer year diagnosed",
+   "expanded_P": "mother cancer year diagnosed"
+  },
+  {
+   "row": 18,
+   "gold_key": "m2:Q13.30",
+   "query": "maternal cancer year",
+   "population": null,
+   "instances": [],
+   "expanded_F": "maternal cancer year",
+   "expanded_P": "maternal cancer year"
+  },
+  {
+   "row": 19,
+   "gold_key": "m2:Q13.30",
+   "query": "year mother diagnosed cancer",
+   "population": null,
+   "instances": [],
+   "expanded_F": "year mother diagnosed cancer",
+   "expanded_P": "year mother diagnosed cancer"
+  },
+  {
+   "row": 20,
+   "gold_key": "m2:12_Q16.8#1_9",
+   "query": "oropharyngeal cancer family history",
+   "population": "sibling",
+   "instances": [
+    "Head and neck cancer (This includes cancers of the mouth, sinuses, nose, or throat. This does not include brain or skin cancer.)"
+   ],
+   "expanded_F": "sibling oropharyngeal cancer family history: Head and neck cancer (This includes cancers of the mouth, sinuses, nose, or throat. This does not include brain or skin cancer.)",
+   "expanded_P": "sibling oropharyngeal cancer family history"
+  },
+  {
+   "row": 21,
+   "gold_key": "m2:12_Q16.8#1_9",
+   "query": "sibling mouth throat cancer",
+   "population": "sibling",
+   "instances": [
+    "Head and neck cancer (This includes cancers of the mouth, sinuses, nose, or throat. This does not include brain or skin cancer.)"
+   ],
+   "expanded_F": "sibling mouth throat cancer: Head and neck cancer (This includes cancers of the mouth, sinuses, nose, or throat. This does not include brain or skin cancer.)",
+   "expanded_P": "sibling mouth throat cancer"
+  },
+  {
+   "row": 22,
+   "gold_key": "m2:12_Q16.8#1_9",
+   "query": "HNC family",
+   "population": "sibling",
+   "instances": [
+    "Head and neck cancer (This includes cancers of the mouth, sinuses, nose, or throat. This does not include brain or skin cancer.)"
+   ],
+   "expanded_F": "sibling HNC family: Head and neck cancer (This includes cancers of the mouth, sinuses, nose, or throat. This does not include brain or skin cancer.)",
+   "expanded_P": "sibling HNC family"
+  },
+  {
+   "row": 23,
+   "gold_key": "m2:12_Q16.8#1_9",
+   "query": "head and neck cancer sibling",
+   "population": "sibling",
+   "instances": [
+    "Head and neck cancer (This includes cancers of the mouth, sinuses, nose, or throat. This does not include brain or skin cancer.)"
+   ],
+   "expanded_F": "head and neck cancer sibling: Head and neck cancer (This includes cancers of the mouth, sinuses, nose, or throat. This does not include brain or skin cancer.)",
+   "expanded_P": "head and neck cancer sibling"
+  },
+  {
+   "row": 24,
+   "gold_key": "m2:Q22.12",
+   "query": "antihistamine use duration years",
+   "population": null,
+   "instances": [],
+   "expanded_F": "antihistamine use duration years",
+   "expanded_P": "antihistamine use duration years"
+  },
+  {
+   "row": 25,
+   "gold_key": "m2:Q22.12",
+   "query": "years took over-the-counter antihistamine",
+   "population": null,
+   "instances": [],
+   "expanded_F": "years took over-the-counter antihistamine",
+   "expanded_P": "years took over-the-counter antihistamine"
+  },
+  {
+   "row": 26,
+   "gold_key": "m2:Q22.12",
+   "query": "antihistamine years",
+   "population": null,
+   "instances": [],
+   "expanded_F": "antihistamine years",
+   "expanded_P": "antihistamine years"
+  },
+  {
+   "row": 27,
+   "gold_key": "m2:Q22.12",
+   "query": "regular antihistamine medication years",
+   "population": null,
+   "instances": [],
+   "expanded_F": "regular antihistamine medication years",
+   "expanded_P": "regular antihistamine medication years"
+  },
+  {
+   "row": 28,
+   "gold_key": "m2:Q5.2",
+   "query": "asthma diagnosis history",
+   "population": null,
+   "instances": [],
+   "expanded_F": "asthma diagnosis history",
+   "expanded_P": "asthma diagnosis history"
+  },
+  {
+   "row": 29,
+   "gold_key": "m2:Q5.2",
+   "query": "doctor diagnosed asthma",
+   "population": null,
+   "instances": [],
+   "expanded_F": "doctor diagnosed asthma",
+   "expanded_P": "doctor diagnosed asthma"
+  },
+  {
+   "row": 30,
+   "gold_key": "m2:Q5.2",
+   "query": "asthma diagnosis",
+   "population": null,
+   "instances": [],
+   "expanded_F": "asthma diagnosis",
+   "expanded_P": "asthma diagnosis"
+  },
+  {
+   "row": 31,
+   "gold_key": "m2:Q5.2",
+   "query": "physician diagnosed asthma ever",
+   "population": null,
+   "instances": [],
+   "expanded_F": "physician diagnosed asthma ever",
+   "expanded_P": "physician diagnosed asthma ever"
+  },
+  {
+   "row": 32,
+   "gold_key": "m2:11_Q16.8#1_3",
+   "query": "familial breast cancer",
+   "population": "sibling",
+   "instances": [
+    "Breast cancer"
+   ],
+   "expanded_F": "sibling familial breast cancer",
+   "expanded_P": "sibling familial breast cancer"
+  },
+  {
+   "row": 33,
+   "gold_key": "m2:11_Q16.8#1_3",
+   "query": "sibling cancer",
+   "population": "sibling",
+   "instances": [
+    "Breast cancer"
+   ],
+   "expanded_F": "sibling cancer: Breast cancer",
+   "expanded_P": "sibling cancer"
+  },
+  {
+   "row": 34,
+   "gold_key": "m2:11_Q16.8#1_3",
+   "query": "cancer sister",
+   "population": "sibling",
+   "instances": [
+    "Breast cancer"
+   ],
+   "expanded_F": "sibling cancer sister: Breast cancer",
+   "expanded_P": "sibling cancer sister"
+  },
+  {
+   "row": 35,
+   "gold_key": "m2:11_Q16.8#1_3",
+   "query": "sibling cancer history",
+   "population": "sibling",
+   "instances": [
+    "Breast cancer"
+   ],
+   "expanded_F": "sibling cancer history: Breast cancer",
+   "expanded_P": "sibling cancer history"
+  },
+  {
+   "row": 36,
+   "gold_key": "m2:1_Q18.10",
+   "query": "bladder cancer age diagnosis",
+   "population": "child",
+   "instances": [],
+   "expanded_F": "child bladder cancer age diagnosis",
+   "expanded_P": "child bladder cancer age diagnosis"
+  },
+  {
+   "row": 37,
+   "gold_key": "m2:1_Q18.10",
+   "query": "year diagnosed cancer",
+   "population": "child",
+   "instances": [],
+   "expanded_F": "child year diagnosed cancer",
+   "expanded_P": "child year diagnosed cancer"
+  },
+  {
+   "row": 38,
+   "gold_key": "m2:1_Q18.10",
+   "query": "diagnosis year",
+   "population": "child",
+   "instances": [],
+   "expanded_F": "child diagnosis year",
+   "expanded_P": "child diagnosis year"
+  },
+  {
+   "row": 39,
+   "gold_key": "m2:1_Q18.10",
+   "query": "bladder cancer diagnosis age",
+   "population": "child",
+   "instances": [],
+   "expanded_F": "child bladder cancer diagnosis age",
+   "expanded_P": "child bladder cancer diagnosis age"
+  },
+  {
+   "row": 40,
+   "gold_key": "m3:Q2.25",
+   "query": "outdoor activity time",
+   "population": null,
+   "instances": [],
+   "expanded_F": "outdoor activity time",
+   "expanded_P": "outdoor activity time"
+  },
+  {
+   "row": 41,
+   "gold_key": "m3:Q2.25",
+   "query": "time outdoor chores",
+   "population": null,
+   "instances": [],
+   "expanded_F": "time outdoor chores",
+   "expanded_P": "time outdoor chores"
+  },
+  {
+   "row": 42,
+   "gold_key": "m3:Q2.25",
+   "query": "outdoor hours",
+   "population": null,
+   "instances": [],
+   "expanded_F": "outdoor hours",
+   "expanded_P": "outdoor hours"
+  },
+  {
+   "row": 43,
+   "gold_key": "m3:Q2.25",
+   "query": "hours per day outdoor work",
+   "population": null,
+   "instances": [],
+   "expanded_F": "hours per day outdoor work",
+   "expanded_P": "hours per day outdoor work"
+  },
+  {
+   "row": 44,
+   "gold_key": "m3:Q2.55",
+   "query": "mind-body exercise",
+   "population": null,
+   "instances": [],
+   "expanded_F": "mind-body exercise",
+   "expanded_P": "mind-body exercise"
+  },
+  {
+   "row": 45,
+   "gold_key": "m3:Q2.55",
+   "query": "yoga frequency",
+   "population": null,
+   "instances": [],
+   "expanded_F": "yoga frequency",
+   "expanded_P": "yoga frequency"
+  },
+  {
+   "row": 46,
+   "gold_key": "m3:Q2.55",
+   "query": "stretching frequency",
+   "population": null,
+   "instances": [],
+   "expanded_F": "stretching frequency",
+   "expanded_P": "stretching frequency"
+  },
+  {
+   "row": 47,
+   "gold_key": "m3:Q2.55",
+   "query": "how often exercise flexibility",
+   "population": null,
+   "instances": [],
+   "expanded_F": "how often exercise flexibility",
+   "expanded_P": "how often exercise flexibility"
+  },
+  {
+   "row": 48,
+   "gold_key": "m3:Q5.14",
+   "query": "time to first cigarette",
+   "population": null,
+   "instances": [],
+   "expanded_F": "time to first cigarette",
+   "expanded_P": "time to first cigarette"
+  },
+  {
+   "row": 49,
+   "gold_key": "m3:Q5.14",
+   "query": "first cigarette morning",
+   "population": null,
+   "instances": [],
+   "expanded_F": "first cigarette morning",
+   "expanded_P": "first cigarette morning"
+  },
+  {
+   "row": 50,
+   "gold_key": "m3:Q5.14",
+   "query": "first cig",
+   "population": null,
+   "instances": [],
+   "expanded_F": "first cig",
+   "expanded_P": "first cig"
+  },
+  {
+   "row": 51,
+   "gold_key": "m3:Q5.14",
+   "query": "morning cigarette frequency",
+   "population": null,
+   "instances": [],
+   "expanded_F": "morning cigarette frequency",
+   "expanded_P": "morning cigarette frequency"
+  },
+  {
+   "row": 52,
+   "gold_key": "m2:Q23.1",
+   "query": "metformin medication use",
+   "population": null,
+   "instances": [],
+   "expanded_F": "metformin medication use",
+   "expanded_P": "metformin medication use"
+  },
+  {
+   "row": 53,
+   "gold_key": "m2:Q23.1",
+   "query": "ever take metformin",
+   "population": null,
+   "instances": [],
+   "expanded_F": "ever take metformin",
+   "expanded_P": "ever take metformin"
+  },
+  {
+   "row": 54,
+   "gold_key": "m2:Q23.1",
+   "query": "metformin use",
+   "population": null,
+   "instances": [],
+   "expanded_F": "metformin use",
+   "expanded_P": "metformin use"
+  },
+  {
+   "row": 55,
+   "gold_key": "m2:Q23.1",
+   "query": "metformin use duration",
+   "population": null,
+   "instances": [],
+   "expanded_F": "metformin use duration",
+   "expanded_P": "metformin use duration"
+  },
+  {
+   "row": 56,
+   "gold_key": "m2:1_Q18.17",
+   "query": "colorectal cancer diagnosis age",
+   "population": "child",
+   "instances": [],
+   "expanded_F": "child colorectal cancer diagnosis age",
+   "expanded_P": "child colorectal cancer diagnosis age"
+  },
+  {
+   "row": 57,
+   "gold_key": "m2:1_Q18.17",
+   "query": "when diagnosed colon cancer",
+   "population": "child",
+   "instances": [],
+   "expanded_F": "child when diagnosed colon cancer",
+   "expanded_P": "child when diagnosed colon cancer"
+  },
+  {
+   "row": 58,
+   "gold_key": "m2:1_Q18.17",
+   "query": "cancer year",
+   "population": "child",
+   "instances": [],
+   "expanded_F": "child cancer year",
+   "expanded_P": "child cancer year"
+  },
+  {
+   "row": 59,
+   "gold_key": "m2:1_Q18.17",
+   "query": "age rectal cancer diagnosed",
+   "population": "child",
+   "instances": [],
+   "expanded_F": "child age rectal cancer diagnosed",
+   "expanded_P": "child age rectal cancer diagnosed"
+  },
+  {
+   "row": 60,
+   "gold_key": "m2:Q27.12",
+   "query": "traffic exposure commute",
+   "population": null,
+   "instances": [],
+   "expanded_F": "traffic exposure commute",
+   "expanded_P": "traffic exposure commute"
+  },
+  {
+   "row": 61,
+   "gold_key": "m2:Q27.12",
+   "query": "commute type",
+   "population": null,
+   "instances": [],
+   "expanded_F": "commute type",
+   "expanded_P": "commute type"
+  },
+  {
+   "row": 62,
+   "gold_key": "m2:Q27.12",
+   "query": "commute route",
+   "population": null,
+   "instances": [],
+   "expanded_F": "commute route",
+   "expanded_P": "commute route"
+  },
+  {
+   "row": 63,
+   "gold_key": "m2:Q27.12",
+   "query": "commute roadway type",
+   "population": null,
+   "instances": [],
+   "expanded_F": "commute roadway type",
+   "expanded_P": "commute roadway type"
+  },
+  {
+   "row": 64,
+   "gold_key": "m2:8_Q16.8#1_1",
+   "query": "family cancer history malignancy",
+   "population": "sibling",
+   "instances": [
+    "Bladder cancer"
+   ],
+   "expanded_F": "sibling family cancer history malignancy: Bladder cancer",
+   "expanded_P": "sibling family cancer history malignancy"
+  },
+  {
+   "row": 65,
+   "gold_key": "m2:8_Q16.8#1_1",
+   "query": "sibling had cancer",
+   "population": "sibling",
+   "instances": [
+    "Bladder cancer"
+   ],
+   "expanded_F": "sibling had cancer: Bladder cancer",
+   "expanded_P": "sibling had cancer"
+  },
+  {
+   "row": 66,
+   "gold_key": "m2:8_Q16.8#1_1",
+   "query": "sibling cancer",
+   "population": "sibling",
+   "instances": [
+    "Bladder cancer"
+   ],
+   "expanded_F": "sibling cancer: Bladder cancer",
+   "expanded_P": "sibling cancer"
+  },
+  {
+   "row": 67,
+   "gold_key": "m2:8_Q16.8#1_1",
+   "query": "family cancer diagnosis",
+   "population": "sibling",
+   "instances": [
+    "Bladder cancer"
+   ],
+   "expanded_F": "sibling family cancer diagnosis: Bladder cancer",
+   "expanded_P": "sibling family cancer diagnosis"
+  },
+  {
+   "row": 68,
+   "gold_key": "m3:Q6.3",
+   "query": "electronic nicotine delivery frequency",
+   "population": null,
+   "instances": [],
+   "expanded_F": "electronic nicotine delivery frequency",
+   "expanded_P": "electronic nicotine delivery frequency"
+  },
+  {
+   "row": 69,
+   "gold_key": "m3:Q6.3",
+   "query": "regular vaping use",
+   "population": null,
+   "instances": [],
+   "expanded_F": "regular vaping use",
+   "expanded_P": "regular vaping use"
+  },
+  {
+   "row": 70,
+   "gold_key": "m3:Q6.3",
+   "query": "vape frequency",
+   "population": null,
+   "instances": [],
+   "expanded_F": "vape frequency",
+   "expanded_P": "vape frequency"
+  },
+  {
+   "row": 71,
+   "gold_key": "m3:Q6.3",
+   "query": "how often use vaping devices",
+   "population": null,
+   "instances": [],
+   "expanded_F": "how often use vaping devices",
+   "expanded_P": "how often use vaping devices"
+  },
+  {
+   "row": 72,
+   "gold_key": "m3:Q1.4_2",
+   "query": "residence location city",
+   "population": null,
+   "instances": [],
+   "expanded_F": "residence location city",
+   "expanded_P": "residence location city"
+  },
+  {
+   "row": 73,
+   "gold_key": "m3:Q1.4_2",
+   "query": "city where you live",
+   "population": null,
+   "instances": [],
+   "expanded_F": "city where you live",
+   "expanded_P": "city where you live"
+  },
+  {
+   "row": 74,
+   "gold_key": "m3:Q1.4_2",
+   "query": "city",
+   "population": null,
+   "instances": [],
+   "expanded_F": "city",
+   "expanded_P": "city"
+  },
+  {
+   "row": 75,
+   "gold_key": "m3:Q1.4_2",
+   "query": "what city do you live in",
+   "population": null,
+   "instances": [],
+   "expanded_F": "what city do you live in",
+   "expanded_P": "what city do you live in"
+  },
+  {
+   "row": 76,
+   "gold_key": "m2:Q19.48",
+   "query": "NSAID utilization frequency",
+   "population": null,
+   "instances": [],
+   "expanded_F": "NSAID utilization frequency",
+   "expanded_P": "NSAID utilization frequency"
+  },
+  {
+   "row": 77,
+   "gold_key": "m2:Q19.48",
+   "query": "how often take naproxen",
+   "population": null,
+   "instances": [],
+   "expanded_F": "how often take naproxen",
+   "expanded_P": "how often take naproxen"
+  },
+  {
+   "row": 78,
+   "gold_key": "m2:Q19.48",
+   "query": "naproxen frequency",
+   "population": null,
+   "instances": [],
+   "expanded_F": "naproxen frequency",
+   "expanded_P": "naproxen frequency"
+  },
+  {
+   "row": 79,
+   "gold_key": "m2:Q19.48",
+   "query": "how many days take naproxen monthly",
+   "population": null,
+   "instances": [],
+   "expanded_F": "how many days take naproxen monthly",
+   "expanded_P": "how many days take naproxen monthly"
+  },
+  {
+   "row": 80,
+   "gold_key": "m2:Q5.15#1_2",
+   "query": "angina pectoris diagnosis",
+   "population": null,
+   "instances": [
+    "Angina"
+   ],
+   "expanded_F": "angina pectoris diagnosis",
+   "expanded_P": "angina pectoris diagnosis"
+  },
+  {
+   "row": 81,
+   "gold_key": "m2:Q5.15#1_2",
+   "query": "chest pain condition",
+   "population": null,
+   "instances": [
+    "Angina"
+   ],
+   "expanded_F": "chest pain condition: Angina",
+   "expanded_P": "chest pain condition"
+  },
+  {
+   "row": 82,
+   "gold_key": "m2:Q5.15#1_2",
+   "query": "angina",
+   "population": null,
+   "instances": [
+    "Angina"
+   ],
+   "expanded_F": "angina",
+   "expanded_P": "angina"
+  },
+  {
+   "row": 83,
+   "gold_key": "m2:Q5.15#1_2",
+   "query": "doctor diagnosed with angina",
+   "population": null,
+   "instances": [
+    "Angina"
+   ],
+   "expanded_F": "doctor diagnosed with angina",
+   "expanded_P": "doctor diagnosed with angina"
+  },
+  {
+   "row": 84,
+   "gold_key": "m3:Q15.9_4_TEXT",
+   "query": "alcohol cessation reason",
+   "population": null,
+   "instances": [],
+   "expanded_F": "alcohol cessation reason",
+   "expanded_P": "alcohol cessation reason"
+  },
+  {
+   "row": 85,
+   "gold_key": "m3:Q15.9_4_TEXT",
+   "query": "why quit drinking",
+   "population": null,
+   "instances": [],
+   "expanded_F": "why quit drinking",
+   "expanded_P": "why quit drinking"
+  },
+  {
+   "row": 86,
+   "gold_key": "m3:Q15.9_4_TEXT",
+   "query": "stop drinking reason",
+   "population": null,
+   "instances": [],
+   "expanded_F": "stop drinking reason",
+   "expanded_P": "stop drinking reason"
+  },
+  {
+   "row": 87,
+   "gold_key": "m3:Q15.9_4_TEXT",
+   "query": "reason for stopping alcohol",
+   "population": null,
+   "instances": [],
+   "expanded_F": "reason for stopping alcohol",
+   "expanded_P": "reason for stopping alcohol"
+  },
+  {
+   "row": 88,
+   "gold_key": "m3:Q3.12_2",
+   "query": "circadian sleep schedule",
+   "population": null,
+   "instances": [],
+   "expanded_F": "circadian sleep schedule",
+   "expanded_P": "circadian sleep schedule"
+  },
+  {
+   "row": 89,
+   "gold_key": "m3:Q3.12_2",
+   "query": "what time wake up",
+   "population": null,
+   "instances": [],
+   "expanded_F": "what time wake up",
+   "expanded_P": "what time wake up"
+  },
+  {
+   "row": 90,
+   "gold_key": "m3:Q3.12_2",
+   "query": "wake time",
+   "population": null,
+   "instances": [],
+   "expanded_F": "wake time",
+   "expanded_P": "wake time"
+  },
+  {
+   "row": 91,
+   "gold_key": "m3:Q3.12_2",
+   "query": "typical wake time weekends",
+   "population": null,
+   "instances": [],
+   "expanded_F": "typical wake time weekends",
+   "expanded_P": "typical wake time weekends"
+  },
+  {
+   "row": 92,
+   "gold_key": "m2:4_Q16.8#1_5",
+   "query": "esophageal cancer family history",
+   "population": "sibling",
+   "instances": [
+    "Cancer of the esophagus"
+   ],
+   "expanded_F": "sibling esophageal cancer family history: Cancer of the esophagus",
+   "expanded_P": "sibling esophageal cancer family history"
+  },
+  {
+   "row": 93,
+   "gold_key": "m2:4_Q16.8#1_5",
+   "query": "sibling had esophageal cancer",
+   "population": "sibling",
+   "instances": [
+    "Cancer of the esophagus"
+   ],
+   "expanded_F": "sibling had esophageal cancer: Cancer of the esophagus",
+   "expanded_P": "sibling had esophageal cancer"
+  },
+  {
+   "row": 94,
+   "gold_key": "m2:4_Q16.8#1_5",
+   "query": "esophageal cancer",
+   "population": "sibling",
+   "instances": [
+    "Cancer of the esophagus"
+   ],
+   "expanded_F": "sibling esophageal cancer: Cancer of the esophagus",
+   "expanded_P": "sibling esophageal cancer"
+  },
+  {
+   "row": 95,
+   "gold_key": "m2:4_Q16.8#1_5",
+   "query": "family member esophageal cancer",
+   "population": "sibling",
+   "instances": [
+    "Cancer of the esophagus"
+   ],
+   "expanded_F": "sibling family member esophageal cancer: Cancer of the esophagus",
+   "expanded_P": "sibling family member esophageal cancer"
+  },
+  {
+   "row": 96,
+   "gold_key": "m3:Q870_2",
+   "query": "nicotine replacement therapy duration",
+   "population": null,
+   "instances": [],
+   "expanded_F": "nicotine replacement therapy duration",
+   "expanded_P": "nicotine replacement therapy duration"
+  },
+  {
+   "row": 97,
+   "gold_key": "m3:Q870_2",
+   "query": "how long using nicotine products",
+   "population": null,
+   "instances": [],
+   "expanded_F": "how long using nicotine products",
+   "expanded_P": "how long using nicotine products"
+  },
+  {
+   "row": 98,
+   "gold_key": "m3:Q870_2",
+   "query": "NRT duration product",
+   "population": null,
+   "instances": [],
+   "expanded_F": "NRT duration product",
+   "expanded_P": "NRT duration product"
+  },
+  {
+   "row": 99,
+   "gold_key": "m3:Q870_2",
+   "query": "length of time using smoking cessation aids",
+   "population": null,
+   "instances": [],
+   "expanded_F": "length of time using smoking cessation aids",
+   "expanded_P": "length of time using smoking cessation aids"
+  },
+  {
+   "row": 100,
+   "gold_key": "m3:Q2.16",
+   "query": "non-exercise ambulatory activity",
+   "population": null,
+   "instances": [],
+   "expanded_F": "non-exercise ambulatory activity",
+   "expanded_P": "non-exercise ambulatory activity"
+  },
+  {
+   "row": 101,
+   "gold_key": "m3:Q2.16",
+   "query": "walking during everyday activities",
+   "population": null,
+   "instances": [],
+   "expanded_F": "walking during everyday activities",
+   "expanded_P": "walking during everyday activities"
+  },
+  {
+   "row": 102,
+   "gold_key": "m3:Q2.16",
+   "query": "incidental walking frequency",
+   "population": null,
+   "instances": [],
+   "expanded_F": "incidental walking frequency",
+   "expanded_P": "incidental walking frequency"
+  },
+  {
+   "row": 103,
+   "gold_key": "m3:Q2.16",
+   "query": "time spent walking for shopping and errands",
+   "population": null,
+   "instances": [],
+   "expanded_F": "time spent walking for shopping and errands",
+   "expanded_P": "time spent walking for shopping and errands"
+  },
+  {
+   "row": 104,
+   "gold_key": "m2:Q26.12",
+   "query": "commute transportation mode",
+   "population": null,
+   "instances": [],
+   "expanded_F": "commute transportation mode",
+   "expanded_P": "commute transportation mode"
+  },
+  {
+   "row": 105,
+   "gold_key": "m2:Q26.12",
+   "query": "usual way of getting to work",
+   "population": null,
+   "instances": [],
+   "expanded_F": "usual way of getting to work",
+   "expanded_P": "usual way of getting to work"
+  },
+  {
+   "row": 106,
+   "gold_key": "m2:Q26.12",
+   "query": "commute transport type",
+   "population": null,
+   "instances": [],
+   "expanded_F": "commute transport type",
+   "expanded_P": "commute transport type"
+  },
+  {
+   "row": 107,
+   "gold_key": "m2:Q26.12",
+   "query": "primary method used to get to work",
+   "population": null,
+   "instances": [],
+   "expanded_F": "primary method used to get to work",
+   "expanded_P": "primary method used to get to work"
+  },
+  {
+   "row": 108,
+   "gold_key": "m2:Q23.8",
+   "query": "insulin use regular therapy",
+   "population": null,
+   "instances": [],
+   "expanded_F": "insulin use regular therapy",
+   "expanded_P": "insulin use regular therapy"
+  },
+  {
+   "row": 109,
+   "gold_key": "m2:Q23.8",
+   "query": "ever taken insulin shots regularly",
+   "population": null,
+   "instances": [],
+   "expanded_F": "ever taken insulin shots regularly",
+   "expanded_P": "ever taken insulin shots regularly"
+  },
+  {
+   "row": 110,
+   "gold_key": "m2:Q23.8",
+   "query": "insulin therapy history",
+   "population": null,
+   "instances": [],
+   "expanded_F": "insulin therapy history",
+   "expanded_P": "insulin therapy history"
+  },
+  {
+   "row": 111,
+   "gold_key": "m2:Q23.8",
+   "query": "long-term regular insulin use diabetes",
+   "population": null,
+   "instances": [],
+   "expanded_F": "long-term regular insulin use diabetes",
+   "expanded_P": "long-term regular insulin use diabetes"
+  },
+  {
+   "row": 112,
+   "gold_key": "m3:Q2.32#1_3",
+   "query": "racquet sport participation",
+   "population": null,
+   "instances": [
+    "Playing tennis, squash or racquetball"
+   ],
+   "expanded_F": "racquet sport participation: Playing tennis, squash or racquetball",
+   "expanded_P": "racquet sport participation"
+  },
+  {
+   "row": 113,
+   "gold_key": "m3:Q2.32#1_3",
+   "query": "playing tennis or squash",
+   "population": null,
+   "instances": [
+    "Playing tennis, squash or racquetball"
+   ],
+   "expanded_F": "playing tennis or squash: Playing tennis, squash or racquetball",
+   "expanded_P": "playing tennis or squash"
+  },
+  {
+   "row": 114,
+   "gold_key": "m3:Q2.32#1_3",
+   "query": "racquet sports activity",
+   "population": null,
+   "instances": [
+    "Playing tennis, squash or racquetball"
+   ],
+   "expanded_F": "racquet sports activity: Playing tennis, squash or racquetball",
+   "expanded_P": "racquet sports activity"
+  },
+  {
+   "row": 115,
+   "gold_key": "m3:Q2.32#1_3",
+   "query": "participation in court sports recreation",
+   "population": null,
+   "instances": [
+    "Playing tennis, squash or racquetball"
+   ],
+   "expanded_F": "participation in court sports recreation: Playing tennis, squash or racquetball",
+   "expanded_P": "participation in court sports recreation"
+  },
+  {
+   "row": 116,
+   "gold_key": "m2:Q14.26",
+   "query": "paternal thyroid cancer diagnosis",
+   "population": null,
+   "instances": [],
+   "expanded_F": "paternal thyroid cancer diagnosis",
+   "expanded_P": "paternal thyroid cancer diagnosis"
+  },
+  {
+   "row": 117,
+   "gold_key": "m2:Q14.26",
+   "query": "father's cancer history thyroid",
+   "population": null,
+   "instances": [],
+   "expanded_F": "father's cancer history thyroid",
+   "expanded_P": "father's cancer history thyroid"
+  },
+  {
+   "row": 118,
+   "gold_key": "m2:Q14.26",
+   "query": "paternal thyroid cancer",
+   "population": null,
+   "instances": [],
+   "expanded_F": "paternal thyroid cancer",
+   "expanded_P": "paternal thyroid cancer"
+  },
+  {
+   "row": 119,
+   "gold_key": "m2:Q14.26",
+   "query": "age at diagnosis father thyroid malignancy",
+   "population": null,
+   "instances": [],
+   "expanded_F": "age at diagnosis father thyroid malignancy",
+   "expanded_P": "age at diagnosis father thyroid malignancy"
+  },
+  {
+   "row": 120,
+   "gold_key": "m2:16_Q16.8#1_16",
+   "query": "sibling non-Hodgkin lymphoma",
+   "population": "sibling",
+   "instances": [
+    "Non-Hodgkin’s lymphoma"
+   ],
+   "expanded_F": "sibling non-Hodgkin lymphoma",
+   "expanded_P": "sibling non-Hodgkin lymphoma"
+  },
+  {
+   "row": 121,
+   "gold_key": "m2:16_Q16.8#1_16",
+   "query": "brother sister had lymphoma",
+   "population": "sibling",
+   "instances": [
+    "Non-Hodgkin’s lymphoma"
+   ],
+   "expanded_F": "sibling brother sister had lymphoma: Non-Hodgkin’s lymphoma",
+   "expanded_P": "sibling brother sister had lymphoma"
+  },
+  {
+   "row": 122,
+   "gold_key": "m2:16_Q16.8#1_16",
+   "query": "sibling NHL diagnosis",
+   "population": "sibling",
+   "instances": [
+    "Non-Hodgkin’s lymphoma"
+   ],
+   "expanded_F": "sibling NHL diagnosis: Non-Hodgkin’s lymphoma",
+   "expanded_P": "sibling NHL diagnosis"
+  },
+  {
+   "row": 123,
+   "gold_key": "m2:16_Q16.8#1_16",
+   "query": "family history sibling lymphoid cancer",
+   "population": "sibling",
+   "instances": [
+    "Non-Hodgkin’s lymphoma"
+   ],
+   "expanded_F": "family history sibling lymphoid cancer: Non-Hodgkin’s lymphoma",
+   "expanded_P": "family history sibling lymphoid cancer"
+  },
+  {
+   "row": 124,
+   "gold_key": "m2:Q12.3#1_8",
+   "query": "colorectal cancer personal history",
+   "population": null,
+   "instances": [
+    "Colon cancer/rectal cancer"
+   ],
+   "expanded_F": "colorectal cancer personal history: Colon cancer/rectal cancer",
+   "expanded_P": "colorectal cancer personal history"
+  },
+  {
+   "row": 125,
+   "gold_key": "m2:Q12.3#1_8",
+   "query": "ever diagnosed with colon cancer",
+   "population": null,
+   "instances": [
+    "Colon cancer/rectal cancer"
+   ],
+   "expanded_F": "ever diagnosed with colon cancer: Colon cancer/rectal cancer",
+   "expanded_P": "ever diagnosed with colon cancer"
+  },
+  {
+   "row": 126,
+   "gold_key": "m2:Q12.3#1_8",
+   "query": "colorectal cancer diagnosis",
+   "population": null,
+   "instances": [
+    "Colon cancer/rectal cancer"
+   ],
+   "expanded_F": "colorectal cancer diagnosis: Colon cancer/rectal cancer",
+   "expanded_P": "colorectal cancer diagnosis"
+  },
+  {
+   "row": 127,
+   "gold_key": "m2:Q12.3#1_8",
+   "query": "personal history bowel malignancy",
+   "population": null,
+   "instances": [
+    "Colon cancer/rectal cancer"
+   ],
+   "expanded_F": "personal history bowel malignancy: Colon cancer/rectal cancer",
+   "expanded_P": "personal history bowel malignancy"
+  },
+  {
+   "row": 128,
+   "gold_key": "m3:Q2.12",
+   "query": "light household activity",
+   "population": null,
+   "instances": [],
+   "expanded_F": "light household activity",
+   "expanded_P": "light household activity"
+  },
+  {
+   "row": 129,
+   "gold_key": "m3:Q2.12",
+   "query": "how often housework",
+   "population": null,
+   "instances": [],
+   "expanded_F": "how often housework",
+   "expanded_P": "how often housework"
+  },
+  {
+   "row": 130,
+   "gold_key": "m3:Q2.12",
+   "query": "domestic activity",
+   "population": null,
+   "instances": [],
+   "expanded_F": "domestic activity",
+   "expanded_P": "domestic activity"
+  },
+  {
+   "row": 131,
+   "gold_key": "m3:Q2.12",
+   "query": "frequency of household work",
+   "population": null,
+   "instances": [],
+   "expanded_F": "frequency of household work",
+   "expanded_P": "frequency of household work"
+  },
+  {
+   "row": 132,
+   "gold_key": "m2:9_Q16.8#1_5",
+   "query": "esophageal malignancy",
+   "population": "sibling",
+   "instances": [
+    "Cancer of the esophagus"
+   ],
+   "expanded_F": "sibling esophageal malignancy: Cancer of the esophagus",
+   "expanded_P": "sibling esophageal malignancy"
+  },
+  {
+   "row": 133,
+   "gold_key": "m2:9_Q16.8#1_5",
+   "query": "sibling esophagus cancer",
+   "population": "sibling",
+   "instances": [
+    "Cancer of the esophagus"
+   ],
+   "expanded_F": "sibling esophagus cancer",
+   "expanded_P": "sibling esophagus cancer"
+  },
+  {
+   "row": 134,
+   "gold_key": "m2:9_Q16.8#1_5",
+   "query": "esophageal cancer",
+   "population": "sibling",
+   "instances": [
+    "Cancer of the esophagus"
+   ],
+   "expanded_F": "sibling esophageal cancer: Cancer of the esophagus",
+   "expanded_P": "sibling esophageal cancer"
+  },
+  {
+   "row": 135,
+   "gold_key": "m2:9_Q16.8#1_5",
+   "query": "family history esophageal cancer",
+   "population": "sibling",
+   "instances": [
+    "Cancer of the esophagus"
+   ],
+   "expanded_F": "sibling family history esophageal cancer: Cancer of the esophagus",
+   "expanded_P": "sibling family history esophageal cancer"
+  },
+  {
+   "row": 136,
+   "gold_key": "m2:Q12.59",
+   "query": "prostate cancer metastasis",
+   "population": null,
+   "instances": [],
+   "expanded_F": "prostate cancer metastasis",
+   "expanded_P": "prostate cancer metastasis"
+  },
+  {
+   "row": 137,
+   "gold_key": "m2:Q12.59",
+   "query": "prostate cancer spread",
+   "population": null,
+   "instances": [],
+   "expanded_F": "prostate cancer spread",
+   "expanded_P": "prostate cancer spread"
+  },
+  {
+   "row": 138,
+   "gold_key": "m2:Q12.59",
+   "query": "metastatic prostate",
+   "population": null,
+   "instances": [],
+   "expanded_F": "metastatic prostate",
+   "expanded_P": "metastatic prostate"
+  },
+  {
+   "row": 139,
+   "gold_key": "m2:Q12.59",
+   "query": "prostate cancer distant metastases",
+   "population": null,
+   "instances": [],
+   "expanded_F": "prostate cancer distant metastases",
+   "expanded_P": "prostate cancer distant metastases"
+  },
+  {
+   "row": 140,
+   "gold_key": "m2:Q19.42",
+   "query": "acetaminophen indication",
+   "population": null,
+   "instances": [],
+   "expanded_F": "acetaminophen indication",
+   "expanded_P": "acetaminophen indication"
+  },
+  {
+   "row": 141,
+   "gold_key": "m2:Q19.42",
+   "query": "reason for taking acetaminophen",
+   "population": null,
+   "instances": [],
+   "expanded_F": "reason for taking acetaminophen",
+   "expanded_P": "reason for taking acetaminophen"
+  },
+  {
+   "row": 142,
+   "gold_key": "m2:Q19.42",
+   "query": "analgesic use",
+   "population": null,
+   "instances": [],
+   "expanded_F": "analgesic use",
+   "expanded_P": "analgesic use"
+  },
+  {
+   "row": 143,
+   "gold_key": "m2:Q19.42",
+   "query": "indication for regular acetaminophen",
+   "population": null,
+   "instances": [],
+   "expanded_F": "indication for regular acetaminophen",
+   "expanded_P": "indication for regular acetaminophen"
+  },
+  {
+   "row": 144,
+   "gold_key": "m2:17_Q16.8#1_22",
+   "query": "sibling malignancy other",
+   "population": "sibling",
+   "instances": [
+    "Other cancer"
+   ],
+   "expanded_F": "sibling malignancy other: Other cancer",
+   "expanded_P": "sibling malignancy other"
+  },
+  {
+   "row": 145,
+   "gold_key": "m2:17_Q16.8#1_22",
+   "query": "sibling other cancer",
+   "population": "sibling",
+   "instances": [
+    "Other cancer"
+   ],
+   "expanded_F": "sibling other cancer",
+   "expanded_P": "sibling other cancer"
+  },
+  {
+   "row": 146,
+   "gold_key": "m2:17_Q16.8#1_22",
+   "query": "other cancer",
+   "population": "sibling",
+   "instances": [
+    "Other cancer"
+   ],
+   "expanded_F": "sibling other cancer",
+   "expanded_P": "sibling other cancer"
+  },
+  {
+   "row": 147,
+   "gold_key": "m2:17_Q16.8#1_22",
+   "query": "family history other malignancy",
+   "population": "sibling",
+   "instances": [
+    "Other cancer"
+   ],
+   "expanded_F": "sibling family history other malignancy: Other cancer",
+   "expanded_P": "sibling family history other malignancy"
+  },
+  {
+   "row": 148,
+   "gold_key": "m2:Q9.13",
+   "query": "subfertility onset age",
+   "population": null,
+   "instances": [],
+   "expanded_F": "subfertility onset age",
+   "expanded_P": "subfertility onset age"
+  },
+  {
+   "row": 149,
+   "gold_key": "m2:Q9.13",
+   "query": "when infertility started",
+   "population": null,
+   "instances": [],
+   "expanded_F": "when infertility started",
+   "expanded_P": "when infertility started"
+  },
+  {
+   "row": 150,
+   "gold_key": "m2:Q9.13",
+   "query": "infertility age",
+   "population": null,
+   "instances": [],
+   "expanded_F": "infertility age",
+   "expanded_P": "infertility age"
+  },
+  {
+   "row": 151,
+   "gold_key": "m2:Q9.13",
+   "query": "age at first subfertility",
+   "population": null,
+   "instances": [],
+   "expanded_F": "age at first subfertility",
+   "expanded_P": "age at first subfertility"
+  },
+  {
+   "row": 152,
+   "gold_key": "m2:Q12.69",
+   "query": "cancer metastasis",
+   "population": null,
+   "instances": [],
+   "expanded_F": "cancer metastasis",
+   "expanded_P": "cancer metastasis"
+  },
+  {
+   "row": 153,
+   "gold_key": "m2:Q12.69",
+   "query": "cancer spread",
+   "population": null,
+   "instances": [],
+   "expanded_F": "cancer spread",
+   "expanded_P": "cancer spread"
+  },
+  {
+   "row": 154,
+   "gold_key": "m2:Q12.69",
+   "query": "metastatic disease",
+   "population": null,
+   "instances": [],
+   "expanded_F": "metastatic disease",
+   "expanded_P": "metastatic disease"
+  },
+  {
+   "row": 155,
+   "gold_key": "m2:Q12.69",
+   "query": "cancer spread to distant sites",
+   "population": null,
+   "instances": [],
+   "expanded_F": "cancer spread to distant sites",
+   "expanded_P": "cancer spread to distant sites"
+  },
+  {
+   "row": 156,
+   "gold_key": "m2:Q776",
+   "query": "commute transportation mode",
+   "population": null,
+   "instances": [],
+   "expanded_F": "commute transportation mode",
+   "expanded_P": "commute transportation mode"
+  },
+  {
+   "row": 157,
+   "gold_key": "m2:Q776",
+   "query": "how get to school",
+   "population": null,
+   "instances": [],
+   "expanded_F": "how get to school",
+   "expanded_P": "how get to school"
+  },
+  {
+   "row": 158,
+   "gold_key": "m2:Q776",
+   "query": "transport mode",
+   "population": null,
+   "instances": [],
+   "expanded_F": "transport mode",
+   "expanded_P": "transport mode"
+  },
+  {
+   "row": 159,
+   "gold_key": "m2:Q776",
+   "query": "modes of transportation to school",
+   "population": null,
+   "instances": [],
+   "expanded_F": "modes of transportation to school",
+   "expanded_P": "modes of transportation to school"
+  },
+  {
+   "row": 160,
+   "gold_key": "m2:1_Q18.13",
+   "query": "cervical cancer diagnosis age",
+   "population": "child",
+   "instances": [],
+   "expanded_F": "child cervical cancer diagnosis age",
+   "expanded_P": "child cervical cancer diagnosis age"
+  },
+  {
+   "row": 161,
+   "gold_key": "m2:1_Q18.13",
+   "query": "age when diagnosed cervix cancer",
+   "population": "child",
+   "instances": [],
+   "expanded_F": "child age when diagnosed cervix cancer",
+   "expanded_P": "child age when diagnosed cervix cancer"
+  },
+  {
+   "row": 162,
+   "gold_key": "m2:1_Q18.13",
+   "query": "cervix cancer yr",
+   "population": "child",
+   "instances": [],
+   "expanded_F": "child cervix cancer yr",
+   "expanded_P": "child cervix cancer yr"
+  },
+  {
+   "row": 163,
+   "gold_key": "m2:1_Q18.13",
+   "query": "age at cervical cancer diagnosis",
+   "population": "child",
+   "instances": [],
+   "expanded_F": "child age at cervical cancer diagnosis",
+   "expanded_P": "child age at cervical cancer diagnosis"
+  },
+  {
+   "row": 164,
+   "gold_key": "m2:5_Q16.8#1_8",
+   "query": "colorectal cancer family history",
+   "population": "sibling",
+   "instances": [
+    "Colon cancer/rectal cancer"
+   ],
+   "expanded_F": "sibling colorectal cancer family history: Colon cancer/rectal cancer",
+   "expanded_P": "sibling colorectal cancer family history"
+  },
+  {
+   "row": 165,
+   "gold_key": "m2:5_Q16.8#1_8",
+   "query": "sibling colon cancer",
+   "population": "sibling",
+   "instances": [
+    "Colon cancer/rectal cancer"
+   ],
+   "expanded_F": "sibling colon cancer: Colon cancer/rectal cancer",
+   "expanded_P": "sibling colon cancer"
+  },
+  {
+   "row": 166,
+   "gold_key": "m2:5_Q16.8#1_8",
+   "query": "CRC sibling",
+   "population": "sibling",
+   "instances": [
+    "Colon cancer/rectal cancer"
+   ],
+   "expanded_F": "CRC sibling: Colon cancer/rectal cancer",
+   "expanded_P": "CRC sibling"
+  },
+  {
+   "row": 167,
+   "gold_key": "m2:5_Q16.8#1_8",
+   "query": "was sibling diagnosed colorectal cancer",
+   "population": "sibling",
+   "instances": [
+    "Colon cancer/rectal cancer"
+   ],
+   "expanded_F": "was sibling diagnosed colorectal cancer: Colon cancer/rectal cancer",
+   "expanded_P": "was sibling diagnosed colorectal cancer"
+  },
+  {
+   "row": 168,
+   "gold_key": "m2:Q3.5",
+   "query": "emergency department utilization",
+   "population": null,
+   "instances": [],
+   "expanded_F": "emergency department utilization",
+   "expanded_P": "emergency department utilization"
+  },
+  {
+   "row": 169,
+   "gold_key": "m2:Q3.5",
+   "query": "ER visit frequency",
+   "population": null,
+   "instances": [],
+   "expanded_F": "ER visit frequency",
+   "expanded_P": "ER visit frequency"
+  },
+  {
+   "row": 170,
+   "gold_key": "m2:Q3.5",
+   "query": "ED use recent",
+   "population": null,
+   "instances": [],
+   "expanded_F": "ED use recent",
+   "expanded_P": "ED use recent"
+  },
+  {
+   "row": 171,
+   "gold_key": "m2:Q3.5",
+   "query": "emergency room healthcare visits",
+   "population": null,
+   "instances": [],
+   "expanded_F": "emergency room healthcare visits",
+   "expanded_P": "emergency room healthcare visits"
+  },
+  {
+   "row": 172,
+   "gold_key": "m2:Q5.58",
+   "query": "rheumatoid arthritis age at diagnosis",
+   "population": null,
+   "instances": [],
+   "expanded_F": "rheumatoid arthritis age at diagnosis",
+   "expanded_P": "rheumatoid arthritis age at diagnosis"
+  },
+  {
+   "row": 173,
+   "gold_key": "m2:Q5.58",
+   "query": "age diagnosed with rheumatoid arthritis",
+   "population": null,
+   "instances": [],
+   "expanded_F": "age diagnosed with rheumatoid arthritis",
+   "expanded_P": "age diagnosed with rheumatoid arthritis"
+  },
+  {
+   "row": 174,
+   "gold_key": "m2:Q5.58",
+   "query": "RA onset age",
+   "population": null,
+   "instances": [],
+   "expanded_F": "RA onset age",
+   "expanded_P": "RA onset age"
+  },
+  {
+   "row": 175,
+   "gold_key": "m2:Q5.58",
+   "query": "age at rheumatoid arthritis diagnosis",
+   "population": null,
+   "instances": [],
+   "expanded_F": "age at rheumatoid arthritis diagnosis",
+   "expanded_P": "age at rheumatoid arthritis diagnosis"
+  },
+  {
+   "row": 176,
+   "gold_key": "m2:Q5.15#1_27",
+   "query": "valvular heart disease",
+   "population": null,
+   "instances": [
+    "Heart Valve Problems"
+   ],
+   "expanded_F": "valvular heart disease: Heart Valve Problems",
+   "expanded_P": "valvular heart disease"
+  },
+  {
+   "row": 177,
+   "gold_key": "m2:Q5.15#1_27",
+   "query": "heart valve problems",
+   "population": null,
+   "instances": [
+    "Heart Valve Problems"
+   ],
+   "expanded_F": "heart valve problems",
+   "expanded_P": "heart valve problems"
+  },
+  {
+   "row": 178,
+   "gold_key": "m2:Q5.15#1_27",
+   "query": "valve disease",
+   "population": null,
+   "instances": [
+    "Heart Valve Problems"
+   ],
+   "expanded_F": "valve disease: Heart Valve Problems",
+   "expanded_P": "valve disease"
+  },
+  {
+   "row": 179,
+   "gold_key": "m2:Q5.15#1_27",
+   "query": "told had heart valve condition",
+   "population": null,
+   "instances": [
+    "Heart Valve Problems"
+   ],
+   "expanded_F": "told had heart valve condition: Heart Valve Problems",
+   "expanded_P": "told had heart valve condition"
+  },
+  {
+   "row": 180,
+   "gold_key": "m3:Q285",
+   "query": "household secondhand smoke",
+   "population": null,
+   "instances": [],
+   "expanded_F": "household secondhand smoke",
+   "expanded_P": "household secondhand smoke"
+  },
+  {
+   "row": 181,
+   "gold_key": "m3:Q285",
+   "query": "people smoking in house",
+   "population": null,
+   "instances": [],
+   "expanded_F": "people smoking in house",
+   "expanded_P": "people smoking in house"
+  },
+  {
+   "row": 182,
+   "gold_key": "m3:Q285",
+   "query": "HH tobacco smoke",
+   "population": null,
+   "instances": [],
+   "expanded_F": "HH tobacco smoke",
+   "expanded_P": "HH tobacco smoke"
+  },
+  {
+   "row": 183,
+   "gold_key": "m3:Q285",
+   "query": "household members tobacco exposure",
+   "population": null,
+   "instances": [],
+   "expanded_F": "household members tobacco exposure",
+   "expanded_P": "household members tobacco exposure"
+  },
+  {
+   "row": 184,
+   "gold_key": "m2:5_Q18.9#1_14",
+   "query": "childhood lymphoma",
+   "population": "child",
+   "instances": [
+    "Lymphoma"
+   ],
+   "expanded_F": "child childhood lymphoma",
+   "expanded_P": "child childhood lymphoma"
+  },
+  {
+   "row": 185,
+   "gold_key": "m2:5_Q18.9#1_14",
+   "query": "child had lymphoma",
+   "population": "child",
+   "instances": [
+    "Lymphoma"
+   ],
+   "expanded_F": "child had lymphoma",
+   "expanded_P": "child had lymphoma"
+  },
+  {
+   "row": 186,
+   "gold_key": "m2:5_Q18.9#1_14",
+   "query": "peds lymphoma",
+   "population": "child",
+   "instances": [
+    "Lymphoma"
+   ],
+   "expanded_F": "child peds lymphoma",
+   "expanded_P": "child peds lymphoma"
+  },
+  {
+   "row": 187,
+   "gold_key": "m2:5_Q18.9#1_14",
+   "query": "lymphoma cancer diagnosed child",
+   "population": "child",
+   "instances": [
+    "Lymphoma"
+   ],
+   "expanded_F": "lymphoma cancer diagnosed child",
+   "expanded_P": "lymphoma cancer diagnosed child"
+  },
+  {
+   "row": 188,
+   "gold_key": "m2:Q12.2",
+   "query": "cancer diagnosis history",
+   "population": null,
+   "instances": [],
+   "expanded_F": "cancer diagnosis history",
+   "expanded_P": "cancer diagnosis history"
+  },
+  {
+   "row": 189,
+   "gold_key": "m2:Q12.2",
+   "query": "ever had cancer",
+   "population": null,
+   "instances": [],
+   "expanded_F": "ever had cancer",
+   "expanded_P": "ever had cancer"
+  },
+  {
+   "row": 190,
+   "gold_key": "m2:Q12.2",
+   "query": "cancer hx",
+   "population": null,
+   "instances": [],
+   "expanded_F": "cancer hx",
+   "expanded_P": "cancer hx"
+  },
+  {
+   "row": 191,
+   "gold_key": "m2:Q12.2",
+   "query": "personal cancer history",
+   "population": null,
+   "instances": [],
+   "expanded_F": "personal cancer history",
+   "expanded_P": "personal cancer history"
+  },
+  {
+   "row": 192,
+   "gold_key": "m3:Q2.42",
+   "query": "seasonal golf participation",
+   "population": null,
+   "instances": [],
+   "expanded_F": "seasonal golf participation",
+   "expanded_P": "seasonal golf participation"
+  },
+  {
+   "row": 193,
+   "gold_key": "m3:Q2.42",
+   "query": "when you play golf",
+   "population": null,
+   "instances": [],
+   "expanded_F": "when you play golf",
+   "expanded_P": "when you play golf"
+  },
+  {
+   "row": 194,
+   "gold_key": "m3:Q2.42",
+   "query": "golf season",
+   "population": null,
+   "instances": [],
+   "expanded_F": "golf season",
+   "expanded_P": "golf season"
+  },
+  {
+   "row": 195,
+   "gold_key": "m3:Q2.42",
+   "query": "seasonal pattern of golf participation",
+   "population": null,
+   "instances": [],
+   "expanded_F": "seasonal pattern of golf participation",
+   "expanded_P": "seasonal pattern of golf participation"
+  },
+  {
+   "row": 196,
+   "gold_key": "m3:Q289",
+   "query": "menthol cigarette frequency",
+   "population": null,
+   "instances": [],
+   "expanded_F": "menthol cigarette frequency",
+   "expanded_P": "menthol cigarette frequency"
+  },
+  {
+   "row": 197,
+   "gold_key": "m3:Q289",
+   "query": "smoking menthol cigarettes",
+   "population": null,
+   "instances": [],
+   "expanded_F": "smoking menthol cigarettes",
+   "expanded_P": "smoking menthol cigarettes"
+  },
+  {
+   "row": 198,
+   "gold_key": "m3:Q289",
+   "query": "menthol use",
+   "population": null,
+   "instances": [],
+   "expanded_F": "menthol use",
+   "expanded_P": "menthol use"
+  },
+  {
+   "row": 199,
+   "gold_key": "m3:Q289",
+   "query": "how often smoke menthol cigarettes",
+   "population": null,
+   "instances": [],
+   "expanded_F": "how often smoke menthol cigarettes",
+   "expanded_P": "how often smoke menthol cigarettes"
+  },
+  {
+   "row": 200,
+   "gold_key": "m1:Q5.7",
+   "query": "household occupancy",
+   "population": null,
+   "instances": [],
+   "expanded_F": "household occupancy",
+   "expanded_P": "household occupancy"
+  },
+  {
+   "row": 201,
+   "gold_key": "m1:Q5.7",
+   "query": "people living in your household",
+   "population": null,
+   "instances": [],
+   "expanded_F": "people living in your household",
+   "expanded_P": "people living in your household"
+  },
+  {
+   "row": 202,
+   "gold_key": "m1:Q5.7",
+   "query": "household size",
+   "population": null,
+   "instances": [],
+   "expanded_F": "household size",
+   "expanded_P": "household size"
+  },
+  {
+   "row": 203,
+   "gold_key": "m1:Q5.7",
+   "query": "number of household members excluding respondent",
+   "population": null,
+   "instances": [],
+   "expanded_F": "number of household members excluding respondent",
+   "expanded_P": "number of household members excluding respondent"
+  },
+  {
+   "row": 204,
+   "gold_key": "m2:Q9.91",
+   "query": "combined oral contraceptive initiation age",
+   "population": null,
+   "instances": [],
+   "expanded_F": "combined oral contraceptive initiation age",
+   "expanded_P": "combined oral contraceptive initiation age"
+  },
+  {
+   "row": 205,
+   "gold_key": "m2:Q9.91",
+   "query": "age started birth control pills",
+   "population": null,
+   "instances": [],
+   "expanded_F": "age started birth control pills",
+   "expanded_P": "age started birth control pills"
+  },
+  {
+   "row": 206,
+   "gold_key": "m2:Q9.91",
+   "query": "hormone age",
+   "population": null,
+   "instances": [],
+   "expanded_F": "hormone age",
+   "expanded_P": "hormone age"
+  },
+  {
+   "row": 207,
+   "gold_key": "m2:Q9.91",
+   "query": "age when first used combined birth control",
+   "population": null,
+   "instances": [],
+   "expanded_F": "age when first used combined birth control",
+   "expanded_P": "age when first used combined birth control"
+  },
+  {
+   "row": 208,
+   "gold_key": "m2:2_Q18.9#1_17",
+   "query": "non-melanoma skin cancer diagnosis",
+   "population": "child",
+   "instances": [
+    "Non-melanoma skin cancer (basal or squamous)"
+   ],
+   "expanded_F": "child non-melanoma skin cancer diagnosis: Non-melanoma skin cancer (basal or squamous)",
+   "expanded_P": "child non-melanoma skin cancer diagnosis"
+  },
+  {
+   "row": 209,
+   "gold_key": "m2:2_Q18.9#1_17",
+   "query": "skin cancer in children",
+   "population": "child",
+   "instances": [
+    "Non-melanoma skin cancer (basal or squamous)"
+   ],
+   "expanded_F": "child skin cancer in children: Non-melanoma skin cancer (basal or squamous)",
+   "expanded_P": "child skin cancer in children"
+  },
+  {
+   "row": 210,
+   "gold_key": "m2:2_Q18.9#1_17",
+   "query": "child skin cancer",
+   "population": "child",
+   "instances": [
+    "Non-melanoma skin cancer (basal or squamous)"
+   ],
+   "expanded_F": "child skin cancer: Non-melanoma skin cancer (basal or squamous)",
+   "expanded_P": "child skin cancer"
+  },
+  {
+   "row": 211,
+   "gold_key": "m2:2_Q18.9#1_17",
+   "query": "childhood diagnosis of nonmelanoma skin cancer",
+   "population": "child",
+   "instances": [
+    "Non-melanoma skin cancer (basal or squamous)"
+   ],
+   "expanded_F": "child childhood diagnosis of nonmelanoma skin cancer: Non-melanoma skin cancer (basal or squamous)",
+   "expanded_P": "child childhood diagnosis of nonmelanoma skin cancer"
+  },
+  {
+   "row": 212,
+   "gold_key": "m2:Q19.87",
+   "query": "pain interference functional limitation",
+   "population": null,
+   "instances": [],
+   "expanded_F": "pain interference functional limitation",
+   "expanded_P": "pain interference functional limitation"
+  },
+  {
+   "row": 213,
+   "gold_key": "m2:Q19.87",
+   "query": "how pain affects work",
+   "population": null,
+   "instances": [],
+   "expanded_F": "how pain affects work",
+   "expanded_P": "how pain affects work"
+  },
+  {
+   "row": 214,
+   "gold_key": "m2:Q19.87",
+   "query": "work limitation pain",
+   "population": null,
+   "instances": [],
+   "expanded_F": "work limitation pain",
+   "expanded_P": "work limitation pain"
+  },
+  {
+   "row": 215,
+   "gold_key": "m2:Q19.87",
+   "query": "pain impact on normal work activities",
+   "population": null,
+   "instances": [],
+   "expanded_F": "pain impact on normal work activities",
+   "expanded_P": "pain impact on normal work activities"
+  },
+  {
+   "row": 216,
+   "gold_key": "m3:Q2.30",
+   "query": "home repair frequency",
+   "population": null,
+   "instances": [],
+   "expanded_F": "home repair frequency",
+   "expanded_P": "home repair frequency"
+  },
+  {
+   "row": 217,
+   "gold_key": "m3:Q2.30",
+   "query": "how often home repairs",
+   "population": null,
+   "instances": [],
+   "expanded_F": "how often home repairs",
+   "expanded_P": "how often home repairs"
+  },
+  {
+   "row": 218,
+   "gold_key": "m3:Q2.30",
+   "query": "repair frequency",
+   "population": null,
+   "instances": [],
+   "expanded_F": "repair frequency",
+   "expanded_P": "repair frequency"
+  },
+  {
+   "row": 219,
+   "gold_key": "m3:Q2.30",
+   "query": "frequency of home maintenance work",
+   "population": null,
+   "instances": [],
+   "expanded_F": "frequency of home maintenance work",
+   "expanded_P": "frequency of home maintenance work"
+  },
+  {
+   "row": 220,
+   "gold_key": "m3:Q2.29",
+   "query": "seasonal home repair participation",
+   "population": null,
+   "instances": [],
+   "expanded_F": "seasonal home repair participation",
+   "expanded_P": "seasonal home repair participation"
+  },
+  {
+   "row": 221,
+   "gold_key": "m3:Q2.29",
+   "query": "when you do repairs",
+   "population": null,
+   "instances": [],
+   "expanded_F": "when you do repairs",
+   "expanded_P": "when you do repairs"
+  },
+  {
+   "row": 222,
+   "gold_key": "m3:Q2.29",
+   "query": "home repair seasons",
+   "population": null,
+   "instances": [],
+   "expanded_F": "home repair seasons",
+   "expanded_P": "home repair seasons"
+  },
+  {
+   "row": 223,
+   "gold_key": "m3:Q2.29",
+   "query": "seasonal timing of home repairs",
+   "population": null,
+   "instances": [],
+   "expanded_F": "seasonal timing of home repairs",
+   "expanded_P": "seasonal timing of home repairs"
+  }
+ ],
+ "negatives": [
+  {
+   "id": "n01",
+   "query": "ambient PM2.5 concentration at the residential address",
+   "population": null,
+   "instances": [
+    "fine particulate matter"
+   ],
+   "expanded_F": "ambient PM2.5 concentration at the residential address: fine particulate matter",
+   "expanded_P": "ambient PM2.5 concentration at the residential address"
+  },
+  {
+   "id": "n02",
+   "query": "annual average nitrogen dioxide level where the participant lives",
+   "population": null,
+   "instances": [
+    "NO2"
+   ],
+   "expanded_F": "annual average nitrogen dioxide level where the participant lives: NO2",
+   "expanded_P": "annual average nitrogen dioxide level where the participant lives"
+  },
+  {
+   "id": "n03",
+   "query": "modeled ozone exposure over the past year",
+   "population": null,
+   "instances": [
+    "ground-level ozone"
+   ],
+   "expanded_F": "modeled ozone exposure over the past year: ground-level ozone",
+   "expanded_P": "modeled ozone exposure over the past year"
+  },
+  {
+   "id": "n04",
+   "query": "particulate matter monitor reading nearest the home",
+   "population": null,
+   "instances": [
+    "PM10",
+    "PM2.5"
+   ],
+   "expanded_F": "particulate matter monitor reading nearest the home: PM10, PM2.5",
+   "expanded_P": "particulate matter monitor reading nearest the home"
+  },
+  {
+   "id": "n05",
+   "query": "air quality index on the day of the interview",
+   "population": null,
+   "instances": [
+    "AQI"
+   ],
+   "expanded_F": "air quality index on the day of the interview: AQI",
+   "expanded_P": "air quality index on the day of the interview"
+  },
+  {
+   "id": "n06",
+   "query": "how clean or dirty the air is where they live",
+   "population": null,
+   "instances": [
+    "air pollution",
+    "smog"
+   ],
+   "expanded_F": "how clean or dirty the air is where they live: air pollution, smog",
+   "expanded_P": "how clean or dirty the air is where they live"
+  },
+  {
+   "id": "n07",
+   "query": "measured air pollution exposure",
+   "population": null,
+   "instances": [
+    "PM2.5",
+    "nitrogen dioxide",
+    "ozone"
+   ],
+   "expanded_F": "measured air pollution exposure: PM2.5, nitrogen dioxide, ozone",
+   "expanded_P": "measured air pollution exposure"
+  },
+  {
+   "id": "n08",
+   "query": "smog level in the participant's area",
+   "population": null,
+   "instances": [
+    "air pollution",
+    "haze"
+   ],
+   "expanded_F": "smog level in the participant's area: air pollution, haze",
+   "expanded_P": "smog level in the participant's area"
+  },
+  {
+   "id": "n09",
+   "query": "Area Deprivation Index national percentile for the residence",
+   "population": null,
+   "instances": [
+    "ADI"
+   ],
+   "expanded_F": "Area Deprivation Index national percentile for the residence: ADI",
+   "expanded_P": "Area Deprivation Index national percentile for the residence"
+  },
+  {
+   "id": "n10",
+   "query": "CDC Social Vulnerability Index score for the participant's tract",
+   "population": null,
+   "instances": [
+    "SVI"
+   ],
+   "expanded_F": "CDC Social Vulnerability Index score for the participant's tract: SVI",
+   "expanded_P": "CDC Social Vulnerability Index score for the participant's tract"
+  },
+  {
+   "id": "n11",
+   "query": "neighborhood deprivation index",
+   "population": null,
+   "instances": [
+    "area deprivation index",
+    "social vulnerability index"
+   ],
+   "expanded_F": "neighborhood deprivation index: area deprivation index, social vulnerability index",
+   "expanded_P": "neighborhood deprivation index"
+  },
+  {
+   "id": "n12",
+   "query": "area-level socioeconomic disadvantage measure",
+   "population": null,
+   "instances": [
+    "neighborhood poverty rate",
+    "area deprivation index"
+   ],
+   "expanded_F": "area-level socioeconomic disadvantage measure: neighborhood poverty rate, area deprivation index",
+   "expanded_P": "area-level socioeconomic disadvantage measure"
+  },
+  {
+   "id": "n13",
+   "query": "median household income of the census block group",
+   "population": null,
+   "instances": [
+    "neighborhood income"
+   ],
+   "expanded_F": "median household income of the census block group: neighborhood income",
+   "expanded_P": "median household income of the census block group"
+  },
+  {
+   "id": "n14",
+   "query": "Rural-Urban Commuting Area code of the residence",
+   "population": null,
+   "instances": [
+    "RUCA",
+    "rurality"
+   ],
+   "expanded_F": "Rural-Urban Commuting Area code of the residence: RUCA, rurality",
+   "expanded_P": "Rural-Urban Commuting Area code of the residence"
+  },
+  {
+   "id": "n15",
+   "query": "how well-off or poor the area they live in is",
+   "population": null,
+   "instances": [
+    "neighborhood wealth",
+    "area poverty"
+   ],
+   "expanded_F": "how well-off or poor the area they live in is: neighborhood wealth, area poverty",
+   "expanded_P": "how well-off or poor the area they live in is"
+  },
+  {
+   "id": "n16",
+   "query": "neighborhood poverty rate",
+   "population": null,
+   "instances": [
+    "percent of residents below the poverty line"
+   ],
+   "expanded_F": "neighborhood poverty rate: percent of residents below the poverty line",
+   "expanded_P": "neighborhood poverty rate"
+  },
+  {
+   "id": "n17",
+   "query": "census tract of residence",
+   "population": null,
+   "instances": [
+    "tract FIPS code"
+   ],
+   "expanded_F": "census tract of residence: tract FIPS code",
+   "expanded_P": "census tract of residence"
+  },
+  {
+   "id": "n18",
+   "query": "latitude and longitude of the home address",
+   "population": null,
+   "instances": [
+    "GPS coordinates"
+   ],
+   "expanded_F": "latitude and longitude of the home address: GPS coordinates",
+   "expanded_P": "latitude and longitude of the home address"
+  },
+  {
+   "id": "n19",
+   "query": "geocoded residential coordinates",
+   "population": null,
+   "instances": [
+    "latitude",
+    "longitude"
+   ],
+   "expanded_F": "geocoded residential coordinates: latitude, longitude",
+   "expanded_P": "geocoded residential coordinates"
+  },
+  {
+   "id": "n20",
+   "query": "census block group identifier",
+   "population": null,
+   "instances": [
+    "block group FIPS code"
+   ],
+   "expanded_F": "census block group identifier: block group FIPS code",
+   "expanded_P": "census block group identifier"
+  },
+  {
+   "id": "n21",
+   "query": "FIPS county code for the participant's address",
+   "population": null,
+   "instances": [
+    "county identifier"
+   ],
+   "expanded_F": "FIPS county code for the participant's address: county identifier",
+   "expanded_P": "FIPS county code for the participant's address"
+  },
+  {
+   "id": "n22",
+   "query": "geocoding match accuracy score",
+   "population": null,
+   "instances": [
+    "address match quality"
+   ],
+   "expanded_F": "geocoding match accuracy score: address match quality",
+   "expanded_P": "geocoding match accuracy score"
+  },
+  {
+   "id": "n23",
+   "query": "distance in miles from the home to the nearest green space",
+   "population": null,
+   "instances": [
+    "park",
+    "greenspace"
+   ],
+   "expanded_F": "distance in miles from the home to the nearest green space: park, greenspace",
+   "expanded_P": "distance in miles from the home to the nearest green space"
+  },
+  {
+   "id": "n24",
+   "query": "the exact map coordinates of where they live",
+   "population": null,
+   "instances": [
+    "latitude",
+    "longitude"
+   ],
+   "expanded_F": "the exact map coordinates of where they live: latitude, longitude",
+   "expanded_P": "the exact map coordinates of where they live"
+  },
+  {
+   "id": "n25",
+   "query": "serum cotinine level",
+   "population": null,
+   "instances": [
+    "nicotine metabolite biomarker"
+   ],
+   "expanded_F": "serum cotinine level: nicotine metabolite biomarker",
+   "expanded_P": "serum cotinine level"
+  },
+  {
+   "id": "n26",
+   "query": "plasma vitamin D concentration",
+   "population": null,
+   "instances": [
+    "25-hydroxyvitamin D"
+   ],
+   "expanded_F": "plasma vitamin D concentration: 25-hydroxyvitamin D",
+   "expanded_P": "plasma vitamin D concentration"
+  },
+  {
+   "id": "n27",
+   "query": "whole blood collection date",
+   "population": null,
+   "instances": [
+    "blood draw date"
+   ],
+   "expanded_F": "whole blood collection date: blood draw date",
+   "expanded_P": "whole blood collection date"
+  },
+  {
+   "id": "n28",
+   "query": "biospecimen consent status",
+   "population": null,
+   "instances": [
+    "blood sample consent",
+    "saliva sample consent"
+   ],
+   "expanded_F": "biospecimen consent status: blood sample consent, saliva sample consent",
+   "expanded_P": "biospecimen consent status"
+  },
+  {
+   "id": "n29",
+   "query": "measured HbA1c value",
+   "population": null,
+   "instances": [
+    "glycated hemoglobin"
+   ],
+   "expanded_F": "measured HbA1c value: glycated hemoglobin",
+   "expanded_P": "measured HbA1c value"
+  },
+  {
+   "id": "n30",
+   "query": "measured blood lead concentration",
+   "population": null,
+   "instances": [
+    "blood lead level"
+   ],
+   "expanded_F": "measured blood lead concentration: blood lead level",
+   "expanded_P": "measured blood lead concentration"
+  },
+  {
+   "id": "n31",
+   "query": "saliva sample DNA yield",
+   "population": null,
+   "instances": [
+    "extracted DNA quantity"
+   ],
+   "expanded_F": "saliva sample DNA yield: extracted DNA quantity",
+   "expanded_P": "saliva sample DNA yield"
+  },
+  {
+   "id": "n32",
+   "query": "did they give a blood or spit sample",
+   "population": null,
+   "instances": [
+    "biospecimen collection",
+    "saliva"
+   ],
+   "expanded_F": "did they give a blood or spit sample: biospecimen collection, saliva",
+   "expanded_P": "did they give a blood or spit sample"
+  },
+  {
+   "id": "n33",
+   "query": "polygenic risk score for breast cancer",
+   "population": null,
+   "instances": [
+    "PRS"
+   ],
+   "expanded_F": "polygenic risk score for breast cancer: PRS",
+   "expanded_P": "polygenic risk score for breast cancer"
+  },
+  {
+   "id": "n34",
+   "query": "genetic ancestry proportions estimated from SNP data",
+   "population": null,
+   "instances": [
+    "admixture",
+    "genetic ancestry"
+   ],
+   "expanded_F": "genetic ancestry proportions estimated from SNP data: admixture",
+   "expanded_P": "genetic ancestry proportions estimated from SNP data"
+  },
+  {
+   "id": "n35",
+   "query": "ancestry informative markers",
+   "population": null,
+   "instances": [
+    "AIMs",
+    "genetic ancestry"
+   ],
+   "expanded_F": "ancestry informative markers: AIMs, genetic ancestry",
+   "expanded_P": "ancestry informative markers"
+  },
+  {
+   "id": "n36",
+   "query": "BRCA1 pathogenic variant carrier status",
+   "population": null,
+   "instances": [
+    "BRCA1 mutation"
+   ],
+   "expanded_F": "BRCA1 pathogenic variant carrier status: BRCA1 mutation",
+   "expanded_P": "BRCA1 pathogenic variant carrier status"
+  },
+  {
+   "id": "n37",
+   "query": "whole genome sequencing availability",
+   "population": null,
+   "instances": [
+    "WGS"
+   ],
+   "expanded_F": "whole genome sequencing availability: WGS",
+   "expanded_P": "whole genome sequencing availability"
+  },
+  {
+   "id": "n38",
+   "query": "genotyping array platform used",
+   "population": null,
+   "instances": [
+    "SNP array",
+    "Illumina"
+   ],
+   "expanded_F": "genotyping array platform used: SNP array, Illumina",
+   "expanded_P": "genotyping array platform used"
+  },
+  {
+   "id": "n39",
+   "query": "whether their DNA has been tested for cancer risk genes",
+   "population": null,
+   "instances": [
+    "BRCA1",
+    "BRCA2",
+    "genetic testing"
+   ],
+   "expanded_F": "whether their DNA has been tested for cancer risk genes: BRCA1, BRCA2, genetic testing",
+   "expanded_P": "whether their DNA has been tested for cancer risk genes"
+  },
+  {
+   "id": "n40",
+   "query": "inherited genetic risk measured in a laboratory",
+   "population": null,
+   "instances": [
+    "germline mutation",
+    "genetic test"
+   ],
+   "expanded_F": "inherited genetic risk measured in a laboratory: germline mutation, genetic test",
+   "expanded_P": "inherited genetic risk measured in a laboratory"
+  },
+  {
+   "id": "n41",
+   "query": "is the air outside their house healthy to breathe",
+   "population": null,
+   "instances": [
+    "air pollution",
+    "air quality"
+   ],
+   "expanded_F": "is the air outside their house healthy to breathe: air pollution, air quality",
+   "expanded_P": "is the air outside their house healthy to breathe"
+  },
+  {
+   "id": "n42",
+   "query": "what kind of neighborhood income level they live in",
+   "population": null,
+   "instances": [
+    "median household income"
+   ],
+   "expanded_F": "what kind of neighborhood income level they live in: median household income",
+   "expanded_P": "what kind of neighborhood income level they live in"
+  },
+  {
+   "id": "n43",
+   "query": "which census area their address falls in",
+   "population": null,
+   "instances": [
+    "census tract",
+    "block group"
+   ],
+   "expanded_F": "which census area their address falls in: census tract, block group",
+   "expanded_P": "which census area their address falls in"
+  },
+  {
+   "id": "n44",
+   "query": "whether anyone in the family had a gene test for cancer risk",
+   "population": "family member",
+   "instances": [
+    "BRCA1",
+    "BRCA2",
+    "genetic testing"
+   ],
+   "expanded_F": "family member whether anyone in the family had a gene test for cancer risk: BRCA1, BRCA2, genetic testing",
+   "expanded_P": "family member whether anyone in the family had a gene test for cancer risk"
+  }
+ ]
+}
