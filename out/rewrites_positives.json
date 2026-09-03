@@ -1,0 +1,2040 @@
+{
+ "schema": "compass_query_rewrites/1",
+ "generated": "2026-09-03",
+ "generator": "claude-haiku-4-5",
+ "generator_route": "claude -p --allowed-tools '' (no network, no tools)",
+ "prompt_sha256_16": "e1501b6981d47985",
+ "prompt_template": "You rewrite a health researcher's variable-lookup request into alternative phrasings, which will be matched against the literal wording of a survey questionnaire.\n\nFor each request below, write exactly {n} alternative phrasings.\n\nThe corpus being matched against is survey question text and its response options, in the questionnaire's own words -- \"How often did you walk while shopping or doing errands\", \"What time do you typically wake up on days off - AM/PM\", \"Have you ever taken naproxen (Naprosyn, Anaprox, Aleve) regularly\". Requests fail when they name a construct in the abstract and the questionnaire names a concrete instance, a timeframe, or a specific subfield.\n\nSo each rewrite should move TOWARD the questionnaire's register:\n1. Name concrete instances the construct covers -- generic and brand drug names, specific transport modes, specific body sites, specific relationships.\n2. Make an implied timeframe, recall window, subfield or unit explicit.\n3. Restate it as the plain question a survey would ask, in everyday words rather than analyst vocabulary.\n\nHard rules:\n- Stay faithful to the request. Do not broaden it into a different construct, and do not narrow a general request down to a single instance -- name an instance as an EXAMPLE alongside the general term.\n- Do not invent facts about what this survey contains or does not contain. If you do not know a concrete instance for a request, keep the general term.\n- Under 15 words each. No question marks.\n- The {n} rewrites must differ from each other and from the original request.\n\nRequests:\n{items}\n\nReturn ONLY a JSON object, no prose and no code fence, of the form:\n{{\"<id>\": [\"rewrite one\", \"rewrite two\", ...], ...}}\nwith exactly {n} strings per id, and one key per id above.",
+ "source_fixture": "retrieval_queries.json",
+ "source_fixture_schema": "retrieval_eval_queries/1",
+ "n_requests": 224,
+ "n_rewrites_requested": 3,
+ "n_requests_short_of_target": 0,
+ "rows_short_of_target": [],
+ "generation_cost": {
+  "n_llm_calls": 28,
+  "batch_size": 8,
+  "total_wall_s": 253.8,
+  "mean_call_s": 62.47,
+  "per_request_serial_s_estimate": 7.809
+ },
+ "note": "The SAME prompt is applied to positive and negative requests with no signal about which is which -- that is the deployed configuration, and it is what makes the task-3 abstention comparison symmetric.",
+ "rewrites": [
+  {
+   "row": 0,
+   "query": "exogenous hormone medication",
+   "rewrites": [
+    "prescription hormone pills, patches, or injections taken",
+    "birth control or hormone replacement medications used",
+    "prescribed estrogen, progestin, or other hormones"
+   ]
+  },
+  {
+   "row": 1,
+   "query": "prescription hormones taken",
+   "rewrites": [
+    "taking prescribed hormone pills, patches, or injections",
+    "current use of birth control or hormone replacement",
+    "regular prescription estrogen or progestin medication use"
+   ]
+  },
+  {
+   "row": 2,
+   "query": "other hormones",
+   "rewrites": [
+    "other hormone medications taken",
+    "additional hormone pills or prescriptions used",
+    "any other hormones taken regularly"
+   ]
+  },
+  {
+   "row": 3,
+   "query": "types of hormone medication used",
+   "rewrites": [
+    "hormone medications used: estrogen, progestin, or other",
+    "birth control or hormone replacement types: pills, patches, injections",
+    "hormone medications: pills, patches, injections, or other forms"
+   ]
+  },
+  {
+   "row": 4,
+   "query": "progestin monotherapy cycle days",
+   "rewrites": [
+    "progestin-only pill days per menstrual cycle",
+    "days taking progestin without estrogen each cycle",
+    "progestin-only use: days per cycle"
+   ]
+  },
+  {
+   "row": 5,
+   "query": "days used progestin pill",
+   "rewrites": [
+    "progestin pill: days per cycle",
+    "how many days per cycle using progestin",
+    "days per menstrual cycle taking progestin pill"
+   ]
+  },
+  {
+   "row": 6,
+   "query": "progestin days",
+   "rewrites": [
+    "progestin days per cycle",
+    "days taking progestin each cycle",
+    "number of progestin days per menstrual cycle"
+   ]
+  },
+  {
+   "row": 7,
+   "query": "days per cycle progestin use",
+   "rewrites": [
+    "progestin: days taken per menstrual cycle",
+    "days per cycle using progestin pill",
+    "number of progestin days each cycle"
+   ]
+  },
+  {
+   "row": 8,
+   "query": "alcohol consumption wine daily",
+   "rewrites": [
+    "Amount of wine you drink per day",
+    "How many glasses of wine daily",
+    "Whether and how much wine you drink daily"
+   ]
+  },
+  {
+   "row": 9,
+   "query": "wine glasses per day",
+   "rewrites": [
+    "How many glasses of wine you drink per day",
+    "Daily wine intake in number of glasses",
+    "Wine glasses typically consumed daily"
+   ]
+  },
+  {
+   "row": 10,
+   "query": "wine intake",
+   "rewrites": [
+    "How much wine you typically drink",
+    "Whether you drink wine and how often",
+    "Wine you consume in typical amounts"
+   ]
+  },
+  {
+   "row": 11,
+   "query": "daily wine consumption amount",
+   "rewrites": [
+    "How much wine you typically drink daily",
+    "Daily wine consumption in glasses",
+    "Daily wine glasses or drinks consumed"
+   ]
+  },
+  {
+   "row": 12,
+   "query": "family history prostate cancer",
+   "rewrites": [
+    "Whether family members have had prostate cancer",
+    "Family members with prostate cancer such as parents or siblings",
+    "Prostate cancer in your father, mother, or siblings"
+   ]
+  },
+  {
+   "row": 13,
+   "query": "sibling prostate cancer",
+   "rewrites": [
+    "Whether any sibling has been diagnosed with prostate cancer",
+    "Your brother or sister having prostate cancer",
+    "Prostate cancer diagnosis among your siblings"
+   ]
+  },
+  {
+   "row": 14,
+   "query": "prostate sibling",
+   "rewrites": [
+    "Whether your sibling has prostate cancer",
+    "Prostate cancer in your brother or sister",
+    "If a brother or sister has prostate cancer"
+   ]
+  },
+  {
+   "row": 15,
+   "query": "brother prostate diagnosis",
+   "rewrites": [
+    "Whether your brother has been diagnosed with prostate cancer",
+    "Your brother's prostate cancer diagnosis",
+    "If your brother has prostate cancer"
+   ]
+  },
+  {
+   "row": 16,
+   "query": "maternal cancer diagnosis age",
+   "rewrites": [
+    "Mother's age at her cancer diagnosis",
+    "How old your mother was when diagnosed with cancer",
+    "Age your mother was when first told of cancer"
+   ]
+  },
+  {
+   "row": 17,
+   "query": "mother cancer year diagnosed",
+   "rewrites": [
+    "Year your mother was diagnosed with cancer",
+    "The year your mother found out she had cancer",
+    "Your mother's cancer diagnosis year"
+   ]
+  },
+  {
+   "row": 18,
+   "query": "maternal cancer year",
+   "rewrites": [
+    "Year your mother's cancer was first detected",
+    "The year your mother was diagnosed with cancer",
+    "The year cancer was diagnosed in your mother"
+   ]
+  },
+  {
+   "row": 19,
+   "query": "year mother diagnosed cancer",
+   "rewrites": [
+    "Year your mother learned she had cancer",
+    "The year your mother was told she had cancer",
+    "Your mother's cancer diagnosis year"
+   ]
+  },
+  {
+   "row": 20,
+   "query": "oropharyngeal cancer family history",
+   "rewrites": [
+    "Family members with throat cancer or mouth cancer",
+    "Relatives who were diagnosed with oropharyngeal cancer",
+    "Cancer in the mouth or throat among your family"
+   ]
+  },
+  {
+   "row": 21,
+   "query": "sibling mouth throat cancer",
+   "rewrites": [
+    "Your siblings with mouth or throat cancer",
+    "Siblings diagnosed with throat cancer or mouth cancer",
+    "Any brothers or sisters with cancer in throat or mouth"
+   ]
+  },
+  {
+   "row": 22,
+   "query": "HNC family",
+   "rewrites": [
+    "Family members with head and neck cancer",
+    "Relatives who had cancer of head or neck",
+    "Cancer of the head or neck among your family"
+   ]
+  },
+  {
+   "row": 23,
+   "query": "head and neck cancer sibling",
+   "rewrites": [
+    "Your siblings with head and neck cancer",
+    "Siblings who were diagnosed with head or neck cancer",
+    "Any brothers or sisters with cancer of head or neck"
+   ]
+  },
+  {
+   "row": 24,
+   "query": "antihistamine use duration years",
+   "rewrites": [
+    "How many years have you used antihistamines like Benadryl or Allegra",
+    "Years of taking antihistamine medications, for example Claritin or Zyrtec",
+    "Length of time using antihistamines such as diphenhydramine or cetirizine"
+   ]
+  },
+  {
+   "row": 25,
+   "query": "years took over-the-counter antihistamine",
+   "rewrites": [
+    "How many years have you used over-the-counter antihistamines like Allegra",
+    "Years of taking OTC antihistamine medicines, such as Claritin or Benadryl",
+    "How long you have used non-prescription antihistamines including Zyrtec or Dramamine"
+   ]
+  },
+  {
+   "row": 26,
+   "query": "antihistamine years",
+   "rewrites": [
+    "How many years have you taken antihistamines like Benadryl or Claritin",
+    "Years using antihistamine medications, examples include Allegra or loratadine products",
+    "Length of time taking antihistamines such as Zyrtec, Allegra, or Benadryl"
+   ]
+  },
+  {
+   "row": 27,
+   "query": "regular antihistamine medication years",
+   "rewrites": [
+    "How many years have you regularly taken antihistamine medicines like Allegra",
+    "Years of regularly using antihistamines, for example Claritin or Zyrtec",
+    "How long you have been regularly taking antihistamine medications such as Benadryl"
+   ]
+  },
+  {
+   "row": 28,
+   "query": "asthma diagnosis history",
+   "rewrites": [
+    "Have you ever been diagnosed with asthma by a doctor",
+    "History of receiving an asthma diagnosis from a healthcare provider",
+    "Whether you have ever had asthma diagnosed by a physician"
+   ]
+  },
+  {
+   "row": 29,
+   "query": "doctor diagnosed asthma",
+   "rewrites": [
+    "Has a doctor ever told you that you have asthma",
+    "Whether a physician has diagnosed you with asthma at any time",
+    "Did a healthcare provider ever diagnose you with asthma"
+   ]
+  },
+  {
+   "row": 30,
+   "query": "asthma diagnosis",
+   "rewrites": [
+    "Have you ever received an asthma diagnosis from a healthcare provider",
+    "Whether you have been diagnosed with asthma by a doctor",
+    "Has anyone ever diagnosed you with having asthma"
+   ]
+  },
+  {
+   "row": 31,
+   "query": "physician diagnosed asthma ever",
+   "rewrites": [
+    "Has a physician ever told you that you have asthma",
+    "Whether a doctor has ever diagnosed you with asthma",
+    "Did a healthcare provider ever give you an asthma diagnosis"
+   ]
+  },
+  {
+   "row": 32,
+   "query": "familial breast cancer",
+   "rewrites": [
+    "Breast cancer in your mother, sister, or close relatives",
+    "Family history of breast cancer",
+    "Relatives who had breast cancer"
+   ]
+  },
+  {
+   "row": 33,
+   "query": "sibling cancer",
+   "rewrites": [
+    "Your brother or sister ever had cancer",
+    "Cancer diagnosed in a brother or sister",
+    "Siblings with any cancer"
+   ]
+  },
+  {
+   "row": 34,
+   "query": "cancer sister",
+   "rewrites": [
+    "Your sister ever had cancer",
+    "Sister diagnosed with any cancer",
+    "Cancer in your sister"
+   ]
+  },
+  {
+   "row": 35,
+   "query": "sibling cancer history",
+   "rewrites": [
+    "Brother or sister with cancer history",
+    "Your siblings ever diagnosed with cancer",
+    "Family history of cancer in siblings"
+   ]
+  },
+  {
+   "row": 36,
+   "query": "bladder cancer age diagnosis",
+   "rewrites": [
+    "Age when diagnosed with bladder cancer",
+    "Your age at the time of bladder cancer diagnosis",
+    "Bladder cancer diagnosis: your age then"
+   ]
+  },
+  {
+   "row": 37,
+   "query": "year diagnosed cancer",
+   "rewrites": [
+    "Year you were diagnosed with cancer",
+    "Year cancer was diagnosed",
+    "Year of your cancer diagnosis"
+   ]
+  },
+  {
+   "row": 38,
+   "query": "diagnosis year",
+   "rewrites": [
+    "Year of cancer diagnosis",
+    "When you were diagnosed with cancer",
+    "Year cancer was first diagnosed"
+   ]
+  },
+  {
+   "row": 39,
+   "query": "bladder cancer diagnosis age",
+   "rewrites": [
+    "Age when your bladder cancer was diagnosed",
+    "Your age at the diagnosis of bladder cancer",
+    "How old when you had your bladder cancer diagnosis"
+   ]
+  },
+  {
+   "row": 40,
+   "query": "outdoor activity time",
+   "rewrites": [
+    "Time per week on outdoor recreation like walking, sports, gardening",
+    "Hours per week spent outside on recreational activities",
+    "Time typically spent outdoors exercising or doing leisured activities weekly"
+   ]
+  },
+  {
+   "row": 41,
+   "query": "time outdoor chores",
+   "rewrites": [
+    "Hours per week doing yard work, gardening, or outdoor maintenance",
+    "Time spent weekly on outdoor chores like yard work or weeding",
+    "Weekly time on outdoor household tasks like yard work or gardening"
+   ]
+  },
+  {
+   "row": 42,
+   "query": "outdoor hours",
+   "rewrites": [
+    "Total hours per week or day spent outside",
+    "Daily or weekly time outdoors for work, exercise, or recreation",
+    "Hours per week you typically spend outdoors"
+   ]
+  },
+  {
+   "row": 43,
+   "query": "hours per day outdoor work",
+   "rewrites": [
+    "Hours per day spent on outdoor job tasks or yard work",
+    "Time daily on outdoor employment or outdoor household chores",
+    "Daily hours working outdoors or doing outdoor maintenance tasks"
+   ]
+  },
+  {
+   "row": 44,
+   "query": "mind-body exercise",
+   "rewrites": [
+    "Frequency of mind-body exercise such as yoga, tai chi, or pilates",
+    "Days per week doing mind-body activities like yoga or meditation",
+    "Time weekly spent on mind-body exercise for flexibility or balance"
+   ]
+  },
+  {
+   "row": 45,
+   "query": "yoga frequency",
+   "rewrites": [
+    "Days per week or times per month doing yoga",
+    "Frequency doing yoga for exercise or flexibility training",
+    "Times per week engaged in yoga practice"
+   ]
+  },
+  {
+   "row": 46,
+   "query": "stretching frequency",
+   "rewrites": [
+    "Days per week or times per day doing stretching",
+    "Frequency of stretching for flexibility or muscle maintenance",
+    "Times per week you do stretching exercises"
+   ]
+  },
+  {
+   "row": 47,
+   "query": "how often exercise flexibility",
+   "rewrites": [
+    "Frequency doing flexibility exercises like stretching, yoga, or pilates",
+    "Days per week spent on flexibility training or stretching",
+    "Times per week doing activities to improve flexibility"
+   ]
+  },
+  {
+   "row": 48,
+   "query": "time to first cigarette",
+   "rewrites": [
+    "Minutes from waking until your first cigarette",
+    "How long after sleep until you smoke first cig",
+    "Time between waking and your first morning smoke"
+   ]
+  },
+  {
+   "row": 49,
+   "query": "first cigarette morning",
+   "rewrites": [
+    "Minutes after waking when you smoke first morning cigarette",
+    "How soon until first smoke on mornings you wake",
+    "First cigarette timing in the morning after sleep"
+   ]
+  },
+  {
+   "row": 50,
+   "query": "first cig",
+   "rewrites": [
+    "Time until your first smoke after waking each day",
+    "How soon after sleep you light your first cigarette",
+    "When you smoke your first cigarette after waking"
+   ]
+  },
+  {
+   "row": 51,
+   "query": "morning cigarette frequency",
+   "rewrites": [
+    "How many cigarettes you smoke each morning",
+    "Number of cigarettes before noon on typical mornings",
+    "Cigarettes smoked in morning hours after waking up"
+   ]
+  },
+  {
+   "row": 52,
+   "query": "metformin medication use",
+   "rewrites": [
+    "Whether you regularly take metformin for blood sugar",
+    "Metformin use as diabetes medication currently or regularly",
+    "Do you take metformin or equivalent diabetes medicine"
+   ]
+  },
+  {
+   "row": 53,
+   "query": "ever take metformin",
+   "rewrites": [
+    "Have you ever taken metformin at any point",
+    "Lifetime use of metformin medication for diabetes",
+    "Whether you've ever been prescribed metformin"
+   ]
+  },
+  {
+   "row": 54,
+   "query": "metformin use",
+   "rewrites": [
+    "Do you currently take metformin medication regularly",
+    "Metformin you are using now for diabetes",
+    "Whether metformin is part of your current medicines"
+   ]
+  },
+  {
+   "row": 55,
+   "query": "metformin use duration",
+   "rewrites": [
+    "How long have you been taking metformin",
+    "Duration in months or years of metformin use",
+    "Length of time metformin is your medication"
+   ]
+  },
+  {
+   "row": 56,
+   "query": "colorectal cancer diagnosis age",
+   "rewrites": [
+    "Age when diagnosed with colon or rectal cancer",
+    "What was your age at colorectal cancer diagnosis",
+    "How old were you when diagnosed with colorectal cancer"
+   ]
+  },
+  {
+   "row": 57,
+   "query": "when diagnosed colon cancer",
+   "rewrites": [
+    "Age when you were diagnosed with colon cancer",
+    "What year was your colon cancer diagnosis",
+    "Years since colon cancer diagnosis"
+   ]
+  },
+  {
+   "row": 58,
+   "query": "cancer year",
+   "rewrites": [
+    "What year were you diagnosed with cancer",
+    "Year of cancer diagnosis",
+    "How many years ago cancer diagnosis occurred"
+   ]
+  },
+  {
+   "row": 59,
+   "query": "age rectal cancer diagnosed",
+   "rewrites": [
+    "Age at rectal cancer diagnosis",
+    "How old were you when diagnosed with rectal cancer",
+    "Your age upon rectal cancer diagnosis"
+   ]
+  },
+  {
+   "row": 60,
+   "query": "traffic exposure commute",
+   "rewrites": [
+    "Time spent in traffic during your commute",
+    "Exposure to vehicle emissions while commuting",
+    "Traffic congestion on your commute route"
+   ]
+  },
+  {
+   "row": 61,
+   "query": "commute type",
+   "rewrites": [
+    "Way you travel to work daily",
+    "Commute by car, bus, train, bike, or foot",
+    "Main transportation type for getting to work"
+   ]
+  },
+  {
+   "row": 62,
+   "query": "commute route",
+   "rewrites": [
+    "Specific roads or highways you commute on",
+    "Your typical commute route or path",
+    "Which route you usually take to work"
+   ]
+  },
+  {
+   "row": 63,
+   "query": "commute roadway type",
+   "rewrites": [
+    "Types of roadway on your commute",
+    "Commute on highway, local street, or rural road",
+    "Roadway type used for commuting"
+   ]
+  },
+  {
+   "row": 64,
+   "query": "family cancer history malignancy",
+   "rewrites": [
+    "Cancer in parents, siblings, or other family members",
+    "Whether any family members ever had cancer",
+    "Your family's history of cancer or malignancy"
+   ]
+  },
+  {
+   "row": 65,
+   "query": "sibling had cancer",
+   "rewrites": [
+    "Your brother or sister being diagnosed with cancer",
+    "Cancer occurring in a sibling",
+    "Whether you have a sibling with cancer"
+   ]
+  },
+  {
+   "row": 66,
+   "query": "sibling cancer",
+   "rewrites": [
+    "Whether your sibling was diagnosed with cancer",
+    "Cancer among your brothers or sisters",
+    "Having a sibling with cancer"
+   ]
+  },
+  {
+   "row": 67,
+   "query": "family cancer diagnosis",
+   "rewrites": [
+    "Family members diagnosed with cancer",
+    "Whether any parents or siblings received cancer diagnosis",
+    "Cancer diagnosis among relatives"
+   ]
+  },
+  {
+   "row": 68,
+   "query": "electronic nicotine delivery frequency",
+   "rewrites": [
+    "How often you use e-cigarettes or vapes",
+    "Frequency of electronic nicotine delivery device use",
+    "Your typical vaping device use frequency"
+   ]
+  },
+  {
+   "row": 69,
+   "query": "regular vaping use",
+   "rewrites": [
+    "Whether you vape regularly on a habitual basis",
+    "Regular or frequent use of vaping devices",
+    "How often you regularly use electronic cigarettes"
+   ]
+  },
+  {
+   "row": 70,
+   "query": "vape frequency",
+   "rewrites": [
+    "How often you vape",
+    "Your vaping frequency",
+    "How many times you use vapes or e-cigs"
+   ]
+  },
+  {
+   "row": 71,
+   "query": "how often use vaping devices",
+   "rewrites": [
+    "Frequency of using vaping devices or e-cigarettes",
+    "How regularly you use vapes",
+    "Using vaping devices, how often"
+   ]
+  },
+  {
+   "row": 72,
+   "query": "residence location city",
+   "rewrites": [
+    "what city do you currently live in",
+    "your city of residence",
+    "the city you live in"
+   ]
+  },
+  {
+   "row": 73,
+   "query": "city where you live",
+   "rewrites": [
+    "what city do you live in",
+    "your current city of residence",
+    "which city is your home"
+   ]
+  },
+  {
+   "row": 74,
+   "query": "city",
+   "rewrites": [
+    "what city do you live in",
+    "the city where you currently reside",
+    "your city of residence"
+   ]
+  },
+  {
+   "row": 75,
+   "query": "what city do you live in",
+   "rewrites": [
+    "the city where you currently live",
+    "your current city of residence",
+    "which city do you call home"
+   ]
+  },
+  {
+   "row": 76,
+   "query": "NSAID utilization frequency",
+   "rewrites": [
+    "how often do you take NSAIDs like ibuprofen or naproxen",
+    "frequency of pain reliever use such as ibuprofen",
+    "how often you use over-the-counter pain relievers"
+   ]
+  },
+  {
+   "row": 77,
+   "query": "how often take naproxen",
+   "rewrites": [
+    "how often did you take naproxen",
+    "how frequently do you use naproxen",
+    "taking naproxen how many times"
+   ]
+  },
+  {
+   "row": 78,
+   "query": "naproxen frequency",
+   "rewrites": [
+    "how often do you take naproxen",
+    "your frequency of using naproxen",
+    "how frequently you use naproxen"
+   ]
+  },
+  {
+   "row": 79,
+   "query": "how many days take naproxen monthly",
+   "rewrites": [
+    "how many days per month do you take naproxen",
+    "number of days each month you use naproxen",
+    "taking naproxen - how many days in a month"
+   ]
+  },
+  {
+   "row": 80,
+   "query": "angina pectoris diagnosis",
+   "rewrites": [
+    "Ever diagnosed with angina pectoris",
+    "Doctor told you that you have angina pectoris",
+    "Healthcare provider confirmed angina pectoris diagnosis"
+   ]
+  },
+  {
+   "row": 81,
+   "query": "chest pain condition",
+   "rewrites": [
+    "Chest pain or pressure in your heart area",
+    "Ongoing or recurring chest pain you have experienced",
+    "History of chest pain or heart discomfort"
+   ]
+  },
+  {
+   "row": 82,
+   "query": "angina",
+   "rewrites": [
+    "Ever been diagnosed with angina",
+    "Angina or heart-related chest pain",
+    "Doctor told you that you have angina"
+   ]
+  },
+  {
+   "row": 83,
+   "query": "doctor diagnosed with angina",
+   "rewrites": [
+    "Physician told you that you have angina",
+    "Healthcare provider said you have angina condition",
+    "Doctor confirmed you have angina"
+   ]
+  },
+  {
+   "row": 84,
+   "query": "alcohol cessation reason",
+   "rewrites": [
+    "Reason you quit drinking alcohol",
+    "Why you stopped or reduced your alcohol intake",
+    "Reason for giving up or limiting alcohol"
+   ]
+  },
+  {
+   "row": 85,
+   "query": "why quit drinking",
+   "rewrites": [
+    "Reason you stopped or cut back on drinking",
+    "Why you quit using alcohol or gave it up",
+    "Reason for stopping your alcohol consumption"
+   ]
+  },
+  {
+   "row": 86,
+   "query": "stop drinking reason",
+   "rewrites": [
+    "Reason you quit or reduced your drinking",
+    "Why you stopped using alcohol or cut back",
+    "Reason for limiting or stopping your alcohol use"
+   ]
+  },
+  {
+   "row": 87,
+   "query": "reason for stopping alcohol",
+   "rewrites": [
+    "Why you quit drinking or reduced intake",
+    "Reason you stopped or gave up alcohol",
+    "Reason for limiting or cutting back on drinking"
+   ]
+  },
+  {
+   "row": 88,
+   "query": "circadian sleep schedule",
+   "rewrites": [
+    "What time you typically wake and sleep",
+    "Your usual sleep and wake times",
+    "When you normally go to bed and wake up"
+   ]
+  },
+  {
+   "row": 89,
+   "query": "what time wake up",
+   "rewrites": [
+    "What time do you typically wake up on weekdays",
+    "Your usual morning wake time",
+    "When you usually wake in the morning"
+   ]
+  },
+  {
+   "row": 90,
+   "query": "wake time",
+   "rewrites": [
+    "What time you typically wake",
+    "Your usual wake time in the morning",
+    "When you normally wake up"
+   ]
+  },
+  {
+   "row": 91,
+   "query": "typical wake time weekends",
+   "rewrites": [
+    "What time do you usually wake on weekends",
+    "Your weekend wake time",
+    "When you typically wake up on days off"
+   ]
+  },
+  {
+   "row": 92,
+   "query": "esophageal cancer family history",
+   "rewrites": [
+    "Family history of esophageal cancer",
+    "Whether esophageal cancer runs in your family",
+    "Any relatives diagnosed with esophageal cancer"
+   ]
+  },
+  {
+   "row": 93,
+   "query": "sibling had esophageal cancer",
+   "rewrites": [
+    "Did your sibling ever have esophageal cancer",
+    "Your sibling's esophageal cancer diagnosis or history",
+    "Does or did your sibling have esophageal cancer"
+   ]
+  },
+  {
+   "row": 94,
+   "query": "esophageal cancer",
+   "rewrites": [
+    "Your esophageal cancer diagnosis history",
+    "Ever been diagnosed with esophageal cancer",
+    "Esophageal cancer in you or family"
+   ]
+  },
+  {
+   "row": 95,
+   "query": "family member esophageal cancer",
+   "rewrites": [
+    "Esophageal cancer in family members",
+    "Does any family member have esophageal cancer",
+    "Any of your relatives with esophageal cancer"
+   ]
+  },
+  {
+   "row": 96,
+   "query": "nicotine replacement therapy duration",
+   "rewrites": [
+    "How long you have used nicotine patches, gum, or lozenges for quitting",
+    "Months or years using nicotine replacement like patches, gum, or inhalers",
+    "Duration on nicotine replacement products such as patches or lozenges"
+   ]
+  },
+  {
+   "row": 97,
+   "query": "how long using nicotine products",
+   "rewrites": [
+    "Years or months using nicotine replacement products like patches and gum",
+    "How long you have used nicotine patches, gum, or lozenges",
+    "Duration of nicotine patch, lozenge, or inhaler use"
+   ]
+  },
+  {
+   "row": 98,
+   "query": "NRT duration product",
+   "rewrites": [
+    "Duration using nicotine replacement therapy products like patches or gum",
+    "How long you have used nicotine patches, lozenges, or gum",
+    "Months or years on nicotine replacement products"
+   ]
+  },
+  {
+   "row": 99,
+   "query": "length of time using smoking cessation aids",
+   "rewrites": [
+    "How long you used nicotine patches, gum, or other cessation aids",
+    "Duration using smoking cessation products like nicotine replacement or inhalers",
+    "Time on nicotine replacement patches, lozenges, or gum"
+   ]
+  },
+  {
+   "row": 100,
+   "query": "non-exercise ambulatory activity",
+   "rewrites": [
+    "Time spent walking for shopping, errands, or daily activities",
+    "How much you walk while doing everyday things",
+    "Walking during daily activities like shopping and running errands"
+   ]
+  },
+  {
+   "row": 101,
+   "query": "walking during everyday activities",
+   "rewrites": [
+    "Time spent walking when shopping, running errands, or doing daily tasks",
+    "How often you walk for shopping, errands, and everyday activities",
+    "Walking frequency during routine daily activities and tasks"
+   ]
+  },
+  {
+   "row": 102,
+   "query": "incidental walking frequency",
+   "rewrites": [
+    "How often you walk while shopping, doing errands, or daily tasks",
+    "Frequency of walking during routine activities like shopping and errands",
+    "Time you spend walking for daily activities and shopping"
+   ]
+  },
+  {
+   "row": 103,
+   "query": "time spent walking for shopping and errands",
+   "rewrites": [
+    "How long you walk when shopping or doing errands",
+    "Frequency and duration of walking for shopping and errands",
+    "Time spent walking while shopping or running errands"
+   ]
+  },
+  {
+   "row": 104,
+   "query": "commute transportation mode",
+   "rewrites": [
+    "Your transportation mode to work - car, bus, train, bike, walking, other",
+    "What kind of transportation you use to commute",
+    "Transportation mode on work days"
+   ]
+  },
+  {
+   "row": 105,
+   "query": "usual way of getting to work",
+   "rewrites": [
+    "Your usual way to work - driving, transit, biking, walking, carpool, other",
+    "How you usually get to work",
+    "What is your typical commute method"
+   ]
+  },
+  {
+   "row": 106,
+   "query": "commute transport type",
+   "rewrites": [
+    "What type of transport you use to work",
+    "Your commute transport type - car, bus, bike, walking, carpool, or other",
+    "Type of transportation for getting to work daily"
+   ]
+  },
+  {
+   "row": 107,
+   "query": "primary method used to get to work",
+   "rewrites": [
+    "What is your primary method of commuting",
+    "Your main way to work - driving, transit, biking, walking, or carpool",
+    "Primary method for getting to your job"
+   ]
+  },
+  {
+   "row": 108,
+   "query": "insulin use regular therapy",
+   "rewrites": [
+    "Regular use of insulin for diabetes",
+    "Whether you take insulin shots regularly",
+    "Insulin therapy for managing your diabetes"
+   ]
+  },
+  {
+   "row": 109,
+   "query": "ever taken insulin shots regularly",
+   "rewrites": [
+    "History of regularly using insulin shots",
+    "Regular insulin shots as past or current therapy",
+    "Whether you've regularly used insulin injections"
+   ]
+  },
+  {
+   "row": 110,
+   "query": "insulin therapy history",
+   "rewrites": [
+    "Whether you've ever used insulin for diabetes",
+    "Past or current insulin therapy use",
+    "Any use of insulin shots in the past"
+   ]
+  },
+  {
+   "row": 111,
+   "query": "long-term regular insulin use diabetes",
+   "rewrites": [
+    "Regular insulin use over a long period for diabetes",
+    "Long-term insulin therapy for managing diabetes",
+    "Using insulin regularly as ongoing diabetes treatment"
+   ]
+  },
+  {
+   "row": 112,
+   "query": "racquet sport participation",
+   "rewrites": [
+    "Playing tennis, squash, or badminton",
+    "Racquet sports like tennis, squash, or racquetball",
+    "How often you play racquet sports"
+   ]
+  },
+  {
+   "row": 113,
+   "query": "playing tennis or squash",
+   "rewrites": [
+    "How often you play tennis or squash",
+    "Whether you ever played tennis or squash",
+    "Your tennis and squash playing"
+   ]
+  },
+  {
+   "row": 114,
+   "query": "racquet sports activity",
+   "rewrites": [
+    "Tennis, squash, badminton, or other racquet sports",
+    "Playing racquet sports like tennis, squash, or racquetball",
+    "How often you do racquet sports"
+   ]
+  },
+  {
+   "row": 115,
+   "query": "participation in court sports recreation",
+   "rewrites": [
+    "Playing tennis, squash, badminton, or court sports",
+    "Court sports like tennis, badminton, or handball",
+    "How often you play court sports"
+   ]
+  },
+  {
+   "row": 116,
+   "query": "paternal thyroid cancer diagnosis",
+   "rewrites": [
+    "Your father's thyroid cancer diagnosis",
+    "Whether your father was diagnosed with thyroid cancer",
+    "Thyroid cancer diagnosis in your father"
+   ]
+  },
+  {
+   "row": 117,
+   "query": "father's cancer history thyroid",
+   "rewrites": [
+    "Your father's thyroid cancer history",
+    "Whether your father ever had thyroid cancer",
+    "Thyroid cancer history in your father"
+   ]
+  },
+  {
+   "row": 118,
+   "query": "paternal thyroid cancer",
+   "rewrites": [
+    "Your father's thyroid cancer",
+    "Whether your father had thyroid cancer",
+    "Thyroid cancer in your father"
+   ]
+  },
+  {
+   "row": 119,
+   "query": "age at diagnosis father thyroid malignancy",
+   "rewrites": [
+    "Your father's age at thyroid cancer diagnosis",
+    "How old your father was when diagnosed with thyroid cancer",
+    "Father's age when thyroid cancer was diagnosed"
+   ]
+  },
+  {
+   "row": 120,
+   "query": "sibling non-Hodgkin lymphoma",
+   "rewrites": [
+    "Brother or sister diagnosed with non-Hodgkin lymphoma",
+    "Any sibling with non-Hodgkin lymphoma or NHL",
+    "Sibling with non-Hodgkin lymphoma diagnosis"
+   ]
+  },
+  {
+   "row": 121,
+   "query": "brother sister had lymphoma",
+   "rewrites": [
+    "Brother or sister ever diagnosed with lymphoma",
+    "Any sibling diagnosed with lymphoma",
+    "Sibling had lymphoma at any time"
+   ]
+  },
+  {
+   "row": 122,
+   "query": "sibling NHL diagnosis",
+   "rewrites": [
+    "Sibling diagnosed with non-Hodgkin lymphoma",
+    "Brother or sister with NHL diagnosis",
+    "Any sibling ever diagnosed with NHL"
+   ]
+  },
+  {
+   "row": 123,
+   "query": "family history sibling lymphoid cancer",
+   "rewrites": [
+    "Brother or sister diagnosed with lymphoma or lymphoid cancer",
+    "Any sibling with lymphoid cancer including lymphoma",
+    "Sibling with lymphoma or other blood system cancer"
+   ]
+  },
+  {
+   "row": 124,
+   "query": "colorectal cancer personal history",
+   "rewrites": [
+    "Ever diagnosed with colorectal, colon, or rectal cancer",
+    "Personal diagnosis of colon or rectal cancer",
+    "Colorectal cancer diagnosis including colon or rectum"
+   ]
+  },
+  {
+   "row": 125,
+   "query": "ever diagnosed with colon cancer",
+   "rewrites": [
+    "Colon cancer diagnosis at any time",
+    "Ever had colon cancer diagnosis",
+    "Cancer of the colon diagnosed"
+   ]
+  },
+  {
+   "row": 126,
+   "query": "colorectal cancer diagnosis",
+   "rewrites": [
+    "Ever diagnosed with colorectal cancer (colon or rectum)",
+    "Diagnosis of cancer in colon or rectum",
+    "Colorectal or colon cancer diagnosis"
+   ]
+  },
+  {
+   "row": 127,
+   "query": "personal history bowel malignancy",
+   "rewrites": [
+    "Ever diagnosed with bowel or colorectal cancer",
+    "Cancer of the bowel or colon diagnosed",
+    "Bowel or colon cancer diagnosis at any time"
+   ]
+  },
+  {
+   "row": 128,
+   "query": "light household activity",
+   "rewrites": [
+    "light housework such as dusting vacuuming or tidying",
+    "light household chores like sweeping organizing or dishes",
+    "doing light household work for example cleaning or organizing"
+   ]
+  },
+  {
+   "row": 129,
+   "query": "how often housework",
+   "rewrites": [
+    "how often you do housework or household cleaning",
+    "frequency of household chores such as tidying or laundry",
+    "how often doing household work like cleaning or cooking"
+   ]
+  },
+  {
+   "row": 130,
+   "query": "domestic activity",
+   "rewrites": [
+    "household work like cleaning tidying cooking or laundry",
+    "domestic chores such as housework yard work or cooking",
+    "time on household activities including tidying cleaning and organizing"
+   ]
+  },
+  {
+   "row": 131,
+   "query": "frequency of household work",
+   "rewrites": [
+    "how often you do household chores like cleaning or tidying",
+    "frequency of housework such as dusting vacuuming or laundry",
+    "how much household work or chores you do regularly"
+   ]
+  },
+  {
+   "row": 132,
+   "query": "esophageal malignancy",
+   "rewrites": [
+    "cancer of the esophagus or food pipe",
+    "esophageal cancer or malignant esophageal tumor",
+    "malignant cancer in the esophagus or food tube"
+   ]
+  },
+  {
+   "row": 133,
+   "query": "sibling esophagus cancer",
+   "rewrites": [
+    "brother or sister with esophageal cancer",
+    "sibling diagnosed with esophagus cancer or food pipe cancer",
+    "sibling having had cancer of the esophagus"
+   ]
+  },
+  {
+   "row": 134,
+   "query": "esophageal cancer",
+   "rewrites": [
+    "cancer of the esophagus",
+    "esophageal or food pipe cancer",
+    "cancer in the food tube or esophagus"
+   ]
+  },
+  {
+   "row": 135,
+   "query": "family history esophageal cancer",
+   "rewrites": [
+    "family member with esophageal cancer",
+    "esophageal cancer in your family or relatives",
+    "relative diagnosed with cancer of the esophagus"
+   ]
+  },
+  {
+   "row": 136,
+   "query": "prostate cancer metastasis",
+   "rewrites": [
+    "Prostate cancer that has spread to distant sites",
+    "Whether prostate cancer reached other organs or bones",
+    "Spread of prostate cancer beyond the prostate gland"
+   ]
+  },
+  {
+   "row": 137,
+   "query": "prostate cancer spread",
+   "rewrites": [
+    "Prostate cancer spreading to other body locations or organs",
+    "Whether prostate cancer extended to distant areas",
+    "Prostate cancer that reached other parts of body"
+   ]
+  },
+  {
+   "row": 138,
+   "query": "metastatic prostate",
+   "rewrites": [
+    "Prostate cancer that spread to other sites",
+    "Advanced prostate cancer with distant spread",
+    "Whether prostate cancer extended beyond the gland itself"
+   ]
+  },
+  {
+   "row": 139,
+   "query": "prostate cancer distant metastases",
+   "rewrites": [
+    "Prostate cancer spreading to organs far from prostate",
+    "Whether prostate cancer reached distant locations in body",
+    "Spread of prostate cancer to places distant from prostate"
+   ]
+  },
+  {
+   "row": 140,
+   "query": "acetaminophen indication",
+   "rewrites": [
+    "What you used acetaminophen or Tylenol to treat",
+    "Reasons for taking acetaminophen or other pain reliever",
+    "Whether acetaminophen was taken for specific symptoms or conditions"
+   ]
+  },
+  {
+   "row": 141,
+   "query": "reason for taking acetaminophen",
+   "rewrites": [
+    "What condition acetaminophen or Tylenol was taken to address",
+    "Reasons you used acetaminophen regularly",
+    "Whether acetaminophen was used for pain, fever, or ache"
+   ]
+  },
+  {
+   "row": 142,
+   "query": "analgesic use",
+   "rewrites": [
+    "Use of pain relief medications like acetaminophen regularly",
+    "Whether you took over-the-counter pain relievers",
+    "Frequency of using pain medications or tablets"
+   ]
+  },
+  {
+   "row": 143,
+   "query": "indication for regular acetaminophen",
+   "rewrites": [
+    "Why you regularly took acetaminophen or Tylenol medication",
+    "Conditions treated with regular acetaminophen use",
+    "Reasons for taking acetaminophen frequently for pain or symptoms"
+   ]
+  },
+  {
+   "row": 144,
+   "query": "sibling malignancy other",
+   "rewrites": [
+    "Brother or sister diagnosed with cancer",
+    "Cancer diagnosis in any sibling",
+    "Whether siblings had any cancer type"
+   ]
+  },
+  {
+   "row": 145,
+   "query": "sibling other cancer",
+   "rewrites": [
+    "Any sibling had a cancer diagnosis",
+    "Cancer in a brother or sister",
+    "Siblings with cancer diagnosis"
+   ]
+  },
+  {
+   "row": 146,
+   "query": "other cancer",
+   "rewrites": [
+    "Cancer diagnosis, any type",
+    "Told you have cancer",
+    "History of any cancer"
+   ]
+  },
+  {
+   "row": 147,
+   "query": "family history other malignancy",
+   "rewrites": [
+    "Cancer in parents, siblings, or other relatives",
+    "Family members diagnosed with cancer",
+    "Relatives had any cancer diagnosis"
+   ]
+  },
+  {
+   "row": 148,
+   "query": "subfertility onset age",
+   "rewrites": [
+    "Age when difficulty getting pregnant started",
+    "How old when infertility began",
+    "Age subfertility or infertility first occurred"
+   ]
+  },
+  {
+   "row": 149,
+   "query": "when infertility started",
+   "rewrites": [
+    "Your age when infertility began",
+    "When infertility or trouble conceiving started",
+    "Age trouble conceiving first occurred"
+   ]
+  },
+  {
+   "row": 150,
+   "query": "infertility age",
+   "rewrites": [
+    "Age when infertility began",
+    "How old you were at infertility onset",
+    "Age difficulty conceiving started"
+   ]
+  },
+  {
+   "row": 151,
+   "query": "age at first subfertility",
+   "rewrites": [
+    "Age when first unable to conceive",
+    "How old at subfertility or infertility start",
+    "Age when infertility first appeared"
+   ]
+  },
+  {
+   "row": 152,
+   "query": "cancer metastasis",
+   "rewrites": [
+    "Whether cancer has spread to distant body sites",
+    "Had cancer spread to bones, lungs, liver, or other areas",
+    "Cancer reaching distant organs or tissues beyond original site"
+   ]
+  },
+  {
+   "row": 153,
+   "query": "cancer spread",
+   "rewrites": [
+    "Whether cancer moved to other body parts",
+    "Had your cancer spread beyond the original site",
+    "Cancer spreading to new locations or lymph nodes"
+   ]
+  },
+  {
+   "row": 154,
+   "query": "metastatic disease",
+   "rewrites": [
+    "Whether cancer had spread to other parts of body",
+    "Cancer in distant organs like lungs, bones, or liver",
+    "Cancer spreading beyond original site to distant locations"
+   ]
+  },
+  {
+   "row": 155,
+   "query": "cancer spread to distant sites",
+   "rewrites": [
+    "Whether cancer spread to bones, lungs, liver, or distant organs",
+    "Had cancer traveled to distant parts of body",
+    "Cancer in distant sites like lymph nodes or organs"
+   ]
+  },
+  {
+   "row": 156,
+   "query": "commute transportation mode",
+   "rewrites": [
+    "How you usually get to work or school",
+    "Whether you drive, take transit, bike, or walk for commuting",
+    "Primary transportation method for getting to work"
+   ]
+  },
+  {
+   "row": 157,
+   "query": "how get to school",
+   "rewrites": [
+    "Primary way you get to school",
+    "Main transportation mode for getting to school",
+    "Whether you drive, bike, or walk to school"
+   ]
+  },
+  {
+   "row": 158,
+   "query": "transport mode",
+   "rewrites": [
+    "How you travel or get around such as driving or transit",
+    "Transportation mode like car, bus, bike, or walking",
+    "Whether you walk, bike, drive, or use transit"
+   ]
+  },
+  {
+   "row": 159,
+   "query": "modes of transportation to school",
+   "rewrites": [
+    "Different ways you travel to school such as walking or driving",
+    "All transportation methods you use to get to school",
+    "Whether you walk, bike, drive, or take transit to school"
+   ]
+  },
+  {
+   "row": 160,
+   "query": "cervical cancer diagnosis age",
+   "rewrites": [
+    "Age when cervical cancer was diagnosed",
+    "How old at cervix cancer diagnosis",
+    "Years old upon cervical cancer diagnosis"
+   ]
+  },
+  {
+   "row": 161,
+   "query": "age when diagnosed cervix cancer",
+   "rewrites": [
+    "Age at cervical cancer diagnosis",
+    "How old when cervix cancer was diagnosed",
+    "How many years old with cervical cancer diagnosis"
+   ]
+  },
+  {
+   "row": 162,
+   "query": "cervix cancer yr",
+   "rewrites": [
+    "Age in years at cervix cancer diagnosis",
+    "Years old when cervical cancer diagnosed",
+    "How many years old at cervix cancer diagnosis"
+   ]
+  },
+  {
+   "row": 163,
+   "query": "age at cervical cancer diagnosis",
+   "rewrites": [
+    "How old when cervix cancer was diagnosed",
+    "Your age upon cervical cancer diagnosis",
+    "Years old at cervix cancer diagnosis"
+   ]
+  },
+  {
+   "row": 164,
+   "query": "colorectal cancer family history",
+   "rewrites": [
+    "Any family members with colorectal cancer",
+    "Relatives diagnosed with colon or rectal cancer",
+    "Parents or siblings with colorectal cancer"
+   ]
+  },
+  {
+   "row": 165,
+   "query": "sibling colon cancer",
+   "rewrites": [
+    "Brother or sister with colon cancer",
+    "Sibling diagnosed with colorectal or colon cancer",
+    "Any sibling diagnosed with colon cancer"
+   ]
+  },
+  {
+   "row": 166,
+   "query": "CRC sibling",
+   "rewrites": [
+    "Sibling with colorectal cancer",
+    "Brother or sister diagnosed colorectal cancer",
+    "Any sibling with colon or rectal cancer"
+   ]
+  },
+  {
+   "row": 167,
+   "query": "was sibling diagnosed colorectal cancer",
+   "rewrites": [
+    "Sibling diagnosed with colorectal cancer",
+    "Brother or sister with colon or rectal cancer",
+    "Any siblings diagnosed colorectal cancer"
+   ]
+  },
+  {
+   "row": 168,
+   "query": "emergency department utilization",
+   "rewrites": [
+    "Have you been to the emergency department or ER lately",
+    "Times you visited an emergency room for urgent medical problems",
+    "Do you use emergency services when you need urgent care"
+   ]
+  },
+  {
+   "row": 169,
+   "query": "ER visit frequency",
+   "rewrites": [
+    "How many ER or emergency room visits have you had",
+    "Frequency of visits to the emergency department for urgent care",
+    "Have you had emergency room visits in the past year"
+   ]
+  },
+  {
+   "row": 170,
+   "query": "ED use recent",
+   "rewrites": [
+    "Recent visits to emergency department or emergency room for care",
+    "Have you been to the ED or emergency room recently",
+    "How often in the past few months gone to emergency services"
+   ]
+  },
+  {
+   "row": 171,
+   "query": "emergency room healthcare visits",
+   "rewrites": [
+    "Have you sought emergency medical care at the ER or ED",
+    "Times you visited an emergency room for health or urgent care",
+    "Whether you use emergency healthcare services for urgent medical needs"
+   ]
+  },
+  {
+   "row": 172,
+   "query": "rheumatoid arthritis age at diagnosis",
+   "rewrites": [
+    "What age were you when you were diagnosed with rheumatoid arthritis",
+    "Age in years when your rheumatoid arthritis was first diagnosed",
+    "How old when you received your RA or rheumatoid arthritis diagnosis"
+   ]
+  },
+  {
+   "row": 173,
+   "query": "age diagnosed with rheumatoid arthritis",
+   "rewrites": [
+    "What age were you at your rheumatoid arthritis diagnosis",
+    "Your age when first diagnosed with rheumatoid arthritis or RA",
+    "How old when your doctor diagnosed you with rheumatoid arthritis"
+   ]
+  },
+  {
+   "row": 174,
+   "query": "RA onset age",
+   "rewrites": [
+    "What age did your rheumatoid arthritis start or first appear",
+    "Age when rheumatoid arthritis first began or was diagnosed",
+    "How old were you when you developed rheumatoid arthritis"
+   ]
+  },
+  {
+   "row": 175,
+   "query": "age at rheumatoid arthritis diagnosis",
+   "rewrites": [
+    "What age when you were diagnosed with rheumatoid arthritis",
+    "Your age at the time of rheumatoid arthritis diagnosis",
+    "How old were you when told you have rheumatoid arthritis"
+   ]
+  },
+  {
+   "row": 176,
+   "query": "valvular heart disease",
+   "rewrites": [
+    "Heart valve problems or disease",
+    "Ever told you have a heart valve condition",
+    "Any problems with your heart valves"
+   ]
+  },
+  {
+   "row": 177,
+   "query": "heart valve problems",
+   "rewrites": [
+    "Valve disease or damage to the heart",
+    "Doctor told you have valve issues",
+    "Heart valve disease or birth defect"
+   ]
+  },
+  {
+   "row": 178,
+   "query": "valve disease",
+   "rewrites": [
+    "Heart valve disease or abnormality",
+    "Problems with your heart's valves",
+    "Ever been told you had valve problems"
+   ]
+  },
+  {
+   "row": 179,
+   "query": "told had heart valve condition",
+   "rewrites": [
+    "Doctor said you have heart valve disease",
+    "Heart valve condition ever diagnosed",
+    "Been told you have valve disease"
+   ]
+  },
+  {
+   "row": 180,
+   "query": "household secondhand smoke",
+   "rewrites": [
+    "People smoking inside your home",
+    "Cigarette smoke in the house",
+    "Secondhand tobacco smoke at home"
+   ]
+  },
+  {
+   "row": 181,
+   "query": "people smoking in house",
+   "rewrites": [
+    "Household members' cigarette smoking",
+    "Smoking inside your home",
+    "Tobacco smoke from others at home"
+   ]
+  },
+  {
+   "row": 182,
+   "query": "HH tobacco smoke",
+   "rewrites": [
+    "Tobacco smoke in your home",
+    "Smoke from cigarettes in the house",
+    "Household members smoking around you"
+   ]
+  },
+  {
+   "row": 183,
+   "query": "household members tobacco exposure",
+   "rewrites": [
+    "Smoke from people smoking in your home",
+    "Tobacco smoke from family or household members",
+    "Secondhand smoke from others at home"
+   ]
+  },
+  {
+   "row": 184,
+   "query": "childhood lymphoma",
+   "rewrites": [
+    "Ever diagnosed with Hodgkin's lymphoma before age 18",
+    "Childhood lymphoma or lymph node cancer diagnosis",
+    "Had Hodgkin's or non-Hodgkin's lymphoma as child"
+   ]
+  },
+  {
+   "row": 185,
+   "query": "child had lymphoma",
+   "rewrites": [
+    "Child or children diagnosed with Hodgkin's lymphoma",
+    "Any of your children diagnosed with lymphoma cancer",
+    "Lymphoma such as Hodgkin's diagnosed in your child"
+   ]
+  },
+  {
+   "row": 186,
+   "query": "peds lymphoma",
+   "rewrites": [
+    "Ever diagnosed with lymphoma during childhood years",
+    "Hodgkin's or non-Hodgkin's lymphoma diagnosed in childhood",
+    "Lymphoma cancer diagnosis any time during childhood"
+   ]
+  },
+  {
+   "row": 187,
+   "query": "lymphoma cancer diagnosed child",
+   "rewrites": [
+    "Ever diagnosed with Hodgkin's lymphoma during childhood",
+    "Lymphoma or cancer diagnosis when you were child",
+    "Non-Hodgkin's or other lymphoma diagnosed before age 18"
+   ]
+  },
+  {
+   "row": 188,
+   "query": "cancer diagnosis history",
+   "rewrites": [
+    "Lymphoma, leukemia, breast, or other cancer diagnosis history",
+    "Ever diagnosed with cancer, any type or location",
+    "Personal history of any cancer diagnosis"
+   ]
+  },
+  {
+   "row": 189,
+   "query": "ever had cancer",
+   "rewrites": [
+    "Lymphoma, leukemia, melanoma, or any cancer diagnosed",
+    "Ever diagnosed with cancer such as breast or lung",
+    "Had any type of cancer in lifetime"
+   ]
+  },
+  {
+   "row": 190,
+   "query": "cancer hx",
+   "rewrites": [
+    "Cancer diagnosis history, any type or location",
+    "Lymphoma, leukemia, melanoma, or other cancer history",
+    "Ever been diagnosed with any cancer"
+   ]
+  },
+  {
+   "row": 191,
+   "query": "personal cancer history",
+   "rewrites": [
+    "Any cancer diagnosis in your personal history",
+    "Lymphoma, leukemia, breast cancer, or other cancer history",
+    "Ever diagnosed with cancer, any type"
+   ]
+  },
+  {
+   "row": 192,
+   "query": "seasonal golf participation",
+   "rewrites": [
+    "How often you play golf in each season",
+    "Golf playing during spring, summer, fall, and winter",
+    "Whether you golf more frequently at certain times of year"
+   ]
+  },
+  {
+   "row": 193,
+   "query": "when you play golf",
+   "rewrites": [
+    "Times during the year you typically golf",
+    "Whether you play golf seasonally or year-round",
+    "How often you golf per month or season"
+   ]
+  },
+  {
+   "row": 194,
+   "query": "golf season",
+   "rewrites": [
+    "Months or time periods when you play golf most",
+    "Whether you have a peak season for golfing",
+    "Which seasons of the year you actively golf"
+   ]
+  },
+  {
+   "row": 195,
+   "query": "seasonal pattern of golf participation",
+   "rewrites": [
+    "How your golfing varies across different seasons",
+    "Pattern of when you golf throughout the year",
+    "Whether you golf more in some seasons than others"
+   ]
+  },
+  {
+   "row": 196,
+   "query": "menthol cigarette frequency",
+   "rewrites": [
+    "How often per day or week you smoke menthol cigarettes",
+    "Whether you regularly smoke menthol brands like Kool",
+    "Times you smoke menthol or mentholated cigarettes"
+   ]
+  },
+  {
+   "row": 197,
+   "query": "smoking menthol cigarettes",
+   "rewrites": [
+    "How often you smoke menthol cigarettes like Kool or Newport",
+    "Whether you regularly use menthol flavored cigarettes",
+    "Times per week you smoke menthol brands"
+   ]
+  },
+  {
+   "row": 198,
+   "query": "menthol use",
+   "rewrites": [
+    "How often you use menthol cigarettes such as Kool",
+    "Frequency of smoking menthol flavored cigarettes per day",
+    "Whether you regularly use menthol smoking products"
+   ]
+  },
+  {
+   "row": 199,
+   "query": "how often smoke menthol cigarettes",
+   "rewrites": [
+    "Frequency of smoking menthol brands like Kool or Newport",
+    "How many times daily you smoke menthol cigarettes",
+    "Whether you regularly smoke mentholated cigarettes"
+   ]
+  },
+  {
+   "row": 200,
+   "query": "household occupancy",
+   "rewrites": [
+    "Who lives with you in your household",
+    "People sharing your home",
+    "Number of people living in your home"
+   ]
+  },
+  {
+   "row": 201,
+   "query": "people living in your household",
+   "rewrites": [
+    "Household members living with you",
+    "People in your home",
+    "Who lives in your household"
+   ]
+  },
+  {
+   "row": 202,
+   "query": "household size",
+   "rewrites": [
+    "Total number of people in your household",
+    "Number of people in your home",
+    "People making up your household"
+   ]
+  },
+  {
+   "row": 203,
+   "query": "number of household members excluding respondent",
+   "rewrites": [
+    "Others living in your household",
+    "Number of people living with you besides yourself",
+    "Household members other than you"
+   ]
+  },
+  {
+   "row": 204,
+   "query": "combined oral contraceptive initiation age",
+   "rewrites": [
+    "Age you started taking birth control pills",
+    "When you first began birth control pills, your age",
+    "Age at first use of birth control pills"
+   ]
+  },
+  {
+   "row": 205,
+   "query": "age started birth control pills",
+   "rewrites": [
+    "Your age when you began birth control pills",
+    "Age at which you started birth control pills",
+    "When first taking birth control pills, your age then"
+   ]
+  },
+  {
+   "row": 206,
+   "query": "hormone age",
+   "rewrites": [
+    "Age when you started hormonal birth control",
+    "Your age at first hormonal contraceptive use",
+    "Started hormonal birth control, your age then"
+   ]
+  },
+  {
+   "row": 207,
+   "query": "age when first used combined birth control",
+   "rewrites": [
+    "Your age when you first used combined birth control",
+    "Age at initiation of combined birth control",
+    "Age of first combined birth control use"
+   ]
+  },
+  {
+   "row": 208,
+   "query": "non-melanoma skin cancer diagnosis",
+   "rewrites": [
+    "Ever been diagnosed with non-melanoma skin cancer",
+    "Diagnosis of basal cell or squamous cell skin cancer",
+    "Non-melanoma skin cancer such as basal cell or squamous cell"
+   ]
+  },
+  {
+   "row": 209,
+   "query": "skin cancer in children",
+   "rewrites": [
+    "Skin cancer diagnosis when you were a child",
+    "Your child or children diagnosed with skin cancer",
+    "Any skin cancer before you turned 18 years old"
+   ]
+  },
+  {
+   "row": 210,
+   "query": "child skin cancer",
+   "rewrites": [
+    "Skin cancer when you were a child",
+    "Child with a history of skin cancer",
+    "Skin cancer diagnosed during childhood"
+   ]
+  },
+  {
+   "row": 211,
+   "query": "childhood diagnosis of nonmelanoma skin cancer",
+   "rewrites": [
+    "Non-melanoma skin cancer diagnosis before you were 18",
+    "Childhood basal cell or squamous cell skin cancer",
+    "Non-melanoma skin cancer such as basal cell in childhood"
+   ]
+  },
+  {
+   "row": 212,
+   "query": "pain interference functional limitation",
+   "rewrites": [
+    "How much pain keeps you from doing daily activities",
+    "Pain limiting work, hobbies, or household tasks",
+    "Difficulty with daily life because of pain"
+   ]
+  },
+  {
+   "row": 213,
+   "query": "how pain affects work",
+   "rewrites": [
+    "Whether pain affects or changes your work",
+    "Pain interfering with your job activities",
+    "Trouble working due to pain"
+   ]
+  },
+  {
+   "row": 214,
+   "query": "work limitation pain",
+   "rewrites": [
+    "How pain limits what you can do at work",
+    "Unable to do work tasks because of pain",
+    "Pain preventing or reducing work activities"
+   ]
+  },
+  {
+   "row": 215,
+   "query": "pain impact on normal work activities",
+   "rewrites": [
+    "How pain affects your usual work activities",
+    "Pain reducing your normal work or productivity",
+    "Difficulty keeping up with regular work due to pain"
+   ]
+  },
+  {
+   "row": 216,
+   "query": "home repair frequency",
+   "rewrites": [
+    "How often you fix or repair things around your home",
+    "Times per year doing repairs like painting, patching, or replacing",
+    "Fixing household fixtures, walls, and other things regularly or seasonally"
+   ]
+  },
+  {
+   "row": 217,
+   "query": "how often home repairs",
+   "rewrites": [
+    "Frequency of maintaining your home through painting, fixing, replacing fixtures",
+    "Times per month when you do repairs or maintenance work",
+    "Doing home repairs such as patching walls or fixing leaks"
+   ]
+  },
+  {
+   "row": 218,
+   "query": "repair frequency",
+   "rewrites": [
+    "How often you repair or fix things around your house",
+    "Times per year you do maintenance like painting or fixing",
+    "Repairing fixtures, patching walls, replacing things, and home maintenance work"
+   ]
+  },
+  {
+   "row": 219,
+   "query": "frequency of home maintenance work",
+   "rewrites": [
+    "How often you do repairs like painting walls or fixing leaks",
+    "Times per month fixing things around the house seasonally or regular",
+    "Maintenance work such as patching, replacing fixtures, painting, and repairs"
+   ]
+  },
+  {
+   "row": 220,
+   "query": "seasonal home repair participation",
+   "rewrites": [
+    "Doing repairs like painting, fixing leaks, replacing things in certain seasons",
+    "Spring, summer, fall, or winter timing of your home repairs",
+    "Which seasons you fix or maintain your house, including roof work"
+   ]
+  },
+  {
+   "row": 221,
+   "query": "when you do repairs",
+   "rewrites": [
+    "Times of year or seasons when you do home repairs",
+    "Seasonal timing for fixing things like leaks, painting, or patching",
+    "When you fix or repair your house, by season or frequency"
+   ]
+  },
+  {
+   "row": 222,
+   "query": "home repair seasons",
+   "rewrites": [
+    "Which seasons you do home repairs like painting or fixing things",
+    "Spring and fall timing for repairs such as patching or replacing",
+    "Seasonal patterns of doing repairs like fixing leaks or painting walls"
+   ]
+  },
+  {
+   "row": 223,
+   "query": "seasonal timing of home repairs",
+   "rewrites": [
+    "Which seasons you do repairs like painting, patching, fixing leaks",
+    "Spring, summer, fall, or winter when you fix your house",
+    "Doing repairs such as replacing fixtures or painting walls by season"
+   ]
+  }
+ ]
+}

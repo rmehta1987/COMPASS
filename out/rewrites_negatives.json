@@ -1,0 +1,420 @@
+{
+ "schema": "compass_query_rewrites/1",
+ "generated": "2026-09-03",
+ "generator": "claude-haiku-4-5",
+ "generator_route": "claude -p --allowed-tools '' (no network, no tools)",
+ "prompt_sha256_16": "e1501b6981d47985",
+ "prompt_template": "You rewrite a health researcher's variable-lookup request into alternative phrasings, which will be matched against the literal wording of a survey questionnaire.\n\nFor each request below, write exactly {n} alternative phrasings.\n\nThe corpus being matched against is survey question text and its response options, in the questionnaire's own words -- \"How often did you walk while shopping or doing errands\", \"What time do you typically wake up on days off - AM/PM\", \"Have you ever taken naproxen (Naprosyn, Anaprox, Aleve) regularly\". Requests fail when they name a construct in the abstract and the questionnaire names a concrete instance, a timeframe, or a specific subfield.\n\nSo each rewrite should move TOWARD the questionnaire's register:\n1. Name concrete instances the construct covers -- generic and brand drug names, specific transport modes, specific body sites, specific relationships.\n2. Make an implied timeframe, recall window, subfield or unit explicit.\n3. Restate it as the plain question a survey would ask, in everyday words rather than analyst vocabulary.\n\nHard rules:\n- Stay faithful to the request. Do not broaden it into a different construct, and do not narrow a general request down to a single instance -- name an instance as an EXAMPLE alongside the general term.\n- Do not invent facts about what this survey contains or does not contain. If you do not know a concrete instance for a request, keep the general term.\n- Under 15 words each. No question marks.\n- The {n} rewrites must differ from each other and from the original request.\n\nRequests:\n{items}\n\nReturn ONLY a JSON object, no prose and no code fence, of the form:\n{{\"<id>\": [\"rewrite one\", \"rewrite two\", ...], ...}}\nwith exactly {n} strings per id, and one key per id above.",
+ "source_fixture": "fixtures/negative_requests.json",
+ "source_fixture_schema": "retrieval_negative_requests/1",
+ "n_requests": 44,
+ "n_rewrites_requested": 3,
+ "n_requests_short_of_target": 0,
+ "rows_short_of_target": [],
+ "generation_cost": {
+  "n_llm_calls": 6,
+  "batch_size": 8,
+  "total_wall_s": 83.2,
+  "mean_call_s": 60.65,
+  "per_request_serial_s_estimate": 7.582
+ },
+ "note": "The SAME prompt is applied to positive and negative requests with no signal about which is which -- that is the deployed configuration, and it is what makes the task-3 abstention comparison symmetric.",
+ "rewrites": [
+  {
+   "row": 0,
+   "query": "ambient PM2.5 concentration at the residential address",
+   "rewrites": [
+    "Fine dust or particle levels in the air around your home",
+    "Air pollution or particulate matter where you live",
+    "Levels of soot and fine particles at your home"
+   ]
+  },
+  {
+   "row": 1,
+   "query": "annual average nitrogen dioxide level where the participant lives",
+   "rewrites": [
+    "Yearly nitrogen dioxide or vehicle exhaust pollution in your area",
+    "Average air pollution from cars and industry where you live annually",
+    "Annual nitrogen dioxide levels in the air near your home"
+   ]
+  },
+  {
+   "row": 2,
+   "query": "modeled ozone exposure over the past year",
+   "rewrites": [
+    "Estimated smog or ozone pollution you breathed in over the past year",
+    "Calculated annual ozone exposure or ground-level smog near you",
+    "Yearly modeled ozone pollution levels in your neighborhood"
+   ]
+  },
+  {
+   "row": 3,
+   "query": "particulate matter monitor reading nearest the home",
+   "rewrites": [
+    "Fine particle measurements from the air monitor closest to your home",
+    "Dust and particle levels from nearby air quality monitors",
+    "Particulate pollution reading at the nearest monitoring station"
+   ]
+  },
+  {
+   "row": 4,
+   "query": "air quality index on the day of the interview",
+   "rewrites": [
+    "The air pollution index or score on your interview day",
+    "That day's overall air quality rating or measurement",
+    "Air quality index on the date you completed the survey"
+   ]
+  },
+  {
+   "row": 5,
+   "query": "how clean or dirty the air is where they live",
+   "rewrites": [
+    "Air cleanliness or pollution levels where you currently live",
+    "Whether the air is clean or polluted in your area",
+    "Levels of air pollution or dirty air at your home"
+   ]
+  },
+  {
+   "row": 6,
+   "query": "measured air pollution exposure",
+   "rewrites": [
+    "Air pollutants or emissions you were exposed to over time",
+    "Levels of air pollution you experienced or were exposed to",
+    "Dust, smog or air pollutants in your living environment"
+   ]
+  },
+  {
+   "row": 7,
+   "query": "smog level in the participant's area",
+   "rewrites": [
+    "Smog or air pollution levels in your neighborhood",
+    "Amount of visible smog or haze in your area",
+    "Ground-level ozone or smog pollution where you live"
+   ]
+  },
+  {
+   "row": 8,
+   "query": "Area Deprivation Index national percentile for the residence",
+   "rewrites": [
+    "Neighborhood economic disadvantage on national ranking scale",
+    "Neighborhood deprivation or poverty level overall",
+    "Your neighborhood's socioeconomic disadvantage level"
+   ]
+  },
+  {
+   "row": 9,
+   "query": "CDC Social Vulnerability Index score for the participant's tract",
+   "rewrites": [
+    "Social vulnerability level of your census tract",
+    "Social vulnerability and hardship in your neighborhood area",
+    "Social vulnerability factors affecting your tract"
+   ]
+  },
+  {
+   "row": 10,
+   "query": "neighborhood deprivation index",
+   "rewrites": [
+    "Economic deprivation in the neighborhood where you live",
+    "Level of neighborhood disadvantage overall",
+    "Neighborhood's socioeconomic deprivation score or ranking"
+   ]
+  },
+  {
+   "row": 11,
+   "query": "area-level socioeconomic disadvantage measure",
+   "rewrites": [
+    "Socioeconomic disadvantage in the area where you live",
+    "Economic disadvantage level of neighborhood overall",
+    "Area's socioeconomic disadvantage ranking or classification"
+   ]
+  },
+  {
+   "row": 12,
+   "query": "median household income of the census block group",
+   "rewrites": [
+    "Median household income in your census block group",
+    "Average income of households where you live",
+    "Household income level in your neighborhood area"
+   ]
+  },
+  {
+   "row": 13,
+   "query": "Rural-Urban Commuting Area code of the residence",
+   "rewrites": [
+    "Urban, rural, or commuting area classification of residence",
+    "Your area's classification: urban, rural, or commuting",
+    "Rural-urban classification for where you live"
+   ]
+  },
+  {
+   "row": 14,
+   "query": "how well-off or poor the area they live in is",
+   "rewrites": [
+    "Economic affluence or poverty of neighborhood area",
+    "Neighborhood residents' economic status: well-off or poor",
+    "Neighborhood economic status: affluence versus poverty"
+   ]
+  },
+  {
+   "row": 15,
+   "query": "neighborhood poverty rate",
+   "rewrites": [
+    "Percentage of residents living in poverty in neighborhood",
+    "Poverty prevalence in the area where you live",
+    "Residents below poverty threshold in your neighborhood"
+   ]
+  },
+  {
+   "row": 16,
+   "query": "census tract of residence",
+   "rewrites": [
+    "Census tract number for where you live",
+    "Your home's census tract",
+    "The census tract of your address"
+   ]
+  },
+  {
+   "row": 17,
+   "query": "latitude and longitude of the home address",
+   "rewrites": [
+    "Latitude and longitude of your home",
+    "Specific map coordinates for your home address",
+    "Geographic position in degrees of your home"
+   ]
+  },
+  {
+   "row": 18,
+   "query": "geocoded residential coordinates",
+   "rewrites": [
+    "Latitude and longitude of your residence",
+    "Geographic coordinates where you live",
+    "Your home's map coordinates as numbers"
+   ]
+  },
+  {
+   "row": 19,
+   "query": "census block group identifier",
+   "rewrites": [
+    "Census block group number for your home",
+    "Your residential census block group",
+    "The census block group where you live"
+   ]
+  },
+  {
+   "row": 20,
+   "query": "FIPS county code for the participant's address",
+   "rewrites": [
+    "FIPS code for your county",
+    "County FIPS code where you live",
+    "Federal county code of your address"
+   ]
+  },
+  {
+   "row": 21,
+   "query": "geocoding match accuracy score",
+   "rewrites": [
+    "How accurately your address was geocoded",
+    "Accuracy score for the geocoded address",
+    "Quality of the address geocoding match"
+   ]
+  },
+  {
+   "row": 22,
+   "query": "distance in miles from the home to the nearest green space",
+   "rewrites": [
+    "Miles from your home to the nearest park",
+    "Distance to the closest green space from home",
+    "How far in miles to the nearest green area"
+   ]
+  },
+  {
+   "row": 23,
+   "query": "the exact map coordinates of where they live",
+   "rewrites": [
+    "Exact latitude and longitude of your home",
+    "Precise map coordinates of where you live",
+    "Your home's exact geographic coordinates"
+   ]
+  },
+  {
+   "row": 24,
+   "query": "serum cotinine level",
+   "rewrites": [
+    "cotinine measured in your blood serum",
+    "blood test result for cotinine",
+    "how much cotinine in your serum"
+   ]
+  },
+  {
+   "row": 25,
+   "query": "plasma vitamin D concentration",
+   "rewrites": [
+    "vitamin D level measured in plasma",
+    "blood test result for vitamin D",
+    "how much vitamin D in your plasma"
+   ]
+  },
+  {
+   "row": 26,
+   "query": "whole blood collection date",
+   "rewrites": [
+    "when your blood sample was collected",
+    "the date blood was drawn",
+    "blood collection timing"
+   ]
+  },
+  {
+   "row": 27,
+   "query": "biospecimen consent status",
+   "rewrites": [
+    "consent status for providing a sample",
+    "whether you agreed to give a biospecimen",
+    "whether you consented to sample donation"
+   ]
+  },
+  {
+   "row": 28,
+   "query": "measured HbA1c value",
+   "rewrites": [
+    "HbA1c from your blood test",
+    "hemoglobin A1c level in blood",
+    "blood test result for HbA1c"
+   ]
+  },
+  {
+   "row": 29,
+   "query": "measured blood lead concentration",
+   "rewrites": [
+    "lead level measured in your blood",
+    "blood test result for lead",
+    "how much lead in your blood"
+   ]
+  },
+  {
+   "row": 30,
+   "query": "saliva sample DNA yield",
+   "rewrites": [
+    "DNA yield from your saliva sample",
+    "amount of DNA in saliva",
+    "DNA extracted from your spit sample"
+   ]
+  },
+  {
+   "row": 31,
+   "query": "did they give a blood or spit sample",
+   "rewrites": [
+    "whether you gave blood or spit",
+    "sample type provided: blood or saliva",
+    "blood sample or spit sample collected"
+   ]
+  },
+  {
+   "row": 32,
+   "query": "polygenic risk score for breast cancer",
+   "rewrites": [
+    "Genetic risk for breast cancer calculated from your DNA",
+    "Calculated breast cancer risk based on genetic test results",
+    "Your breast cancer risk measured from genetic information"
+   ]
+  },
+  {
+   "row": 33,
+   "query": "genetic ancestry proportions estimated from SNP data",
+   "rewrites": [
+    "Percentage of ancestry from different ethnic or regional populations",
+    "Your ancestry breakdown estimated from DNA genetic testing",
+    "Ethnic background and ancestry calculated from your genetic data"
+   ]
+  },
+  {
+   "row": 34,
+   "query": "ancestry informative markers",
+   "rewrites": [
+    "Genetic markers from your DNA showing ancestry information",
+    "Genetic ancestry markers identified from your DNA testing",
+    "DNA variants used to determine ethnic heritage or ancestry"
+   ]
+  },
+  {
+   "row": 35,
+   "query": "BRCA1 pathogenic variant carrier status",
+   "rewrites": [
+    "Whether you carry BRCA1 gene mutations for cancer risk",
+    "If your DNA has the harmful BRCA1 gene mutation",
+    "BRCA1 cancer risk mutation test results and carrier status"
+   ]
+  },
+  {
+   "row": 36,
+   "query": "whole genome sequencing availability",
+   "rewrites": [
+    "Whether your complete genome has been sequenced by testing",
+    "Access to full genome DNA sequencing technology or testing",
+    "Having your full genetic code sequenced through DNA testing"
+   ]
+  },
+  {
+   "row": 37,
+   "query": "genotyping array platform used",
+   "rewrites": [
+    "Which genetic testing company or platform tested your DNA",
+    "Type and brand of genetic test used on your DNA",
+    "Genetic testing platform or array used for your DNA"
+   ]
+  },
+  {
+   "row": 38,
+   "query": "whether their DNA has been tested for cancer risk genes",
+   "rewrites": [
+    "If you've had genetic testing for hereditary cancer genes",
+    "Whether DNA testing checked for cancer risk mutations",
+    "Having your DNA tested for breast cancer risk genes"
+   ]
+  },
+  {
+   "row": 39,
+   "query": "inherited genetic risk measured in a laboratory",
+   "rewrites": [
+    "Laboratory test results measuring genetic risk you inherited from family",
+    "Your inherited genetic risk factors determined through lab testing",
+    "Genetic disease risk from family inheritance measured by laboratory test"
+   ]
+  },
+  {
+   "row": 40,
+   "query": "is the air outside their house healthy to breathe",
+   "rewrites": [
+    "Whether air pollution or smog outside your home causes breathing problems",
+    "How often outdoor air quality feels poor around your house",
+    "Amount of pollution, smog, or pollen in air outside your home"
+   ]
+  },
+  {
+   "row": 41,
+   "query": "what kind of neighborhood income level they live in",
+   "rewrites": [
+    "Whether your neighborhood is considered low, middle, or high income",
+    "What the average household income level in your neighborhood is",
+    "Whether most residents in your neighborhood earn above or below average income"
+   ]
+  },
+  {
+   "row": 42,
+   "query": "which census area their address falls in",
+   "rewrites": [
+    "Your home address zip code, city, and state",
+    "Which county your address is located in",
+    "Your census tract number or census block group number"
+   ]
+  },
+  {
+   "row": 43,
+   "query": "whether anyone in the family had a gene test for cancer risk",
+   "rewrites": [
+    "Whether any parent, sibling, or close relative had genetic cancer risk testing",
+    "If your mother, father, or siblings were ever tested for cancer genes",
+    "Whether anyone in your immediate family took a DNA test for cancer susceptibility"
+   ]
+  }
+ ]
+}

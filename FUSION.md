@@ -485,7 +485,7 @@ is not a query-to-gold overlap phenomenon and is invisible to this measurement.
 | 224-row fixture, gold rule, `stem_option_dup`, `build.py` at `3dc8415eccfe` unchanged | **Held.** No existing file modified; all five new scripts are additive. |
 | Load dtype pinned to fp32 | **Held.** Every fusion run goes through `deploy/retriever.py`, which loads with `dtype=torch.float32` explicitly (the manifest records it as `float32`); the two fallback re-runs go through `compass_score.py`, which forces the same. Cosine algebra is done in fp64. |
 | Frozen `bge-small` (0.375) and `mxbai-l1` (0.469) stay runnable | **Both re-run on CPU, both reproduce.** `bge-small` R@1 **0.375** (@5 0.750, @10 0.866, singleton 0.399, folded 0.304, near-dup 0.434, 140 top-1 errors, within-construct cos p50 0.9099). `mxbai-l1` R@1 **0.469** (@5 0.808, @10 0.915) — the `overall`, `singleton`, `folded_family`, `near_duplicate`, `errors` and `within_construct_cosine` blocks are **byte-identical** to `out/recheck_frozen_mxbai-l1.json`. |
-| Every number traceable to a committed JSON artifact | **Held.** Five artifacts, cited per section. |
+| Every number traceable to a committed JSON artifact | **Held, in the strict sense.** Six artifacts, cited per section, and all six are **tracked in git** (`git add -f` past the `out/` and `*.json` ignore rules, 420 KB total). `CHARACTERISATION.md` had to define "committed" as "written to a file in the tree" because the repository was not under version control when it was written; that workaround is no longer needed here. |
 
 ---
 

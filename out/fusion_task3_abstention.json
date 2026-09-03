@@ -1,0 +1,927 @@
+{
+ "schema": "compass_fusion_abstention/1",
+ "question": "Does phrasing fusion destroy the absence-detection mechanism? Under max_cos every score inflates, negatives included.",
+ "disqualifying_criterion_recorded_before_running": "Absence detection at AUROC 0.982 is worth more than 25 R@1 points in an autonomous pipeline, because the model cannot detect its own errors (AUROC 0.640, precision 0.90 unreachable). If fusion collapses the positive/negative separation, that is disqualifying regardless of what it does to R@1.",
+ "model_under_test": "bge-small fine-tuned (nn0, t=0.10), deploy/ bundle",
+ "deploy_guards": "checksums + dictionary hash + row-order verified at load",
+ "shipped_tau": 0.729476,
+ "threshold_policy": "Candidate taus are drawn from the 224 POSITIVE fused scores only. The 44 negatives never enter the selection, not even as grid points (stricter than src/char_report.py, whose grid was the union). They report.",
+ "n_positive_rows": 224,
+ "n_negative_rows": 44,
+ "n_distinct_strings_encoded": 1061,
+ "rewrite_source_positives": "out/rewrites_positives.json",
+ "rewrite_source_negatives": "out/rewrites_negatives.json",
+ "parity_vs_characterisation_sec3": {
+  "reproduced_max_f1_tau": 0.729476,
+  "shipped_max_f1_tau": 0.729476,
+  "reproduced_negatives_rejected": 0.9773,
+  "shipped_negatives_rejected": 0.9773,
+  "reproduced_auroc_all_vs_neg": 0.9823,
+  "reproduced_R@1": 0.567
+ },
+ "parity_ok": true,
+ "configs": {
+  "A_single_vs_single": {
+   "note": "1 draw each side. Reproduces CHARACTERISATION.md sec 3.",
+   "n_draws_positive": 1,
+   "n_draws_negative": 1,
+   "max_cos": {
+    "positive_R@1": 0.567,
+    "positive_R@5": 0.8616,
+    "positive_R@10": 0.9196,
+    "score_distribution": {
+     "positives_all": {
+      "n": 224,
+      "p10": 0.7413,
+      "p50": 0.8795,
+      "p90": 0.9573,
+      "min": 0.5683,
+      "max": 0.9874,
+      "mean": 0.8584
+     },
+     "positives_correct": {
+      "n": 127,
+      "p10": 0.7766,
+      "p50": 0.907,
+      "p90": 0.9573,
+      "min": 0.6464,
+      "max": 0.9874,
+      "mean": 0.879
+     },
+     "positives_incorrect": {
+      "n": 97,
+      "p10": 0.7077,
+      "p50": 0.8356,
+      "p90": 0.9567,
+      "min": 0.5683,
+      "max": 0.9777,
+      "mean": 0.8315
+     },
+     "negatives": {
+      "n": 44,
+      "p10": 0.4034,
+      "p50": 0.5961,
+      "p90": 0.6907,
+      "min": 0.3116,
+      "max": 0.7722,
+      "mean": 0.5657
+     }
+    },
+    "auroc_positives_all_vs_negatives": 0.9823,
+    "auroc_positives_correct_vs_negatives": 0.9953,
+    "auroc_correct_vs_incorrect_positives": 0.6399,
+    "overlap": {
+     "negatives_above_positive_p50": 0,
+     "negatives_above_positive_p10": 1,
+     "negatives_above_positive_max": 0
+    },
+    "rederived_threshold_positives_only": {
+     "max_f1": {
+      "tau": 0.729476,
+      "n_answered": 207,
+      "coverage": 0.9241,
+      "precision": 0.6039,
+      "recall": 0.558,
+      "f1": 0.58,
+      "negatives_rejected": 0.9773
+     },
+     "at_all_negatives_rejected": {
+      "tau": 0.773393,
+      "n_answered": 183,
+      "coverage": 0.817,
+      "precision": 0.6284,
+      "recall": 0.5134,
+      "f1": 0.5651,
+      "negatives_rejected": 1.0
+     },
+     "at_precision_0.90": null,
+     "n_candidate_taus": 221
+    },
+    "at_shipped_tau_0.729476": {
+     "tau": 0.729476,
+     "n_answered": 207,
+     "coverage": 0.9241,
+     "precision": 0.6039,
+     "recall": 0.558,
+     "negatives_rejected": 0.9773,
+     "negatives_admitted": 1
+    },
+    "hardest_negatives": [
+     {
+      "id": "n23",
+      "domain": "geocode_spatial",
+      "adjacency": "clean",
+      "query": "distance in miles from the home to the nearest green space",
+      "fused_cos": 0.7722
+     },
+     {
+      "id": "n13",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "median household income of the census block group",
+      "fused_cos": 0.7134
+     },
+     {
+      "id": "n33",
+      "domain": "genomics_ancestry",
+      "adjacency": "clean",
+      "query": "polygenic risk score for breast cancer",
+      "fused_cos": 0.7041
+     },
+     {
+      "id": "n43",
+      "domain": "geocode_spatial",
+      "adjacency": "adjacent",
+      "query": "which census area their address falls in",
+      "fused_cos": 0.693
+     },
+     {
+      "id": "n11",
+      "domain": "area_deprivation",
+      "adjacency": "clean",
+      "query": "neighborhood deprivation index",
+      "fused_cos": 0.6907
+     },
+     {
+      "id": "n42",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "what kind of neighborhood income level they live in",
+      "fused_cos": 0.6796
+     }
+    ]
+   }
+  },
+  "B_fixture4_vs_neg1": {
+   "note": "4 draws for positives, 1 for negatives. ASYMMETRIC AND OPTIMISTIC -- reported to size the bias, not to be believed.",
+   "n_draws_positive": 4,
+   "n_draws_negative": 1,
+   "max_cos": {
+    "positive_R@1": 0.625,
+    "positive_R@5": 0.9286,
+    "positive_R@10": 0.9464,
+    "score_distribution": {
+     "positives_all": {
+      "n": 224,
+      "p10": 0.8634,
+      "p50": 0.9366,
+      "p90": 0.9705,
+      "min": 0.6788,
+      "max": 0.9874,
+      "mean": 0.924
+     },
+     "positives_correct": {
+      "n": 140,
+      "p10": 0.853,
+      "p50": 0.9317,
+      "p90": 0.97,
+      "min": 0.8205,
+      "max": 0.9874,
+      "mean": 0.9232
+     },
+     "positives_incorrect": {
+      "n": 84,
+      "p10": 0.8888,
+      "p50": 0.9527,
+      "p90": 0.9705,
+      "min": 0.6788,
+      "max": 0.9777,
+      "mean": 0.9254
+     },
+     "negatives": {
+      "n": 44,
+      "p10": 0.4034,
+      "p50": 0.5961,
+      "p90": 0.6907,
+      "min": 0.3116,
+      "max": 0.7722,
+      "mean": 0.5657
+     }
+    },
+    "auroc_positives_all_vs_negatives": 0.9976,
+    "auroc_positives_correct_vs_negatives": 1.0,
+    "auroc_correct_vs_incorrect_positives": 0.4435,
+    "overlap": {
+     "negatives_above_positive_p50": 0,
+     "negatives_above_positive_p10": 0,
+     "negatives_above_positive_max": 0
+    },
+    "rederived_threshold_positives_only": {
+     "max_f1": {
+      "tau": 0.678783,
+      "n_answered": 220,
+      "coverage": 0.9821,
+      "precision": 0.6364,
+      "recall": 0.625,
+      "f1": 0.6306,
+      "negatives_rejected": 0.8636
+     },
+     "at_all_negatives_rejected": {
+      "tau": 0.820453,
+      "n_answered": 216,
+      "coverage": 0.9643,
+      "precision": 0.6296,
+      "recall": 0.6071,
+      "f1": 0.6182,
+      "negatives_rejected": 1.0
+     },
+     "at_precision_0.90": null,
+     "n_candidate_taus": 54
+    },
+    "at_shipped_tau_0.729476": {
+     "tau": 0.729476,
+     "n_answered": 220,
+     "coverage": 0.9821,
+     "precision": 0.6364,
+     "recall": 0.625,
+     "negatives_rejected": 0.9773,
+     "negatives_admitted": 1
+    },
+    "hardest_negatives": [
+     {
+      "id": "n23",
+      "domain": "geocode_spatial",
+      "adjacency": "clean",
+      "query": "distance in miles from the home to the nearest green space",
+      "fused_cos": 0.7722
+     },
+     {
+      "id": "n13",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "median household income of the census block group",
+      "fused_cos": 0.7134
+     },
+     {
+      "id": "n33",
+      "domain": "genomics_ancestry",
+      "adjacency": "clean",
+      "query": "polygenic risk score for breast cancer",
+      "fused_cos": 0.7041
+     },
+     {
+      "id": "n43",
+      "domain": "geocode_spatial",
+      "adjacency": "adjacent",
+      "query": "which census area their address falls in",
+      "fused_cos": 0.693
+     },
+     {
+      "id": "n11",
+      "domain": "area_deprivation",
+      "adjacency": "clean",
+      "query": "neighborhood deprivation index",
+      "fused_cos": 0.6907
+     },
+     {
+      "id": "n42",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "what kind of neighborhood income level they live in",
+      "fused_cos": 0.6796
+     }
+    ]
+   },
+   "mean_cos": {
+    "positive_R@1": 0.5714,
+    "positive_R@5": 0.9286,
+    "positive_R@10": 0.9643,
+    "score_distribution": {
+     "positives_all": {
+      "n": 224,
+      "p10": 0.7352,
+      "p50": 0.8441,
+      "p90": 0.9334,
+      "min": 0.5935,
+      "max": 0.9734,
+      "mean": 0.8333
+     },
+     "positives_correct": {
+      "n": 128,
+      "p10": 0.7795,
+      "p50": 0.8709,
+      "p90": 0.9334,
+      "min": 0.7073,
+      "max": 0.9734,
+      "mean": 0.8609
+     },
+     "positives_incorrect": {
+      "n": 96,
+      "p10": 0.7144,
+      "p50": 0.8035,
+      "p90": 0.8737,
+      "min": 0.5935,
+      "max": 0.9494,
+      "mean": 0.7965
+     },
+     "negatives": {
+      "n": 44,
+      "p10": 0.4034,
+      "p50": 0.5961,
+      "p90": 0.6907,
+      "min": 0.3116,
+      "max": 0.7722,
+      "mean": 0.5657
+     }
+    },
+    "auroc_positives_all_vs_negatives": 0.9809,
+    "auroc_positives_correct_vs_negatives": 0.9972,
+    "auroc_correct_vs_incorrect_positives": 0.7357,
+    "overlap": {
+     "negatives_above_positive_p50": 0,
+     "negatives_above_positive_p10": 1,
+     "negatives_above_positive_max": 0
+    },
+    "rederived_threshold_positives_only": {
+     "max_f1": {
+      "tau": 0.746606,
+      "n_answered": 196,
+      "coverage": 0.875,
+      "precision": 0.6327,
+      "recall": 0.5536,
+      "f1": 0.5905,
+      "negatives_rejected": 0.9773
+     },
+     "at_all_negatives_rejected": {
+      "tau": 0.779544,
+      "n_answered": 172,
+      "coverage": 0.7679,
+      "precision": 0.6744,
+      "recall": 0.5179,
+      "f1": 0.5859,
+      "negatives_rejected": 1.0
+     },
+     "at_precision_0.90": null,
+     "n_candidate_taus": 56
+    },
+    "at_shipped_tau_0.729476": {
+     "tau": 0.729476,
+     "n_answered": 208,
+     "coverage": 0.9286,
+     "precision": 0.5962,
+     "recall": 0.5536,
+     "negatives_rejected": 0.9773,
+     "negatives_admitted": 1
+    },
+    "hardest_negatives": [
+     {
+      "id": "n23",
+      "domain": "geocode_spatial",
+      "adjacency": "clean",
+      "query": "distance in miles from the home to the nearest green space",
+      "fused_cos": 0.7722
+     },
+     {
+      "id": "n13",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "median household income of the census block group",
+      "fused_cos": 0.7134
+     },
+     {
+      "id": "n33",
+      "domain": "genomics_ancestry",
+      "adjacency": "clean",
+      "query": "polygenic risk score for breast cancer",
+      "fused_cos": 0.7041
+     },
+     {
+      "id": "n43",
+      "domain": "geocode_spatial",
+      "adjacency": "adjacent",
+      "query": "which census area their address falls in",
+      "fused_cos": 0.693
+     },
+     {
+      "id": "n11",
+      "domain": "area_deprivation",
+      "adjacency": "clean",
+      "query": "neighborhood deprivation index",
+      "fused_cos": 0.6907
+     },
+     {
+      "id": "n42",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "what kind of neighborhood income level they live in",
+      "fused_cos": 0.6796
+     }
+    ]
+   }
+  },
+  "C_fixture4_vs_negrw4": {
+   "note": "Draw counts match (4 vs 4); sources do not -- fixture phrasings come from the gold wording, negative rewrites from the request.",
+   "n_draws_positive": 4,
+   "n_draws_negative": 4,
+   "max_cos": {
+    "positive_R@1": 0.625,
+    "positive_R@5": 0.9286,
+    "positive_R@10": 0.9464,
+    "score_distribution": {
+     "positives_all": {
+      "n": 224,
+      "p10": 0.8634,
+      "p50": 0.9366,
+      "p90": 0.9705,
+      "min": 0.6788,
+      "max": 0.9874,
+      "mean": 0.924
+     },
+     "positives_correct": {
+      "n": 140,
+      "p10": 0.853,
+      "p50": 0.9317,
+      "p90": 0.97,
+      "min": 0.8205,
+      "max": 0.9874,
+      "mean": 0.9232
+     },
+     "positives_incorrect": {
+      "n": 84,
+      "p10": 0.8888,
+      "p50": 0.9527,
+      "p90": 0.9705,
+      "min": 0.6788,
+      "max": 0.9777,
+      "mean": 0.9254
+     },
+     "negatives": {
+      "n": 44,
+      "p10": 0.449,
+      "p50": 0.6776,
+      "p90": 0.7586,
+      "min": 0.3939,
+      "max": 0.8433,
+      "mean": 0.6432
+     }
+    },
+    "auroc_positives_all_vs_negatives": 0.9907,
+    "auroc_positives_correct_vs_negatives": 0.9987,
+    "auroc_correct_vs_incorrect_positives": 0.4435,
+    "overlap": {
+     "negatives_above_positive_p50": 0,
+     "negatives_above_positive_p10": 0,
+     "negatives_above_positive_max": 0
+    },
+    "rederived_threshold_positives_only": {
+     "max_f1": {
+      "tau": 0.678783,
+      "n_answered": 220,
+      "coverage": 0.9821,
+      "precision": 0.6364,
+      "recall": 0.625,
+      "f1": 0.6306,
+      "negatives_rejected": 0.5227
+     },
+     "at_all_negatives_rejected": {
+      "tau": 0.846409,
+      "n_answered": 208,
+      "coverage": 0.9286,
+      "precision": 0.6154,
+      "recall": 0.5714,
+      "f1": 0.5926,
+      "negatives_rejected": 1.0
+     },
+     "at_precision_0.90": null,
+     "n_candidate_taus": 54
+    },
+    "at_shipped_tau_0.729476": {
+     "tau": 0.729476,
+     "n_answered": 220,
+     "coverage": 0.9821,
+     "precision": 0.6364,
+     "recall": 0.625,
+     "negatives_rejected": 0.7955,
+     "negatives_admitted": 9
+    },
+    "hardest_negatives": [
+     {
+      "id": "n43",
+      "domain": "geocode_spatial",
+      "adjacency": "adjacent",
+      "query": "which census area their address falls in",
+      "fused_cos": 0.8433
+     },
+     {
+      "id": "n13",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "median household income of the census block group",
+      "fused_cos": 0.8154
+     },
+     {
+      "id": "n23",
+      "domain": "geocode_spatial",
+      "adjacency": "clean",
+      "query": "distance in miles from the home to the nearest green space",
+      "fused_cos": 0.7722
+     },
+     {
+      "id": "n10",
+      "domain": "area_deprivation",
+      "adjacency": "clean",
+      "query": "CDC Social Vulnerability Index score for the participant's tract",
+      "fused_cos": 0.7648
+     },
+     {
+      "id": "n42",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "what kind of neighborhood income level they live in",
+      "fused_cos": 0.7586
+     },
+     {
+      "id": "n34",
+      "domain": "genomics_ancestry",
+      "adjacency": "adjacent",
+      "query": "genetic ancestry proportions estimated from SNP data",
+      "fused_cos": 0.7483
+     }
+    ]
+   },
+   "mean_cos": {
+    "positive_R@1": 0.5714,
+    "positive_R@5": 0.9286,
+    "positive_R@10": 0.9643,
+    "score_distribution": {
+     "positives_all": {
+      "n": 224,
+      "p10": 0.7352,
+      "p50": 0.8441,
+      "p90": 0.9334,
+      "min": 0.5935,
+      "max": 0.9734,
+      "mean": 0.8333
+     },
+     "positives_correct": {
+      "n": 128,
+      "p10": 0.7795,
+      "p50": 0.8709,
+      "p90": 0.9334,
+      "min": 0.7073,
+      "max": 0.9734,
+      "mean": 0.8609
+     },
+     "positives_incorrect": {
+      "n": 96,
+      "p10": 0.7144,
+      "p50": 0.8035,
+      "p90": 0.8737,
+      "min": 0.5935,
+      "max": 0.9494,
+      "mean": 0.7965
+     },
+     "negatives": {
+      "n": 44,
+      "p10": 0.3949,
+      "p50": 0.6106,
+      "p90": 0.6688,
+      "min": 0.3058,
+      "max": 0.7618,
+      "mean": 0.5703
+     }
+    },
+    "auroc_positives_all_vs_negatives": 0.9821,
+    "auroc_positives_correct_vs_negatives": 0.9979,
+    "auroc_correct_vs_incorrect_positives": 0.7357,
+    "overlap": {
+     "negatives_above_positive_p50": 0,
+     "negatives_above_positive_p10": 1,
+     "negatives_above_positive_max": 0
+    },
+    "rederived_threshold_positives_only": {
+     "max_f1": {
+      "tau": 0.746606,
+      "n_answered": 196,
+      "coverage": 0.875,
+      "precision": 0.6327,
+      "recall": 0.5536,
+      "f1": 0.5905,
+      "negatives_rejected": 0.9773
+     },
+     "at_all_negatives_rejected": {
+      "tau": 0.761812,
+      "n_answered": 184,
+      "coverage": 0.8214,
+      "precision": 0.6304,
+      "recall": 0.5179,
+      "f1": 0.5686,
+      "negatives_rejected": 1.0
+     },
+     "at_precision_0.90": null,
+     "n_candidate_taus": 56
+    },
+    "at_shipped_tau_0.729476": {
+     "tau": 0.729476,
+     "n_answered": 208,
+     "coverage": 0.9286,
+     "precision": 0.5962,
+     "recall": 0.5536,
+     "negatives_rejected": 0.9773,
+     "negatives_admitted": 1
+    },
+    "hardest_negatives": [
+     {
+      "id": "n13",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "median household income of the census block group",
+      "fused_cos": 0.7618
+     },
+     {
+      "id": "n11",
+      "domain": "area_deprivation",
+      "adjacency": "clean",
+      "query": "neighborhood deprivation index",
+      "fused_cos": 0.6923
+     },
+     {
+      "id": "n06",
+      "domain": "ambient_air_pollution",
+      "adjacency": "adjacent",
+      "query": "how clean or dirty the air is where they live",
+      "fused_cos": 0.6796
+     },
+     {
+      "id": "n23",
+      "domain": "geocode_spatial",
+      "adjacency": "clean",
+      "query": "distance in miles from the home to the nearest green space",
+      "fused_cos": 0.6713
+     },
+     {
+      "id": "n33",
+      "domain": "genomics_ancestry",
+      "adjacency": "clean",
+      "query": "polygenic risk score for breast cancer",
+      "fused_cos": 0.6688
+     },
+     {
+      "id": "n42",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "what kind of neighborhood income level they live in",
+      "fused_cos": 0.6669
+     }
+    ]
+   }
+  },
+  "D_rewrite4_vs_rewrite4": {
+   "note": "Symmetric and deployable: query + 3 generated rewrites on both sides from one prompt blind to which set a request came from.",
+   "n_draws_positive": 4,
+   "n_draws_negative": 4,
+   "max_cos": {
+    "positive_R@1": 0.5625,
+    "positive_R@5": 0.875,
+    "positive_R@10": 0.9241,
+    "score_distribution": {
+     "positives_all": {
+      "n": 224,
+      "p10": 0.8147,
+      "p50": 0.9192,
+      "p90": 0.97,
+      "min": 0.6718,
+      "max": 0.9874,
+      "mean": 0.9045
+     },
+     "positives_correct": {
+      "n": 126,
+      "p10": 0.8619,
+      "p50": 0.9245,
+      "p90": 0.9683,
+      "min": 0.7554,
+      "max": 0.9874,
+      "mean": 0.9146
+     },
+     "positives_incorrect": {
+      "n": 98,
+      "p10": 0.802,
+      "p50": 0.9138,
+      "p90": 0.9706,
+      "min": 0.6718,
+      "max": 0.9806,
+      "mean": 0.8915
+     },
+     "negatives": {
+      "n": 44,
+      "p10": 0.449,
+      "p50": 0.6776,
+      "p90": 0.7586,
+      "min": 0.3939,
+      "max": 0.8433,
+      "mean": 0.6432
+     }
+    },
+    "auroc_positives_all_vs_negatives": 0.9847,
+    "auroc_positives_correct_vs_negatives": 0.9962,
+    "auroc_correct_vs_incorrect_positives": 0.5565,
+    "overlap": {
+     "negatives_above_positive_p50": 0,
+     "negatives_above_positive_p10": 2,
+     "negatives_above_positive_max": 0
+    },
+    "rederived_threshold_positives_only": {
+     "max_f1": {
+      "tau": 0.773658,
+      "n_answered": 214,
+      "coverage": 0.9554,
+      "precision": 0.5841,
+      "recall": 0.558,
+      "f1": 0.5708,
+      "negatives_rejected": 0.9545
+     },
+     "at_all_negatives_rejected": {
+      "tau": 0.845762,
+      "n_answered": 186,
+      "coverage": 0.8304,
+      "precision": 0.6183,
+      "recall": 0.5134,
+      "f1": 0.561,
+      "negatives_rejected": 1.0
+     },
+     "at_precision_0.90": null,
+     "n_candidate_taus": 220
+    },
+    "at_shipped_tau_0.729476": {
+     "tau": 0.729476,
+     "n_answered": 220,
+     "coverage": 0.9821,
+     "precision": 0.5727,
+     "recall": 0.5625,
+     "negatives_rejected": 0.7955,
+     "negatives_admitted": 9
+    },
+    "hardest_negatives": [
+     {
+      "id": "n43",
+      "domain": "geocode_spatial",
+      "adjacency": "adjacent",
+      "query": "which census area their address falls in",
+      "fused_cos": 0.8433
+     },
+     {
+      "id": "n13",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "median household income of the census block group",
+      "fused_cos": 0.8154
+     },
+     {
+      "id": "n23",
+      "domain": "geocode_spatial",
+      "adjacency": "clean",
+      "query": "distance in miles from the home to the nearest green space",
+      "fused_cos": 0.7722
+     },
+     {
+      "id": "n10",
+      "domain": "area_deprivation",
+      "adjacency": "clean",
+      "query": "CDC Social Vulnerability Index score for the participant's tract",
+      "fused_cos": 0.7648
+     },
+     {
+      "id": "n42",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "what kind of neighborhood income level they live in",
+      "fused_cos": 0.7586
+     },
+     {
+      "id": "n34",
+      "domain": "genomics_ancestry",
+      "adjacency": "adjacent",
+      "query": "genetic ancestry proportions estimated from SNP data",
+      "fused_cos": 0.7483
+     }
+    ]
+   },
+   "mean_cos": {
+    "positive_R@1": 0.6071,
+    "positive_R@5": 0.8616,
+    "positive_R@10": 0.9107,
+    "score_distribution": {
+     "positives_all": {
+      "n": 224,
+      "p10": 0.7393,
+      "p50": 0.8526,
+      "p90": 0.9364,
+      "min": 0.5348,
+      "max": 0.9662,
+      "mean": 0.8413
+     },
+     "positives_correct": {
+      "n": 136,
+      "p10": 0.7489,
+      "p50": 0.8598,
+      "p90": 0.9329,
+      "min": 0.6602,
+      "max": 0.9662,
+      "mean": 0.8529
+     },
+     "positives_incorrect": {
+      "n": 88,
+      "p10": 0.6867,
+      "p50": 0.8451,
+      "p90": 0.9443,
+      "min": 0.5348,
+      "max": 0.9661,
+      "mean": 0.8233
+     },
+     "negatives": {
+      "n": 44,
+      "p10": 0.3949,
+      "p50": 0.6106,
+      "p90": 0.6688,
+      "min": 0.3058,
+      "max": 0.7618,
+      "mean": 0.5703
+     }
+    },
+    "auroc_positives_all_vs_negatives": 0.9743,
+    "auroc_positives_correct_vs_negatives": 0.9943,
+    "auroc_correct_vs_incorrect_positives": 0.5656,
+    "overlap": {
+     "negatives_above_positive_p50": 0,
+     "negatives_above_positive_p10": 1,
+     "negatives_above_positive_max": 0
+    },
+    "rederived_threshold_positives_only": {
+     "max_f1": {
+      "tau": 0.655702,
+      "n_answered": 216,
+      "coverage": 0.9643,
+      "precision": 0.6296,
+      "recall": 0.6071,
+      "f1": 0.6182,
+      "negatives_rejected": 0.7955
+     },
+     "at_all_negatives_rejected": {
+      "tau": 0.77048,
+      "n_answered": 182,
+      "coverage": 0.8125,
+      "precision": 0.6374,
+      "recall": 0.5179,
+      "f1": 0.5714,
+      "negatives_rejected": 1.0
+     },
+     "at_precision_0.90": null,
+     "n_candidate_taus": 224
+    },
+    "at_shipped_tau_0.729476": {
+     "tau": 0.729476,
+     "n_answered": 205,
+     "coverage": 0.9152,
+     "precision": 0.6341,
+     "recall": 0.5804,
+     "negatives_rejected": 0.9773,
+     "negatives_admitted": 1
+    },
+    "hardest_negatives": [
+     {
+      "id": "n13",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "median household income of the census block group",
+      "fused_cos": 0.7618
+     },
+     {
+      "id": "n11",
+      "domain": "area_deprivation",
+      "adjacency": "clean",
+      "query": "neighborhood deprivation index",
+      "fused_cos": 0.6923
+     },
+     {
+      "id": "n06",
+      "domain": "ambient_air_pollution",
+      "adjacency": "adjacent",
+      "query": "how clean or dirty the air is where they live",
+      "fused_cos": 0.6796
+     },
+     {
+      "id": "n23",
+      "domain": "geocode_spatial",
+      "adjacency": "clean",
+      "query": "distance in miles from the home to the nearest green space",
+      "fused_cos": 0.6713
+     },
+     {
+      "id": "n33",
+      "domain": "genomics_ancestry",
+      "adjacency": "clean",
+      "query": "polygenic risk score for breast cancer",
+      "fused_cos": 0.6688
+     },
+     {
+      "id": "n42",
+      "domain": "area_deprivation",
+      "adjacency": "adjacent",
+      "query": "what kind of neighborhood income level they live in",
+      "fused_cos": 0.6669
+     }
+    ]
+   }
+  }
+ }
+}
