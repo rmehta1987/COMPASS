@@ -16,14 +16,16 @@ to a control that reproduces R@1 0.567 exactly.
 
 ## One-line answer
 
-**Fusion does not deliver, and the leakage caveat that qualified every number in this
-project largely dissolves.** The best fusion rule recovers **22.8%** of the 25-point
-oracle gap — under the brief's own 25% floor — so task 4 was not built. A real rewriter,
-run anyway because task 3's abstention comparison could not be made honest without one,
-moves R@1 by **+4.0 points that a paired item-clustered test cannot distinguish from
-zero** (95% CI **[−0.018, +0.098]**). Abstention survives fusion, but the shipped
-threshold does not: under `max_cos` with rewritten negatives it drops from rejecting
-43/44 to **35/44**.
+**Fusion does not deliver, and the *lexical* leakage caveat that qualified every number
+in this project dissolves.** The best fusion rule's point estimate recovers **22.8%** of
+the 25-point oracle gap, under the brief's own 25% floor — but on 56 effective items that
+comparison cannot resolve either side of the threshold it is judged against, so the
+finding is *no demonstrated effect*, not a measured shortfall. Task 4 was not built. A
+real rewriter, run anyway because task 3's abstention comparison could not be made honest
+without one, moves R@1 by **+4.0 points that a paired item-clustered test cannot
+distinguish from zero** (95% CI **[−0.018, +0.098]**). Abstention survives fusion, but the
+shipped threshold does not: under `max_cos` with rewritten negatives it drops from
+rejecting 43/44 to **35/44**.
 
 ---
 
@@ -31,8 +33,8 @@ threshold does not: under `max_cos` with rewritten negatives it drops from rejec
 
 | | headline | § | source |
 |---|---|---|---|
-| **1. Overlap** | **The leakage caveat largely dissolves.** R@1 by query/gold overlap quartile is **0.482 / 0.554 / 0.643 / 0.589** — non-monotonic. Item-level correlation with k/4 is **−0.023 (perm p 0.87)**. Within every query-length stratum, overlap buys nothing. What *does* predict correctness is the absolute count of shared content words (**rho 0.186, perm p 0.005**) — query informativeness, not lexical copying. | §1 | [`out/fusion_task1_overlap.json`](out/fusion_task1_overlap.json) |
-| **2. Fusion** | Best deployable rule **0.625** (`max_cos`, tied by `min_rank`) against 0.567 shipped and 0.821 oracle: **22.8% of the gap**, below the brief's 25% floor. **Decision: do not build the rewriter.** The 10 items at 0/4 are **not** rescued — exactly as §1a predicts. `residence_commute` moves 0.062 → 0.250, which *is* its oracle. | §2 | [`out/fusion_task2_rules.json`](out/fusion_task2_rules.json) |
+| **1. Overlap** | **The lexical leakage caveat dissolves; a structural one is opened.** R@1 by query/gold overlap quartile is **0.482 / 0.554 / 0.643 / 0.589** — non-monotonic. Item-level correlation with k/4 is **−0.023 (perm p 0.87)**. Within every query-length stratum, overlap buys nothing. What *does* predict correctness is the absolute count of shared content words (**rho 0.186, perm p 0.005**) — query informativeness, not lexical copying. What the test *cannot* see: whether sight of the gold conferred structural knowledge of which framing to write. §4's rewriter loses to the fixture's phrasings 0.625 vs 0.563, and 4× on `residence_commute`, which is what that would look like. | §1 | [`out/fusion_task1_overlap.json`](out/fusion_task1_overlap.json) |
+| **2. Fusion** | **No demonstrated effect, underpowered.** Best deployable rule **0.625** (`max_cos`, tied by `min_rank`) against 0.567 shipped and 0.821 oracle — a point estimate of 22.8% of the gap, but [0.494, 0.740] overlaps the control's [0.441, 0.692] and spans the 25% floor it is tested against. **Decision: do not build the rewriter** — the burden was on fusion to show the gain. The 10 items at 0/4 are **not** rescued, exactly as §1a predicts. `residence_commute` moves 0.062 → 0.250, which *is* its oracle. | §2 | [`out/fusion_task2_rules.json`](out/fusion_task2_rules.json) |
 | **2a. RRF** | **The brief's prediction was wrong.** RRF was expected to lose to the control. It gains: **0.589 vs 0.567**, third of five rules. Reported as a measured correction. | §2 | same |
 | **3. Abstention** | **Separation survives; the threshold does not.** AUROC holds at 0.974–0.991. But with negatives rewritten too, `max_cos` at the shipped τ = 0.7295 rejects **35/44, not 43/44**. Re-deriving τ → 0.7737 restores 42/44 at the same recall. `mean_cos` does not inflate and keeps 43/44 at the **unchanged** τ. | §3 | [`out/fusion_task3_abstention.json`](out/fusion_task3_abstention.json) |
 | **3a. The asymmetry, sized** | Four-phrasing positives against one-phrasing negatives overstates rejection at the same τ by **34 points** (86.4% vs 52.3%). The brief said to state this bias; it is measured instead. | §3 | same |
@@ -194,11 +196,27 @@ it would not cost the model much either. A study-team request stream would diffe
 this fixture mainly in being *longer and more specific*, and on this evidence that would
 move R@1 **up**, not down.
 
-Two things this does not license. The queries were written by the same generator family
+Three things this does not license. The queries were written by the same generator family
 as the 13,528 training pairs, and **register alignment is not measured here** — it is not
 a lexical-overlap phenomenon and this test cannot see it. And the fixture still contains
 zero rows for four strata (§4 of [`CHARACTERISATION.md`](CHARACTERISATION.md)). The request set is still worth
 asking for; §7's framing of *why* changes, as the brief anticipated.
+
+**And there is a second channel this test cannot reach, with evidence for it later in this
+document.** Sight of the gold may confer *structural* knowledge rather than vocabulary —
+which of several plausible framings of a construct to write down at all. §4 measures the
+gap without being able to name it: the fixture's phrasings beat a real rewriter's on
+`max_cos` (**0.625 vs 0.563**), and on `residence_commute` by four-fold — **0.250 against
+0.062**, where fixture fusion lands exactly on that stratum's oracle while the rewriter
+does not move it a single row. A rewriter has strictly more information about the *request*
+than the fixture's writer had, and strictly less about the *target*; that it loses on
+precisely the stratum of near-identical commute items is what a framing effect would look
+like. Content-word overlap cannot see this, because the fixture's writer was instructed
+not to copy words — only to know which question was meant. **So §1's conclusion is
+narrower than "no leakage": lexical leakage is ruled out, and a structural advantage from
+sight of the gold is neither ruled out nor measured.** It would inflate the fixture's
+numbers without leaving a lexical trace, and the study-team request set is the only
+instrument here that would detect it.
 
 ---
 
@@ -227,10 +245,16 @@ are computed on **n = 56**, not 224.
 The rule recorded before running: *below ~0.63 (under ~25% of the gap) → fusion does not
 exploit the disjointness and task 4 is not worth building; above ~0.70 → build it.*
 
-**0.625, recovery 22.8%. Below the floor. Task 4 is not built.** The confidence interval
-makes the same point without the threshold: `max_cos` [0.494, 0.740] overlaps `single`
-[0.441, 0.692] across most of its range, and neither comes near the oracle's lower bound
-of 0.702. On 56 items this experiment cannot even resolve a 5.8-point difference.
+**No demonstrated effect, and the experiment is underpowered. Task 4 is not built.**
+`max_cos` [0.494, 0.740] overlaps `single` [0.441, 0.692] across most of its range, and
+neither comes near the oracle's lower bound of 0.702: on 56 items this design cannot
+resolve a 5.8-point difference in either direction. **22.8% is therefore not a measured
+quantity** — it is a point estimate from a comparison whose interval spans both sides of
+the 25% threshold it is being judged against. The decision rule is satisfied, but by an
+absence of evidence rather than by evidence of absence, and the honest statement of the
+result is that fusion has not been shown to exploit the disjointness on data this thin.
+That is enough not to build on, since the burden was on fusion to demonstrate the gain;
+it is not enough to conclude fusion cannot deliver one.
 
 **RRF, the measured negative that wasn't.** The brief predicted RRF below the control,
 because corroboration voting should let three phrasings outvote the one that found the
@@ -367,6 +391,10 @@ four cosines cannot exceed the best of them, so the negative distribution barely
 gives coverage 0.915, precision **0.634**, recall **0.580**, negatives rejected **43/44** —
 better than the shipped operating point on precision and recall at identical rejection,
 with no threshold change. Its AUROC is 0.974 against 0.982, the one thing it gives up.
+**This is the most attractive-looking number in this document and it is not independent
+evidence** — the precision gain is computed over the same flips as §4's R@1, whose 95% CI
+straddles zero, and it inherits a non-determinism the latency table does not price. Both
+caveats are set out under recommendation 2 in §6; quote the number with them attached.
 
 Precision 0.90 remains **unreachable at any τ in every configuration**. Fusion does not
 make a returned result verifiable, and §3's finding that the model cannot flag its own
@@ -450,6 +478,12 @@ deterministic answer. A rewriter makes the retriever's output **non-reproducible
 runs**, which for a research tool whose value is an auditable variable choice is a real
 cost, not a rounding error.
 
+**And the non-determinism reaches further than the ranking.** Because the abstention
+threshold is applied to the *fused* score, a rewriter makes the **refusal** non-
+deterministic too: a request sitting near τ can be answered on one run and refused on the
+next, from identical input against identical frozen vectors. That is the worse of the two
+failures, and it is not visible anywhere in this table. See recommendation 2 in §6.
+
 ---
 
 ## 5. What this does not do
@@ -464,18 +498,29 @@ resting on at least one wrong variable, and §3 says the model cannot flag which
 cancer-screening and demographics still have **zero** fixture rows — 61 targets and 51
 constructs. No fusion rule measured on this fixture says anything about them.
 
-**It does not replace the study-team request set**, but §1 changes what to ask for. Not
-"queries written without sight of the instrument" as a purity exercise — that variable is
-now measured and does not predict accuracy. The question worth asking is whether a real
-researcher's request is **longer and more specific** than this fixture's 2–5 word lookup
-labels. If it is, §1's length gradient (R@1 0.493 → 0.537 → 0.676 by query length) says
-0.567 is a **lower** bound. That is a cheaper thing to ask for and a sharper thing to
-learn.
+**It does not replace the study-team request set** — but §1 changes what to ask for, and
+narrows what the set is needed to settle. Not "queries written without sight of the
+instrument" as a purity exercise: the *lexical* half of that variable is now measured and
+does not predict accuracy. Two sharper questions remain, and both are cheaper to answer
+than the original framing.
 
-**One caveat on §1 that the test cannot reach.** The fixture's queries and the 13,528
-training pairs came from the same generator family. §1 rules out *lexical* leakage from
-the gold; it says nothing about register alignment between fixture and training set, which
-is not a query-to-gold overlap phenomenon and is invisible to this measurement.
+1. **Is a real researcher's request longer and more specific than this fixture's 2–5 word
+   lookup labels?** If it is, §1's length gradient (R@1 0.493 → 0.537 → 0.676 by query
+   length) says 0.567 is a **lower** bound.
+2. **Does sight of the gold confer structural knowledge — which framing of a construct to
+   write down — rather than vocabulary?** §1 cannot see this, and §4 shows the gap it would
+   produce: the fixture's phrasings beat a real rewriter's on `max_cos` (0.625 vs 0.563)
+   and four-fold on `residence_commute`. A request set written blind is the only instrument
+   here that separates the two.
+
+**Two caveats on §1 that the test cannot reach**, and they compound. The fixture's queries
+and the 13,528 training pairs came from the same generator family, so **register
+alignment** between fixture and training set is untested — it is not a query-to-gold
+overlap phenomenon and is invisible to this measurement. And the **structural channel**
+above is likewise invisible, because the fixture's writer was instructed not to copy words,
+only to know which question was meant. §1 rules out lexical leakage from the gold and
+nothing else; neither of these would leave a lexical trace, and both would inflate the
+fixture's numbers in the same direction.
 
 ---
 
@@ -488,6 +533,42 @@ is not a query-to-gold overlap phenomenon and is invisible to this measurement.
    threshold change (§3), and the only one whose ranking is robust to a rewriter producing
    a bad paraphrase. `max_cos`'s advantage in §2 is an artifact of the fixture's phrasings
    being independently gold-derived, which no rewriter reproduces.
+
+   **The operating point in full, since it is easy to miss in §3's table and should not be
+   rediscovered later as a missed opportunity.** Config D / `mean_cos`, at the **unchanged**
+   shipped τ = 0.7295:
+
+   | | shipped (single) | D / `mean_cos` | |
+   |---|---|---|---|
+   | precision | 0.6039 | **0.6341** | **+3.0 pts** |
+   | recall | 0.5580 | **0.5804** | +2.2 pts |
+   | coverage | 0.9241 | 0.9152 | −0.9 pts |
+   | negatives rejected | 43/44 | **43/44** | unchanged |
+   | AUROC pos vs neg | 0.9823 | 0.9743 | −0.008 |
+
+   Three points of precision for nine-tenths of a point of coverage, at identical negative
+   rejection and no threshold change, with AUROC the only other cost. That is the most
+   attractive-looking result in this document, which is why it needs both caveats attached
+   wherever it is quoted.
+
+   **It is not independent evidence.** Precision is `correct_answered / answered`, so it is
+   computed over the same flips as §4's R@1 — the same 21-gained/12-lost table seen through
+   a coverage filter (130 correct of 205 answered, against 125 of 207). The +0.040 R@1 those
+   flips produce has an item-clustered 95% CI of **[−0.018, +0.098]**. The precision gain
+   inherits that interval; it restates §4's uncertainty in a second unit rather than
+   corroborating it, and two views of one underpowered comparison are not two results.
+
+   **And it carries a cost §4's latency table does not name.** A non-deterministic rewriter
+   makes the **abstention decision** non-deterministic, not merely the ranking. A request
+   whose fused score sits near τ can be answered on one run and refused on the next, from
+   the same input against the same frozen vectors. For a tool whose value is an *auditable*
+   variable choice, an unreproducible refusal is a worse failure than a variable R@1: a
+   wrong-but-stable answer can be checked and corrected once, while a request that
+   intermittently returns nothing cannot be investigated from its output. `mean_cos` is
+   exposed to this exactly as `max_cos` is — averaging stabilises the *ranking* against one
+   bad paraphrase, and does nothing about run-to-run variation in the rewriter itself. Any
+   deployment would need the rewriter's output cached and versioned per request, at which
+   point the cache, not the threshold, becomes the artifact that has to be frozen.
 3. **Never evaluate query expansion against un-expanded negatives.** §3 sizes that error at
    34 points of apparent rejection rate. If the 44-row negative set is ever used to
    validate an expansion scheme, it must be expanded by the same prompt.
