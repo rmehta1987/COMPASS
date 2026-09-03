@@ -72,4 +72,7 @@ check_untyped_defs = true
 [[tool.mypy.overrides]]
 module = ["encode_and_score", "build_targets"]
 ignore_errors = true
+# `follow_imports = "skip"` alone makes mypy report the module as MISSING at the
+# import site, which is a new error rather than a suppressed one.
+ignore_missing_imports = true
 follow_imports = "skip"
