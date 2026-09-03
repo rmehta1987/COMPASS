@@ -1,0 +1,43 @@
+# --- environments and caches -------------------------------------------------
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- generated, and deliberately not committed -------------------------------
+# build/ is reproduced exactly by `python build.py` from raw/ (version hash
+# 6fcd02755bf3, deterministic across `rm -rf build/`). Leaving it out means every
+# worktree must rebuild it, which is the stronger check: a lane whose hash differs
+# has changed the build rules, and §0 catches that immediately.
+build/
+
+# Transient per-run artifacts. Each reasoning call now writes its OWN
+# run/logs/tool_log.<run>.<sample>.jsonl, and generate/live_specifier.py copies
+# the winning sample's log next to the record it produced. The single
+# run/tool_log.jsonl is the old shared file that corresponded to no saved record
+# — it stays ignored so a stale one cannot be mistaken for evidence.
+run/tool_log.jsonl
+run/logs/
+parked/
+
+# NOT ignored: run/<protocol>.<hash>.tool_log.jsonl. That file is the winning
+# sample's own log, copied beside the record it produced, and it is the only
+# thing that makes the record's gate fields checkable by a reader who was not
+# there when it ran.
+
+# --- WSL/Windows download artifacts ------------------------------------------
+*:Zone.Identifier
+
+# --- not project data --------------------------------------------------------
+# codebook.csv in the project root is NOT project data and must never be read or
+# parsed (handoff §5 rule 1). Excluded so it cannot be pulled into a worktree or
+# a diff. If you want it version-controlled, remove this line deliberately — the
+# no-read rule still applies either way.
+codebook.csv
+
+# editor swap files
+*.swp
+*.swo
+*~

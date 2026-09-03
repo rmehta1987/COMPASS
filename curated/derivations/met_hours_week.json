@@ -1,0 +1,12 @@
+{
+  "derivation_id": "met_hours_week",
+  "author": "R. Mehta",
+  "date": "2026-08-26",
+  "signed": true,
+  "unit": "MET-hours/week",
+  "component_keys": ["m3:Q2.33","m3:Q2.62"],
+  "recipe": "Sum over 10 activities of (frequency x duration x compendium MET value), seasonally weighted. Compendium v2011.",
+  "construct_validity_basis": "Ainsworth compendium of physical activities, 2011 update",
+  "fitted_to_outcome": false,
+  "caveat": "30 constituent items (m3:Q2.33-Q2.62); response coding absent from the public codebook."
+}

@@ -1,0 +1,12 @@
+{
+  "derivation_id": "social_cohesion_scale",
+  "author": "R. Mehta",
+  "date": "2026-08-26",
+  "signed": true,
+  "unit": "mean Likert score, 5 items",
+  "component_keys": ["m3:Q16.1_1","m3:Q16.1_2","m3:Q16.1_3","m3:Q16.1_4","m3:Q16.1_5"],
+  "recipe": "Mean of the five Q16.1 sub-items after reverse-coding items 4 and 5. Requires >=4 of 5 items non-missing.",
+  "construct_validity_basis": "Sampson social cohesion / collective efficacy scale, 5-item form",
+  "fitted_to_outcome": false,
+  "caveat": "Response coding is NOT in the public codebook; direction of the Likert scale must be confirmed by the study team before use."
+}
