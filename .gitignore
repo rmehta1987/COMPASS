@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Logs (added back explicitly on a need basis)
+*.log
+out/
+runs/
+
+# Data, model, and vector artifacts
+*.json
+*.jsonl
+*.safetensors
+*.pt
+*.pth
+*.bin
+!.claude/**/*.json
+
+# Generated / fixture dirs
+fixtures/
+deploy/model/
+
+# OS / editor cruft
+.DS_Store
+*.swp
