@@ -45,7 +45,7 @@
         "S3 screens estimability: blocked until two survey metadata exports arrive",
         "S4 tags literature density; a tag, never a prune"
       ],
-      "status_label": "PLACEHOLDER",
+      "status_label": "S3 blocked · real gate output",
       "status": "blocked",
       "placeholder": "Will show the gate's real output: how many pairs were live, passed and blocked, and which exports are missing.",
       "waits_for": null

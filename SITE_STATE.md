@@ -5,7 +5,7 @@ clone: /home/mehta5/compass-site  (--single-branch main from GitHub, cut at 2652
        deploy/model/ copied from the operator's clone, sha-verified by retriever.py at load;
        deploy/targets.json and the dictionary are read from the operator's clone by path,
        never copied here — see site/tools/*.py for the env vars)
-last green: d3a04fd   (VERIFIED 2026-09-04 by ./site-check.sh on that sha, GREEN)
+last green: 61ac724   (VERIFIED 2026-09-04 by ./site-check.sh on that sha, GREEN)
 check: ./site-check.sh
 note: main's .gitignore excludes *.json — site/artefacts is un-ignored (item 1)
       and step 6 asserts every loaded artefact is tracked.
@@ -26,7 +26,7 @@ note: compass-gen/STATE.md (7ef75fa) marks pipeline items 11 and 13 as landed. I
 - [x] 4  real retriever runs → site/artefacts/runs.json (run site-20260904T213836Z; map in run/site/, ignored)
 - [x] 5  Retriever panel (runs.json + absence.json; tool log, record, candidates, limitation)
 - [x] 6  Intake panel (fields, rendered query, covered-instance drop; no tool calls)
-- [ ] 7  Funnel panel (real gate output: live/passed/blocked, missing exports)
+- [x] 7  Funnel panel (funnel.json from pipeline.gate in the generation clone)
 - [ ] 10 Score panel (GenerationEnv, key_present false, why scoring has not run)
 - [ ] 11 measurement section (architecture sweep + shipped model, all figures traced)
 - [ ] 12 PNG export (SVG foreignObject, no library)

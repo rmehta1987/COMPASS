@@ -66,6 +66,14 @@
   the covered rule at work), population unset by contract, and the template's sha from
   the run's bundle record. Tool calls: none, and the panel says so.
 
+## 2026-09-04 — item 7
+- funnel.json is built by `capture_pipeline_state.py`, which imports the generation
+  clone's `pipeline` package read-only and calls `worked_frame()` and `gate()` exactly as
+  `python -m pipeline.gate` does; only counts, marker names and export names cross into
+  the public artefact (the raw capture under run/site/ carries stems and keys).
+- Real output: enumerated 384, pruned 128, live 256, gate passed 0, blocked 256, every
+  pair `blocked_no_metadata` on the two missing exports, `n_source` unknown.
+
 ### Figure trace (done before item 1; primaries opened, not summaries)
 | figure | primary | run id | verdict |
 |---|---|---|---|

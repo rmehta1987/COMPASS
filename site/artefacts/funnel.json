@@ -1,0 +1,39 @@
+{
+ "schema": "compass_site/funnel/1",
+ "provenance": {
+  "source": "site/tools/capture_pipeline_state.py calling pipeline.auto_intake.worked_frame() and pipeline.gate.gate(allow_unestimable=False) in the generation clone; the same calls its `python -m pipeline.gate` makes",
+  "run_id": "2026-09-04T21:40:06+00:00",
+  "commit": "generation clone ralph-loop 7ef75fa",
+  "dictionary_version_hash": "3dc8415eccfe"
+ },
+ "stages": {
+  "S1_enumerated": 384,
+  "S2_pruned": 128,
+  "S3_parked": 0,
+  "live": 256,
+  "S3_estimable": 0,
+  "S3_unknown": 256,
+  "S3_requires_derivation": 70
+ },
+ "gate": {
+  "allow_unestimable": false,
+  "live": 256,
+  "passed": 0,
+  "blocked": 256,
+  "estimability_marks": [
+   "blocked_no_metadata"
+  ],
+  "n_sources": [
+   "unknown"
+  ],
+  "missing_exports": [
+   "module_co_completion_counts",
+   "per_item_non_missing_counts"
+  ],
+  "blocked_on": [
+   "module_co_completion_counts",
+   "per_item_non_missing_counts"
+  ]
+ },
+ "pairs_emitted": 0
+}

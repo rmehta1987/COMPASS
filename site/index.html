@@ -223,6 +223,25 @@ function intakePanel(){
   return h;
 }
 
+function funnelPanel(){
+  const f=DATA.funnel, st=f.stages, g=f.gate;
+  let h=`<p class="sec">tool calls</p><div class="none">None. S1–S4 and the gate are deterministic: no model, no network.</div>`;
+  h+=`<p class="sec">screen · captured ${esc(f.provenance.run_id)} · ${esc(f.provenance.commit)}</p><dl>`
+    +row("S1 enumerate",`${st.S1_enumerated} candidate pairs over distinct constructs`,true)
+    +row("S2 prune",`${st.S2_pruned} removed · construct identity, battery, free text, scale`,true)
+    +row("S3 screen",`${st.S3_estimable} estimable · ${st.S3_unknown} unknown · ${st.S3_requires_derivation} need a derivation · ${st.S3_parked} parked`,true)
+    +row("live",`${st.live} pairs reach the gate`,true)
+    +row("gate",`passed <span class="flag">${g.passed}</span> · blocked <span class="flag">${g.blocked}</span> of ${g.live} · allow_unestimable ${g.allow_unestimable}`,true)
+    +row("estimability",g.estimability_marks.map(m=>`<span class="flag">${esc(m)}</span>`).join(", "),true)
+    +row("blocked on",esc(g.missing_exports.join(" · ")),true)
+    +row("n source",esc(g.n_sources.join(", ")),true)
+    +row("pairs emitted",`<span class="flag">${f.pairs_emitted}</span> without --allow-unestimable`,true)
+    +row("dictionary",esc(f.provenance.dictionary_version_hash),true)
+    +`</dl>`;
+  h+=`<div class="none">The two exports are survey-metadata counts the study team holds. Until they arrive every pair carries the marker above and nothing reaches the Specifier by default.</div>`;
+  return h;
+}
+
 function draw(){
   const s=DATA.stages.stages.find(x=>x.id===sel);
   let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
@@ -230,6 +249,7 @@ function draw(){
   if(typed!==null&&!cur) h+=noRun();
   else if(sel==="retriever"&&cur) h+=retrieverPanel();
   else if(sel==="intake"&&cur) h+=intakePanel();
+  else if(sel==="funnel") h+=funnelPanel();
   else h+=placeholder(s);
   el("#panel").innerHTML=h;
 }
