@@ -55,9 +55,10 @@ def main() -> int:
     ap.add_argument("--threads", type=int, default=4,
                     help="pinned torch thread count, recorded in the manifest; "
                          "latency is measured at this setting")
-    ap.add_argument("--smoke-report", type=Path, default=Path("out/smoke_report.json"),
-                    help="deploy/smoke_test.py report; if present, the shipped "
-                         "instances-only R@1 is copied into manifest['template']")
+    ap.add_argument("--smoke-report", type=Path, default=Path("out/smoke_report_x86_Wright.json"),
+                    help="deploy/smoke_test.py report from the SERVING machine; if present, "
+                         "the shipped instances-only R@1 goes into manifest['template'] and "
+                         "the machine, latency and vector delta into manifest['device']")
     ap.add_argument("--qx-paired", type=Path, default=Path("out/qx_task2_paired.json"))
     a = ap.parse_args()
 
@@ -202,6 +203,20 @@ def main() -> int:
                 "unreproducible across machines with different core counts."),
             "query_ms_isolated_single_at_pinned_threads": round(query_ms, 2),
             "latency_measured_on": machine,
+            "serving_reference": ({
+                "machine": smoke["machine"],
+                "run": smoke["run"],
+                "query_ms_isolated_single": smoke["latency"]["query_ms_isolated_single"],
+                "threads": smoke["latency"]["threads"],
+                "reencode_all_targets_s": smoke["reencode"]["wall_s"],
+                "max_abs_vector_delta_vs_transferred": smoke["reencode"]["max_abs_delta_local_vs_transferred"],
+                "top1_agreement_224_rows": smoke["reencode"]["top1_agreement_224_rows_local_vs_transferred"],
+                "acceptance": {arm: {k: v for k, v in smoke["acceptance"][arm].items()
+                                     if k in ("R@1", "R@5", "R@10", "rank_p50", "rank_p90",
+                                              "rank_max", "negatives_rejected", "auroc")}
+                               for arm in ("S", "F", "I")},
+                "report": str(a.smoke_report),
+            } if smoke else "not yet run: deploy/smoke_test.py on the serving machine"),
             "latency_note": (
                 "One query per forward pass, fp32, warm. The 2.94 ms/query quoted in "
                 "RESULTS.md is query_ms_per_row from a BATCHED 224-row scoring run "
@@ -268,7 +283,11 @@ def main() -> int:
                     "single-query serving the F1 optimum by the same rule is "
                     "therefore the next candidate, 0.731902, in every arm; "
                     "F1(shipped) is 0.0013 to 0.0015 below it: one row. Recall is "
-                    "identical at both values."),
+                    "identical at both values. Confirmed across machines: on the x86 "
+                    "serving machine (Wright, WSL2) single-query encoding put row 68 "
+                    "BELOW again and tau* came back as the shipped 0.729476, with "
+                    "max vector delta 2.9e-7 against the Arm-computed vectors. The "
+                    "same row, the same threshold, opposite sides by machine."),
                 "not_changed_because": (
                     "one row of F1 is not material, 0.7295 is cited across every "
                     "document, and 0.731902 is itself the exact score of a CORRECT "

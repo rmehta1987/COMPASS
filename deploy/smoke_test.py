@@ -75,10 +75,13 @@ EXPECTED = {
 }
 # out/qx_task3_abstention.json: recall at the shipped tau, arms S and F
 EXPECTED_RECALL_AT_SHIPPED = {"S": 0.558, "F": 0.6339}
-# F1 optimum by the artifacts' rule when queries are encoded ONE AT A TIME (the
-# deployed access pattern). Differs from the shipped 0.729476 because row 68
-# crosses the threshold on a 6e-8 batch-vs-single difference; see step 5.
-EXPECTED_TAU_STAR_SINGLE_QUERY = 0.731902
+# The F1 optimum by the artifacts' rule lands on one of two adjacent candidates
+# depending on which side of the shipped threshold fixture row 68 falls, and
+# that is decided by ~6e-8 of encoding noise: on the training machine (Arm,
+# single query) it fell above -> tau* 0.731902; on the x86 serving machine it
+# fell below -> tau* 0.729476, the shipped value. Either is the correct answer
+# for the machine that produced it. Anything else is a real change.
+KNIFE_EDGE_TAUS = (0.729476, 0.731902)
 ARM_LABEL = {"S": "no template (row's own query)",
              "F": "pre-registered arm F: population + instances",
              "I": "shipped contract: instances only, population None"}
@@ -287,7 +290,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--bundle", type=Path, default=HERE)
     ap.add_argument("--prereg", type=Path, default=HERE.parent / "out" / "qx_preregistration.json")
-    ap.add_argument("--report", type=Path, default=HERE.parent / "out" / "smoke_report.json")
+    ap.add_argument("--report", type=Path,
+                    default=HERE.parent / "out" / f"smoke_report_{platform.machine()}_{socket.gethostname()}.json",
+                    help="per-machine by default so runs on different machines do not overwrite each other")
     ap.add_argument("--adopt-local-vectors", action="store_true",
                     help="after re-encoding, replace target_vectors.safetensors with the "
                          "locally computed vectors, rewrite its manifest checksum, re-verify")
@@ -444,18 +449,19 @@ def main() -> int:
                   f"{[k['score'] for k in th['knife_edge_negatives_within_0.003']]}")
             if arm in ("S", "F"):
                 # The shipped tau is the 6-dp rounding of an INCORRECT positive's
-                # score (row 68, 'electronic nicotine delivery frequency'): batch
-                # encoding put it 1.9e-8 below the threshold, single-query encoding
-                # puts it 4.5e-8 above. So tau* under single-query serving is the
-                # next candidate, 0.731902, and F1(shipped) is one row short of the
-                # optimum. Recall and the negatives are unaffected. Assert the facts
-                # that hold under both access patterns; report the fragile one.
+                # score (row 68, 'electronic nicotine delivery frequency'). On the
+                # training machine batch encoding put it 1.9e-8 below the threshold
+                # and single-query encoding 4.5e-8 above; on the x86 serving machine
+                # single-query encoding put it below again. tau* therefore flips
+                # between 0.729476 and 0.731902 by machine, and F1(shipped) is at
+                # most one row short of the optimum. Recall and the negatives are
+                # unaffected. Assert the facts that hold everywhere; report the rest.
                 check(f"arm {arm} recall at shipped min_cos",
                       th["at_shipped_tau"]["recall"], EXPECTED_RECALL_AT_SHIPPED[arm], fails)
                 check(f"arm {arm} shipped min_cos within one row of max F1",
                       -0.002 < th["f1_at_shipped_minus_max_f1"] <= 0.0, True, fails)
-                check(f"arm {arm} tau* under single-query serving",
-                      th["tau_star_artifact_rule_4dp_f1_lowest_tie"], EXPECTED_TAU_STAR_SINGLE_QUERY, fails)
+                check(f"arm {arm} tau* is one of the two knife-edge candidates {KNIFE_EDGE_TAUS}",
+                      th["tau_star_artifact_rule_4dp_f1_lowest_tie"] in KNIFE_EDGE_TAUS, True, fails)
 
         print("6. isolated single-query latency at the pinned thread count")
         for q in queries["S"][:8]:
