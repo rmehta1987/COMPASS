@@ -1,6 +1,6 @@
 {
  "schema": "compass_retriever_deploy/1",
- "frozen": "2026-09-03",
+ "frozen": "2026-09-04",
  "what_this_is": "The shipped COMPASS variable retriever: fine-tuned bge-small, argmax cosine over 1,353 precomputed target vectors, no LLM call. CPU-only.",
  "dictionary_version_hash": "3dc8415eccfe",
  "dictionary_hash_policy": "retriever.py ASSERTS this hash against targets.json at load and raises. It does not warn: a stale vector file returns wrong answers silently, which is worse than not starting.",
@@ -29,11 +29,11 @@
  },
  "device": {
   "pinned": "cpu",
-  "why": "The fine-tuned checkpoint has exactly one GPU/CPU top-1 disagreement in 224 rows -- row 107, 'primary method used to get to work', max |vector delta| 4.06e-7 (out/final_bge-small_ft.json). Not a bug, but that query is the hardest row in every report in this project, so the flip lands exactly where device parity matters. CPU-only serving avoids it and costs little: on the training machine (spark-2500), 44.0 ms per isolated query at 4 threads and 21.2s to encode the whole corpus; serving-machine figures are under serving_reference.",
+  "why": "The fine-tuned checkpoint has exactly one GPU/CPU top-1 disagreement in 224 rows -- row 107, 'primary method used to get to work', max |vector delta| 4.06e-7 (out/final_bge-small_ft.json). Not a bug, but that query is the hardest row in every report in this project, so the flip lands exactly where device parity matters. CPU-only serving avoids it and costs little: on the training machine (spark-2500), 44.6 ms per isolated query at 4 threads and 21.1s to encode the whole corpus; serving-machine figures are under serving_reference.",
   "vectors_computed_on": "cpu",
   "threads": 4,
   "threads_why": "retriever.py calls torch.set_num_threads with this value unless the caller overrides it. Unpinned thread counts make latency unreproducible across machines with different core counts.",
-  "query_ms_isolated_single_at_pinned_threads": 44.04,
+  "query_ms_isolated_single_at_pinned_threads": 44.56,
   "latency_measured_on": "spark-2500 aarch64 Linux-6.17.0-1026-nvidia-aarch64-with-glibc2.39",
   "serving_reference": {
    "machine": {
@@ -96,7 +96,7 @@
    "query_ms_note": "five earlier runs of step 6 on this machine (2026-09-03), all at threads=4; median 13.41 ms. The 23.76 outlier shared the box with a corpus re-encode. query_ms_isolated_single above is the single run in the cited report, a later run than these five; none of these figures is a mean."
   },
   "serves": "Wright",
-  "serves_why": "serving_reference records that the x86 machine REPRODUCES the bundle; this key records that it SERVES it. Per-query latency is paid on every pipeline call, corpus encode once per dictionary_version_hash: Wright is ~3x faster per isolated query (13.06 ms in its report vs 44.0 ms here at the same 4 threads) and ~3x slower to encode the corpus (57.9 s vs 21.2 s here), so the trade favours Wright by the ratio of calls to rebuilds. Not a correctness argument -- both machines pass deploy/smoke_test.py in full. Change this key alone to move serving.",
+  "serves_why": "serving_reference records that the x86 machine REPRODUCES the bundle; this key records that it SERVES it. Per-query latency is paid on every pipeline call, corpus encode once per dictionary_version_hash: Wright is ~3x faster per isolated query (13.06 ms in its report vs 44.6 ms here at the same 4 threads) and ~3x slower to encode the corpus (57.9 s vs 21.1 s here), so the trade favours Wright by the ratio of calls to rebuilds. Not a correctness argument -- both machines pass deploy/smoke_test.py in full. Change this key alone to move serving.",
   "latency_note": "One query per forward pass, fp32, warm. The 2.94 ms/query quoted in RESULTS.md is query_ms_per_row from a BATCHED 224-row scoring run (out/ft_bge-small_nn0_t0.10.json) and is not per-call latency; src/finalize.py's isolated figure on the training machine was 18.3 ms. Re-measure on the serving machine with deploy/smoke_test.py step 6."
  },
  "corpus": {
@@ -111,7 +111,7 @@
  "measured": {
   "recall_at1_224_row_fixture": 0.567,
   "reproduces_out_ft_bge-small_nn0_t0.10_json": true,
-  "cpu_encode_all_targets_s": 21.2,
+  "cpu_encode_all_targets_s": 21.1,
   "cos_top1_min_over_fixture": 0.5683,
   "cos_top1_max_over_fixture": 0.9874
  },
@@ -217,8 +217,8 @@
    "bytes": 9842
   },
   "smoke_test.py": {
-   "sha256": "d02718fe432b5fe68d73706130aabd00a004493de0169c1ab2c7ee2eb36fd0bd",
-   "bytes": 26808
+   "sha256": "4b7f95254a23d433da0edbfe1127c6bd72b2003899091bcb7038d27e9734cfeb",
+   "bytes": 26810
   },
   "target_vectors.safetensors": {
    "sha256": "941dd61a8ea17f2d35585a068d6e08a453877820a732a5b7a4d8910d0c6b96a4",
@@ -232,5 +232,28 @@
    "sha256": "a5254caebb54a6998196dc692cd055eb0f2648c52cbd81f561e896fe5bbda844",
    "bytes": 5498
   }
+ },
+ "proof_chain": {
+  "serving_machine_proved_commit": "6416094",
+  "serving_machine_report": "out/smoke_report_x86_64_Wright.json",
+  "files_differing_from_proved_bundle": {
+   "retriever.py": {
+    "sha256_then": "24ccefb4bffdbeb17b51fcf2d8357aeba547282a034a2cd0d5a596975cd4f2e7",
+    "sha256_now": "5392ad828cfb98ce6136626913d86f066adfe6fdc97d76db23f58fe82fa8984d",
+    "ast_identical_modulo_docstrings": true
+   },
+   "smoke_test.py": {
+    "sha256_then": "98606ca8760a46b57de9f4127eb1fb0293d8dc30d76e0caff9f43370fcd60f0a",
+    "sha256_now": "4b7f95254a23d433da0edbfe1127c6bd72b2003899091bcb7038d27e9734cfeb",
+    "ast_identical_modulo_docstrings": false
+   },
+   "template.py": {
+    "sha256_then": "9c78d0b0bb0139a3b85c8648a7be47e6375c7c214e93b4409e4c810dbe190ce8",
+    "sha256_now": "a5254caebb54a6998196dc692cd055eb0f2648c52cbd81f561e896fe5bbda844",
+    "ast_identical_modulo_docstrings": true
+   }
+  },
+  "identical_to_proved_bundle": false,
+  "what_this_means": "The tracked serving-machine report certifies the bundle at the commit named above. Files listed as differing have changed since; a file with ast_identical_modulo_docstrings=true changed only in docstrings or comments, false means code (including message strings) changed. The current bundle is proven wherever deploy/smoke_test.py has been run against THIS manifest: on the training machine at every freeze (report out/smoke_report_aarch64_spark-2500.json, not tracked). Re-running the smoke test on the serving machine and committing its report re-closes the chain."
  }
 }

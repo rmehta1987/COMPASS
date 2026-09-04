@@ -11,8 +11,8 @@ source file is cited on every row.
 > sha256, the command that regenerates it, the tracked file that reproduces the figure
 > ([`deploy/manifest.json`](deploy/manifest.json),
 > [`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json)) and the
-> commit. A backticked path may be tracked or training-machine-only; `PROVENANCE.md`
-> lists the training-machine ones.
+> commit, and a checksum for every `out/` artifact this document cites. A backticked path
+> may be tracked or training-machine-only.
 
 ## 1. Task and dataset
 
@@ -356,9 +356,9 @@ a query template, frozen into [`deploy/`](deploy/) and proven on two machines:
 | | value | source |
 |---|---|---|
 | bundle | `bge-small` fine-tuned (nn0, t=0.10), argmax cosine over 1,353 CPU-computed target vectors, CPU-pinned, 4 threads, 9 files, 137.2 MB (5 tracked; `deploy/model/` and `deploy/targets.json` copied by rsync) | [`deploy/manifest.json`](deploy/manifest.json) |
-| shipped contract | instances-only query template ([`deploy/template.py`](deploy/template.py)); the population slot of pre-registered arm F is left unused (net −1 row on the 17 it touched) | `deploy/manifest.json::template`, `QUERY_EXPANSION.md` §2a and §5 |
+| shipped contract | instances-only query template ([`deploy/template.py`](deploy/template.py)); the population slot of pre-registered arm F is left unused (adding it was net −1 row on the 17 rows it alone touched; removing it from F is net 0 on 224 rows, R@1 0.6429 either way, so the revision rests on mechanism) | `deploy/manifest.json::template.population_slot`, `QUERY_EXPANSION.md` §2a and §5 |
 | R@1 / R@5 / R@10 as shipped (arm I) | 0.6429 / 0.8884 / 0.9375, rank p50 1, p90 7, max 61 | [`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json) `acceptance.I` |
 | abstention | `min_cos` 0.729476; 43/44 negatives rejected; AUROC 0.9874 (arm I) | same, `acceptance.I`; knife edge in `deploy/manifest.json::abstention.knife_edge` and `threshold.*` |
-| acceptance test | [`deploy/smoke_test.py`](deploy/smoke_test.py) exits 0 only if arms S, F and I reproduce to the digit; 0 failures on the Spark (aarch64) and on Wright (x86_64) | smoke reports `result`; commits e446cf8, da317d6, 4b8abee |
+| acceptance test | [`deploy/smoke_test.py`](deploy/smoke_test.py) exits 0 only if arms S, F and I reproduce to the digit; 0 failures on the Spark (aarch64, current bundle) and on Wright (x86_64, bundle at commit 6416094; code files since changed in docstrings and hint strings only, `deploy/manifest.json::proof_chain`) | smoke reports `result`; `PROVENANCE.md` §proof chain; commits e446cf8, da317d6, 4b8abee |
 | serving machine | Wright; isolated 13.41 ms median per query at 4 threads | `deploy/manifest.json::device.serves`, `serving_reference` |
 

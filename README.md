@@ -51,8 +51,11 @@ file; `deploy/retriever.py` asserts them at load and raises rather than warns.
 the digit, R@1 0.567 without the template, 0.643 with the pre-registered template (arm F),
 and 0.643 / R@10 0.938 with the instances-only template that ships (arm I), plus 43/44
 negatives rejected in each arm. It passed on the Spark (aarch64; report on the training
-machine) and on the x86 serving machine Wright
-([`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json), commits
+machine, re-run at every freeze) and, at commit 6416094, on the x86 serving machine Wright
+([`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json)). The three
+bundle code files have since changed in docstrings, comments and hint strings only
+(AST-checked, `deploy/manifest.json::proof_chain`; `PROVENANCE.md` §proof chain); a Wright
+re-run against the current manifest is pending. Commits
 [da317d6](https://github.com/rmehta1987/COMPASS/commit/da317d602738ca6752d9f8264accdd4a2ffac64e),
 [4b8abee](https://github.com/rmehta1987/COMPASS/commit/4b8abeebf7b12d6e2c870ec775b745b084195c95)).
 

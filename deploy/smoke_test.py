@@ -236,7 +236,7 @@ def step0_integrity(bundle: Path, rep: dict):
           f"{rep['integrity']['model_safetensors_sha256']}")
     if bad:
         if any(b.startswith("MISSING  model/") or b.startswith("MISSING  targets.json") for b in bad):
-            print("  deploy/model/ (133 MB, over GitHub's file limit) and deploy/targets.json "
+            print("  deploy/model/ (134.2 MB, over GitHub's file limit) and deploy/targets.json "
                   "(the instrument's question wording; this repository is public) are not "
                   "tracked. Copy both from the training machine, e.g.\n"
                   "    rsync -av <spark>:COMPASS/deploy/model/ deploy/model/\n"
