@@ -530,11 +530,11 @@ that cannot be compared to the curve is a check that never runs.
 Do not emit JSON. Prose only. A separate step will format it.""")
 
 
-def user_prompt(pair: Any) -> str:
+def user_prompt(pair: PairLike) -> str:
     """Render call 1's user message: the pair, and what to state about it.
 
     Args:
-        pair: The funnel candidate this run was handed.
+        pair: The pair this run was handed; see `PairLike`.
 
     Returns:
         The prompt text naming the pair.
@@ -609,7 +609,7 @@ sample-size field in this schema, and adding one is rejected.
 """
 
 
-def prompt_hash(pair: object) -> str:
+def prompt_hash(pair: PairLike) -> str:
     """Hash the exact prompt text a run sends, for provenance.
 
     Args:
@@ -811,14 +811,42 @@ class _Anchor(Protocol):
     construct_key: str
     member_keys: list[str]
     is_free_text: bool
+    stem_text: str
+    is_group: bool
 
 
-class _Pair(Protocol):
-    """The enumerated pair, as far as the adjudicator is concerned."""
+class PairLike(Protocol):
+    """What the Specifier reads from a pair, and nothing more.
 
-    pair_id: str
-    exposure: _Anchor
-    outcome: _Anchor
+    The funnel's `Candidate` satisfies it, and so does
+    `pipeline.resolved_pair.ResolvedPair`, which builds the same two anchors
+    from a pair of `RetrievalRecord`s. Naming the interface is what lets a
+    request-sourced pair reach the Specifier through the same call path as an
+    enumerated one, with the prompt byte-identical for the same anchors.
+    `pair_id` is read-only because both implementations derive it.
+    """
+
+    estimability: str | None
+    requires_derivation: bool
+
+    @property
+    def exposure(self) -> _Anchor:
+        """The exposure anchor. Read-only so a narrower concrete type fits."""
+        ...
+
+    @property
+    def outcome(self) -> _Anchor:
+        """The outcome anchor."""
+        ...
+
+    @property
+    def pair_id(self) -> str:
+        """`<exposure construct key> -> <outcome construct key>`."""
+        ...
+
+
+#: The adjudicator's name for the same interface.
+_Pair = PairLike
 
 
 #: Per required tool, the `outcome` values that mean the call did its job.
@@ -1370,7 +1398,7 @@ def _transduce_refusal(backend: Backend, analysis: str, log: ToolLog,
                    gate="refused", seed=seed, attempts=spent)
 
 
-def specify_once(backend: Backend, pair, *, mode="benchmark", seed=0,
+def specify_once(backend: Backend, pair: PairLike, *, mode="benchmark", seed=0,
                  temperature=0.0, identity: RunIdentity | None = None) -> Attempt:
     """One sample. The unit the k-fan-out repeats.
 
@@ -1551,7 +1579,7 @@ def _disclosure(p: ProtocolSpecification) -> int:
     return len(p.sought_covariates)
 
 
-def specify(backend: Backend, pair, *, k: int = 5, mode: str = "benchmark",
+def specify(backend: Backend, pair: PairLike, *, k: int = 5, mode: str = "benchmark",
             temperature: float = 0.7, parked_dir: Path | None = None,
             identity: RunIdentity | None = None) -> Result:
     """K samples of one pair. Deterministic everywhere except the sampling itself.

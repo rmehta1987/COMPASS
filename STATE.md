@@ -46,7 +46,7 @@ note: WORDING TENSION for items 11 and 15 (found at item 8). A funnel pair's
 - [x] 7  user intake (pipeline/intake.py; canaries run through it)
 - [x] 8  auto intake (pipeline/auto_intake.py; check.sh step 8)
 - [x] 9  estimability gate + --allow-unestimable (pipeline/gate.py; check.sh step 9)
-- [ ] 10 specifier takes RetrievalRecord
+- [x] 10 specifier takes RetrievalRecord (PairLike; pipeline/resolved_pair.py)
 - [ ] 11 specifier emits the record
 - [ ] 12 ledger append
 - [ ] 13 output artefact schema

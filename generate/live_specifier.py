@@ -37,7 +37,7 @@ from agent.tool_authority import (  # noqa: E402
 from env import tools as T  # noqa: E402
 
 
-def run_identity(pair: object, version: str, screened_from: int,
+def run_identity(pair: PairLike, version: str, screened_from: int,
                  model_id: str,
                  selection_mode: str = "enumerated_screen") -> RunIdentity:
     """Assemble what the driver knows before the model is called.
@@ -206,7 +206,7 @@ def ref(r: object) -> str:
     if isinstance(did, str):
         return f"derivation:{did}"
     return f"area:{getattr(r, 'measure_id', r)}"
-from agent.specifier import specify  # noqa: E402
+from agent.specifier import PairLike, specify  # noqa: E402
 from generate.funnel import Candidate, Construct, load_constructs, run  # noqa: E402
 
 
