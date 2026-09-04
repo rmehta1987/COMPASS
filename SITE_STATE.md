@@ -5,7 +5,7 @@ clone: /home/mehta5/compass-site  (--single-branch main from GitHub, cut at 2652
        deploy/model/ copied from the operator's clone, sha-verified by retriever.py at load;
        deploy/targets.json and the dictionary are read from the operator's clone by path,
        never copied here — see site/tools/*.py for the env vars)
-last green: 17eef4c   (VERIFIED 2026-09-04 by ./site-check.sh on that sha, GREEN)
+last green: (item 8/9 commit; see git log)   (VERIFIED 2026-09-04 by ./site-check.sh on that sha, GREEN)
 check: ./site-check.sh
 note: main's .gitignore excludes *.json — site/artefacts is un-ignored (item 1)
       and step 6 asserts every loaded artefact is tracked.
@@ -30,7 +30,8 @@ note: compass-gen/STATE.md (7ef75fa) marks pipeline items 11 and 13 landed as CO
 - [x] 11 measurement section (measurements.json: five-encoder sweep parsed from arm_hybrid_e_D.md §2; shipped arms S/I, threshold and latency from the tracked smoke report)
 - [x] 12 PNG export (SVG foreignObject → canvas → PNG; no library)
 - [x] 13 download page source (live DOM + embedded artefacts; opens from file://)
-- [ ] 14 deploy (Pages workflow; enabling Pages is the operator's action)
+- [x] 14 deploy: .github/workflows/pages.yml uploads site/ on push to `site`; branch pushed;
+         ENABLING PAGES (Settings → Pages → Source: GitHub Actions) IS THE OPERATOR'S ACTION
 
 ## BLOCKED
 8  specifier panel — the pipeline loop's baseline run (its item 15). Its items 11 and 13

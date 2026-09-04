@@ -1,0 +1,41 @@
+# Deploys site/ to GitHub Pages from the `site` branch. Nothing is built: the
+# page is static and loads its data from site/artefacts/*.json, which .gitignore
+# un-ignores and site-check.sh step 6 asserts are tracked. Pages must be enabled
+# with source "GitHub Actions" in the repository settings (an operator action);
+# until then this job fails at the deploy step and publishes nothing.
+name: pages
+on:
+  push:
+    branches: [site]
+    paths: [site/**, .github/workflows/pages.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: every artefact the page loads is tracked and present
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, sys
+          idx = json.loads(pathlib.Path("site/artefacts/index.json").read_text())
+          missing = [f for f in idx["files"] if not pathlib.Path("site/artefacts", f).is_file()]
+          print("artefacts:", idx["files"], "missing:", missing)
+          sys.exit(1 if missing else 0)
+          PY
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
