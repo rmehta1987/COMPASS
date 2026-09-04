@@ -98,7 +98,8 @@ def load_template() -> Any:
 
 def retrieve(retriever: RetrieverLike, req: Any,
              min_cos: float | None = None,
-             strata: Strata | None = None) -> RetrievalRecord:
+             strata: Strata | None = None,
+             source: str = "user") -> RetrievalRecord:
     """Run one request through the deployed retriever and record the outcome.
 
     Args:
@@ -107,6 +108,7 @@ def retrieve(retriever: RetrieverLike, req: Any,
         min_cos: Abstention threshold; the manifest's when None.
         strata: Precomputed strata; built from the retriever when None. Pass
             one when calling in a loop, it classifies every target.
+        source: `user` or `instrument`; see `RequestSnapshot.source`.
 
     Returns:
         The record, resolved or abstained. Never raises on a miss: an
@@ -125,10 +127,13 @@ def retrieve(retriever: RetrieverLike, req: Any,
     if not abstained:
         if strata is None:
             strata = Strata.from_retriever(retriever)
-        stratum, unmeasured = strata.of(int(best["target_id"]))
-        hit = Hit.from_hit(best, stratum=stratum, unmeasured_stratum=unmeasured)
+        tid = int(best["target_id"])
+        stratum, unmeasured = strata.of(tid)
+        row = retriever.targets[tid - 1]          # bundle guarantees row i == id i+1
+        hit = Hit.from_hit(best, stratum=stratum, unmeasured_stratum=unmeasured,
+                           dict_construct_key=row.get("dict_construct_key"))
     return RetrievalRecord(
-        request=RequestSnapshot.from_request(req), query=query,
+        request=RequestSnapshot.from_request(req, source), query=query,
         dictionary_hash=str(retriever.manifest["dictionary_version_hash"]),
         min_cos=thr, best_cos=best_cos, margin=best_cos - thr,
         margin_12=margin_12, abstained=abstained,

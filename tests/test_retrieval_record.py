@@ -17,7 +17,8 @@ REQ = RequestSnapshot(construct_text="use of anti-inflammatory medication",
                       role="exposure", population=None,
                       timeframe="past 12 months",
                       instances=("ibuprofen", "naproxen"))
-HIT = Hit(key="m2:Q9.95", construct_key="m2:Q9.95", module="2", target_id=17,
+HIT = Hit(key="m2:Q9.95", construct_key="m2:Q9.95", dict_construct_key="m2:Q9.95",
+          module="2", target_id=17,
           fold_size=1, n_siblings=0, members=("m2:Q9.95",),
           stratum="reproductive_hormonal", unmeasured_stratum=False)
 RESOLVED = RetrievalRecord(request=REQ, query="use of anti-inflammatory medication "
@@ -48,9 +49,12 @@ def test_the_wire_format_is_plain_json_with_no_wording_fields():
     d = json.loads(RESOLVED.to_json())
     assert set(d) == {"request", "query", "dictionary_hash", "min_cos", "best_cos",
                       "margin", "margin_12", "abstained", "nearest_key", "hit"}
-    assert set(d["hit"]) == {"key", "construct_key", "module", "target_id",
-                             "fold_size", "n_siblings", "members", "stratum",
-                             "unmeasured_stratum"}
+    assert set(d["hit"]) == {"key", "construct_key", "dict_construct_key", "module",
+                             "target_id", "fold_size", "n_siblings", "members",
+                             "stratum", "unmeasured_stratum"}
+    assert set(d["request"]) == {"construct_text", "role", "population", "timeframe",
+                                 "instances", "source"}
+    assert d["request"]["source"] == "user"
     for wording in ("stem", "option", "text", "question_text"):
         assert wording not in d["hit"]
 
@@ -91,6 +95,7 @@ def test_hit_from_retriever_dict_drops_wording():
     h = Hit.from_hit(raw, stratum="ses_employment", unmeasured_stratum=True)
     assert h.key == "m1:Q5.4" and h.module == "1"
     assert h.stratum == "ses_employment" and h.unmeasured_stratum is True
+    assert h.dict_construct_key == "m1:Q5.4"          # falls back to construct_key
     assert h.members == ("m1:Q5.4", "m1:Q5.4_1")
     assert "WORDING" not in h.model_dump_json()
 

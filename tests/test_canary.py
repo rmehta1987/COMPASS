@@ -16,7 +16,8 @@ TAU = 0.729476
 def _rec(*, abstained: bool, key: str = "m1:Q5.4", cos: float = 0.731576,
          stratum: str = "ses_employment", unmeasured: bool = True) -> RetrievalRecord:
     hit = None if abstained else Hit(
-        key=key, construct_key=key, module="1", target_id=5, fold_size=1,
+        key=key, construct_key=key, dict_construct_key=key, module="1", target_id=5,
+        fold_size=1,
         n_siblings=0, members=(key,), stratum=stratum, unmeasured_stratum=unmeasured)
     return RetrievalRecord(
         request=RequestSnapshot(construct_text="x", role="exposure"), query="x",

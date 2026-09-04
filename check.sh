@@ -73,9 +73,15 @@ $PY -m pipeline.canary >"$OUT" 2>&1 \
     || { grep -v "Loading weights" "$OUT"; fail 7 "pipeline.canary"; }
 grep "canaries:" "$OUT"
 
-# 8. retrieval tripwire, last because slow: frozen and validated, a pipeline
+# 8. auto intake (pipeline/auto_intake.py): the worked pair resolves on both
+#    sides, and the worked-example frame's both-resolved count holds its floor.
+$PY -m pipeline.auto_intake --pair m3:Q16.1 m2:Q5.8 --frame >"$OUT" 2>&1 \
+    || { grep -v "Loading weights" "$OUT"; fail 8 "pipeline.auto_intake"; }
+grep -E "^(pair|frame)" "$OUT"
+
+# 9. retrieval tripwire, last because slow: frozen and validated, a pipeline
 #    change is never the fix. Exact R@1, min_cos and 43/44 negatives.
-$PY deploy/smoke_test.py >"$OUT" 2>&1 || { tail -5 "$OUT"; fail 8 "deploy/smoke_test.py"; }
+$PY deploy/smoke_test.py >"$OUT" 2>&1 || { tail -5 "$OUT"; fail 9 "deploy/smoke_test.py"; }
 echo "smoke_test ALL PASS"
 
 echo; echo "GREEN"

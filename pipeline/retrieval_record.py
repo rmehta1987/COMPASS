@@ -33,6 +33,11 @@ class RequestSnapshot(BaseModel):
         population: A population qualifier, or None under the shipped contract.
         timeframe: A recall window such as "past 12 months", or None.
         instances: Named instances of the construct, in request order.
+        source: `user` when a person typed the construct, `instrument` when
+            auto intake built it from a dictionary construct's own stem. An
+            instrument-sourced `construct_text` and its rendered `query` ARE
+            withheld wording, and an artefact writer must redact them before
+            anything is committed to the public tree.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -42,9 +47,10 @@ class RequestSnapshot(BaseModel):
     population: str | None = None
     timeframe: str | None = None
     instances: tuple[str, ...] = ()
+    source: str = Field(default="user", pattern="^(user|instrument)$")
 
     @classmethod
-    def from_request(cls, req: Any) -> RequestSnapshot:
+    def from_request(cls, req: Any, source: str = "user") -> RequestSnapshot:
         """Snapshot a `deploy.template.RetrievalRequest`.
 
         Typed `Any` because the dataclass is loaded by path (see module doc);
@@ -52,6 +58,7 @@ class RequestSnapshot(BaseModel):
 
         Args:
             req: The request object.
+            source: `user` or `instrument`; see the attribute.
 
         Returns:
             The snapshot.
@@ -60,7 +67,7 @@ class RequestSnapshot(BaseModel):
         return cls(construct_text=req.construct,
                    role=str(getattr(role, "value", role)),
                    population=req.population, timeframe=req.timeframe,
-                   instances=tuple(req.instances))
+                   instances=tuple(req.instances), source=source)
 
 
 class Hit(BaseModel):
@@ -68,7 +75,11 @@ class Hit(BaseModel):
 
     Attributes:
         key: The canonical variable key the query selected.
-        construct_key: The construct the key belongs to.
+        construct_key: The construct the key belongs to, as the deployed
+            target set names it.
+        dict_construct_key: The same construct as the built dictionary names
+            it; differs from `construct_key` on 2 of 1,353 targets, and is the
+            key the funnel's `Construct.construct_key` is compared with.
         module: The instrument module, "1", "2" or "3".
         target_id: Row number in the deployed target set, 1-based.
         fold_size: How many dictionary rows fold into this target.
@@ -85,6 +96,7 @@ class Hit(BaseModel):
 
     key: str = Field(min_length=1)
     construct_key: str = Field(min_length=1)
+    dict_construct_key: str = Field(min_length=1)
     module: str = Field(min_length=1)
     target_id: int = Field(ge=1)
     fold_size: int = Field(ge=1)
@@ -95,18 +107,21 @@ class Hit(BaseModel):
 
     @classmethod
     def from_hit(cls, hit: dict[str, Any], *, stratum: str,
-                 unmeasured_stratum: bool) -> Hit:
+                 unmeasured_stratum: bool, dict_construct_key: str | None = None) -> Hit:
         """Build from a `CompassRetriever.search()` / `select()` dict.
 
         Args:
             hit: One hit dict as the retriever returns it.
             stratum: From `pipeline.strata.Strata.of`.
             unmeasured_stratum: Likewise.
+            dict_construct_key: From the target row; the retriever's hit dict
+                does not carry it. Falls back to `construct_key`.
 
         Returns:
             The keys-only view of it. Wording fields are dropped on purpose.
         """
         return cls(key=hit["key"], construct_key=hit["construct_key"],
+                   dict_construct_key=dict_construct_key or hit["construct_key"],
                    module=str(hit["module"]), target_id=hit["target_id"],
                    fold_size=hit["fold_size"], n_siblings=hit["n_siblings"],
                    members=tuple(hit["members"]), stratum=stratum,
