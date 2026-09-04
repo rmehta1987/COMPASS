@@ -26,7 +26,7 @@ data placed in compass-gen (all gitignored): raw/ (public download), deploy/mode
 
 ## items
 - [x] 1  check.sh v1
-- [ ] 2  RetrievalRecord dataclass
+- [x] 2  RetrievalRecord dataclass (pipeline/retrieval_record.py)
 - [ ] 3  retrieval adapter
 - [ ] 4  adapter step in check.sh
 - [ ] 5  unmeasured_stratum flag

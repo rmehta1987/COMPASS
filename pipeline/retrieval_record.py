@@ -1,0 +1,179 @@
+"""The persisted outcome of one retrieval: what was asked, what came back.
+
+A `RetrievalRecord` is stored whole inside every artefact that names a variable,
+so a proposal can be traced back to the exact request, threshold and cosine that
+selected each key. It is written once and never backfilled: a field added later
+would leave earlier artefacts incomparable, which is why the abstained case, the
+threshold and the runner-up margin are all recorded from the start.
+
+Two deliberate absences:
+
+* No stem or option wording. Artefacts are committed to a public tree and the
+  instrument's wording is withheld from it; the record carries keys, and wording
+  is resolved at run time by key through `env/labels.py::cite`.
+* No reference to the `RetrievalRequest` dataclass itself. The bundle loads
+  `deploy/template.py` by path under its own module name, so a second import
+  would yield a second class; the record snapshots the request's fields instead.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class RequestSnapshot(BaseModel):
+    """The fields of a `RetrievalRequest`, as plain values.
+
+    Attributes:
+        construct_text: What the requester wants measured, in their words. Named
+            `construct_text` because `construct` shadows a `BaseModel` method.
+        role: `exposure`, `outcome` or `confounder`; the enum's string value.
+        population: A population qualifier, or None under the shipped contract.
+        timeframe: A recall window such as "past 12 months", or None.
+        instances: Named instances of the construct, in request order.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    construct_text: str = Field(min_length=1)
+    role: str = Field(min_length=1)
+    population: str | None = None
+    timeframe: str | None = None
+    instances: tuple[str, ...] = ()
+
+    @classmethod
+    def from_request(cls, req: Any) -> RequestSnapshot:
+        """Snapshot a `deploy.template.RetrievalRequest`.
+
+        Typed `Any` because the dataclass is loaded by path (see module doc);
+        only the five field names are relied on.
+
+        Args:
+            req: The request object.
+
+        Returns:
+            The snapshot.
+        """
+        role = req.role
+        return cls(construct_text=req.construct,
+                   role=str(getattr(role, "value", role)),
+                   population=req.population, timeframe=req.timeframe,
+                   instances=tuple(req.instances))
+
+
+class Hit(BaseModel):
+    """The selected target, keys only.
+
+    Attributes:
+        key: The canonical variable key the query selected.
+        construct_key: The construct the key belongs to.
+        module: The instrument module, "1", "2" or "3".
+        target_id: Row number in the deployed target set, 1-based.
+        fold_size: How many dictionary rows fold into this target.
+        n_siblings: How many other targets share the construct.
+        members: Every variable key folded into this target, including `key`.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    key: str = Field(min_length=1)
+    construct_key: str = Field(min_length=1)
+    module: str = Field(min_length=1)
+    target_id: int = Field(ge=1)
+    fold_size: int = Field(ge=1)
+    n_siblings: int = Field(ge=0)
+    members: tuple[str, ...] = Field(min_length=1)
+
+    @classmethod
+    def from_hit(cls, hit: dict[str, Any]) -> Hit:
+        """Build from a `CompassRetriever.search()` / `select()` dict.
+
+        Args:
+            hit: One hit dict as the retriever returns it.
+
+        Returns:
+            The keys-only view of it. Wording fields are dropped on purpose.
+        """
+        return cls(key=hit["key"], construct_key=hit["construct_key"],
+                   module=str(hit["module"]), target_id=hit["target_id"],
+                   fold_size=hit["fold_size"], n_siblings=hit["n_siblings"],
+                   members=tuple(hit["members"]))
+
+
+class RetrievalRecord(BaseModel):
+    """One retrieval, persisted whole.
+
+    Attributes:
+        request: The request's fields.
+        query: The exact string the template rendered and the encoder saw.
+        dictionary_hash: The dictionary the bundle was built from.
+        min_cos: The abstention threshold in force for this call.
+        best_cos: The top cosine, recorded even when it fell below `min_cos`.
+        margin: `best_cos - min_cos`; negative on an abstention.
+        margin_12: Top-1 minus top-2 cosine, None when the call abstained.
+        abstained: True when no target cleared `min_cos`.
+        hit: The selected target, None when abstained.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    request: RequestSnapshot
+    query: str = Field(min_length=1)
+    dictionary_hash: str = Field(min_length=1)
+    min_cos: float
+    best_cos: float
+    margin: float
+    margin_12: float | None
+    abstained: bool
+    hit: Hit | None
+
+    @model_validator(mode="after")
+    def _abstention_is_consistent(self) -> RetrievalRecord:
+        """Refuse a record whose flag, hit and cosine disagree.
+
+        Abstained means no hit and a cosine below the threshold; resolved means
+        a hit and a cosine at or above it.
+
+        Returns:
+            The record, unchanged.
+
+        Raises:
+            ValueError: When the flag, the hit and the cosine disagree.
+        """
+        if self.abstained:
+            if self.hit is not None:
+                raise ValueError("abstained record carries a hit")
+            if self.best_cos >= self.min_cos:
+                raise ValueError("abstained record clears min_cos")
+            if self.margin_12 is not None:
+                raise ValueError("abstained record carries margin_12")
+        else:
+            if self.hit is None:
+                raise ValueError("resolved record has no hit")
+            if self.best_cos < self.min_cos:
+                raise ValueError("resolved record is below min_cos")
+        if abs((self.best_cos - self.min_cos) - self.margin) > 1e-9:
+            raise ValueError("margin != best_cos - min_cos")
+        return self
+
+    def to_json(self) -> str:
+        """Serialise losslessly; `from_json` inverts it.
+
+        Returns:
+            Compact JSON.
+        """
+        return self.model_dump_json()
+
+    @classmethod
+    def from_json(cls, text: str) -> RetrievalRecord:
+        """Parse what `to_json` wrote.
+
+        Args:
+            text: The JSON.
+
+        Returns:
+            An equal record.
+        """
+        return cls.model_validate_json(text)

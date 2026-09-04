@@ -60,7 +60,7 @@ convention = "google"
 
 [tool.mypy]
 python_version = "3.12"
-files = ["agent", "env", "generate", "mcp", "benchmark", "build.py"]
+files = ["agent", "env", "generate", "mcp", "benchmark", "pipeline", "build.py"]
 # `build_targets.py` and `encode_and_score.py` are excluded here for the
 # reason recorded above the ruff exclusion: they arrived from outside the
 # project and are unannotated, and mypy only began following them when
