@@ -24,10 +24,10 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass
-from typing import Any
 
+from pipeline.intake import parse_request
 from pipeline.retrieval_record import RetrievalRecord
-from pipeline.retrieve import RetrieverLike, load_retriever, load_template, retrieve
+from pipeline.retrieve import RetrieverLike, load_retriever, retrieve
 from pipeline.strata import Strata
 
 
@@ -54,6 +54,15 @@ class Canary:
     stratum: str | None = None
     unmeasured: bool | None = None
     margin_4dp: float | None = None
+
+    def text(self) -> str:
+        """The request as a person would type it for `pipeline.intake`.
+
+        Returns:
+            `construct[: instance, ...]`.
+        """
+        return self.construct + (f": {', '.join(self.instances)}" if self.instances
+                                 else "")
 
 
 CANARIES: tuple[Canary, ...] = (
@@ -100,23 +109,20 @@ def evaluate(canary: Canary, rec: RetrievalRecord) -> list[str]:
 
 
 def run(retriever: RetrieverLike, canaries: tuple[Canary, ...] = CANARIES,
-        template: Any = None) -> list[tuple[Canary, RetrievalRecord, list[str]]]:
-    """Run every canary through the adapter.
+        ) -> list[tuple[Canary, RetrievalRecord, list[str]]]:
+    """Run every canary through intake and the adapter, the user path.
 
     Args:
         retriever: The loaded bundle.
         canaries: The canaries to run.
-        template: The shipped template module; loaded when None.
 
     Returns:
         `(canary, record, violations)` per canary, in order.
     """
-    tpl = template or load_template()
     strata = Strata.from_retriever(retriever)
     out = []
     for c in canaries:
-        req = tpl.RetrievalRequest(construct=c.construct, role=tpl.VariableRole.EXPOSURE,
-                                   instances=c.instances)
+        req = parse_request(c.text(), role="exposure").request
         rec = retrieve(retriever, req, strata=strata)
         out.append((c, rec, evaluate(c, rec)))
     return out

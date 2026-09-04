@@ -31,7 +31,7 @@ data placed in compass-gen (all gitignored): raw/ (public download), deploy/mode
 - [x] 4  adapter step in check.sh (step 6)
 - [x] 5  unmeasured_stratum flag (pipeline/strata.py, Hit.unmeasured_stratum)
 - [x] 6  pipeline/canary.py C1–C3 (check.sh step 7)
-- [ ] 7  user intake
+- [x] 7  user intake (pipeline/intake.py; canaries run through it)
 - [ ] 8  auto intake
 - [ ] 9  estimability gate + --allow-unestimable
 - [ ] 10 specifier takes RetrievalRecord
