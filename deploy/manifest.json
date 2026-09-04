@@ -29,11 +29,11 @@
  },
  "device": {
   "pinned": "cpu",
-  "why": "The fine-tuned checkpoint has exactly one GPU/CPU top-1 disagreement in 224 rows -- row 107, 'primary method used to get to work', max |vector delta| 4.06e-7 (out/final_bge-small_ft.json). Not a bug, but that query is the hardest row in every report in this project, so the flip lands exactly where device parity matters. CPU-only serving avoids it and costs little: on the training machine (spark-2500), 44.4 ms per isolated query at 4 threads and 21.3s to encode the whole corpus; serving-machine figures are under serving_reference.",
+  "why": "The fine-tuned checkpoint has exactly one GPU/CPU top-1 disagreement in 224 rows -- row 107, 'primary method used to get to work', max |vector delta| 4.06e-7 (out/final_bge-small_ft.json). Not a bug, but that query is the hardest row in every report in this project, so the flip lands exactly where device parity matters. CPU-only serving avoids it and costs little: on the training machine (spark-2500), 44.0 ms per isolated query at 4 threads and 21.2s to encode the whole corpus; serving-machine figures are under serving_reference.",
   "vectors_computed_on": "cpu",
   "threads": 4,
   "threads_why": "retriever.py calls torch.set_num_threads with this value unless the caller overrides it. Unpinned thread counts make latency unreproducible across machines with different core counts.",
-  "query_ms_isolated_single_at_pinned_threads": 44.45,
+  "query_ms_isolated_single_at_pinned_threads": 44.04,
   "latency_measured_on": "spark-2500 aarch64 Linux-6.17.0-1026-nvidia-aarch64-with-glibc2.39",
   "serving_reference": {
    "machine": {
@@ -93,10 +93,10 @@
     14.24,
     23.76
    ],
-   "query_ms_note": "five runs of step 6 on this machine, all at threads=4; median 13.41 ms. The 23.76 outlier shared the box with a corpus re-encode. query_ms_isolated_single above is one of these runs, not a mean."
+   "query_ms_note": "five earlier runs of step 6 on this machine (2026-09-03), all at threads=4; median 13.41 ms. The 23.76 outlier shared the box with a corpus re-encode. query_ms_isolated_single above is the single run in the cited report, a later run than these five; none of these figures is a mean."
   },
   "serves": "Wright",
-  "serves_why": "serving_reference records that the x86 machine REPRODUCES the bundle; this key records that it SERVES it. Per-query latency is paid on every pipeline call, corpus encode once per dictionary_version_hash: Wright is ~3x faster per isolated query (median 13.4 ms vs 43.6 ms at the same 4 threads) and ~3x slower to encode the corpus (54-60 s vs 21 s), so the trade favours Wright by the ratio of calls to rebuilds. Not a correctness argument -- both machines pass deploy/smoke_test.py in full. Change this key alone to move serving.",
+  "serves_why": "serving_reference records that the x86 machine REPRODUCES the bundle; this key records that it SERVES it. Per-query latency is paid on every pipeline call, corpus encode once per dictionary_version_hash: Wright is ~3x faster per isolated query (13.06 ms in its report vs 44.0 ms here at the same 4 threads) and ~3x slower to encode the corpus (57.9 s vs 21.2 s here), so the trade favours Wright by the ratio of calls to rebuilds. Not a correctness argument -- both machines pass deploy/smoke_test.py in full. Change this key alone to move serving.",
   "latency_note": "One query per forward pass, fp32, warm. The 2.94 ms/query quoted in RESULTS.md is query_ms_per_row from a BATCHED 224-row scoring run (out/ft_bge-small_nn0_t0.10.json) and is not per-call latency; src/finalize.py's isolated figure on the training machine was 18.3 ms. Re-measure on the serving machine with deploy/smoke_test.py step 6."
  },
  "corpus": {
@@ -111,7 +111,7 @@
  "measured": {
   "recall_at1_224_row_fixture": 0.567,
   "reproduces_out_ft_bge-small_nn0_t0.10_json": true,
-  "cpu_encode_all_targets_s": 21.3,
+  "cpu_encode_all_targets_s": 21.2,
   "cos_top1_min_over_fixture": 0.5683,
   "cos_top1_max_over_fixture": 0.9874
  },
@@ -151,7 +151,7 @@
   "why_it_ships": "Forgetting the template is a silent loss: pre-registered arm F measured R@1 0.643 against 0.567 without it (out/qx_task2_paired.json on the training machine, withdrawn from git; reproduced in out/smoke_report_x86_64_Wright.json acceptance.F; 62 of 224 rows changed, item-clustered bootstrap CI excluding zero).",
   "population_slot": {
    "status": "POST-HOC REVISION of pre-registered arm F, which rendered population + instances. The revision is to leave the population slot unused.",
-   "measured": "net -1 row on the 17 rows it touched: R@1 0.647 -> 0.588 (+2, -3). QUERY_EXPANSION.md section 2a (figures) and section 5 (the revision, recorded as post hoc).",
+   "measured": "adding the slot (S -> F) was net -1 row on the 17 rows where it was the only change: R@1 0.647 -> 0.588 (+2, -3). Removing it from F (F -> I) measured net 0 on all 224 rows: 13 rows re-rank, 4 gained and 4 lost at rank 1, R@1 0.6429 in both arms; the rows carrying both slots absorb the difference. The revision is justified on mechanism, not on the headline. QUERY_EXPANSION.md section 2a (figures) and section 5 (the revision, recorded as post hoc).",
    "mechanism": "the roster noun pulls the query toward the roster block's OTHER question about the same cancer, at margins down to 0.0001",
    "held_out_confirmation": "the study-team-authored request set; until then the revision is unconfirmed"
   },
@@ -229,8 +229,8 @@
    "bytes": 940840
   },
   "template.py": {
-   "sha256": "9c78d0b0bb0139a3b85c8648a7be47e6375c7c214e93b4409e4c810dbe190ce8",
-   "bytes": 5303
+   "sha256": "a5254caebb54a6998196dc692cd055eb0f2648c52cbd81f561e896fe5bbda844",
+   "bytes": 5498
   }
  }
 }

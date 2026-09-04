@@ -7,8 +7,10 @@ for each headline figure, the artifact that produced it, that artifact's sha256 
 measured on 2026-09-03, the command that regenerates it, the tracked file (if any) that
 reproduces the figure inside the public tree, and the commit that recorded it.
 
-Rule for reading the reports: a path in a **link** is tracked here and resolves; a path
-in plain `backticks` is on the training machine and is listed below.
+Rule for reading the reports: a path in a **link** is tracked here and resolves. A path in
+plain `backticks` may be tracked or may exist only on the training machine; the
+training-machine ones that carry a headline figure are listed below with checksums, and
+`git ls-files` is the authority on what is tracked.
 
 ## Machines
 
@@ -26,7 +28,8 @@ in plain `backticks` is on the training machine and is listed below.
 | R@1 / R@5 / R@10, no template | 0.567 / 0.862 / 0.920, rank p50 1, p90 9, max 82 | `out/ft_bge-small_nn0_t0.10.json` (`python src/compass_score.py --model bge-small --weights runs/bge-small_nn0_t0.10 ...`) | `7c469036f443d156` | [`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json) `acceptance.S`; asserted by [`deploy/smoke_test.py`](deploy/smoke_test.py) | [da317d6](https://github.com/rmehta1987/COMPASS/commit/da317d602738ca6752d9f8264accdd4a2ffac64e) |
 | R@1 / R@5 / R@10, arm F (population + instances) | 0.6429 / 0.8884 / 0.942, p90 6, max 61 | `out/qx_task2_paired.json` (`python src/qx_paired.py`) | `913736170edb6e83` | smoke report `acceptance.F` | [8f1d9fb](https://github.com/rmehta1987/COMPASS/commit/8f1d9fbb45c8356c9cf2de989596cd4a568f1c34) |
 | R@1 / R@5 / R@10, arm I (instances only, **shipped**) | 0.6429 / 0.8884 / 0.9375, p90 7, max 61 | measured only by the smoke test (post-hoc revision of arm F) | — | smoke report `acceptance.I`; `deploy/manifest.json::template.r_at1_224_rows` | [e446cf8](https://github.com/rmehta1987/COMPASS/commit/e446cf83de0026bc40db17dd2eedabe02155ece7) |
-| abstention threshold | `min_cos` 0.729476; 43/44 negatives rejected in every arm; AUROC 0.9823 (S) / 0.9867 (F) / 0.9874 (I) | `out/char_task3_calibration.json` (`python src/char_report.py`), `out/qx_task3_abstention.json` (`python src/qx_abstain.py`) | `5cfd9438c2e1dcb7`, `221dbc4946fd2f67` | smoke report `acceptance.*.negatives_rejected`, `auroc`, `threshold.*` | [3304990](https://github.com/rmehta1987/COMPASS/commit/33049904b54785110ec362231327f8fbb4eae2bb) |
+| abstention threshold, arms S and F | `min_cos` 0.729476; 43/44 negatives rejected; AUROC 0.9823 (S) / 0.9867 (F) | `out/char_task3_calibration.json` (`python src/char_report.py`, arm S), `out/qx_task3_abstention.json` (`python src/qx_abstain.py`, arms S/P/F) | `5cfd9438c2e1dcb7`, `221dbc4946fd2f67` | smoke report `acceptance.S/F.negatives_rejected`, `auroc`, `threshold.S/F` | [3304990](https://github.com/rmehta1987/COMPASS/commit/33049904b54785110ec362231327f8fbb4eae2bb) |
+| abstention, arm I (shipped) | 43/44 at the shipped `min_cos`; AUROC 0.9874 | measured only by the smoke test | — | smoke report `acceptance.I` | [e446cf8](https://github.com/rmehta1987/COMPASS/commit/e446cf83de0026bc40db17dd2eedabe02155ece7) |
 | threshold knife edge | 0.729476 is the rounded score of fixture row 68 (incorrect); tau* = 0.731902 under single-query encoding on the Spark, 0.729476 on Wright | `out/smoke_report_aarch64_spark-2500.json` (Spark, untracked: `1f516889c1fd3ff4`) | — | smoke report `threshold.S.knife_edge_*`; `deploy/manifest.json::abstention.knife_edge` | [4b8abee](https://github.com/rmehta1987/COMPASS/commit/4b8abeebf7b12d6e2c870ec775b745b084195c95) |
 | GPU/CPU parity | 1 of 224 top-1 disagreements (row 107), max vector delta 4.06e-7 | `out/final_bge-small_ft.json` (`python src/finalize.py`) | `fd9e0a3defb783f6` | `deploy/manifest.json::device.why` | — |
 | Arm vs x86 vector delta | max 2.94e-7, top-1 agreement 224/224 | — | — | smoke report `reencode` | [da317d6](https://github.com/rmehta1987/COMPASS/commit/da317d602738ca6752d9f8264accdd4a2ffac64e) |
@@ -37,14 +40,19 @@ in plain `backticks` is on the training machine and is listed below.
 
 | figure | value | regime | machine, threads | source |
 |---|---|---|---|---|
-| **2.94 ms/row** | batched: 224 queries encoded together, wall clock divided by rows | **not per-call latency** | `spark-2500`, default threads | `out/ft_bge-small_nn0_t0.10.json::query_ms_per_row` |
-| 18.3 ms | isolated, one query per forward pass | per-call | `spark-2500`, default 20 threads | `out/final_bge-small_ft.json`, `RESULTS.md` §7 |
-| 43.6 to 44.3 ms | isolated | per-call | `spark-2500`, pinned 4 threads | `deploy/manifest.json::device.query_ms_isolated_single_at_pinned_threads` |
-| 12.88 / 13.30 / 13.41 / 14.24 / 23.76 ms, median 13.41 | isolated, five runs | per-call | `Wright`, pinned 4 threads | `deploy/manifest.json::device.serving_reference` |
-| corpus encode | 18.2 to 21.2 s Spark; 53.7 to 59.6 s Wright | 1,353 targets, batch 64 | as above | manifest `measured`, smoke reports `reencode.wall_s` |
+| **2.94 ms/row** | batched: 224 queries encoded together, wall clock divided by rows | **not per-call latency** | `spark-2500`, default threads | `out/ft_bge-small_nn0_t0.10.json::query_ms_per_row` (sha `7c469036f443d156`) |
+| 18.3 ms | isolated, one query per forward pass | per-call | `spark-2500`, default 20 threads | `out/final_bge-small_ft.json::cpu_query_ms_isolated` (sha `fd9e0a3defb783f6`), `RESULTS.md` §7 |
+| 44.04 ms | isolated | per-call | `spark-2500`, pinned 4 threads | `out/smoke_report_aarch64_spark-2500.json::latency` (sha `1f516889c1fd3ff4`, training machine) |
+| 44.4 ms at the current freeze | isolated, measured by the freeze script; changes by a few tenths on every re-freeze | per-call | `spark-2500`, pinned 4 threads | `deploy/manifest.json::device.query_ms_isolated_single_at_pinned_threads` (read the key, do not quote a copy) |
+| 13.06 ms | isolated | per-call | `Wright`, pinned 4 threads | [`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json)`::latency`; also `manifest::device.serving_reference.query_ms_isolated_single` |
+| 12.88 / 13.30 / 13.41 / 14.24 / 23.76 ms, median 13.41 | isolated, five earlier runs recorded by the operator on 2026-09-03; the 13.06 above is a sixth, later run | per-call | `Wright`, pinned 4 threads | `deploy/manifest.json::device.serving_reference.query_ms_isolated_single_runs` (recorded as a constant in `src/freeze_deploy.py`) |
+| corpus encode, 1,353 targets, batch 64 | 19.2 s Spark at default threads; 21.0 s Spark at 4 threads; about 21 s at the current freeze; 57.9 s Wright at 4 threads | — | as stated | `out/final_bge-small_ft.json::cpu_encode_all_targets_s`; Spark smoke report `reencode.wall_s`; `manifest::measured.cpu_encode_all_targets_s`; Wright smoke report `reencode.wall_s` |
 
-Every document that once quoted 2.94 ms as per-query latency has been corrected to cite
-this table.
+Every prose report that once quoted 2.94 ms as per-query latency now labels it batched
+and cites this table. Two places keep the bare figure by design: `BRIEF_ensemble.md`
+(a brief recorded verbatim; it carries an editorial note) and the artifact key
+`encode_ms_per_query_1_draw` in `out/fusion_task4_rewriter.json`, whose name is wrong and
+whose value is the batched one.
 
 ## Frozen baselines (RESULTS.md section 3)
 
@@ -75,8 +83,11 @@ and in the smoke report. Commit [2ede8f7](https://github.com/rmehta1987/COMPASS/
 | `out/qx_task2_paired.json` | `913736170edb6e83` | 138,119 | `QUERY_EXPANSION.md` §2, smoke report `acceptance.F` |
 | `out/qx_task3_abstention.json` | `221dbc4946fd2f67` | 49,339 | `QUERY_EXPANSION.md` §3, smoke report `threshold` |
 
-These files remain reachable in the repository's history from e446cf8 onward until the
-operator rewrites it or makes the repository private.
+**As of this commit `origin/main` is still at 6416094, before the withdrawal**, so all
+four are tracked at the tip of the public default branch, not merely in its history. Once
+this branch is merged they leave the tip but remain reachable in history: `deploy/targets.json`
+from e446cf8, the three `out/` artifacts from 73f796b and 8f1d9fb, until the operator
+rewrites history or makes the repository private.
 
 ## Commits
 

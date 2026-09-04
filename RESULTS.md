@@ -11,7 +11,8 @@ source file is cited on every row.
 > sha256, the command that regenerates it, the tracked file that reproduces the figure
 > ([`deploy/manifest.json`](deploy/manifest.json),
 > [`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json)) and the
-> commit. A path in backticks here is a training-machine path.
+> commit. A backticked path may be tracked or training-machine-only; `PROVENANCE.md`
+> lists the training-machine ones.
 
 ## 1. Task and dataset
 
@@ -65,7 +66,7 @@ All metrics are computed in `src/compass_score.py::evaluate` / `subset_stats`, o
 |---|---|
 | **R@k** (`@1/@5/@10/@25/@50`) | Fraction of queries where the gold target's rank ≤ k, by cosine similarity. R@1 is top-1 selection accuracy — the deployed operating point (argmax). |
 | **rank p50/p90/max** | Median / 90th-percentile / worst rank of the gold target across all 224 queries — the tail, not just the mean. |
-| **Singleton R@1** | R@1 restricted to targets with no folding and no siblings (n=168) — the "easy" case. |
+| **Singleton R@1** | R@1 restricted to rows whose gold target is **not a folded-family representative** (n=168 of 224; siblings allowed, so this set overlaps the near-duplicate set). Complement of folded-family R@1. The §1 corpus figure "singleton targets 1,234" uses the same definition (1,353 − 119 folded). |
 | **Folded-family R@1** | R@1 restricted to targets that collapse a per-person/per-entity roster into one target (n=56) — tests whether the model correctly picks the folded representative over a near-identical un-folded phrasing. |
 | **Near-duplicate R@1** (and its ratio to overall R@1) | R@1 restricted to gold targets that have sibling options under the *same* question stem (n=76, `gold_multi_option`) — this is the **discrimination / constraint metric**: it isolates cases where the wrong answer is lexically almost the query's paraphrase but semantically the wrong *option* (e.g. "sibling breast cancer" vs "sibling lung cancer"). A ratio < 1 means the model is disproportionately worse exactly where option-level discrimination matters. |
 | **Wrong-construct / right-construct-wrong-option** (of top-1 errors) | Error-type decomposition, i.e. the retrieval **false-positive breakdown**: *wrong-construct* = the model returned an entirely different survey question (coarse failure); *right-construct-wrong-option* = it found the right question but picked the wrong sibling (fine-grained, near-duplicate failure). Reported as count/total-errors and as a fraction. |
@@ -357,7 +358,7 @@ a query template, frozen into [`deploy/`](deploy/) and proven on two machines:
 | bundle | `bge-small` fine-tuned (nn0, t=0.10), argmax cosine over 1,353 CPU-computed target vectors, CPU-pinned, 4 threads, 9 files, 137.2 MB (5 tracked; `deploy/model/` and `deploy/targets.json` copied by rsync) | [`deploy/manifest.json`](deploy/manifest.json) |
 | shipped contract | instances-only query template ([`deploy/template.py`](deploy/template.py)); the population slot of pre-registered arm F is left unused (net −1 row on the 17 it touched) | `deploy/manifest.json::template`, `QUERY_EXPANSION.md` §2a and §5 |
 | R@1 / R@5 / R@10 as shipped (arm I) | 0.6429 / 0.8884 / 0.9375, rank p50 1, p90 7, max 61 | [`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json) `acceptance.I` |
-| abstention | `min_cos` 0.729476; 43/44 negatives rejected; AUROC 0.9874 (arm I) | same, `threshold`; knife edge in `deploy/manifest.json::abstention.knife_edge` |
-| acceptance test | [`deploy/smoke_test.py`](deploy/smoke_test.py) exits 0 only if arms S, F and I reproduce to the digit; 36 checks, 0 failures on the Spark (aarch64) and on Wright (x86_64) | smoke reports; commits e446cf8, da317d6, 4b8abee |
+| abstention | `min_cos` 0.729476; 43/44 negatives rejected; AUROC 0.9874 (arm I) | same, `acceptance.I`; knife edge in `deploy/manifest.json::abstention.knife_edge` and `threshold.*` |
+| acceptance test | [`deploy/smoke_test.py`](deploy/smoke_test.py) exits 0 only if arms S, F and I reproduce to the digit; 0 failures on the Spark (aarch64) and on Wright (x86_64) | smoke reports `result`; commits e446cf8, da317d6, 4b8abee |
 | serving machine | Wright; isolated 13.41 ms median per query at 4 threads | `deploy/manifest.json::device.serves`, `serving_reference` |
 

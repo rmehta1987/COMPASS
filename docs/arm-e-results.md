@@ -4,7 +4,7 @@
 (`ncbi/MedCPT-Query-Encoder` / `ncbi/MedCPT-Article-Encoder`), frozen weights, no
 training, CPU. Artifact `arm_e.medcpt_a.json`, targets `targets.json` (both withheld from
 the public repository, with `build/dictionary.json` and `benchmark/fixtures/`; the
-reproduce block runs on the training machine only, `README.md` §What is withheld).
+reproduce block runs only on the pipeline's private checkout, `README.md` §What is withheld).
 
 ```
 python build_targets.py --dictionary build/dictionary.json --out targets.json

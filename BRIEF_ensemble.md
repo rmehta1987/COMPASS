@@ -4,7 +4,11 @@ The task brief this work was run against, recorded verbatim so that the decision
 rules, the expectations and the premise corrections in `FUSION.md` can be checked
 against what was actually asked rather than against a paraphrase of it.
 
-**Answered by:** `FUSION.md` (artifacts `out/fusion_task1_overlap.json`,
+*Editorial note (2026-09-04): the brief below quotes "2.94 ms" as the retriever's per-query
+cost. That figure is batched throughput (`query_ms_per_row`), not per-call latency; see
+`PROVENANCE.md` §Latency. The brief is otherwise recorded verbatim.*
+
+**Answered by:** `FUSION.md` (artifacts `out/fusion_task1_overlap.json` (withdrawn from git),
 `out/fusion_task2_rules.json`, `out/fusion_task3_abstention.json`,
 `out/fusion_task4_rewriter.json`, `out/rewrites_positives.json`,
 `out/rewrites_negatives.json`).

@@ -7,9 +7,10 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 - Never restate a ratchet, ceiling, count or hash below; name its owning module instead.
 - Treat a merge sha as the anchor, not the evidence: open the commit or the primary before
   repeating what a line here says a task did.
-- **Shas below 2026-09-03 belong to the private pre-publication history** and do not
-  resolve in the public repository, whose history starts at the orphan commit b3d818d.
-  Open the primary instead.
+- **Shas quoted in entries dated before 2026-09-03 belong to the private pre-publication
+  history** and do not resolve in the public repository (the pipeline mirror is the orphan
+  commit b3d818d plus one follow-up; the retrieval tree's root is d0ff436). Open the
+  primary instead.
 
 ---
 
@@ -28,8 +29,10 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
   the bundle; `deploy/manifest.json::device.serves` names Wright.
 - **Four artifacts withdrawn from git** for quoting instrument wording per row
   (`deploy/targets.json`, `out/fusion_task1_overlap.json`, `out/qx_task2_paired.json`,
-  `out/qx_task3_abstention.json`); they remain in `main`'s history from e446cf8 until the
-  operator rewrites it. Residual wording scan: `README.md` §What is withheld.
+  `out/qx_task3_abstention.json`) on the merge branch; `origin/main` still tracks them at
+  its tip until the merge lands, and they remain in history afterwards (73f796b, 8f1d9fb,
+  e446cf8) until the operator rewrites it. Residual wording scan: `README.md` §What is
+  withheld.
 - Corrections recorded rather than silently replaced: the 2.94 ms/query figure was
   batched throughput, not latency (`PROVENANCE.md`); the shipped threshold is a knife edge
   (`CHARACTERISATION.md` §3); `arm_hybrid_e_D.md` §6 and `docs/arm-e-results.md` §8 argued

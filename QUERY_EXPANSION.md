@@ -302,8 +302,10 @@ the template did not change, which is why the value survives templating.
 positive's score (fixture row 68). In the batched encoding above that row sits 1.9e-8 below
 the threshold; encoding the query alone, as `select()` does, puts it 4.5e-8 above on the
 Spark, so τ* moves to the next candidate, 0.731902, in every arm — and back below on the x86
-serving machine. Recall is identical at both values and 43/44 holds in every arm; under F
-and I the one surviving negative (n42, 0.7316) sits inside that window. The shipped value is
+serving machine. Recall is identical at both values. At the shipped τ, 43/44 holds in every
+arm; at τ* = 0.731902 the templated arms reject 44/44, because the one negative that
+survives the shipped τ under F and I (n42, 0.7316) falls inside that window (smoke reports
+`threshold.F.at_tau_star`). The shipped value is
 unchanged; `deploy/manifest.json::abstention.knife_edge` records the finding and a robust
 alternative (0.73174), and [`deploy/smoke_test.py`](deploy/smoke_test.py) asserts the pair
 {0.729476, 0.731902} rather than one side.

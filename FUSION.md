@@ -95,8 +95,9 @@ stem of every row and the repository is public; its sha256 and size are in
 | [`out/rewrites_positives.json`](out/rewrites_positives.json) | `compass_query_rewrites/1` | 57 KB | All 672 generated rewrites for the 224 positive requests, with the full prompt and its sha256. |
 | [`out/rewrites_negatives.json`](out/rewrites_negatives.json) | `compass_query_rewrites/1` | 15 KB | The same for the 44 held-out negatives, from the same prompt. |
 
-**A convention worth knowing when reading the links.** A file reference is a link when the
-file is tracked in git and plain code when it is not. So [`src/char_report.py`](src/char_report.py),
+**A convention worth knowing when reading the links.** A file reference in a link is
+tracked in git and resolves; a reference in plain code may or may not be tracked
+([`PROVENANCE.md`](PROVENANCE.md) lists the training-machine ones). So [`src/char_report.py`](src/char_report.py),
 [`deploy/manifest.json`](deploy/manifest.json) and five of the six artifacts above are
 clickable, while `out/fusion_task1_overlap.json`, `out/char_pos_bge-small_ft.json`,
 `retrieval_queries.json` and `fixtures/negative_requests.json` are not — `.gitignore`

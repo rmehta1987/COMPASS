@@ -2,9 +2,11 @@
 Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 
 > **Reading this in the public repository (2026-09-03 merge).** Two things do not
-> resolve here. (1) Every short commit sha in this file, `TASKS.md`, `CHANGELOG.md`
-> and `.claude/` refers to the private pre-publication history; the public history
-> starts at the orphan commit b3d818d and none of those shas is reachable. (2) The
+> resolve here. (1) Every short commit sha in this file, `DESIGN.md`, `TASKS.md`,
+> `CHANGELOG.md`, `CLAUDE.md` and `.claude/` refers to the private pre-publication
+> history; the pipeline mirror entered the public repository as the orphan commit
+> b3d818d (one commit plus one follow-up), and none of those shas is reachable from it or
+> from the retrieval tree's root d0ff436. (2) The
 > instrument and its derivatives are withheld (`README.md` §What is withheld): `raw/`,
 > `build/dictionary.json`, `benchmark/fixtures/`, `run/`, `benchmark/prevalence_key.py`.
 > Any instruction below that reads them runs only on the training machine. The

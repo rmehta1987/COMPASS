@@ -12,9 +12,12 @@ A slot is rendered only when its content words are not already in the text.
 `role` is never rendered. No model call, no network, pure string concatenation.
 
 Shipped contract (manifest["template"]): INSTANCES ONLY. Leave `population`
-at its default of None. Supplying it measured net -1 row on the 17 rows it
-touched (0.647 -> 0.588, +2 -3): the roster noun pulls the query toward the
-roster block's OTHER question about the same cancer at margins down to 0.0001.
+at its default of None. Supplying it measured net -1 row on the 17 rows where it
+was the only change (0.647 -> 0.588, +2 -3): the roster noun pulls the query
+toward the roster block's OTHER question about the same cancer at margins down
+to 0.0001. Removing it from the full template measured net 0 over all 224 rows
+(R@1 0.6429 either way; 4 rows gained, 4 lost), so the contract rests on the
+mechanism, not on the headline.
 
 Provenance: `RetrievalRequest`, `to_query`, `covered`, `VariableRole` copied
 verbatim from src/query_expand.py; `STOPWORDS`, `TOKEN_RE`, `light_stem`,

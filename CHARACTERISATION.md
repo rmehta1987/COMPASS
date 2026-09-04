@@ -2,15 +2,16 @@
 
 **Model under test:** `bge-small` fine-tuned (`nn0, t=0.10`), argmax cosine, no LLM call.
 R@1 0.567, 18.3 ms isolated per query on the training machine (2.94 ms/row batched, see
-[`PROVENANCE.md`](PROVENANCE.md)), 133.5 MB checkpoint, `runs/bge-small_nn0_t0.10/`.
+[`PROVENANCE.md`](PROVENANCE.md)), 134.2 MB checkpoint directory (133.5 MB `model.safetensors`),
+`runs/bge-small_nn0_t0.10/`.
 Companion to `RESULTS.md`, which selects the model; this document characterises it.
 
 Every number is read from a JSON artifact in `out/` written by a script in `src/`, cited
 on the row. Nothing here is re-typed from a prior report. The `out/` artifacts, the
 fixtures and the checkpoint are on the training machine, not in this public tree; the
 sha256 of each, the command that regenerates it and the tracked file that reproduces its
-figure are in [`PROVENANCE.md`](PROVENANCE.md). A backticked path below is a
-training-machine path.
+figure are in [`PROVENANCE.md`](PROVENANCE.md). A backticked path below may be tracked or
+training-machine-only; `PROVENANCE.md` lists the training-machine ones.
 
 **One-line answer.** The tool is *reliable on some constructs and blind on others*, not a
 coin flip — the blind spots are enumerable and listed in §1. It can tell when a requested
@@ -382,7 +383,7 @@ and re-asserted by `src/test_deploy_asserts.py`.
 | runtime | [`deploy/retriever.py`](deploy/retriever.py) — no `torch.load`, no pickle; safetensors both sides; thread count pinned to 4 from the manifest |
 | template | [`deploy/template.py`](deploy/template.py) — the instances-only query template, re-exported by `retriever.py` (added by the CPU port) |
 | acceptance test | [`deploy/smoke_test.py`](deploy/smoke_test.py) — exits 0 only if arms S, F and I reproduce to the digit; passed on the Spark and on the x86 serving machine ([`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json)) |
-| CPU encode-all | 18.2 s at this freeze (default threads); 21.2 s at the pinned 4 threads (`deploy/manifest.json::measured`); 57.9 s on the serving machine (smoke report `reencode.wall_s`); the first build measured 34.8 s under CPU contention |
+| CPU encode-all | 19.2 s at default threads (`out/final_bge-small_ft.json`); 21.0 s at the pinned 4 threads on the Spark (smoke report), about 21 s at the current freeze (`deploy/manifest.json::measured.cpu_encode_all_targets_s`, regenerated on each freeze); 57.9 s on the serving machine ([smoke report](out/smoke_report_x86_64_Wright.json) `reencode.wall_s`). The original freeze printed 18.2 s and a contended first build 34.8 s; neither manifest survives, so those two are unsourced. |
 
 **Hash assertion fails, it does not warn** — and this is tested, not asserted in prose.
 `src/test_deploy_asserts.py` tampers with a copy of the bundle three ways and requires each

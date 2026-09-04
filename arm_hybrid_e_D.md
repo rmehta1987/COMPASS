@@ -10,7 +10,9 @@ Artifacts: `run/hybrid_ed.bge-large.d{10,25,50}.json`,
 `run/hybrid_pools.bge-large.json`, `arm_e2.*.json` (9 encoder configs). All are withheld
 from the public repository (`README.md` §What is withheld: `run/`, `arm_e*.json`), as are
 the inputs the reproduce block below reads (`build/dictionary.json`,
-`benchmark/fixtures/`); the block runs on the training machine only. Each row of the §2
+`benchmark/fixtures/`); the block runs only on the pipeline's private checkout (the x86
+machine), not on the Spark, whose copy of the same 224-row fixture is `retrieval_queries.json`
+at the repo root. Each row of the §2
 table reads from `arm_e2.<config>.json` for its config; the §3 tables read from the three
 `run/hybrid_ed.bge-large.d<depth>.json` files.
 

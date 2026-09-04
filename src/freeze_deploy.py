@@ -236,21 +236,23 @@ def main() -> int:
                 "report": str(a.smoke_report),
                 "query_ms_isolated_single_runs": SERVING_LATENCY_RUNS_MS,
                 "query_ms_note": (
-                    "five runs of step 6 on this machine, all at threads=4; median "
-                    f"{sorted(SERVING_LATENCY_RUNS_MS)[len(SERVING_LATENCY_RUNS_MS) // 2]} ms. "
+                    "five earlier runs of step 6 on this machine (2026-09-03), all at "
+                    f"threads=4; median {sorted(SERVING_LATENCY_RUNS_MS)[len(SERVING_LATENCY_RUNS_MS) // 2]} ms. "
                     "The 23.76 outlier shared the box with a corpus re-encode. "
-                    "query_ms_isolated_single above is one of these runs, not a mean."),
+                    "query_ms_isolated_single above is the single run in the cited report, "
+                    "a later run than these five; none of these figures is a mean."),
             } if smoke else "not yet run: deploy/smoke_test.py on the serving machine"),
             "serves": a.serves,
             "serves_why": (
                 "serving_reference records that the x86 machine REPRODUCES the bundle; "
                 "this key records that it SERVES it. Per-query latency is paid on every "
                 "pipeline call, corpus encode once per dictionary_version_hash: Wright is "
-                "~3x faster per isolated query (median 13.4 ms vs 43.6 ms at the same 4 "
-                "threads) and ~3x slower to encode the corpus (54-60 s vs 21 s), so the "
-                "trade favours Wright by the ratio of calls to rebuilds. Not a correctness "
-                "argument -- both machines pass deploy/smoke_test.py in full. Change this "
-                "key alone to move serving."),
+                f"~3x faster per isolated query ({smoke['latency']['query_ms_isolated_single'] if smoke else 'n/a'} ms "
+                f"in its report vs {query_ms:.1f} ms here at the same {a.threads} threads) and "
+                f"~3x slower to encode the corpus ({smoke['reencode']['wall_s'] if smoke else 'n/a'} s "
+                f"vs {encode_s:.1f} s here), so the trade favours Wright by the ratio of calls "
+                "to rebuilds. Not a correctness argument -- both machines pass "
+                "deploy/smoke_test.py in full. Change this key alone to move serving."),
             "latency_note": (
                 "One query per forward pass, fp32, warm. The 2.94 ms/query quoted in "
                 "RESULTS.md is query_ms_per_row from a BATCHED 224-row scoring run "
@@ -359,9 +361,14 @@ def main() -> int:
                 "status": "POST-HOC REVISION of pre-registered arm F, which rendered "
                           "population + instances. The revision is to leave the "
                           "population slot unused.",
-                "measured": "net -1 row on the 17 rows it touched: R@1 0.647 -> 0.588 "
-                            "(+2, -3). QUERY_EXPANSION.md section 2a (figures) and section 5 "
-                            "(the revision, recorded as post hoc).",
+                "measured": "adding the slot (S -> F) was net -1 row on the 17 rows where it "
+                            "was the only change: R@1 0.647 -> 0.588 (+2, -3). Removing it "
+                            "from F (F -> I) measured net 0 on all 224 rows: 13 rows re-rank, "
+                            "4 gained and 4 lost at rank 1, R@1 0.6429 in both arms; the rows "
+                            "carrying both slots absorb the difference. The revision is "
+                            "justified on mechanism, not on the headline. QUERY_EXPANSION.md "
+                            "section 2a (figures) and section 5 (the revision, recorded as "
+                            "post hoc).",
                 "mechanism": "the roster noun pulls the query toward the roster "
                              "block's OTHER question about the same cancer, at "
                              "margins down to 0.0001",
