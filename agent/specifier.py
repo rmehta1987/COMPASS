@@ -826,8 +826,15 @@ class PairLike(Protocol):
     `pair_id` is read-only because both implementations derive it.
     """
 
-    estimability: str | None
-    requires_derivation: bool
+    @property
+    def estimability(self) -> str | None:
+        """The funnel's or the gate's verdict, rendered into the prompt."""
+        ...
+
+    @property
+    def requires_derivation(self) -> bool:
+        """True when an anchor is a grid battery."""
+        ...
 
     @property
     def exposure(self) -> _Anchor:
