@@ -29,9 +29,9 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
   the bundle; `deploy/manifest.json::device.serves` names Wright.
 - **Four artifacts withdrawn from git** for quoting instrument wording per row
   (`deploy/targets.json`, `out/fusion_task1_overlap.json`, `out/qx_task2_paired.json`,
-  `out/qx_task3_abstention.json`) on the merge branch; `origin/main` still tracks them at
-  its tip until the merge lands, and they remain in history afterwards (73f796b, 8f1d9fb,
-  e446cf8) until the operator rewrites it. Residual wording scan: `README.md` §What is
+  `out/qx_task3_abstention.json`); merged to `main` on 2026-09-04, until which `main`
+  tracked them at its tip. They remain in history (73f796b, 8f1d9fb, e446cf8) until the
+  operator rewrites it. Residual wording scan: `README.md` §What is
   withheld.
 - Corrections recorded rather than silently replaced: the 2.94 ms/query figure was
   batched throughput, not latency (`PROVENANCE.md`); the shipped threshold is a knife edge

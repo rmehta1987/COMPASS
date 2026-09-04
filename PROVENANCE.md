@@ -30,7 +30,7 @@ training-machine ones that carry a headline figure are listed below with checksu
 | R@1 / R@5 / R@10, arm I (instances only, **shipped**) | 0.6429 / 0.8884 / 0.9375, p90 7, max 61 | measured only by the smoke test (post-hoc revision of arm F) | — | smoke report `acceptance.I`; `deploy/manifest.json::template.r_at1_224_rows` | [e446cf8](https://github.com/rmehta1987/COMPASS/commit/e446cf83de0026bc40db17dd2eedabe02155ece7) |
 | abstention threshold, arms S and F | `min_cos` 0.729476; 43/44 negatives rejected; AUROC 0.9823 (S) / 0.9867 (F) | `out/char_task3_calibration.json` (`python src/char_report.py`, arm S), `out/qx_task3_abstention.json` (`python src/qx_abstain.py`, arms S/P/F) | `5cfd9438c2e1dcb7`, `221dbc4946fd2f67` | smoke report `acceptance.S/F.negatives_rejected`, `auroc`, `threshold.S/F` | [3304990](https://github.com/rmehta1987/COMPASS/commit/33049904b54785110ec362231327f8fbb4eae2bb) |
 | abstention, arm I (shipped) | 43/44 at the shipped `min_cos`; AUROC 0.9874 | measured only by the smoke test | — | smoke report `acceptance.I` | [e446cf8](https://github.com/rmehta1987/COMPASS/commit/e446cf83de0026bc40db17dd2eedabe02155ece7) |
-| threshold knife edge | 0.729476 is the rounded score of fixture row 68 (incorrect); tau* = 0.731902 under single-query encoding on the Spark, 0.729476 on Wright | `out/smoke_report_aarch64_spark-2500.json` (Spark, untracked: `1f516889c1fd3ff4`) | — | smoke report `threshold.S.knife_edge_*`; `deploy/manifest.json::abstention.knife_edge` | [4b8abee](https://github.com/rmehta1987/COMPASS/commit/4b8abeebf7b12d6e2c870ec775b745b084195c95) |
+| threshold knife edge | 0.729476 is the rounded score of fixture row 68 (incorrect); tau* = 0.731902 under single-query encoding on the Spark, 0.729476 on Wright | `out/smoke_report_aarch64_spark-2500.json` (Spark, untracked; regenerated 2026-09-04, sha `40eaec27b4e3d0ba`) | — | smoke report `threshold.S.knife_edge_*`; `deploy/manifest.json::abstention.knife_edge` | [4b8abee](https://github.com/rmehta1987/COMPASS/commit/4b8abeebf7b12d6e2c870ec775b745b084195c95) |
 | GPU/CPU parity | 1 of 224 top-1 disagreements (row 107), max vector delta 4.06e-7 | `out/final_bge-small_ft.json` (`python src/finalize.py`) | `fd9e0a3defb783f6` | `deploy/manifest.json::device.why` | — |
 | Arm vs x86 vector delta | max 2.94e-7, top-1 agreement 224/224 | — | — | smoke report `reencode` | [da317d6](https://github.com/rmehta1987/COMPASS/commit/da317d602738ca6752d9f8264accdd4a2ffac64e) |
 | target vectors | 1,353 x 384 fp32, bit-identical across re-freezes on the Spark | [`deploy/target_vectors.safetensors`](deploy/target_vectors.safetensors) | `941dd61a8ea17f2d` | tracked | [e446cf8](https://github.com/rmehta1987/COMPASS/commit/e446cf83de0026bc40db17dd2eedabe02155ece7) |
@@ -42,10 +42,10 @@ training-machine ones that carry a headline figure are listed below with checksu
 |---|---|---|---|---|
 | **2.94 ms/row** | batched: 224 queries encoded together, wall clock divided by rows | **not per-call latency** | `spark-2500`, default threads | `out/ft_bge-small_nn0_t0.10.json::cost.query_ms_per_row` (sha `7c469036f443d156`) |
 | 18.3 ms | isolated, one query per forward pass | per-call | `spark-2500`, default 20 threads | `out/final_bge-small_ft.json::cpu_query_ms_isolated` (sha `fd9e0a3defb783f6`), `RESULTS.md` §7 |
-| 44.04 ms | isolated | per-call | `spark-2500`, pinned 4 threads | `out/smoke_report_aarch64_spark-2500.json::latency` (sha `1f516889c1fd3ff4`, training machine). The freeze script re-measures the same quantity on every freeze into `deploy/manifest.json::device.query_ms_isolated_single_at_pinned_threads`; read that key rather than a copy, it moves by a few tenths per run. |
+| 44.03 ms | isolated | per-call | `spark-2500`, pinned 4 threads | `out/smoke_report_aarch64_spark-2500.json::latency` (training machine; regenerated 2026-09-04 against the current manifest, template sha `a5254caebb54a699…`, report sha `40eaec27b4e3d0ba`; the 2026-09-03 run against the previous bundle measured 44.04). The freeze script re-measures the same quantity on every freeze into `deploy/manifest.json::device.query_ms_isolated_single_at_pinned_threads`; read that key rather than a copy, it moves by a few tenths per run. |
 | 13.06 ms | isolated | per-call | `Wright`, pinned 4 threads | [`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json)`::latency`; also `manifest::device.serving_reference.query_ms_isolated_single` |
 | 12.88 / 13.30 / 13.41 / 14.24 / 23.76 ms, median 13.41 | isolated, five earlier runs recorded by the operator on 2026-09-03; the 13.06 above is a sixth, later run | per-call | `Wright`, pinned 4 threads | `deploy/manifest.json::device.serving_reference.query_ms_isolated_single_runs` (recorded as a constant in `src/freeze_deploy.py`) |
-| corpus encode, 1,353 targets, batch 64 | 19.2 s Spark at default threads; 21.0 s Spark at 4 threads; about 21 s at the current freeze; 57.9 s Wright at 4 threads | — | as stated | `out/final_bge-small_ft.json::cpu_encode_all_targets_s`; Spark smoke report `reencode.wall_s`; `manifest::measured.cpu_encode_all_targets_s`; Wright smoke report `reencode.wall_s` |
+| corpus encode, 1,353 targets, batch 64 | 19.2 s Spark at default threads; 21.1 s Spark at 4 threads (2026-09-04 report; 21.0 on 2026-09-03); about 21 s at the current freeze; 57.9 s Wright at 4 threads | — | as stated | `out/final_bge-small_ft.json::cpu_encode_all_targets_s`; Spark smoke report `reencode.wall_s`; `manifest::measured.cpu_encode_all_targets_s`; Wright smoke report `reencode.wall_s` |
 
 Every prose report that once quoted 2.94 ms as per-query latency now labels it batched
 and cites this table. Two places keep the bare figure by design: `BRIEF_ensemble.md`
@@ -82,11 +82,11 @@ and in the smoke report. Commit [2ede8f7](https://github.com/rmehta1987/COMPASS/
 | `out/qx_task2_paired.json` | `913736170edb6e83` | 138,119 | `QUERY_EXPANSION.md` §2, smoke report `acceptance.F` |
 | `out/qx_task3_abstention.json` | `221dbc4946fd2f67` | 49,339 | `QUERY_EXPANSION.md` §3, smoke report `threshold` |
 
-**As of this commit `origin/main` is still at 6416094, before the withdrawal**, so all
-four are tracked at the tip of the public default branch, not merely in its history. Once
-this branch is merged they leave the tip but remain reachable in history: `deploy/targets.json`
-from e446cf8, the three `out/` artifacts from 73f796b and 8f1d9fb, until the operator
-rewrites history or makes the repository private.
+`origin/main` sat at 6416094, before the withdrawal, until this branch was merged into it
+on 2026-09-04; until then all four were tracked at the tip of the public default branch.
+They remain reachable in history: `deploy/targets.json` from e446cf8, the three `out/`
+artifacts from 73f796b and 8f1d9fb, until the operator rewrites history or makes the
+repository private.
 
 ## The bundle's proof chain
 
@@ -102,9 +102,11 @@ Since then three hashed bundle files changed, without a code change to the retri
 
 `deploy/manifest.json::proof_chain` recomputes this comparison at every freeze, with the
 AST check, so a report proving an older bundle is never presented as proving the current
-one. The current bundle is proven on the Spark at every freeze (report
-`out/smoke_report_aarch64_spark-2500.json`, training machine). **A serving-machine re-run
-against the current manifest is pending**; committing its report re-closes the chain.
+one. The current bundle was proven on the Spark on 2026-09-04 against this manifest
+(`out/smoke_report_aarch64_spark-2500.json`, template sha `a5254caebb54a699…`, report sha `40eaec27b4e3d0ba`,
+training machine; the freeze script does not run the test itself, the operator does).
+**A serving-machine re-run against the current manifest is pending**; committing its report
+re-closes the chain.
 
 ## Every `out/` artifact the four reports cite
 
@@ -175,11 +177,24 @@ Measured on the training machine on 2026-09-04; `tracked` means `git ls-files` l
 | `out/score_gate_stem_dash_option.json` | `83b2399878e27ac5` | 80,992 | training-machine |
 | `out/score_gate_stem_option.json` | `bf9f5d2454307bcf` | 80,995 | training-machine |
 | `out/score_gate_verbatim.json` | `020df5346ed5e83d` | 80,977 | training-machine |
-| `out/smoke_report_aarch64_spark-2500.json` | `1f516889c1fd3ff4` | 10,185 | training-machine |
+| `out/smoke_report_aarch64_spark-2500.json` | `40eaec27b4e3d0ba` | 10,185 | training-machine |
 | `out/smoke_report_x86_64_Wright.json` | `f42f4e0131708e56` | 10,198 | tracked |
 | `out/targets_1241.json` | `f9922f1b6b0468db` | 869,883 | training-machine |
 | `out/targets_full.json` | `22b0c37a90696f4e` | 940,840 | training-machine |
 | `out/training_pairs.json` | `e32ad01a1c5c208b` | 1,778,194 | training-machine |
+
+| `out/char_pos_bge-small_frozen.json` | `81a12be2e4335ea5` | 283,626 | training-machine |
+| `out/char_neg_bge-small_ft.json` | `d91fc1286a0c5c7b` | 38,929 | training-machine |
+| `out/char_neg_bge-small_frozen.json` | `3cb195593babfab6` | 38,739 | training-machine |
+| `out/sweep1.log` | `a926b5b1758ee508` | 1,234 | training-machine |
+| `out/sweep2.log` | `cbd99afb2b377b67` | 3,520 | training-machine |
+| `out/sweep3.log` | `8b8d7dacaf57fa91` | 6,401 | training-machine |
+| `out/sweep4.log` | `c17db1508be66493` | 13,289 | training-machine |
+| `out/sweep5.log` | `a683d01df616105d` | 3,519 | training-machine |
+| `out/sweep6.log` | `9865aada9d159f9b` | 954 | training-machine |
+| `out/sweep7.log` | `5fda4a9ee934f191` | 1,978 | training-machine |
+
+The last ten rows expand the glob citations `out/char_pos_*.json`, `out/char_neg_*.json` and `out/sweep*.log`.
 
 ## Commits
 
