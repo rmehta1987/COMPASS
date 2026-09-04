@@ -85,7 +85,7 @@
      "auroc": 0.9874
     }
    },
-   "report": "out/smoke_report_x86_Wright.json",
+   "report": "out/smoke_report_x86_64_Wright.json",
    "query_ms_isolated_single_runs": [
     12.88,
     13.3,

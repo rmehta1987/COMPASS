@@ -55,7 +55,7 @@ def main() -> int:
     ap.add_argument("--threads", type=int, default=4,
                     help="pinned torch thread count, recorded in the manifest; "
                          "latency is measured at this setting")
-    ap.add_argument("--smoke-report", type=Path, default=Path("out/smoke_report_x86_Wright.json"),
+    ap.add_argument("--smoke-report", type=Path, default=Path("out/smoke_report_x86_64_Wright.json"),
                     help="deploy/smoke_test.py report from the SERVING machine; if present, "
                          "the shipped instances-only R@1 goes into manifest['template'] and "
                          "the machine, latency and vector delta into manifest['device']")
