@@ -49,7 +49,7 @@ note: WORDING TENSION for items 11 and 15 (found at item 8). A funnel pair's
 - [x] 10 specifier takes RetrievalRecord (PairLike; pipeline/resolved_pair.py)
 - [x] 11 specifier emits the record (pipeline/artefact.py; redact() is the committable form)
 - [x] 12 ledger append (pipeline/ledger.py; verify() is the denominator check)
-- [ ] 13 output artefact schema
+- [x] 13 output artefact schema (pipeline/causal_structure.py, pipeline/hypothesis.py)
 - [ ] 13a critique seam + GenerationEnv
 - [ ] 14 DAG validators
 - [ ] 15 baseline score, once, on a tag (phase 2 in compass-score; scoring-key is on the remote at 215ee9e)
