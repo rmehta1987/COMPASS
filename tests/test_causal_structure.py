@@ -115,4 +115,5 @@ def test_hypothesis_record_round_trips_and_redacts(built):
     assert H.HypothesisRecord.from_json(h.to_json()) == h
     r = h.redacted()
     assert r.artefact.redacted and r.structure == s
-    assert set(json.loads(h.to_json())) == {"artefact", "structure"}
+    assert set(json.loads(h.to_json())) == {"artefact", "structure", "critiques",
+                                            "revision", "generation"}
