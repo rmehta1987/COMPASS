@@ -45,7 +45,7 @@ note: WORDING TENSION for items 11 and 15 (found at item 8). A funnel pair's
 - [x] 6  pipeline/canary.py C1–C3 (check.sh step 7)
 - [x] 7  user intake (pipeline/intake.py; canaries run through it)
 - [x] 8  auto intake (pipeline/auto_intake.py; check.sh step 8)
-- [ ] 9  estimability gate + --allow-unestimable
+- [x] 9  estimability gate + --allow-unestimable (pipeline/gate.py; check.sh step 9)
 - [ ] 10 specifier takes RetrievalRecord
 - [ ] 11 specifier emits the record
 - [ ] 12 ledger append

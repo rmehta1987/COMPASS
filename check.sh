@@ -79,9 +79,18 @@ $PY -m pipeline.auto_intake --pair m3:Q16.1 m2:Q5.8 --frame >"$OUT" 2>&1 \
     || { grep -v "Loading weights" "$OUT"; fail 8 "pipeline.auto_intake"; }
 grep -E "^(pair|frame)" "$OUT"
 
-# 9. retrieval tripwire, last because slow: frozen and validated, a pipeline
-#    change is never the fix. Exact R@1, min_cos and 43/44 negatives.
-$PY deploy/smoke_test.py >"$OUT" 2>&1 || { tail -5 "$OUT"; fail 9 "deploy/smoke_test.py"; }
+# 9. estimability gate (pipeline/gate.py) on the worked frame: without the
+#    flag zero pairs pass and both missing exports are named; with it every
+#    pair passes marked blocked_no_metadata. Both runs must agree.
+$PY -m pipeline.gate >"$OUT" 2>&1 || { cat "$OUT"; fail 9 "pipeline.gate (blocking)"; }
+grep -E "^(gate|missing)" "$OUT"
+$PY -m pipeline.gate --allow-unestimable >"$OUT" 2>&1 \
+    || { cat "$OUT"; fail 9 "pipeline.gate --allow-unestimable"; }
+grep -E "^(gate|passed)" "$OUT"
+
+# 10. retrieval tripwire, last because slow: frozen and validated, a pipeline
+#     change is never the fix. Exact R@1, min_cos and 43/44 negatives.
+$PY deploy/smoke_test.py >"$OUT" 2>&1 || { tail -5 "$OUT"; fail 10 "deploy/smoke_test.py"; }
 echo "smoke_test ALL PASS"
 
 echo; echo "GREEN"
