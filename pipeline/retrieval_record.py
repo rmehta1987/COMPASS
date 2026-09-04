@@ -114,6 +114,8 @@ class RetrievalRecord(BaseModel):
         margin: `best_cos - min_cos`; negative on an abstention.
         margin_12: Top-1 minus top-2 cosine, None when the call abstained.
         abstained: True when no target cleared `min_cos`.
+        nearest_key: The top-1 target's key regardless of the threshold, so a
+            rank-based score and an abstention diagnosis both stay possible.
         hit: The selected target, None when abstained.
     """
 
@@ -127,6 +129,7 @@ class RetrievalRecord(BaseModel):
     margin: float
     margin_12: float | None
     abstained: bool
+    nearest_key: str = Field(min_length=1)
     hit: Hit | None
 
     @model_validator(mode="after")
@@ -154,6 +157,8 @@ class RetrievalRecord(BaseModel):
                 raise ValueError("resolved record has no hit")
             if self.best_cos < self.min_cos:
                 raise ValueError("resolved record is below min_cos")
+            if self.hit.key != self.nearest_key:
+                raise ValueError("resolved hit is not the nearest target")
         if abs((self.best_cos - self.min_cos) - self.margin) > 1e-9:
             raise ValueError("margin != best_cos - min_cos")
         return self

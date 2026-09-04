@@ -23,13 +23,14 @@ RESOLVED = RetrievalRecord(request=REQ, query="use of anti-inflammatory medicati
                            "past 12 months: ibuprofen, naproxen",
                            dictionary_hash="3dc8415eccfe", min_cos=0.729476,
                            best_cos=0.812345, margin=0.812345 - 0.729476,
-                           margin_12=0.031, abstained=False, hit=HIT)
+                           margin_12=0.031, abstained=False,
+                           nearest_key="m2:Q9.95", hit=HIT)
 PM25 = RequestSnapshot(construct_text="ambient PM2.5 exposure", role="exposure")
 ABSTAINED = RetrievalRecord(request=PM25,
                             query="ambient PM2.5 exposure",
                             dictionary_hash="3dc8415eccfe", min_cos=0.729476,
                             best_cos=0.61, margin=0.61 - 0.729476, margin_12=None,
-                            abstained=True, hit=None)
+                            abstained=True, nearest_key="m2:Q3.5", hit=None)
 
 
 @pytest.mark.parametrize("rec", [RESOLVED, ABSTAINED], ids=["resolved", "abstained"])
@@ -45,7 +46,7 @@ def test_json_round_trip_is_lossless(rec):
 def test_the_wire_format_is_plain_json_with_no_wording_fields():
     d = json.loads(RESOLVED.to_json())
     assert set(d) == {"request", "query", "dictionary_hash", "min_cos", "best_cos",
-                      "margin", "margin_12", "abstained", "hit"}
+                      "margin", "margin_12", "abstained", "nearest_key", "hit"}
     assert set(d["hit"]) == {"key", "construct_key", "module", "target_id",
                              "fold_size", "n_siblings", "members"}
     for wording in ("stem", "option", "text", "question_text"):
@@ -64,8 +65,9 @@ def test_unknown_fields_are_refused():
     {"hit": None},                             # resolved but no hit
     {"best_cos": 0.5, "margin": 0.5 - 0.729476},  # resolved below threshold
     {"margin": 0.0},                           # margin disagrees with the cosines
+    {"nearest_key": "m2:Q3.5"},                # selected hit is not the nearest
 ], ids=["abstained_with_hit", "resolved_without_hit", "resolved_below_tau",
-        "margin_mismatch"])
+        "margin_mismatch", "hit_not_nearest"])
 def test_inconsistent_abstention_is_refused(patch):
     d = json.loads(RESOLVED.to_json())
     d.update(patch)
