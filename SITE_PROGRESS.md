@@ -127,7 +127,11 @@
   operator; until then the deploy step fails and nothing is published.
 - Items 1–3 were green before the first push. `git push` of the workflow commit was refused
   (token without `workflow` scope); origin/site holds 297869b, the commit before it.
-  The operator pushes the workflow with a workflow-scoped token, then enables Pages.
+  The operator refreshed the token with the workflow scope; pushed f6b71af.
+- Pages enabled through the API (build_type workflow). First run failed at configure-pages
+  (ran seconds before Pages existed); second failed on the github-pages environment policy
+  (only main allowed); `site` added to the policy; third run green. Live URL probed: the
+  page and every artefact return 200 at the same byte sizes as the local files.
 
 ### Figure trace (done before item 1; primaries opened, not summaries)
 | figure | primary | run id | verdict |
