@@ -60,6 +60,12 @@
 - The Run bar matches a typed request against the committed requests only; anything else
   renders NO COMMITTED RUN with the text verbatim. No score is ever synthesised.
 
+## 2026-09-04 — item 6
+- Intake panel: the RetrievalRequest fields, the rendered query, which instances the
+  template dropped as already covered (the first example drops its instance, which is
+  the covered rule at work), population unset by contract, and the template's sha from
+  the run's bundle record. Tool calls: none, and the panel says so.
+
 ### Figure trace (done before item 1; primaries opened, not summaries)
 | figure | primary | run id | verdict |
 |---|---|---|---|

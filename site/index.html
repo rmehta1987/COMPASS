@@ -206,12 +206,30 @@ function retrieverPanel(){
   return h;
 }
 
+function intakePanel(){
+  const q=cur.request, p=DATA.runs.provenance;
+  let h=`<p class="sec">tool calls</p><div class="none">None. The template is deterministic string concatenation: same fields, same query, every run. No model call, no network.</div>`;
+  h+=`<p class="sec">RetrievalRequest · run ${esc(p.run_id)}</p><dl>`
+    +row("request",esc(q.text))
+    +row("construct",esc(q.construct),true)
+    +row("role",`${esc(q.role)} · never rendered`,true)
+    +row("instances",q.instances.length?esc(q.instances.join(", ")):"<em>none</em>",true)
+    +row("population",`<em>unset</em> · shipped contract leaves it empty`,true)
+    +row("rendered query",esc(cur.rendered_query),true)
+    +row("dropped as covered",cur.instances_dropped_as_covered.length?`${esc(cur.instances_dropped_as_covered.join(", "))} · every content word already in the construct`:"<em>nothing</em>",true)
+    +row("origin",esc(cur.origin))
+    +`</dl>`;
+  h+=`<p class="sec">template</p><div class="none">[population] construct [timeframe][: instance, instance, …] — a slot renders only when its content words are not already present. Bundle template sha ${esc(p.bundle.template_py_sha256)}</div>`;
+  return h;
+}
+
 function draw(){
   const s=DATA.stages.stages.find(x=>x.id===sel);
   let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
          <ul class="does">${s.does.map(d=>`<li>${esc(d)}</li>`).join("")}</ul>`;
   if(typed!==null&&!cur) h+=noRun();
   else if(sel==="retriever"&&cur) h+=retrieverPanel();
+  else if(sel==="intake"&&cur) h+=intakePanel();
   else h+=placeholder(s);
   el("#panel").innerHTML=h;
 }
