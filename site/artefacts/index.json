@@ -5,6 +5,7 @@
     "commit": "site branch"
   },
   "files": [
-    "stages.json"
+    "stages.json",
+    "runs.json"
   ]
 }

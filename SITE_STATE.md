@@ -5,7 +5,7 @@ clone: /home/mehta5/compass-site  (--single-branch main from GitHub, cut at 2652
        deploy/model/ copied from the operator's clone, sha-verified by retriever.py at load;
        deploy/targets.json and the dictionary are read from the operator's clone by path,
        never copied here — see site/tools/*.py for the env vars)
-last green: 9677403   (VERIFIED 2026-09-04 by ./site-check.sh on that sha, GREEN)
+last green: 12ade2c   (VERIFIED 2026-09-04 by ./site-check.sh on that sha, GREEN)
 check: ./site-check.sh
 note: main's .gitignore excludes *.json — site/artefacts is un-ignored (item 1)
       and step 6 asserts every loaded artefact is tracked.
@@ -22,8 +22,8 @@ note: compass-gen/STATE.md (7ef75fa) marks pipeline items 11 and 13 as landed. I
 ## items
 - [x] 1  strip fabricated figures; un-ignore site/artefacts; panels PLACEHOLDER
 - [x] 2  site-check.sh (six steps; site/tools/plant.py proves each red, 13 plantings)
-- [ ] 3  all data in site/artefacts/*.json; page fetches, never inlines
-- [ ] 4  real retriever runs → pseudonymised artefacts (id map in run/, never site/)
+- [x] 3  all data in site/artefacts/*.json; page fetches, never inlines
+- [x] 4  real retriever runs → site/artefacts/runs.json (run site-20260904T213836Z; map in run/site/, ignored)
 - [ ] 5  Retriever panel
 - [ ] 6  Intake panel
 - [ ] 7  Funnel panel (real gate output: live/passed/blocked, missing exports)

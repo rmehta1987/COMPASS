@@ -1,0 +1,729 @@
+{
+ "schema": "compass_site/runs/1",
+ "provenance": {
+  "source": "site/tools/run_examples.py calling deploy/retriever.py search() and select() on the frozen bundle; requests from site/tools/requests.json",
+  "run_id": "site-20260904T213836Z",
+  "git_head": "12ade2c",
+  "machine": {
+   "node": "spark-2500",
+   "machine": "aarch64",
+   "platform": "Linux-6.17.0-1026-nvidia-aarch64-with-glibc2.39",
+   "python": "3.12.3",
+   "torch": "2.14.0+cu130",
+   "transformers": "5.16.1",
+   "threads": 4
+  },
+  "bundle": {
+   "manifest_sha256": "8c0f548f3dca865766921cb31cd8b9bdb87d60d58f1101a4f10d86f69fceeecd",
+   "retriever_py_sha256": "5392ad828cfb98ce6136626913d86f066adfe6fdc97d76db23f58fe82fa8984d",
+   "template_py_sha256": "a5254caebb54a6998196dc692cd055eb0f2648c52cbd81f561e896fe5bbda844",
+   "dictionary_version_hash": "3dc8415eccfe",
+   "frozen": "2026-09-04"
+  },
+  "pseudonyms": "TARGET-NN by first appearance in this file; the map is in run/site/<run_id>/ on the private side and is not published",
+  "tier": "A"
+ },
+ "threshold": {
+  "min_cos": 0.729476,
+  "source": "deploy/manifest.json abstention.default_min_cos",
+  "how_chosen": "F1-maximising value over the positive fixture rows only; the held-out negative set reported the rejection rate and did not choose the value (deploy/manifest.json abstention.how_chosen)"
+ },
+ "corpus": {
+  "n_targets": 1353,
+  "n_constructs": 1066,
+  "n_folded_family": 119,
+  "embed_dim": 384,
+  "params_m": 33
+ },
+ "level_rule": "every target is individual-level: the instrument carries no area-level construct (see absence.json)",
+ "domain_rule": "src/char_strata.py::domain_of over the target's stem, priority-ordered keyword regex, first match wins; 'unclassified' when none matches",
+ "latency_note": "query_ms_median is seven isolated single-query search calls on this machine after warm-up, at the manifest's pinned thread count; it is not the serving-machine figure",
+ "examples": [
+  {
+   "id": "resolved",
+   "label": "resolved",
+   "origin": "operator-authored",
+   "request": {
+    "text": "how often siblings were diagnosed with breast cancer",
+    "construct": "how often siblings were diagnosed with breast cancer",
+    "role": "exposure",
+    "instances": [
+     "breast cancer"
+    ],
+    "population": null
+   },
+   "rendered_query": "how often siblings were diagnosed with breast cancer",
+   "instances_dropped_as_covered": [],
+   "tool_log": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "how often siblings were diagnosed with breast cancer",
+      "k": 10
+     },
+     "returned": {
+      "n_hits": 10,
+      "top_cos": 0.883468,
+      "top": "TARGET-01",
+      "top_domain": "cancer_history"
+     }
+    },
+    {
+     "tool": "select",
+     "args": {
+      "query": "how often siblings were diagnosed with breast cancer",
+      "min_cos": 0.729476
+     },
+     "returned": {
+      "target": "TARGET-01",
+      "cos": 0.883468,
+      "margin_12": 0.012921
+     }
+    }
+   ],
+   "record": {
+    "abstained": false,
+    "top_cos": 0.883468,
+    "rank": 1,
+    "margin_12": 0.012921,
+    "gap_above_threshold": 0.153992,
+    "target": {
+     "pseudonym": "TARGET-01",
+     "domain": "cancer_history",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 20,
+     "n_siblings": 0
+    },
+    "nearest_if_abstained": null,
+    "query_ms_median": 44.7
+   },
+   "candidates": [
+    {
+     "rank": 1,
+     "pseudonym": "TARGET-01",
+     "domain": "cancer_history",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 20,
+     "n_siblings": 0,
+     "cos": 0.883468
+    },
+    {
+     "rank": 2,
+     "pseudonym": "TARGET-02",
+     "domain": "cancer_history",
+     "level": "individual",
+     "option_position": 3,
+     "option_count": 22,
+     "fold_size": 20,
+     "n_siblings": 21,
+     "cos": 0.870547
+    },
+    {
+     "rank": 3,
+     "pseudonym": "TARGET-03",
+     "domain": "cancer_history",
+     "level": "individual",
+     "option_position": 3,
+     "option_count": 21,
+     "fold_size": 1,
+     "n_siblings": 20,
+     "cos": 0.643146
+    },
+    {
+     "rank": 4,
+     "pseudonym": "TARGET-04",
+     "domain": "cancer_history",
+     "level": "individual",
+     "option_position": 3,
+     "option_count": 22,
+     "fold_size": 5,
+     "n_siblings": 21,
+     "cos": 0.63741
+    },
+    {
+     "rank": 5,
+     "pseudonym": "TARGET-05",
+     "domain": "cancer_history",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 5,
+     "n_siblings": 0,
+     "cos": 0.630484
+    },
+    {
+     "rank": 6,
+     "pseudonym": "TARGET-06",
+     "domain": "cancer_history",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.622924
+    },
+    {
+     "rank": 7,
+     "pseudonym": "TARGET-07",
+     "domain": "cancer_history",
+     "level": "individual",
+     "option_position": 3,
+     "option_count": 22,
+     "fold_size": 1,
+     "n_siblings": 21,
+     "cos": 0.615625
+    },
+    {
+     "rank": 8,
+     "pseudonym": "TARGET-08",
+     "domain": "cancer_history",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 20,
+     "n_siblings": 0,
+     "cos": 0.583008
+    },
+    {
+     "rank": 9,
+     "pseudonym": "TARGET-09",
+     "domain": "family_roster",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.58287
+    },
+    {
+     "rank": 10,
+     "pseudonym": "TARGET-10",
+     "domain": "cancer_history",
+     "level": "individual",
+     "option_position": 3,
+     "option_count": 19,
+     "fold_size": 1,
+     "n_siblings": 18,
+     "cos": 0.582517
+    }
+   ]
+  },
+  {
+   "id": "resolved-2",
+   "label": "resolved · demo query",
+   "origin": "deploy/retriever.py __main__ demo query",
+   "request": {
+    "text": "exogenous hormone medication",
+    "construct": "exogenous hormone medication",
+    "role": "exposure",
+    "instances": [],
+    "population": null
+   },
+   "rendered_query": "exogenous hormone medication",
+   "instances_dropped_as_covered": [],
+   "tool_log": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "exogenous hormone medication",
+      "k": 10
+     },
+     "returned": {
+      "n_hits": 10,
+      "top_cos": 0.741318,
+      "top": "TARGET-11",
+      "top_domain": "medication"
+     }
+    },
+    {
+     "tool": "select",
+     "args": {
+      "query": "exogenous hormone medication",
+      "min_cos": 0.729476
+     },
+     "returned": {
+      "target": "TARGET-11",
+      "cos": 0.741318,
+      "margin_12": 0.033042
+     }
+    }
+   ],
+   "record": {
+    "abstained": false,
+    "top_cos": 0.741318,
+    "rank": 1,
+    "margin_12": 0.033042,
+    "gap_above_threshold": 0.011842,
+    "target": {
+     "pseudonym": "TARGET-11",
+     "domain": "medication",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0
+    },
+    "nearest_if_abstained": null,
+    "query_ms_median": 44.82
+   },
+   "candidates": [
+    {
+     "rank": 1,
+     "pseudonym": "TARGET-11",
+     "domain": "medication",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.741318
+    },
+    {
+     "rank": 2,
+     "pseudonym": "TARGET-12",
+     "domain": "healthcare_util",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.708276
+    },
+    {
+     "rank": 3,
+     "pseudonym": "TARGET-13",
+     "domain": "medication",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.676625
+    },
+    {
+     "rank": 4,
+     "pseudonym": "TARGET-14",
+     "domain": "medication",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.672086
+    },
+    {
+     "rank": 5,
+     "pseudonym": "TARGET-15",
+     "domain": "medication",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.653395
+    },
+    {
+     "rank": 6,
+     "pseudonym": "TARGET-16",
+     "domain": "medication",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.649593
+    },
+    {
+     "rank": 7,
+     "pseudonym": "TARGET-17",
+     "domain": "medication",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.64921
+    },
+    {
+     "rank": 8,
+     "pseudonym": "TARGET-18",
+     "domain": "medication",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.63433
+    },
+    {
+     "rank": 9,
+     "pseudonym": "TARGET-19",
+     "domain": "medication",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.625613
+    },
+    {
+     "rank": 10,
+     "pseudonym": "TARGET-20",
+     "domain": "healthcare_util",
+     "level": "individual",
+     "option_position": 4,
+     "option_count": 12,
+     "fold_size": 1,
+     "n_siblings": 11,
+     "cos": 0.615425
+    }
+   ]
+  },
+  {
+   "id": "absent",
+   "label": "absent",
+   "origin": "negative fixture n01 + negative_expansion_fields",
+   "request": {
+    "text": "ambient PM2.5 concentration at the residential address",
+    "construct": "ambient PM2.5 concentration at the residential address",
+    "role": "exposure",
+    "instances": [
+     "fine particulate matter"
+    ],
+    "population": null
+   },
+   "rendered_query": "ambient PM2.5 concentration at the residential address: fine particulate matter",
+   "instances_dropped_as_covered": [],
+   "tool_log": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "ambient PM2.5 concentration at the residential address: fine particulate matter",
+      "k": 10
+     },
+     "returned": {
+      "n_hits": 10,
+      "top_cos": 0.598588,
+      "top": "TARGET-21",
+      "top_domain": "unclassified"
+     }
+    },
+    {
+     "tool": "select",
+     "args": {
+      "query": "ambient PM2.5 concentration at the residential address: fine particulate matter",
+      "min_cos": 0.729476
+     },
+     "returned": null
+    }
+   ],
+   "record": {
+    "abstained": true,
+    "top_cos": 0.598588,
+    "rank": null,
+    "margin_12": 0.161873,
+    "gap_above_threshold": -0.130888,
+    "target": null,
+    "nearest_if_abstained": {
+     "pseudonym": "TARGET-21",
+     "domain": "unclassified",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0
+    },
+    "query_ms_median": 47.3
+   },
+   "candidates": [
+    {
+     "rank": 1,
+     "pseudonym": "TARGET-21",
+     "domain": "unclassified",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.598588
+    },
+    {
+     "rank": 2,
+     "pseudonym": "TARGET-22",
+     "domain": "residence_commute",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.436715
+    },
+    {
+     "rank": 3,
+     "pseudonym": "TARGET-23",
+     "domain": "tobacco",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.41308
+    },
+    {
+     "rank": 4,
+     "pseudonym": "TARGET-24",
+     "domain": "chronic_condition",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.412498
+    },
+    {
+     "rank": 5,
+     "pseudonym": "TARGET-25",
+     "domain": "healthcare_util",
+     "level": "individual",
+     "option_position": 20,
+     "option_count": 49,
+     "fold_size": 1,
+     "n_siblings": 48,
+     "cos": 0.401317
+    },
+    {
+     "rank": 6,
+     "pseudonym": "TARGET-26",
+     "domain": "residence_commute",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.387519
+    },
+    {
+     "rank": 7,
+     "pseudonym": "TARGET-27",
+     "domain": "residence_commute",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.387519
+    },
+    {
+     "rank": 8,
+     "pseudonym": "TARGET-28",
+     "domain": "unclassified",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.373984
+    },
+    {
+     "rank": 9,
+     "pseudonym": "TARGET-29",
+     "domain": "alcohol",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.367292
+    },
+    {
+     "rank": 10,
+     "pseudonym": "TARGET-30",
+     "domain": "alcohol",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.362099
+    }
+   ]
+  },
+  {
+   "id": "false-accept",
+   "label": "false accept",
+   "origin": "negative fixture n42 + negative_expansion_fields",
+   "request": {
+    "text": "what kind of neighborhood income level they live in",
+    "construct": "what kind of neighborhood income level they live in",
+    "role": "exposure",
+    "instances": [
+     "median household income"
+    ],
+    "population": null
+   },
+   "rendered_query": "what kind of neighborhood income level they live in: median household income",
+   "instances_dropped_as_covered": [],
+   "tool_log": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "what kind of neighborhood income level they live in: median household income",
+      "k": 10
+     },
+     "returned": {
+      "n_hits": 10,
+      "top_cos": 0.731576,
+      "top": "TARGET-31",
+      "top_domain": "ses_employment"
+     }
+    },
+    {
+     "tool": "select",
+     "args": {
+      "query": "what kind of neighborhood income level they live in: median household income",
+      "min_cos": 0.729476
+     },
+     "returned": {
+      "target": "TARGET-31",
+      "cos": 0.731576,
+      "margin_12": 0.027859
+     }
+    }
+   ],
+   "record": {
+    "abstained": false,
+    "top_cos": 0.731576,
+    "rank": 1,
+    "margin_12": 0.027859,
+    "gap_above_threshold": 0.0021,
+    "target": {
+     "pseudonym": "TARGET-31",
+     "domain": "ses_employment",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0
+    },
+    "nearest_if_abstained": null,
+    "query_ms_median": 44.87
+   },
+   "candidates": [
+    {
+     "rank": 1,
+     "pseudonym": "TARGET-31",
+     "domain": "ses_employment",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.731576
+    },
+    {
+     "rank": 2,
+     "pseudonym": "TARGET-32",
+     "domain": "ses_employment",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.703717
+    },
+    {
+     "rank": 3,
+     "pseudonym": "TARGET-33",
+     "domain": "residence_commute",
+     "level": "individual",
+     "option_position": 2,
+     "option_count": 5,
+     "fold_size": 1,
+     "n_siblings": 4,
+     "cos": 0.642522
+    },
+    {
+     "rank": 4,
+     "pseudonym": "TARGET-34",
+     "domain": "residence_commute",
+     "level": "individual",
+     "option_position": 5,
+     "option_count": 5,
+     "fold_size": 1,
+     "n_siblings": 4,
+     "cos": 0.583026
+    },
+    {
+     "rank": 5,
+     "pseudonym": "TARGET-35",
+     "domain": "family_roster",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.576172
+    },
+    {
+     "rank": 6,
+     "pseudonym": "TARGET-22",
+     "domain": "residence_commute",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.574104
+    },
+    {
+     "rank": 7,
+     "pseudonym": "TARGET-36",
+     "domain": "residence_commute",
+     "level": "individual",
+     "option_position": 1,
+     "option_count": 5,
+     "fold_size": 1,
+     "n_siblings": 4,
+     "cos": 0.57311
+    },
+    {
+     "rank": 8,
+     "pseudonym": "TARGET-37",
+     "domain": "ses_employment",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.550304
+    },
+    {
+     "rank": 9,
+     "pseudonym": "TARGET-23",
+     "domain": "tobacco",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.499337
+    },
+    {
+     "rank": 10,
+     "pseudonym": "TARGET-26",
+     "domain": "residence_commute",
+     "level": "individual",
+     "option_position": null,
+     "option_count": null,
+     "fold_size": 1,
+     "n_siblings": 0,
+     "cos": 0.497887
+    }
+   ]
+  }
+ ]
+}

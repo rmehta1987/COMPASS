@@ -27,6 +27,26 @@
   object with `source` and one of `run_id` / `commit` / `frozen`; figures are JSON
   numbers, never digits inside prose strings (request text excepted).
 
+## 2026-09-04 — item 3
+- stages.json + index.json; the script holds no data. First run of the check on the new
+  page caught "step 1" in a JS comment — the digit rule reads comments too. Reworded.
+
+## 2026-09-04 — item 4
+- `site/tools/run_examples.py` ran `deploy/retriever.py` on four requests (spark-2500,
+  aarch64, torch 2.14, 4 threads; run id in runs.json provenance). Public artefact
+  `site/artefacts/runs.json`; private map and raw hits under `run/site/<run_id>/`.
+- The n42 false accept reproduces: templated query scores 0.731576, gap above the
+  shipped threshold +0.0021, top-two margin 0.0279, domain ses_employment, level
+  individual. This is the first record of that case WITH its target (the smoke report
+  holds the bare score). The key is on the private side only.
+- The absent example scores 0.5986 with its instance appended and abstains; the resolved
+  examples score 0.8835 (roster-folded target, fold 20) and 0.7413.
+- The check refused the first artefact: the manifest's `how_chosen` prose carries fixture
+  counts, and copying prose is retyping. Replaced with a figure-free summary and a
+  pointer to the manifest key.
+- Latency here is ~45 ms/query, consistent with the manifest's Spark figure at four
+  pinned threads; the artefact says so and does not call it the serving figure.
+
 ### Figure trace (done before item 1; primaries opened, not summaries)
 | figure | primary | run id | verdict |
 |---|---|---|---|
