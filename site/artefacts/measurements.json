@@ -1,0 +1,218 @@
+{
+ "schema": "compass_site/measurements/1",
+ "provenance": {
+  "source": "site/tools/build_measurements.py parsing arm_hybrid_e_D.md \u00a72 (encoder sweep) and reading out/smoke_report_x86_64_Wright.json + deploy/manifest.json (shipped model)",
+  "commit": "arm_hybrid_e_D.md 1101c61; smoke report 6416094; main 265241d",
+  "run_id": "sweep measured 2026-09-02/03 (x86, frozen encoders); smoke report run 2026-09-03 on Wright",
+  "sweep_artefacts_note": "the per-config JSONs the sweep table was written from are withheld from the public tree; the document is the committed record"
+ },
+ "fixture": {
+  "n_positive_rows": 224,
+  "n_negative_rows": 44,
+  "note": "queries were written by a model that saw the gold wording; recall is an upper bound (manifest known_limitations)"
+ },
+ "sweep": {
+  "what": "frozen encoders, no fine-tuning, untemplated fixture queries, full target corpus",
+  "dictionary_version_hash": "3dc8415eccfe",
+  "machine": "x86, CPU only",
+  "columns": [
+   [
+    "model",
+    "model"
+   ],
+   [
+    "params_m",
+    "params"
+   ],
+   [
+    "recall_at_1",
+    "R@1"
+   ],
+   [
+    "recall_at_5",
+    "R@5"
+   ],
+   [
+    "recall_at_10",
+    "R@10"
+   ],
+   [
+    "recall_at_25",
+    "R@25"
+   ],
+   [
+    "recall_at_50",
+    "R@50"
+   ],
+   [
+    "rank_p50",
+    "rank p50"
+   ],
+   [
+    "rank_p90",
+    "p90"
+   ],
+   [
+    "rank_max",
+    "max"
+   ],
+   [
+    "ms_per_query",
+    "ms / query"
+   ]
+  ],
+  "rows": [
+   {
+    "model": "bge-small",
+    "params_m": 33,
+    "recall_at_1": 0.375,
+    "recall_at_5": 0.75,
+    "recall_at_10": 0.866,
+    "recall_at_25": 0.938,
+    "recall_at_50": 0.964,
+    "rank_p50": 2,
+    "rank_p90": 14,
+    "rank_max": 198,
+    "encode_s": 43,
+    "ms_per_query": 5.5
+   },
+   {
+    "model": "bge-base",
+    "params_m": 109,
+    "recall_at_1": 0.379,
+    "recall_at_5": 0.754,
+    "recall_at_10": 0.862,
+    "recall_at_25": 0.955,
+    "recall_at_50": 0.973,
+    "rank_p50": 2,
+    "rank_p90": 16,
+    "rank_max": 134,
+    "encode_s": 208,
+    "ms_per_query": 27.4
+   },
+   {
+    "model": "embeddinggemma",
+    "params_m": 300,
+    "recall_at_1": 0.371,
+    "recall_at_5": 0.795,
+    "recall_at_10": 0.897,
+    "recall_at_25": 0.964,
+    "recall_at_50": 0.982,
+    "rank_p50": 2,
+    "rank_p90": 11,
+    "rank_max": 81,
+    "encode_s": 974,
+    "ms_per_query": 222.9
+   },
+   {
+    "model": "bge-large",
+    "params_m": 335,
+    "recall_at_1": 0.46,
+    "recall_at_5": 0.79,
+    "recall_at_10": 0.906,
+    "recall_at_25": 0.951,
+    "recall_at_50": 0.987,
+    "rank_p50": 2,
+    "rank_p90": 10,
+    "rank_max": 154,
+    "encode_s": 604,
+    "ms_per_query": 81.1
+   },
+   {
+    "model": "qwen3-0.6b",
+    "params_m": 595,
+    "recall_at_1": 0.362,
+    "recall_at_5": 0.812,
+    "recall_at_10": 0.884,
+    "recall_at_25": 0.929,
+    "recall_at_50": 0.969,
+    "rank_p50": 2,
+    "rank_p90": 12,
+    "rank_max": 584,
+    "encode_s": 8699,
+    "ms_per_query": 1415
+   }
+  ]
+ },
+ "shipped": {
+  "model": "bge-small, fine-tuned",
+  "params_m": 33,
+  "embed_dim": 384,
+  "training": {
+   "negatives": "in-batch negatives only",
+   "temperature": 0.1
+  },
+  "dictionary_version_hash": "3dc8415eccfe",
+  "n_targets": 1353,
+  "arm_columns": [
+   [
+    "recall_at_1",
+    "R@1"
+   ],
+   [
+    "recall_at_5",
+    "R@5"
+   ],
+   [
+    "recall_at_10",
+    "R@10"
+   ],
+   [
+    "rank_p50",
+    "rank p50"
+   ],
+   [
+    "rank_p90",
+    "p90"
+   ],
+   [
+    "rank_max",
+    "max"
+   ]
+  ],
+  "arms": {
+   "S": {
+    "label": "no template (row's own query)",
+    "recall_at_1": 0.567,
+    "recall_at_5": 0.862,
+    "recall_at_10": 0.92,
+    "rank_p50": 1,
+    "rank_p90": 9,
+    "rank_max": 82,
+    "negatives_rejected": 43,
+    "n_negatives": 44,
+    "auroc_absent_vs_present": 0.9823
+   },
+   "I": {
+    "label": "shipped contract: instances only, population None",
+    "recall_at_1": 0.643,
+    "recall_at_5": 0.888,
+    "recall_at_10": 0.938,
+    "rank_p50": 1,
+    "rank_p90": 7,
+    "rank_max": 61,
+    "negatives_rejected": 43,
+    "n_negatives": 44,
+    "auroc_absent_vs_present": 0.9874
+   }
+  },
+  "threshold": {
+   "min_cos": 0.729476,
+   "coverage": 0.9286,
+   "precision": 0.6827,
+   "recall": 0.6339,
+   "f1": 0.6574,
+   "candidate_taus": 222
+  },
+  "latency": {
+   "query_ms_isolated_single": 13.06,
+   "threads": 4,
+   "machine": "x86_64",
+   "note": "serving machine, one query per forward pass, fp32, warm; other machines differ (the run artefacts on this page report their own)"
+  },
+  "wrong_pick_detection": {
+   "available": false,
+   "note": "the AUROC for correct-vs-incorrect picks under the shipped arm lives only in an artefact withdrawn from git and is not shown"
+  }
+ }
+}

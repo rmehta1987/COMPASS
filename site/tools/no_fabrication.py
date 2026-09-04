@@ -12,7 +12,8 @@ Two halves, both hard failures:
    ``commit`` or ``frozen`` date. A figure inside a *string* (``"cos 0.7316"``)
    is a retyped number, not data: any string value outside ``provenance``
    that carries a decimal, a thousands-grouped or a three-plus-digit integer
-   fails, except request text, which is the user's own words.
+   fails, except request text and names (a model, a column label), which
+   are words, not values.
 """
 from __future__ import annotations
 
@@ -35,7 +36,8 @@ ALLOW: list[tuple[str, str]] = [
 NUM_RE = re.compile(r"(?<![\w#.\-/])\d[\d,]*(?:\.\d+)?")
 FIGURE_RE = re.compile(r"\d+\.\d+|\d{1,3}(?:,\d{3})+|(?<![\w.-])\d{3,}(?![\w.-])")
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}(?:T[\d:]+Z?)?")
-REQUEST_KEYS = {"request", "query", "rendered_query", "construct", "instances", "text", "label"}
+# verbatim inputs and names: a request, a model name, a column label. Never a value.
+REQUEST_KEYS = {"request", "query", "rendered_query", "construct", "instances", "text", "label", "model", "name", "columns", "arm_columns"}
 
 
 def page_literals() -> list[str]:

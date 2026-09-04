@@ -5,7 +5,7 @@ clone: /home/mehta5/compass-site  (--single-branch main from GitHub, cut at 2652
        deploy/model/ copied from the operator's clone, sha-verified by retriever.py at load;
        deploy/targets.json and the dictionary are read from the operator's clone by path,
        never copied here — see site/tools/*.py for the env vars)
-last green: 61ac724   (VERIFIED 2026-09-04 by ./site-check.sh on that sha, GREEN)
+last green: cf37207   (VERIFIED 2026-09-04 by ./site-check.sh on that sha, GREEN)
 check: ./site-check.sh
 note: main's .gitignore excludes *.json — site/artefacts is un-ignored (item 1)
       and step 6 asserts every loaded artefact is tracked.
@@ -28,7 +28,7 @@ note: compass-gen/STATE.md (7ef75fa) marks pipeline items 11 and 13 as landed. I
 - [x] 6  Intake panel (fields, rendered query, covered-instance drop; no tool calls)
 - [x] 7  Funnel panel (funnel.json from pipeline.gate in the generation clone)
 - [x] 10 Score panel (score.json: GenerationEnv stamp of the generation clone, gated)
-- [ ] 11 measurement section (architecture sweep + shipped model, all figures traced)
+- [x] 11 measurement section (measurements.json: five-encoder sweep parsed from arm_hybrid_e_D.md §2; shipped arms S/I, threshold and latency from the tracked smoke report)
 - [ ] 12 PNG export (SVG foreignObject, no library)
 - [ ] 13 download page source
 - [ ] 14 deploy (Pages workflow; enabling Pages is the operator's action)

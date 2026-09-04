@@ -79,6 +79,21 @@
   key_present false, key_fetchable false, branch ralph-loop, clean tree, sha recorded.
   Status gated; estimable denominator 0 (from the funnel capture); two reasons listed.
 
+## 2026-09-04 — items 7 and 10, process slip
+- Both commits were made while the console showed RED. Cause: the check ran before
+  `git add`, so step 6 saw untracked artefacts, and `| tail -1` returned tail's exit
+  code, not the check's. Re-ran unpiped on cf37207: GREEN. Rule from AGENTS.md
+  ("never piped") applies to site-check.sh too; recorded in SITE_ATTEMPTS.md.
+
+## 2026-09-04 — item 11
+- `build_measurements.py` parses the five sweep rows out of arm_hybrid_e_D.md §2 by
+  column, never retyping, and reads the shipped arms S and I, the threshold block and
+  latency from out/smoke_report_x86_64_Wright.json (tracked, run 2026-09-03). The sweep's
+  own JSONs are withheld; the artefact and the page both say the document is the record.
+- The footer is rendered from data: parameter count, serving latency, gate counts,
+  AUROC and negatives rejected. The wrong-pick AUROC is named as absent, not quoted.
+- Placement: below the stage rail, as the brief asks.
+
 ### Figure trace (done before item 1; primaries opened, not summaries)
 | figure | primary | run id | verdict |
 |---|---|---|---|

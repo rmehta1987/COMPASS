@@ -83,6 +83,17 @@
   .after{display:flex;gap:8px;flex-wrap:wrap}
   .after button{font-family:var(--mono);font-size:12px;padding:8px 12px}
 
+  .measure{margin:34px 0 0}
+  .measure h2{font-size:20px;margin:0 0 4px;letter-spacing:-.012em}
+  .measure p.lead{margin:0 0 16px;font-size:14px;color:var(--ink-2);max-width:82ch}
+  .tbl{overflow-x:auto;border:1px solid var(--rule);background:#fff;margin:0 0 18px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--rule-2);text-align:right;font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+  th{font-weight:600;color:var(--ink-2);background:var(--paper);letter-spacing:.03em;font-size:11px}
+  td:first-child,th:first-child{text-align:left;font-family:var(--sans);font-size:13.5px}
+  tr:last-child td{border-bottom:0}
+  td.hi{font-weight:600}
+  .prov{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin:-8px 0 18px}
   footer{border-top:1px solid var(--rule);margin-top:34px;padding:20px 0 54px;font-size:13px;color:var(--ink-2)}
   footer p{margin:0 0 7px;max-width:82ch}
   @media (max-width:820px){
@@ -111,11 +122,8 @@
     <nav class="rail" id="rail" aria-label="pipeline stage"></nav>
     <section class="panel" id="panel" aria-live="polite"></section>
   </div>
-  <footer>
-    <p>Every figure on this page is loaded from a committed run artefact with a
-    run id. Panels marked PLACEHOLDER have no committed artefact yet and show
-    no numbers.</p>
-  </footer>
+  <section class="measure" id="measure" aria-label="measurements"></section>
+  <footer id="foot"></footer>
 </main>
 
 <script>
@@ -260,6 +268,32 @@ function scorePanel(){
   return h;
 }
 
+function measure(){
+  const m=DATA.measurements, sh=m.shipped, S=sh.arms.S, I=sh.arms.I, th=sh.threshold, lat=sh.latency;
+  const best=Math.max(...m.sweep.rows.map(r=>r.recall_at_1));
+  const cell=(k,v)=>k.startsWith("recall_at")?v.toFixed(3):k==="params_m"?`${v}M`:k==="model"?esc(v):String(v);
+  let h=`<h2>What was measured</h2>
+  <p class="lead">Two tables, both on the same ${m.fixture.n_positive_rows}-row fixture (${m.fixture.n_negative_rows} held-out negatives). ${esc(m.fixture.note)}.</p>`;
+  h+=`<p class="sec">encoder sweep · ${esc(m.sweep.what)} · ${esc(m.sweep.machine)} · dictionary ${esc(m.sweep.dictionary_version_hash)}</p>
+  <div class="tbl"><table><thead><tr>${m.sweep.columns.map(([,l])=>`<th>${esc(l)}</th>`).join("")}</tr></thead><tbody>`
+   +m.sweep.rows.map(r=>`<tr>${m.sweep.columns.map(([k])=>`<td class="${k==="recall_at_1"&&r[k]===best?"hi":""}">${cell(k,r[k])}</td>`).join("")}</tr>`).join("")
+   +`</tbody></table></div>
+  <p class="prov">${esc(m.provenance.run_id)} · ${esc(m.provenance.sweep_artefacts_note)}</p>`;
+  h+=`<p class="sec">shipped model · ${esc(sh.model)} · ${sh.params_m}M params · ${esc(sh.training.negatives)}, temperature ${sh.training.temperature} · ${sh.n_targets.toLocaleString()} targets · dictionary ${esc(sh.dictionary_version_hash)}</p>
+  <div class="tbl"><table><thead><tr><th>query arm</th>${sh.arm_columns.map(([,l])=>`<th>${esc(l)}</th>`).join("")}<th>negatives rejected</th><th>AUROC absent vs present</th></tr></thead><tbody>`
+   +[["S",S],["I",I]].map(([k,a])=>`<tr><td>${k} · ${esc(a.label)}</td>${sh.arm_columns.map(([c])=>`<td class="${k==="I"&&c==="recall_at_1"?"hi":""}">${cell(c,a[c])}</td>`).join("")}<td>${a.negatives_rejected} / ${a.n_negatives}</td><td>${a.auroc_absent_vs_present.toFixed(4)}</td></tr>`).join("")
+   +`</tbody></table></div>
+  <div class="tbl"><table><thead><tr><th>threshold</th><th>min_cos</th><th>coverage</th><th>precision</th><th>recall</th><th>F1</th><th>candidate values</th><th>latency</th></tr></thead><tbody>
+   <tr><td>shipped, F1-maximising over positives</td><td>${th.min_cos.toFixed(6)}</td><td>${th.coverage.toFixed(4)}</td><td>${th.precision.toFixed(4)}</td><td>${th.recall.toFixed(4)}</td><td>${th.f1.toFixed(4)}</td><td>${th.candidate_taus}</td><td>${lat.query_ms_isolated_single} ms · ${esc(lat.machine)} · ${lat.threads} threads</td></tr>
+  </tbody></table></div>
+  <p class="prov">${esc(m.provenance.commit)} · ${esc(lat.note)}</p>`;
+  h+=`<div class="none">${esc(sh.wrong_pick_detection.note)}.</div>`;
+  el("#measure").innerHTML=h;
+  el("#foot").innerHTML=`<p>Retrieval is shipped: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, no model call. Hypothesis generation is not: the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} pairs without two survey-metadata exports, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>.</p>
+  <p>Abstention on constructs the instrument does not measure is reliable on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(4)}, ${I.negatives_rejected} of ${I.n_negatives} negatives rejected). Detecting its own wrong pick is a different question, and the one figure for it is not on this page. Whether the fixture is a ceiling or a floor is unresolved.</p>
+  <p>Every figure above is loaded from <code>site/artefacts/</code> with its run id or commit. Panels marked PLACEHOLDER have no committed artefact and show no numbers.</p>`;
+}
+
 function draw(){
   const s=DATA.stages.stages.find(x=>x.id===sel);
   let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
@@ -282,7 +316,7 @@ el("#dl-src").onclick=()=>{
   const a=document.createElement("a");a.href=URL.createObjectURL(b);
   a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
 
-load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); draw();}).catch(e=>{
+load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); draw(); measure();}).catch(e=>{
   el("#panel").innerHTML=`<h2>Artefacts did not load</h2><div class="ph"><b>NO DATA</b> — ${esc(e.message)}. Serve this directory over HTTP; a file:// open cannot fetch the artefacts.</div>`;
 });
 </script>

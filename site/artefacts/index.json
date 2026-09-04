@@ -9,6 +9,7 @@
     "runs.json",
     "absence.json",
     "funnel.json",
-    "score.json"
+    "score.json",
+    "measurements.json"
   ]
 }
