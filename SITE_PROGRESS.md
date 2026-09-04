@@ -125,7 +125,9 @@
   checkout (the .gitignore trap, again, at the deploy side), uploads `site/` as the Pages
   artefact and deploys. Source must be set to "GitHub Actions" in Settings → Pages by the
   operator; until then the deploy step fails and nothing is published.
-- Items 1–3 were green before the first push; the branch is pushed with this commit.
+- Items 1–3 were green before the first push. `git push` of the workflow commit was refused
+  (token without `workflow` scope); origin/site holds 297869b, the commit before it.
+  The operator pushes the workflow with a workflow-scoped token, then enables Pages.
 
 ### Figure trace (done before item 1; primaries opened, not summaries)
 | figure | primary | run id | verdict |
