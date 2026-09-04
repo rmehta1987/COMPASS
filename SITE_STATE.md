@@ -27,7 +27,7 @@ note: compass-gen/STATE.md (7ef75fa) marks pipeline items 11 and 13 as landed. I
 - [x] 5  Retriever panel (runs.json + absence.json; tool log, record, candidates, limitation)
 - [x] 6  Intake panel (fields, rendered query, covered-instance drop; no tool calls)
 - [x] 7  Funnel panel (funnel.json from pipeline.gate in the generation clone)
-- [ ] 10 Score panel (GenerationEnv, key_present false, why scoring has not run)
+- [x] 10 Score panel (score.json: GenerationEnv stamp of the generation clone, gated)
 - [ ] 11 measurement section (architecture sweep + shipped model, all figures traced)
 - [ ] 12 PNG export (SVG foreignObject, no library)
 - [ ] 13 download page source

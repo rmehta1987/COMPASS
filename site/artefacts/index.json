@@ -8,6 +8,7 @@
     "stages.json",
     "runs.json",
     "absence.json",
-    "funnel.json"
+    "funnel.json",
+    "score.json"
   ]
 }

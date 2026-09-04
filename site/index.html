@@ -242,6 +242,24 @@ function funnelPanel(){
   return h;
 }
 
+function scorePanel(){
+  const sc=DATA.score, e=sc.generation_env;
+  const b=v=>v?`<span class="flag">true</span>`:`false <span class="good">required</span>`;
+  let h=`<p class="sec">tool calls</p><div class="none">None in the generation clone. Scoring runs in a separate clone that holds the key, and has not run.</div>`;
+  h+=`<p class="sec">GenerationEnv · stamped ${esc(sc.provenance.run_id)}</p><dl>`
+    +row("key_present",b(e.key_present),true)
+    +row("key_fetchable",b(e.key_fetchable),true)
+    +row("branch",esc(e.branch),true)
+    +row("tree_sha",esc(e.tree_sha),true)
+    +row("tree_clean",String(e.tree_clean),true)
+    +row("clean_for_scoring",e.clean_for_scoring?`<span class="good">true</span>`:`<span class="flag">false</span>`,true)
+    +row("estimable denominator",`<span class="flag">${sc.estimable_denominator}</span>`,true)
+    +row("status",`<span class="flag">${esc(sc.status)}</span> · scoring has run: ${sc.scoring_has_run}`,true)
+    +`</dl>`;
+  h+=`<p class="sec">why scoring has not run</p><ul class="does">${sc.why_not.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`;
+  return h;
+}
+
 function draw(){
   const s=DATA.stages.stages.find(x=>x.id===sel);
   let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
@@ -250,6 +268,7 @@ function draw(){
   else if(sel==="retriever"&&cur) h+=retrieverPanel();
   else if(sel==="intake"&&cur) h+=intakePanel();
   else if(sel==="funnel") h+=funnelPanel();
+  else if(sel==="score") h+=scorePanel();
   else h+=placeholder(s);
   el("#panel").innerHTML=h;
 }

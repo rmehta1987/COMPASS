@@ -91,7 +91,7 @@
         "Reports match rate only beside contamination and leakage verdicts",
         "Runs exactly once, on a tag, before any tuning, so it cannot become a feedback signal"
       ],
-      "status_label": "PLACEHOLDER",
+      "status_label": "gated · not run",
       "status": "blocked",
       "placeholder": "Will show the generation clone's GenerationEnv stamp and why scoring has not run.",
       "waits_for": null

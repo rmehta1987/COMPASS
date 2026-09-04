@@ -74,6 +74,11 @@
 - Real output: enumerated 384, pruned 128, live 256, gate passed 0, blocked 256, every
   pair `blocked_no_metadata` on the two missing exports, `n_source` unknown.
 
+## 2026-09-04 — item 10
+- score.json: `pipeline.generation_env.stamp()` run against the generation clone:
+  key_present false, key_fetchable false, branch ralph-loop, clean tree, sha recorded.
+  Status gated; estimable denominator 0 (from the funnel capture); two reasons listed.
+
 ### Figure trace (done before item 1; primaries opened, not summaries)
 | figure | primary | run id | verdict |
 |---|---|---|---|

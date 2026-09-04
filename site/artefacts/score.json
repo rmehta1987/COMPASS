@@ -1,0 +1,24 @@
+{
+ "schema": "compass_site/score/1",
+ "provenance": {
+  "source": "site/tools/capture_pipeline_state.py calling pipeline.generation_env.stamp() on the generation clone",
+  "run_id": "2026-09-04T21:40:06+00:00",
+  "commit": "generation clone ralph-loop 7ef75fa",
+  "dictionary_version_hash": "3dc8415eccfe"
+ },
+ "generation_env": {
+  "key_present": false,
+  "key_fetchable": false,
+  "tree_sha": "7ef75fa2e35810c0fb86f5b53174465d230b24b3",
+  "tree_clean": true,
+  "branch": "ralph-loop",
+  "clean_for_scoring": true
+ },
+ "status": "gated",
+ "scoring_has_run": false,
+ "why_not": [
+  "the estimability gate passes zero pairs without the two survey metadata exports, so there is no estimable denominator",
+  "the baseline score runs once, on a tag, in a separate clone that holds the key; that item is still open in the pipeline loop"
+ ],
+ "estimable_denominator": 0
+}
