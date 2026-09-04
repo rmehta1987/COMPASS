@@ -25,7 +25,7 @@ data placed in compass-gen (all gitignored): raw/ (public download), deploy/mode
       compass-gen-artifacts.tar.gz, 2026-09-04; screened: no key files inside).
 
 ## items
-- [ ] 1  check.sh v1
+- [x] 1  check.sh v1
 - [ ] 2  RetrievalRecord dataclass
 - [ ] 3  retrieval adapter
 - [ ] 4  adapter step in check.sh
