@@ -112,6 +112,14 @@
   script that `load()` prefers over fetch. The mockup's version would have shown
   "Artefacts did not load" when opened from disk. The saved file is one HTML file.
 
+## 2026-09-04 — items 8 and 9 (blocked, re-verified)
+- Read `pipeline/artefact.py` (redact() replaces wording with sha256 digests, keeps keys)
+  and listed `run/` in the generation clone: only August specifier runs in the old
+  schema, whose `selection_rationale`, tool-log `log` strings and `quoted_wording` carry
+  instrument wording and keys in prose. No SpecifierArtefact or HypothesisRecord has been
+  emitted; that is the baseline run, pipeline item 15, still open. The two panels now say
+  exactly that, with status `blocked · no run yet`, and show no invented output.
+
 ### Figure trace (done before item 1; primaries opened, not summaries)
 | figure | primary | run id | verdict |
 |---|---|---|---|

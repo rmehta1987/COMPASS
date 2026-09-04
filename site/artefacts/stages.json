@@ -1,7 +1,7 @@
 {
   "schema": "compass_site/stages/1",
   "provenance": {
-    "source": "authored 2026-09-04 from generate/funnel.py, pipeline/gate.py, pipeline/generation_env.py, agent/specifier.py docstrings and deploy/manifest.json prose; carries no figures",
+    "source": "authored 2026-09-04 from generate/funnel.py, pipeline/gate.py, pipeline/generation_env.py, agent/specifier.py docstrings and deploy/manifest.json prose; carries no figures; specifier and record status re-read 2026-09-04 from the generation clone's STATE.md and run/ listing",
     "commit": "COMPASS main 265241d; generation clone ralph-loop 7ef75fa",
     "tier": "A"
   },
@@ -61,10 +61,10 @@
         "tool_authority overwrites every environment-computed field and drops stale rationales",
         "_rank() is a pure function of the record: no judge, no self-rating"
       ],
-      "status_label": "PLACEHOLDER",
-      "status": "built",
-      "placeholder": "Will show a real reasoning-loop tool log. Waits for the pipeline loop.",
-      "waits_for": "the pipeline loop's item 11 (specifier emits the record), then a tier-A redaction of its keys"
+      "status_label": "blocked · no run yet",
+      "status": "blocked",
+      "placeholder": "Will show a real reasoning-loop tool log beside the record it produced, keys pseudonymised the same way as the retriever runs.",
+      "waits_for": "the pipeline loop's baseline run (its item 15): the artefact code landed (items 11 and 13 there) but no run has produced one, and the earlier August runs are an older schema whose free text carries instrument wording and keys, which tier A cannot show"
     },
     {
       "id": "record",
@@ -76,10 +76,10 @@
         "Holds the causal structure as a typed DAG; a mediator under a cross-sectional design fails validation",
         "Reserves an empty critique seam, so adding a reviewer later needs no schema change"
       ],
-      "status_label": "PLACEHOLDER",
-      "status": "built",
-      "placeholder": "Will show a real HypothesisRecord. Waits for the pipeline loop.",
-      "waits_for": "the pipeline loop's item 13 (output artefact schema), then a tier-A redaction of its keys"
+      "status_label": "blocked · no run yet",
+      "status": "blocked",
+      "placeholder": "Will show a real HypothesisRecord: full retrieval records for each variable, the estimability stamp, the typed DAG and the empty critique seam.",
+      "waits_for": "the same baseline run; a record is only emitted by it"
     },
     {
       "id": "score",

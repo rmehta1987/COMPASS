@@ -5,7 +5,7 @@ clone: /home/mehta5/compass-site  (--single-branch main from GitHub, cut at 2652
        deploy/model/ copied from the operator's clone, sha-verified by retriever.py at load;
        deploy/targets.json and the dictionary are read from the operator's clone by path,
        never copied here — see site/tools/*.py for the env vars)
-last green: 8e3fd4d   (VERIFIED 2026-09-04 by ./site-check.sh on that sha, GREEN)
+last green: 17eef4c   (VERIFIED 2026-09-04 by ./site-check.sh on that sha, GREEN)
 check: ./site-check.sh
 note: main's .gitignore excludes *.json — site/artefacts is un-ignored (item 1)
       and step 6 asserts every loaded artefact is tracked.
@@ -15,9 +15,8 @@ note: the brief's figure table needed two corrections before item 4 (see SITE_PR
       the n42 false accept is committed only as a bare score (0.731576, no key, no margin)
       in that report's threshold.I.knife_edge_negatives_within_0.003 — item 4 re-runs it.
       AUROC 0.719 traces only to a withdrawn artefact (QUERY_EXPANSION.md) and is dropped.
-note: compass-gen/STATE.md (7ef75fa) marks pipeline items 11 and 13 as landed. Items 8
-      and 9 here stay BLOCKED until the redacted artefacts are inspected for tier A
-      (keys are tier B; the records must be pseudonymised the same way as the runs).
+note: compass-gen/STATE.md (7ef75fa) marks pipeline items 11 and 13 landed as CODE; no
+      run has produced the new artefact yet (see BLOCKED). Re-checked 2026-09-04.
 
 ## items
 - [x] 1  strip fabricated figures; un-ignore site/artefacts; panels PLACEHOLDER
@@ -34,8 +33,11 @@ note: compass-gen/STATE.md (7ef75fa) marks pipeline items 11 and 13 as landed. I
 - [ ] 14 deploy (Pages workflow; enabling Pages is the operator's action)
 
 ## BLOCKED
-8  specifier panel — pipeline loop item 11 (see note: may be unblockable)
-9  record panel — pipeline loop item 13 (see note: may be unblockable)
+8  specifier panel — the pipeline loop's baseline run (its item 15). Its items 11 and 13
+   landed as code (7ef75fa) but no run has emitted a SpecifierArtefact; the August runs
+   under compass-gen/run/ are the older schema and carry wording and keys in free prose.
+   When a redacted artefact exists: pseudonymise keys with the run map, copy in as JSON.
+9  record panel — the same run; a HypothesisRecord is only produced by it.
 
 ## PARKED
 (item · three attempts · why)
