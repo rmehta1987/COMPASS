@@ -18,7 +18,7 @@
   "torch_threads": 4,
   "cuda_visible": false
  },
- "load_s": 0.35,
+ "load_s": 0.31,
  "template": {
   "rows_rendered": 268,
   "rows_differing": 0,
@@ -26,7 +26,7 @@
  },
  "reencode": {
   "n_targets": 1353,
-  "wall_s": 59.6,
+  "wall_s": 53.7,
   "threads": 4,
   "max_abs_delta_local_vs_transferred": 2.942979335784912e-07,
   "top1_agreement_224_rows_local_vs_transferred": "224/224",
@@ -891,7 +891,7 @@
   }
  },
  "latency": {
-  "query_ms_isolated_single": 14.24,
+  "query_ms_isolated_single": 13.41,
   "threads": 4,
   "n_queries": 224
  },
@@ -918,10 +918,7 @@
   }
  ],
  "result": {
-  "ok": false,
-  "failures": [
-   "arm S tau* under single-query serving: got 0.729476, expected 0.731902",
-   "arm F tau* under single-query serving: got 0.729476, expected 0.731902"
-  ]
+  "ok": true,
+  "failures": []
  }
 }

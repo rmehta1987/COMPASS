@@ -85,9 +85,19 @@
      "auroc": 0.9874
     }
    },
-   "report": "out/smoke_report_x86_Wright.json"
+   "report": "out/smoke_report_x86_Wright.json",
+   "query_ms_isolated_single_runs": [
+    12.88,
+    13.3,
+    13.41,
+    14.24,
+    23.76
+   ],
+   "query_ms_note": "five runs of step 6 on this machine, all at threads=4; median 13.41 ms. The 23.76 outlier shared the box with a corpus re-encode. query_ms_isolated_single above is one of these runs, not a mean."
   },
-  "latency_note": "One query per forward pass, fp32, warm. The 2.94 ms/query quoted in RESULTS.md is query_ms_per_row from a BATCHED 224-row scoring run (out/ft_bge-small_nn0_t0.10.json) and is not per-call latency; src/finalize.py's isolated figure on the training machine was 18.3 ms. Re-measure on the serving machine with deploy/smoke_test.py step 6."
+  "latency_note": "One query per forward pass, fp32, warm. The 2.94 ms/query quoted in RESULTS.md is query_ms_per_row from a BATCHED 224-row scoring run (out/ft_bge-small_nn0_t0.10.json) and is not per-call latency; src/finalize.py's isolated figure on the training machine was 18.3 ms. Re-measure on the serving machine with deploy/smoke_test.py step 6.",
+  "serves": "Wright",
+  "serves_why": "serving_reference records that the x86 machine REPRODUCES the bundle; this key records that it SERVES it. Per-query latency is paid on every pipeline call, corpus encode once per dictionary_version_hash: Wright is ~3x faster per isolated query (median 13.4 ms vs 43.6 ms at the same 4 threads) and ~3x slower to encode the corpus (59.6 s vs 21.2 s), so the trade favours Wright by the ratio of calls to rebuilds. Not a correctness argument -- both machines now pass deploy/smoke_test.py in full. Change this key alone to move serving."
  },
  "corpus": {
   "n_targets": 1353,
