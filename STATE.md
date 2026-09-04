@@ -60,3 +60,5 @@ note: WORDING TENSION for items 11 and 15 (found at item 8). A funnel pair's
   - [ ] 15d phase 2 in /home/mehta5/compass-score (full clone, wide refspec, scoring-key fetched at 215ee9e; prevalence_key.py 685 lines, leak_facts.py 412 lines present; content not read): checkout the tag, run the harness, commit the four numbers as artefacts/<run_id>/BASELINE.md on ralph-loop; never regenerate; halt on a contamination verdict
 ## PARKED
 (item · three attempts · why)
+## DEFERRED (operator, 2026-09-04: "we will do it later")
+- D3 effort/thinking pin: the Specifier's `claude -p` runs haiku with thinking ON at the CLI's default effort, unpinned anywhere (probe 2026-09-04: a one-word call returned a thinking block, 35 of 42 output tokens; sealed settings.json pins nothing; ~/.claude/settings.json sets effortLevel only for opus/sonnet/fable). After 15d: (a) pass an explicit --effort in agent/cli_backend.py and stamp it into the run identity (Lane A, user amendment); (b) A/B on the same seeded ~10-pair subset at two levels: wall clock, samples surviving the gate, validator discards, harness match rate — indicative only at that n. Not to be touched during the baseline.
