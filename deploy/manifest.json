@@ -29,11 +29,11 @@
  },
  "device": {
   "pinned": "cpu",
-  "why": "The fine-tuned checkpoint has exactly one GPU/CPU top-1 disagreement in 224 rows -- row 107, 'primary method used to get to work', max |vector delta| 4.06e-7 (out/final_bge-small_ft.json). Not a bug, but that query is the hardest row in every report in this project, so the flip lands exactly where device parity matters. CPU-only serving avoids it and costs little: 43.6 ms per isolated query at 4 threads, 21.2s to encode the whole corpus.",
+  "why": "The fine-tuned checkpoint has exactly one GPU/CPU top-1 disagreement in 224 rows -- row 107, 'primary method used to get to work', max |vector delta| 4.06e-7 (out/final_bge-small_ft.json). Not a bug, but that query is the hardest row in every report in this project, so the flip lands exactly where device parity matters. CPU-only serving avoids it and costs little: 44.2 ms per isolated query at 4 threads, 21.2s to encode the whole corpus.",
   "vectors_computed_on": "cpu",
   "threads": 4,
   "threads_why": "retriever.py calls torch.set_num_threads with this value unless the caller overrides it. Unpinned thread counts make latency unreproducible across machines with different core counts.",
-  "query_ms_isolated_single_at_pinned_threads": 43.6,
+  "query_ms_isolated_single_at_pinned_threads": 44.23,
   "latency_measured_on": "spark-2500 aarch64 Linux-6.17.0-1026-nvidia-aarch64-with-glibc2.39",
   "serving_reference": {
    "machine": {
@@ -48,9 +48,9 @@
     "cuda_visible": false
    },
    "run": "2026-09-03",
-   "query_ms_isolated_single": 14.24,
+   "query_ms_isolated_single": 13.06,
    "threads": 4,
-   "reencode_all_targets_s": 59.6,
+   "reencode_all_targets_s": 57.9,
    "max_abs_vector_delta_vs_transferred": 2.942979335784912e-07,
    "top1_agreement_224_rows": "224/224",
    "acceptance": {
@@ -95,9 +95,9 @@
    ],
    "query_ms_note": "five runs of step 6 on this machine, all at threads=4; median 13.41 ms. The 23.76 outlier shared the box with a corpus re-encode. query_ms_isolated_single above is one of these runs, not a mean."
   },
-  "latency_note": "One query per forward pass, fp32, warm. The 2.94 ms/query quoted in RESULTS.md is query_ms_per_row from a BATCHED 224-row scoring run (out/ft_bge-small_nn0_t0.10.json) and is not per-call latency; src/finalize.py's isolated figure on the training machine was 18.3 ms. Re-measure on the serving machine with deploy/smoke_test.py step 6.",
   "serves": "Wright",
-  "serves_why": "serving_reference records that the x86 machine REPRODUCES the bundle; this key records that it SERVES it. Per-query latency is paid on every pipeline call, corpus encode once per dictionary_version_hash: Wright is ~3x faster per isolated query (median 13.4 ms vs 43.6 ms at the same 4 threads) and ~3x slower to encode the corpus (59.6 s vs 21.2 s), so the trade favours Wright by the ratio of calls to rebuilds. Not a correctness argument -- both machines now pass deploy/smoke_test.py in full. Change this key alone to move serving."
+  "serves_why": "serving_reference records that the x86 machine REPRODUCES the bundle; this key records that it SERVES it. Per-query latency is paid on every pipeline call, corpus encode once per dictionary_version_hash: Wright is ~3x faster per isolated query (median 13.4 ms vs 43.6 ms at the same 4 threads) and ~3x slower to encode the corpus (54-60 s vs 21 s), so the trade favours Wright by the ratio of calls to rebuilds. Not a correctness argument -- both machines pass deploy/smoke_test.py in full. Change this key alone to move serving.",
+  "latency_note": "One query per forward pass, fp32, warm. The 2.94 ms/query quoted in RESULTS.md is query_ms_per_row from a BATCHED 224-row scoring run (out/ft_bge-small_nn0_t0.10.json) and is not per-call latency; src/finalize.py's isolated figure on the training machine was 18.3 ms. Re-measure on the serving machine with deploy/smoke_test.py step 6."
  },
  "corpus": {
   "n_targets": 1353,
