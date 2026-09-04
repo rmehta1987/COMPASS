@@ -24,6 +24,7 @@ data placed in compass-gen (all gitignored): raw/ (public download), deploy/mode
       benchmark/fixtures/ (retrieval_queries sha 8999c803… matches), run/ (from
       compass-gen-artifacts.tar.gz, 2026-09-04; screened: no key files inside).
 
+note: item 15 precondition VERIFIED 2026-09-04 in compass-score only (never here): scoring-key present on the remote and fetched there. claude CLI 2.1.260 authenticated (one-word haiku call returned OK).
 note: WORDING TENSION for items 11 and 15 (found at item 8). A funnel pair's
       requests are built from the construct's stem, so those RetrievalRecords
       carry withheld instrument wording in request.construct_text and query
@@ -52,6 +53,10 @@ note: WORDING TENSION for items 11 and 15 (found at item 8). A funnel pair's
 - [x] 13 output artefact schema (pipeline/causal_structure.py, pipeline/hypothesis.py)
 - [x] 13a critique seam + GenerationEnv (pipeline/hypothesis.py, pipeline/generation_env.py)
 - [x] 14 DAG validators (pipeline/validators.py)
-- [ ] 15 baseline score, once, on a tag (phase 2 in compass-score; scoring-key is on the remote at 215ee9e)
+- [ ] 15 baseline score, once, on a tag — split 2026-09-04 after items 1-14, one commit each:
+  - [ ] 15a pipeline/run.py: frame under D1=narrow -> gate --allow-unestimable -> auto_intake -> ResolvedPair -> specify (PairLike) -> validators -> HypothesisRecord (redacted) -> ledger; artefacts under artefacts/<run_id>/ (a NEW tracked dir: out/, run/, runs/, parked/ are gitignored); end-to-end test on ScriptedBackend, no model
+  - [ ] 15b benchmark/baseline_score.py: takes artefact paths only, refuses any artefact whose GenerationEnv is missing or not clean_for_scoring, match rule = hypothesis outcome construct in the paper's outcome_keys_on_record(pmid) AND exposure construct resolved from the paper's exposure_terms through the deployed retriever (EXPOSURE_KEYS in scorability.py is empty by design; the exposure side has terms only); reports match rate N/M, ledger denominator, GenerationEnv, strata, plus contamination_check / input_leakage / unearned_assertions verdicts; key modules imported lazily so its unit tests run here on an injected key table
+  - [ ] 15c phase 1 live run in compass-gen: frame = medication + reproductive_hormonal exposures x chronic_condition outcomes through the funnel (D1 narrow); time ONE pair at k=5 on claude-haiku-4-5 first, then M = min(live frame, what fits ~6 h wall clock) as a seeded (seed 0) deterministic subset, M recorded in the ledger; commit + push artefacts, stamp GenerationEnv after the push, tag baseline-<dictionary hash>-<run_id>
+  - [ ] 15d phase 2 in /home/mehta5/compass-score (full clone, wide refspec, scoring-key fetched at 215ee9e; prevalence_key.py 685 lines, leak_facts.py 412 lines present; content not read): checkout the tag, run the harness, commit the four numbers as artefacts/<run_id>/BASELINE.md on ralph-loop; never regenerate; halt on a contamination verdict
 ## PARKED
 (item · three attempts · why)
