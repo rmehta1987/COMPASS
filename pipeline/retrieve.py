@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from pipeline.retrieval_record import Hit, RequestSnapshot, RetrievalRecord
+from pipeline.strata import Strata
 
 ROOT = Path(__file__).resolve().parent.parent
 DEPLOY = ROOT / "deploy"
@@ -96,13 +97,16 @@ def load_template() -> Any:
 
 
 def retrieve(retriever: RetrieverLike, req: Any,
-             min_cos: float | None = None) -> RetrievalRecord:
+             min_cos: float | None = None,
+             strata: Strata | None = None) -> RetrievalRecord:
     """Run one request through the deployed retriever and record the outcome.
 
     Args:
         retriever: The loaded bundle.
         req: A `RetrievalRequest`; its `to_query()` is what the encoder sees.
         min_cos: Abstention threshold; the manifest's when None.
+        strata: Precomputed strata; built from the retriever when None. Pass
+            one when calling in a loop, it classifies every target.
 
     Returns:
         The record, resolved or abstained. Never raises on a miss: an
@@ -117,13 +121,18 @@ def retrieve(retriever: RetrieverLike, req: Any,
                key=lambda h: int(h["target_id"]))
     abstained = best_cos < thr
     margin_12 = None if abstained else round(best_cos - float(top[1]["cos"]), 6)
+    hit: Hit | None = None
+    if not abstained:
+        if strata is None:
+            strata = Strata.from_retriever(retriever)
+        stratum, unmeasured = strata.of(int(best["target_id"]))
+        hit = Hit.from_hit(best, stratum=stratum, unmeasured_stratum=unmeasured)
     return RetrievalRecord(
         request=RequestSnapshot.from_request(req), query=query,
         dictionary_hash=str(retriever.manifest["dictionary_version_hash"]),
         min_cos=thr, best_cos=best_cos, margin=best_cos - thr,
         margin_12=margin_12, abstained=abstained,
-        nearest_key=str(best["key"]),
-        hit=None if abstained else Hit.from_hit(best))
+        nearest_key=str(best["key"]), hit=hit)
 
 
 def shipped_expectation() -> float:
@@ -158,11 +167,12 @@ def reproduce(retriever: RetrieverLike, prereg: Path = PREREG) -> dict[str, Any]
     tpl = load_template()
     rows = json.loads(prereg.read_text())["positives"]
     by_key = {m: t["target_id"] for t in retriever.targets for m in t["members"]}
+    strata = Strata.from_targets(retriever.targets, [r["gold_key"] for r in rows])
     rank1 = abstained = 0
     for row in rows:
         req = tpl.RetrievalRequest(construct=row["query"], role=tpl.VariableRole.EXPOSURE,
                                    instances=tuple(row["instances"]))
-        rec = retrieve(retriever, req)
+        rec = retrieve(retriever, req, strata=strata)
         rank1 += by_key[rec.nearest_key] == by_key[row["gold_key"]]
         abstained += rec.abstained
     return {"n": len(rows), "rank1": rank1, "R@1": round(rank1 / len(rows), 3),

@@ -18,7 +18,8 @@ REQ = RequestSnapshot(construct_text="use of anti-inflammatory medication",
                       timeframe="past 12 months",
                       instances=("ibuprofen", "naproxen"))
 HIT = Hit(key="m2:Q9.95", construct_key="m2:Q9.95", module="2", target_id=17,
-          fold_size=1, n_siblings=0, members=("m2:Q9.95",))
+          fold_size=1, n_siblings=0, members=("m2:Q9.95",),
+          stratum="reproductive_hormonal", unmeasured_stratum=False)
 RESOLVED = RetrievalRecord(request=REQ, query="use of anti-inflammatory medication "
                            "past 12 months: ibuprofen, naproxen",
                            dictionary_hash="3dc8415eccfe", min_cos=0.729476,
@@ -48,7 +49,8 @@ def test_the_wire_format_is_plain_json_with_no_wording_fields():
     assert set(d) == {"request", "query", "dictionary_hash", "min_cos", "best_cos",
                       "margin", "margin_12", "abstained", "nearest_key", "hit"}
     assert set(d["hit"]) == {"key", "construct_key", "module", "target_id",
-                             "fold_size", "n_siblings", "members"}
+                             "fold_size", "n_siblings", "members", "stratum",
+                             "unmeasured_stratum"}
     for wording in ("stem", "option", "text", "question_text"):
         assert wording not in d["hit"]
 
@@ -86,8 +88,9 @@ def test_hit_from_retriever_dict_drops_wording():
     raw = {"target_id": 3, "key": "m1:Q5.4", "construct_key": "m1:Q5.4",
            "module": 1, "stem": "WORDING", "option": "WORDING", "fold_size": 2,
            "n_siblings": 4, "members": ["m1:Q5.4", "m1:Q5.4_1"], "cos": 0.73}
-    h = Hit.from_hit(raw)
+    h = Hit.from_hit(raw, stratum="ses_employment", unmeasured_stratum=True)
     assert h.key == "m1:Q5.4" and h.module == "1"
+    assert h.stratum == "ses_employment" and h.unmeasured_stratum is True
     assert h.members == ("m1:Q5.4", "m1:Q5.4_1")
     assert "WORDING" not in h.model_dump_json()
 

@@ -29,7 +29,7 @@ data placed in compass-gen (all gitignored): raw/ (public download), deploy/mode
 - [x] 2  RetrievalRecord dataclass (pipeline/retrieval_record.py)
 - [x] 3  retrieval adapter (pipeline/retrieve.py; --reproduce = 0.643)
 - [x] 4  adapter step in check.sh (step 6)
-- [ ] 5  unmeasured_stratum flag
+- [x] 5  unmeasured_stratum flag (pipeline/strata.py, Hit.unmeasured_stratum)
 - [ ] 6  pipeline/canary.py C1–C3
 - [ ] 7  user intake
 - [ ] 8  auto intake

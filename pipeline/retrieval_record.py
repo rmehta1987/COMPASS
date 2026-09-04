@@ -74,6 +74,11 @@ class Hit(BaseModel):
         fold_size: How many dictionary rows fold into this target.
         n_siblings: How many other targets share the construct.
         members: Every variable key folded into this target, including `key`.
+        stratum: The target's stratum by `src/char_strata.py`'s keyword rule.
+        unmeasured_stratum: True when the retrieval benchmark has zero gold
+            rows in that stratum, so its accuracy there is unknown, not poor.
+            Four such strata hold the mediators of every disparities
+            hypothesis; see `pipeline/strata.py`.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -85,13 +90,18 @@ class Hit(BaseModel):
     fold_size: int = Field(ge=1)
     n_siblings: int = Field(ge=0)
     members: tuple[str, ...] = Field(min_length=1)
+    stratum: str = Field(min_length=1)
+    unmeasured_stratum: bool
 
     @classmethod
-    def from_hit(cls, hit: dict[str, Any]) -> Hit:
+    def from_hit(cls, hit: dict[str, Any], *, stratum: str,
+                 unmeasured_stratum: bool) -> Hit:
         """Build from a `CompassRetriever.search()` / `select()` dict.
 
         Args:
             hit: One hit dict as the retriever returns it.
+            stratum: From `pipeline.strata.Strata.of`.
+            unmeasured_stratum: Likewise.
 
         Returns:
             The keys-only view of it. Wording fields are dropped on purpose.
@@ -99,7 +109,8 @@ class Hit(BaseModel):
         return cls(key=hit["key"], construct_key=hit["construct_key"],
                    module=str(hit["module"]), target_id=hit["target_id"],
                    fold_size=hit["fold_size"], n_siblings=hit["n_siblings"],
-                   members=tuple(hit["members"]))
+                   members=tuple(hit["members"]), stratum=stratum,
+                   unmeasured_stratum=unmeasured_stratum)
 
 
 class RetrievalRecord(BaseModel):

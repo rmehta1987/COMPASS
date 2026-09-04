@@ -26,14 +26,14 @@ class FakeRetriever:
     manifest: ClassVar[dict[str, Any]] = {"dictionary_version_hash": "3dc8415eccfe"}
     targets: ClassVar[list[dict[str, Any]]] = [
         {"target_id": 1, "canonical_key": "m2:Q9.95", "construct_key": "m2:Q9.95",
-         "module": "2", "stem": "S", "option": "O", "fold_size": 1, "siblings": [],
-         "members": ["m2:Q9.95"]},
+         "module": "2", "stem": "ever used hormone therapy for menopause", "option": "O",
+         "fold_size": 1, "siblings": [], "members": ["m2:Q9.95"]},
         {"target_id": 3, "canonical_key": "m1:Q5.4~dup", "construct_key": "m1:Q5.4",
-         "module": "1", "stem": "S", "option": "O", "fold_size": 1, "siblings": [1],
-         "members": ["m1:Q5.4~dup"]},
+         "module": "1", "stem": "total household income", "option": "O",
+         "fold_size": 1, "siblings": [1], "members": ["m1:Q5.4~dup"]},
         {"target_id": 2, "canonical_key": "m1:Q5.4", "construct_key": "m1:Q5.4",
-         "module": "1", "stem": "S", "option": "O", "fold_size": 2, "siblings": [1],
-         "members": ["m1:Q5.4", "m1:Q5.4_1"]},
+         "module": "1", "stem": "total household income", "option": "O",
+         "fold_size": 2, "siblings": [1], "members": ["m1:Q5.4", "m1:Q5.4_1"]},
     ]
 
     def __init__(self, cos: tuple[float, ...]) -> None:
@@ -69,6 +69,9 @@ def test_resolved_record_carries_the_shipped_query_and_threshold():
     assert rec.margin == pytest.approx(0.81 - TAU)
     assert rec.margin_12 == pytest.approx(0.04)
     assert rec.hit.key == rec.nearest_key == "m2:Q9.95"
+    # stratum from the committed classifier; unmeasured because the fake target
+    # set folds none of the real gold keys, so every stratum has zero rows
+    assert rec.hit.stratum == "reproductive_hormonal" and rec.hit.unmeasured_stratum
     assert rec.request.population is None and rec.request.role == "exposure"
     assert rec.dictionary_hash == "3dc8415eccfe"
 
@@ -105,6 +108,14 @@ def test_an_exact_tie_resolves_to_the_lowest_target_id_like_the_acceptance_test(
 def test_a_tie_below_the_top_does_not_disturb_the_winner():
     rec = R.retrieve(FakeRetriever((0.95, 0.9, 0.9)), _req(construct="x"))
     assert rec.hit is not None and rec.hit.target_id == 1
+
+
+def test_precomputed_strata_are_used_when_given():
+    from pipeline.strata import Strata
+    r = FakeRetriever((0.81, 0.77))
+    strata = Strata.from_targets(r.targets, ["m2:Q9.95"])   # one row in that stratum
+    rec = R.retrieve(r, _req(construct="x"), strata=strata)
+    assert rec.hit is not None and rec.hit.unmeasured_stratum is False
 
 
 def test_the_record_round_trips_after_a_real_adapter_call():
