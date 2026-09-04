@@ -45,7 +45,11 @@ def plant_page(root: Path, marker: str, payload: str) -> None:
 
 
 def instrument_run() -> str:
-    dic = Path(os.environ["COMPASS_DICTIONARY"])
+    sys.path.insert(0, str(HERE))
+    from no_instrument import dictionary_path
+    dic = dictionary_path()
+    if dic is None:
+        raise SystemExit("dictionary not found; set COMPASS_DICTIONARY")
     for e in json.loads(dic.read_text(encoding="utf-8"))["entries"]:
         w = " ".join(str(e.get("question_text", "")).split()).split()
         if len(w) >= 8:
