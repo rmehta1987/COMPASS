@@ -25,7 +25,9 @@ No torch.load, no pickle: weights and vectors are both safetensors.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
+import sys
 from pathlib import Path
 
 import torch
@@ -33,6 +35,22 @@ from safetensors.torch import load_file
 from transformers import AutoModel, AutoTokenizer
 
 ROOT = Path(__file__).resolve().parent
+
+
+def _load_template(root: Path):
+    """template.py ships in the bundle (sha256 in the manifest). Loaded by path
+    so this works whether retriever.py is imported as a module or by path."""
+    spec = importlib.util.spec_from_file_location("compass_deploy_template",
+                                                  root / "template.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod        # dataclasses resolves annotations via sys.modules
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_template = _load_template(ROOT)
+RetrievalRequest = _template.RetrievalRequest      # re-exported: the shipped template
+VariableRole = _template.VariableRole
 
 
 class DictionaryHashMismatch(RuntimeError):
@@ -87,8 +105,13 @@ class CompassRetriever:
         self.padding_side = c["padding_side"]
         self.min_cos = m["abstention"]["default_min_cos"]
 
+        # thread count comes from the manifest unless the caller overrides it:
+        # an unpinned count makes latency unreproducible across machines
+        if threads is None:
+            threads = m.get("device", {}).get("threads")
         if threads:
-            torch.set_num_threads(threads)
+            torch.set_num_threads(int(threads))
+        self.threads = torch.get_num_threads()
         mdir = str(self.root / "model")
         self.tok = AutoTokenizer.from_pretrained(mdir)
         self.tok.padding_side = self.padding_side
@@ -157,6 +180,16 @@ class CompassRetriever:
             return None
         top[0]["margin_12"] = round(top[0]["cos"] - top[1]["cos"], 6)
         return top[0]
+
+    # --- the shipped template, so a caller cannot load the retriever and forget it.
+    # Contract is INSTANCES ONLY: see manifest["template"]. `population` stays None.
+
+    def search_request(self, req: "RetrievalRequest", k: int = 10) -> list[dict]:
+        return self.search(req.to_query(), k=k)
+
+    def select_request(self, req: "RetrievalRequest",
+                       min_cos: float | None = None) -> dict | None:
+        return self.select(req.to_query(), min_cos=min_cos)
 
 
 if __name__ == "__main__":

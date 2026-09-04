@@ -23,6 +23,14 @@ runs/
 fixtures/
 deploy/model/
 
+# CPU port: the small half of the deploy bundle travels in git so a clone can
+# self-verify. deploy/model/ (133 MB, over GitHub's file limit) does not; copy
+# it from the training machine and let deploy/smoke_test.py step 0 check it.
+!deploy/manifest.json
+!deploy/targets.json
+!deploy/target_vectors.safetensors
+# out/smoke_report.json is force-added (git add -f), like the other tracked out/ files
+
 # OS / editor cruft
 .DS_Store
 *.swp

@@ -52,9 +52,18 @@ def main() -> int:
     ap.add_argument("--calibration", type=Path,
                     default=Path("out/char_task3_calibration.json"))
     ap.add_argument("--out", type=Path, default=Path("deploy"))
+    ap.add_argument("--threads", type=int, default=4,
+                    help="pinned torch thread count, recorded in the manifest; "
+                         "latency is measured at this setting")
+    ap.add_argument("--smoke-report", type=Path, default=Path("out/smoke_report.json"),
+                    help="deploy/smoke_test.py report; if present, the shipped "
+                         "instances-only R@1 is copied into manifest['template']")
+    ap.add_argument("--qx-paired", type=Path, default=Path("out/qx_task2_paired.json"))
     a = ap.parse_args()
 
+    import platform
     from transformers import AutoModel, AutoTokenizer
+    torch.set_num_threads(a.threads)
 
     T = json.loads(a.targets.read_text())
     if T["dictionary_version_hash"] != EXPECTED_HASH:
@@ -99,6 +108,24 @@ def main() -> int:
 
     cal = json.loads(a.calibration.read_text())["bge-small_ft"]["sweep_cos_top1"]
     f1max, allrej = cal["max_f1"], cal["at_all_negatives_rejected"]
+
+    # ---- isolated single-query latency AT THE PINNED THREAD COUNT. The 2.94 ms
+    # figure elsewhere in this project is query_ms_per_row from a BATCHED scoring
+    # run (out/ft_bge-small_nn0_t0.10.json); it is not what a caller sees.
+    qtexts = [cfg["q_prefix"] + r["query"] for r in rows]
+    for q in qtexts[:8]:
+        encode([q], tok, model, cfg["pool"], 64, "cpu")
+    t1 = time.time()
+    for q in qtexts:
+        encode([q], tok, model, cfg["pool"], 64, "cpu")
+    query_ms = (time.time() - t1) / len(qtexts) * 1000
+    machine = f"{platform.node()} {platform.machine()} {platform.platform()}"
+
+    # ---- shipped-contract figures: pre-registered arm F from the paired artifact,
+    # instances-only (arm I) from the smoke test's report when it has been run
+    qx = json.loads(a.qx_paired.read_text())["overall"] if a.qx_paired.exists() else None
+    smoke = json.loads(a.smoke_report.read_text()) if a.smoke_report.exists() else None
+    arm_I = (smoke or {}).get("acceptance", {}).get("I")
 
     # Bytecode caches are machine-specific: checksumming one would make the
     # integrity check fail on any machine but this one.
@@ -165,9 +192,22 @@ def main() -> int:
                 "(out/final_bge-small_ft.json). Not a bug, but that query is the "
                 "hardest row in every report in this project, so the flip lands "
                 "exactly where device parity matters. CPU-only serving avoids it "
-                "and costs nothing: 2.94 ms/query, "
-                f"{encode_s:.1f}s to encode the whole corpus."),
+                f"and costs little: {query_ms:.1f} ms per isolated query at "
+                f"{a.threads} threads, {encode_s:.1f}s to encode the whole corpus."),
             "vectors_computed_on": "cpu",
+            "threads": a.threads,
+            "threads_why": (
+                "retriever.py calls torch.set_num_threads with this value unless the "
+                "caller overrides it. Unpinned thread counts make latency "
+                "unreproducible across machines with different core counts."),
+            "query_ms_isolated_single_at_pinned_threads": round(query_ms, 2),
+            "latency_measured_on": machine,
+            "latency_note": (
+                "One query per forward pass, fp32, warm. The 2.94 ms/query quoted in "
+                "RESULTS.md is query_ms_per_row from a BATCHED 224-row scoring run "
+                "(out/ft_bge-small_nn0_t0.10.json) and is not per-call latency; "
+                "src/finalize.py's isolated figure on the training machine was 18.3 ms. "
+                "Re-measure on the serving machine with deploy/smoke_test.py step 6."),
         },
         "corpus": {
             "n_targets": len(targets),
@@ -210,12 +250,86 @@ def main() -> int:
             "not_independently_validated": (
                 "The threshold is derived from a model-authored negative set. It "
                 "needs the study-team-authored request set to confirm."),
+            "threshold_grid": (
+                "Candidates are the distinct top-1 scores of the 224 positives "
+                "(221 values). F1 over positives is piecewise constant between "
+                "positive scores, so this candidate set is exhaustive: no denser "
+                "grid can find a different optimum, only the same plateau. "
+                "deploy/smoke_test.py step 5 re-derives it exhaustively and over a "
+                "20,001-point dense grid and reports the plateau on every run."),
+            "knife_edge": {
+                "finding": (
+                    "The shipped value is the 6-dp rounding of an INCORRECT positive's "
+                    "top-1 score (fixture row 68, 'electronic nicotine delivery "
+                    "frequency', gold m3:Q6.3). Encoded in a batch of 64 that row "
+                    "scores 0.729475981, 1.9e-8 BELOW the threshold, and is refused; "
+                    "encoded alone, as retriever.select() does, it scores "
+                    "0.729476045, 4.5e-8 ABOVE, and is answered (wrongly). Under "
+                    "single-query serving the F1 optimum by the same rule is "
+                    "therefore the next candidate, 0.731902, in every arm; "
+                    "F1(shipped) is 0.0013 to 0.0015 below it: one row. Recall is "
+                    "identical at both values."),
+                "not_changed_because": (
+                    "one row of F1 is not material, 0.7295 is cited across every "
+                    "document, and 0.731902 is itself the exact score of a CORRECT "
+                    "positive (row 212), so it is the same knife-edge on the other "
+                    "side. Changing the operating point is the operator's call."),
+                "robust_alternative": {
+                    "min_cos": 0.73174,
+                    "why": (
+                        "midpoint of the 3.3e-4 window (0.731576, 0.731902]: above the "
+                        "one surviving negative under the templated arms (n42, "
+                        "'neighborhood income level', 0.731576) and below the correct "
+                        "positive at 0.731902, with 1.6e-4 of margin each side, about "
+                        "2,000x the observed encoding jitter. At this value recall is "
+                        "unchanged in every arm, row 68 is refused, and the templated "
+                        "arms reject 44/44 negatives instead of 43/44."),
+                    "caveat": "chosen with sight of the 44 negatives, which the "
+                              "shipped value was not; confirm on the study-team set.",
+                },
+            },
+        },
+        "template": {
+            "file": "template.py",
+            "what": "[population] construct [timeframe][: instance, ...] -- "
+                    "RetrievalRequest.to_query(); pure string concatenation, no "
+                    "model call. Re-exported by retriever.py as RetrievalRequest / "
+                    "VariableRole, with search_request() and select_request().",
+            "shipped_contract": "INSTANCES ONLY. Leave population=None (its default).",
+            "why_it_ships": (
+                "Forgetting the template is a silent loss: pre-registered arm F "
+                "measured R@1 0.643 against 0.567 without it "
+                "(out/qx_task2_paired.json, 62 of 224 rows changed, item-clustered "
+                "bootstrap CI excluding zero)."),
+            "population_slot": {
+                "status": "POST-HOC REVISION of pre-registered arm F, which rendered "
+                          "population + instances. The revision is to leave the "
+                          "population slot unused.",
+                "measured": "net -1 row on the 17 rows it touched: R@1 0.647 -> 0.588 "
+                            "(+2, -3). QUERY_EXPANSION.md section 2a.",
+                "mechanism": "the roster noun pulls the query toward the roster "
+                             "block's OTHER question about the same cancer, at "
+                             "margins down to 0.0001",
+                "held_out_confirmation": "the study-team-authored request set; "
+                                         "until then the revision is unconfirmed",
+            },
+            "r_at1_224_rows": {
+                "no_template_S": qx["S"]["R@1"] if qx else 0.567,
+                "preregistered_F_population_and_instances": qx["F"]["R@1"] if qx else 0.6429,
+                "shipped_I_instances_only": arm_I["R@1_4dp"] if arm_I else None,
+                "shipped_I_measured_by": "deploy/smoke_test.py arm I" if arm_I else
+                                         "not yet measured: run deploy/smoke_test.py, then re-freeze",
+            },
         },
         "known_limitations": [
             "R@1 0.567 on a fixture whose queries were written by a model that saw "
             "the gold wording, by the same generator family as the 13,528 training "
             "pairs. An unknown share of the +0.192 over frozen bge-small is "
-            "register alignment. See RESULTS.md section 9.",
+            "register alignment. The lexical-leakage reading was measured and does "
+            "not survive: item-level Spearman -0.023 (permutation p 0.87), R@1 by "
+            "query/gold overlap quartile 0.482 / 0.554 / 0.643 / 0.589, "
+            "non-monotonic, flat within every query-length stratum. FUSION.md "
+            "section 1; RESULTS.md section 9.",
             "Recall is not uniform: residence/commute R@1 0.062 (n=16) and sleep "
             "0.000 (n=4) against cancer_history 0.613 (n=80). "
             "out/char_task4_strata.json.",
@@ -238,6 +352,11 @@ def main() -> int:
                 ("stem_option_dup", "stem_option", "stem_dash_option", "verbatim")],
             "negative_fixture": "fixtures/negative_requests.json",
             "training_meta": str(a.checkpoint / "compass_train_meta.json"),
+            "template_paired_artifact": "out/qx_task2_paired.json",
+            "template_abstention_artifact": "out/qx_task3_abstention.json",
+            "preregistration_fixture": "out/qx_preregistration.json (tracked; the "
+                                       "only fixture deploy/smoke_test.py needs)",
+            "cpu_port_acceptance_test": "deploy/smoke_test.py",
         },
         "files": files,
     }
@@ -247,7 +366,9 @@ def main() -> int:
     print(f"  dictionary hash      {EXPECTED_HASH} (asserted at load)")
     print(f"  targets / dim        {len(targets)} / {int(D.shape[1])}")
     print(f"  rendering            {TARGET_TEXT}")
-    print(f"  CPU encode-all       {encode_s:.1f}s")
+    print(f"  CPU encode-all       {encode_s:.1f}s at {a.threads} threads")
+    print(f"  isolated query       {query_ms:.2f} ms at {a.threads} threads ({machine})")
+    print(f"  instances-only R@1   {arm_I['R@1_4dp'] if arm_I else 'not yet measured'}")
     print(f"  R@1 from bundle      {r_at1}  "
           f"(matches out/ft_bge-small_nn0_t0.10.json: {r_at1 == 0.567})")
     print(f"  default min_cos      {f1max['tau']:.4f}  "

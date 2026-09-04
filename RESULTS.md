@@ -92,6 +92,28 @@ Sorted by R@1:
 | nomic-v15 frozen | 137 | 0.371 | 0.719 | 0.799 | 0.906 | 0.955 | 2/23/260 | 0.369 (168) | 0.375 (56) | 0.342 (76) | 0.922 | 128/141 (0.908) | 13/141 | 0.9150/0.9631 | 18.67 | 94.3 | `out/frozen_nomic-v15.json` |
 | granite-s2 frozen | 48 | 0.312 | 0.777 | 0.862 | 0.938 | 0.964 | 2/14/771 | 0.369 (168) | 0.143 (56) | 0.303 (76) | 0.971 | 152/154 (0.987) | 2/154 | 0.9387/0.9655 | 3.83 | 26.1 | `out/frozen_granite-s2.json` |
 
+**dtype audit (added 2026-09-03, CPU-port validation).** Every row above was produced in
+**fp32**. The `out/frozen_*.json` artifacts predate the `dtype` field `compass_score.py`
+now writes, so the dtype was established from run order and the model repos' declared
+dtype, not read from the artifacts. Early runs loaded in the repo's declared dtype
+(`transformers` v5 honours it); `--dtype-from-config` was then made diagnostic-only and
+fp32 forced, and every model whose repo declares half precision was re-run
+(`out/refp32.log`). The first-pass numbers are recorded here so they cannot be mistaken
+for the published ones:
+
+| Row | Repo declares | Published run | First-pass run (superseded) |
+|---|---|---|---|
+| granite-s2 | bf16 | 0.312 fp32, `out/refp32.log` | **0.263** bf16, `out/round2.log` (−4.9 pts) |
+| qwen3-06b | bf16 | 0.375 fp32, `out/refp32.log` | 0.379 bf16, `out/frozen_sweep.log` |
+| gte-mbert | fp16 | 0.388 fp32, `out/refp32.log` | 0.384 fp16, `out/frozen_sweep.log` |
+| qwen35-08b | bf16 | 0.433 fp32, `out/refp32.log` | 0.433 bf16 at full dim, `out/round2.log` |
+| mxbai-l1 | fp16 | 0.469 fp32, `out/refp32.log` | 0.469 fp16, `out/round2.log` |
+| bge-small, bge-base, e5-base, nomic-v15, embeddinggemma-300m | fp32 | fp32 by declaration, single run | — |
+
+The last five rows were not re-run under forced fp32 because their repos declare fp32, so
+the config-honouring load already gave fp32. `granite-s2` is the one model where the
+choice moved R@1 materially.
+
 **Reading the frozen results:** `mxbai-embed-large-v1` leads on every R@k cut and is the
 only frozen model whose near-duplicate R@1 (0.500) *exceeds* its overall R@1 (0.469,
 ratio 1.066) — it is not disproportionately worse on hard, sibling-heavy items. Most other

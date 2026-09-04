@@ -1,0 +1,169 @@
+{
+ "schema": "compass_retriever_deploy/1",
+ "frozen": "2026-09-03",
+ "what_this_is": "The shipped COMPASS variable retriever: fine-tuned bge-small, argmax cosine over 1,353 precomputed target vectors, no LLM call. CPU-only.",
+ "dictionary_version_hash": "3dc8415eccfe",
+ "dictionary_hash_policy": "retriever.py ASSERTS this hash against targets.json at load and raises. It does not warn: a stale vector file returns wrong answers silently, which is worse than not starting.",
+ "encoder": {
+  "base_repo": "BAAI/bge-small-en-v1.5",
+  "base_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+  "fine_tuned_from": "runs/bge-small_nn0_t0.10",
+  "training_config": "nn0, t=0.10 (in-batch negatives only, temp 0.10)",
+  "params_m": 33,
+  "embed_dim": 384,
+  "format": "safetensors, CPU-loadable, fp32"
+ },
+ "conventions": {
+  "pooling": "cls",
+  "query_prefix": "Represent this sentence for searching relevant passages: ",
+  "document_prefix": "",
+  "target_text_rendering": "stem_option_dup",
+  "target_text_rendering_definition": "f'{stem} {option}' when the target has an option, else f'{stem} {stem}' -- the stem is DUPLICATED when there is no option. See src/compass_score.py::target_text.",
+  "target_text_rendering_why": "+8.0 R@1 over `stem_option` on the full 1,353-target / 224-row set (0.375 vs 0.295, out/gate_full_stem_option_dup.json vs out/gate_full_stem_option.json). The gain is almost entirely in folded-family recall (0.304 vs 0.089): duplicating the stem is what makes a roster representative retrievable at all.",
+  "padding_side": "right",
+  "dtype": "float32",
+  "max_len_document": 256,
+  "max_len_query": 64,
+  "normalise": "L2, both sides; score is a dot product = cosine",
+  "selection": "argmax over all 1,353 target vectors"
+ },
+ "device": {
+  "pinned": "cpu",
+  "why": "The fine-tuned checkpoint has exactly one GPU/CPU top-1 disagreement in 224 rows -- row 107, 'primary method used to get to work', max |vector delta| 4.06e-7 (out/final_bge-small_ft.json). Not a bug, but that query is the hardest row in every report in this project, so the flip lands exactly where device parity matters. CPU-only serving avoids it and costs little: 44.3 ms per isolated query at 4 threads, 21.2s to encode the whole corpus.",
+  "vectors_computed_on": "cpu",
+  "threads": 4,
+  "threads_why": "retriever.py calls torch.set_num_threads with this value unless the caller overrides it. Unpinned thread counts make latency unreproducible across machines with different core counts.",
+  "query_ms_isolated_single_at_pinned_threads": 44.29,
+  "latency_measured_on": "spark-2500 aarch64 Linux-6.17.0-1026-nvidia-aarch64-with-glibc2.39",
+  "latency_note": "One query per forward pass, fp32, warm. The 2.94 ms/query quoted in RESULTS.md is query_ms_per_row from a BATCHED 224-row scoring run (out/ft_bge-small_nn0_t0.10.json) and is not per-call latency; src/finalize.py's isolated figure on the training machine was 18.3 ms. Re-measure on the serving machine with deploy/smoke_test.py step 6."
+ },
+ "corpus": {
+  "n_targets": 1353,
+  "n_constructs": 1066,
+  "n_multi_option": 343,
+  "n_folded_family": 119,
+  "targets_file": "targets.json",
+  "vectors_file": "target_vectors.safetensors",
+  "vector_row_order": "row i is target_id i+1, ascending; asserted at load"
+ },
+ "measured": {
+  "recall_at1_224_row_fixture": 0.567,
+  "reproduces_out_ft_bge-small_nn0_t0.10_json": true,
+  "cpu_encode_all_targets_s": 21.2,
+  "cos_top1_min_over_fixture": 0.5683,
+  "cos_top1_max_over_fixture": 0.9874
+ },
+ "abstention": {
+  "default_min_cos": 0.729476,
+  "how_chosen": "Threshold maximising F1 over the 224 POSITIVE rows only (out/char_task3_calibration.json). The 44-row held-out negative set was then used to report, not to select: it rejects 43/44 absent-construct requests at this threshold.",
+  "at_default": {
+   "coverage": 0.9241,
+   "precision": 0.6039,
+   "recall": 0.558,
+   "negatives_rejected": 0.9773
+  },
+  "stricter_option": {
+   "min_cos": 0.772195,
+   "note": "rejects 44/44 negatives, but costs 4.5 more recall points",
+   "coverage": 0.8214,
+   "precision": 0.625,
+   "recall": 0.5134
+  },
+  "what_it_does_NOT_do": "This threshold detects ABSENT constructs (AUROC 0.982 positives vs negatives). It does NOT detect a wrong pick among present constructs: cosine separates correct from incorrect top-1 at AUROC 0.640 only, and precision 0.90 is unreachable at any threshold. Do not read a returned result as verified.",
+  "not_independently_validated": "The threshold is derived from a model-authored negative set. It needs the study-team-authored request set to confirm.",
+  "threshold_grid": "Candidates are the distinct top-1 scores of the 224 positives (221 values). F1 over positives is piecewise constant between positive scores, so this candidate set is exhaustive: no denser grid can find a different optimum, only the same plateau. deploy/smoke_test.py step 5 re-derives it exhaustively and over a 20,001-point dense grid and reports the plateau on every run.",
+  "knife_edge": {
+   "finding": "The shipped value is the 6-dp rounding of an INCORRECT positive's top-1 score (fixture row 68, 'electronic nicotine delivery frequency', gold m3:Q6.3). Encoded in a batch of 64 that row scores 0.729475981, 1.9e-8 BELOW the threshold, and is refused; encoded alone, as retriever.select() does, it scores 0.729476045, 4.5e-8 ABOVE, and is answered (wrongly). Under single-query serving the F1 optimum by the same rule is therefore the next candidate, 0.731902, in every arm; F1(shipped) is 0.0013 to 0.0015 below it: one row. Recall is identical at both values.",
+   "not_changed_because": "one row of F1 is not material, 0.7295 is cited across every document, and 0.731902 is itself the exact score of a CORRECT positive (row 212), so it is the same knife-edge on the other side. Changing the operating point is the operator's call.",
+   "robust_alternative": {
+    "min_cos": 0.73174,
+    "why": "midpoint of the 3.3e-4 window (0.731576, 0.731902]: above the one surviving negative under the templated arms (n42, 'neighborhood income level', 0.731576) and below the correct positive at 0.731902, with 1.6e-4 of margin each side, about 2,000x the observed encoding jitter. At this value recall is unchanged in every arm, row 68 is refused, and the templated arms reject 44/44 negatives instead of 43/44.",
+    "caveat": "chosen with sight of the 44 negatives, which the shipped value was not; confirm on the study-team set."
+   }
+  }
+ },
+ "template": {
+  "file": "template.py",
+  "what": "[population] construct [timeframe][: instance, ...] -- RetrievalRequest.to_query(); pure string concatenation, no model call. Re-exported by retriever.py as RetrievalRequest / VariableRole, with search_request() and select_request().",
+  "shipped_contract": "INSTANCES ONLY. Leave population=None (its default).",
+  "why_it_ships": "Forgetting the template is a silent loss: pre-registered arm F measured R@1 0.643 against 0.567 without it (out/qx_task2_paired.json, 62 of 224 rows changed, item-clustered bootstrap CI excluding zero).",
+  "population_slot": {
+   "status": "POST-HOC REVISION of pre-registered arm F, which rendered population + instances. The revision is to leave the population slot unused.",
+   "measured": "net -1 row on the 17 rows it touched: R@1 0.647 -> 0.588 (+2, -3). QUERY_EXPANSION.md section 2a.",
+   "mechanism": "the roster noun pulls the query toward the roster block's OTHER question about the same cancer, at margins down to 0.0001",
+   "held_out_confirmation": "the study-team-authored request set; until then the revision is unconfirmed"
+  },
+  "r_at1_224_rows": {
+   "no_template_S": 0.567,
+   "preregistered_F_population_and_instances": 0.6429,
+   "shipped_I_instances_only": 0.6429,
+   "shipped_I_measured_by": "deploy/smoke_test.py arm I"
+  }
+ },
+ "known_limitations": [
+  "R@1 0.567 on a fixture whose queries were written by a model that saw the gold wording, by the same generator family as the 13,528 training pairs. An unknown share of the +0.192 over frozen bge-small is register alignment. The lexical-leakage reading was measured and does not survive: item-level Spearman -0.023 (permutation p 0.87), R@1 by query/gold overlap quartile 0.482 / 0.554 / 0.643 / 0.589, non-monotonic, flat within every query-length stratum. FUSION.md section 1; RESULTS.md section 9.",
+  "Recall is not uniform: residence/commute R@1 0.062 (n=16) and sleep 0.000 (n=4) against cancer_history 0.613 (n=80). out/char_task4_strata.json.",
+  "The 224-row fixture contains no SES/employment, insurance/access, cancer-screening or demographics row, so recall on those four strata is unmeasured, not good. out/char_task4_strata.json.",
+  "10 of 56 gold items are retrieved on 0 of their 4 phrasings and 9 on 1 of 4. out/char_task1_phrasing.json lists them with an example phrasing each; these are the documented blind spots."
+ ],
+ "provenance": {
+  "score_artifact": "out/ft_bge-small_nn0_t0.10.json",
+  "parity_artifact": "out/final_bge-small_ft.json",
+  "characterisation": [
+   "out/char_task1_phrasing.json",
+   "out/char_task2_negatives.json",
+   "out/char_task3_calibration.json",
+   "out/char_task4_strata.json"
+  ],
+  "rendering_ablation_full_corpus": [
+   "out/gate_full_stem_option_dup.json",
+   "out/gate_full_stem_option.json",
+   "out/gate_full_stem_dash_option.json",
+   "out/gate_full_verbatim.json"
+  ],
+  "negative_fixture": "fixtures/negative_requests.json",
+  "training_meta": "runs/bge-small_nn0_t0.10/compass_train_meta.json",
+  "template_paired_artifact": "out/qx_task2_paired.json",
+  "template_abstention_artifact": "out/qx_task3_abstention.json",
+  "preregistration_fixture": "out/qx_preregistration.json (tracked; the only fixture deploy/smoke_test.py needs)",
+  "cpu_port_acceptance_test": "deploy/smoke_test.py"
+ },
+ "files": {
+  "model/config.json": {
+   "sha256": "16f43d2b05f82be84df8b92f093d3741daa9dfd3eb65ddeea4ebc38211c9a9de",
+   "bytes": 789
+  },
+  "model/model.safetensors": {
+   "sha256": "c111521c05cc65ca412d6b73650123872c5d9a2ad99cb26a590de3599f9f87d9",
+   "bytes": 133462128
+  },
+  "model/tokenizer.json": {
+   "sha256": "2fc687b11de0bc1b3d8348f92e3b49ef1089a621506c7661fbf3248fcd54947e",
+   "bytes": 711649
+  },
+  "model/tokenizer_config.json": {
+   "sha256": "649e41f8cf1cb1b67acc193795ccaef07bcaa3c4e0fc7d286ba8255fab79cffa",
+   "bytes": 443
+  },
+  "retriever.py": {
+   "sha256": "24ccefb4bffdbeb17b51fcf2d8357aeba547282a034a2cd0d5a596975cd4f2e7",
+   "bytes": 9477
+  },
+  "smoke_test.py": {
+   "sha256": "2413e0436a698ce6074f726841e28cee3c353e3db1528fadcdb9d40b6379b998",
+   "bytes": 25749
+  },
+  "target_vectors.safetensors": {
+   "sha256": "941dd61a8ea17f2d35585a068d6e08a453877820a732a5b7a4d8910d0c6b96a4",
+   "bytes": 2078296
+  },
+  "targets.json": {
+   "sha256": "22b0c37a90696f4efb2e763fca9cc87e39f414b37ecd4a8d09d378ec09585f56",
+   "bytes": 940840
+  },
+  "template.py": {
+   "sha256": "9c78d0b0bb0139a3b85c8648a7be47e6375c7c214e93b4409e4c810dbe190ce8",
+   "bytes": 5303
+  }
+ }
+}
