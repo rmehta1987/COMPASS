@@ -28,6 +28,7 @@ reproducible.
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import subprocess
@@ -189,6 +190,35 @@ class ClaudeCliBackend:
             "--disallowed-tools", ",".join(DENY),
             "--output-format", "json",
         ]))
+
+    def fork(self, k: int) -> list[ClaudeCliBackend]:
+        """K copies of this backend, one per concurrent sample.
+
+        The seal, sandbox, MCP config, settings and run id are shared; the
+        per-sample state is not. `reason()` on one shared instance repoints
+        `tool_log` for every sample, so with two samples in flight the second
+        one's start makes the first read the wrong log at the authority check,
+        and `agent/tool_authority.py` then compares a record against calls
+        another sample made. Each child owns one sample index, handed out from
+        this instance's counter, so file names stay unique across every pair
+        this backend serves; the parent's `tool_logs` still lists every log.
+
+        Args:
+            k: How many samples will run.
+
+        Returns:
+            `k` children, in sample order.
+        """
+        base = self._samples
+        self._samples += k
+        children = []
+        for i in range(k):
+            child = copy.copy(self)
+            child._samples = base + i
+            child.tool_log = child._tool_log_path(base + i)
+            child.tool_logs = self.tool_logs
+            children.append(child)
+        return children
 
     def read_tool_log(self) -> list[dict]:
         """The authentic call record — written by our MCP server, not the model."""

@@ -128,7 +128,8 @@ def default_resolver(retriever: Any, strata: Strata) -> Resolver:
 
 def run(cands: list[Candidate], *, backend: Backend, resolver: Resolver,
         constructs: dict[str, Construct], version: str, screened_from: int,
-        run_dir: Path, k: int = 5, allow_unestimable: bool = False,
+        run_dir: Path, k: int = 5, workers: int = 1,
+        allow_unestimable: bool = False,
         log: Callable[[str], None] = print) -> RunSummary:
     """Take every candidate through the pipeline and write the run.
 
@@ -142,6 +143,7 @@ def run(cands: list[Candidate], *, backend: Backend, resolver: Resolver,
             record carries.
         run_dir: Where artefacts and the ledger go.
         k: Samples per pair.
+        workers: Samples in flight at once; see `agent.specifier.specify`.
         allow_unestimable: The gate's bypass; every passed pair is marked.
         log: Progress sink.
 
@@ -177,7 +179,7 @@ def run(cands: list[Candidate], *, backend: Backend, resolver: Resolver,
             continue
         pair = resolved_pair.from_pair_resolution(pr, constructs, v.estimability)
         identity = run_identity(pair, version, screened_from, backend.name)
-        res = specify(backend, pair, k=k, mode="benchmark",
+        res = specify(backend, pair, k=k, mode="benchmark", workers=workers,
                       parked_dir=run_dir / "parked", identity=identity)
         if res.selected is None:
             if res.refusal is not None:
@@ -245,6 +247,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--limit", type=int, default=None, help="seeded subset size")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--k", type=int, default=5)
+    ap.add_argument("--workers", type=int, default=5,
+                    help="samples in flight at once; 1 runs them in series")
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--allow-unestimable", action="store_true")
     ap.add_argument("--frame-only", action="store_true",
@@ -267,7 +271,7 @@ def main(argv: list[str] | None = None) -> int:
     backend: Any = ClaudeCliBackend(model=a.model, mode="benchmark")
     summary = run(chosen, backend=backend, resolver=default_resolver(retriever, strata),
                   constructs=C, version=version, screened_from=counts["enumerated"],
-                  run_dir=ARTEFACTS / a.run_id, k=a.k,
+                  run_dir=ARTEFACTS / a.run_id, k=a.k, workers=a.workers,
                   allow_unestimable=a.allow_unestimable)
     print(f"run {a.run_id}: total_generated_this_run {summary.total_generated_this_run} "
           f"{summary.by_outcome}")

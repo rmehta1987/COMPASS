@@ -77,6 +77,7 @@ import json
 import string
 import sys
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol
@@ -102,7 +103,7 @@ from agent.tool_authority import (
     apply_record_identity,
     apply_tool_authority,
 )
-from env.tools import ToolLog
+from env.tools import ToolLog, dictionary_version
 
 
 # THE PROMPT CONTRACT. Every prompt below is rendered through PromptTemplate,
@@ -1588,7 +1589,7 @@ def _disclosure(p: ProtocolSpecification) -> int:
 
 def specify(backend: Backend, pair: PairLike, *, k: int = 5, mode: str = "benchmark",
             temperature: float = 0.7, parked_dir: Path | None = None,
-            identity: RunIdentity | None = None) -> Result:
+            identity: RunIdentity | None = None, workers: int = 1) -> Result:
     """K samples of one pair. Deterministic everywhere except the sampling itself.
 
     Sampling is the only stochastic element and it is bounded: k fixed in code,
@@ -1610,14 +1611,35 @@ def specify(backend: Backend, pair: PairLike, *, k: int = 5, mode: str = "benchm
         temperature: Sampling temperature, where the backend has one.
         parked_dir: Where the losing distinct protocols are written.
         identity: The fields the driver owns.
+        workers: Samples in flight at once. Above 1 the backend must offer
+            `fork(k)`, one child per sample with its own tool log; a backend
+            without it runs the samples in series whatever the value.
 
     Returns:
         The result, carrying at most one of a selected protocol and a refusal.
     """
-    attempts = [specify_once(backend, pair, mode=mode, seed=s,
-                             temperature=(0.0 if k == 1 else temperature),
-                             identity=identity)
-                for s in range(k)]
+    temp = 0.0 if k == 1 else temperature
+    fork = getattr(backend, "fork", None)
+    if workers > 1 and fork is not None:
+        # Samples are independent seeds and `_rank` reads records, never
+        # arrival order, so running them at once changes nothing but wall
+        # clock (a k=5 pair took 41 min in series on 2026-09-04). The
+        # dictionary is loaded once here, before any thread reads it, and
+        # each sample gets its own backend so its authority check reads the
+        # log its own calls wrote.
+        dictionary_version()
+        children = fork(k)
+
+        def one(s: int) -> Attempt:
+            return specify_once(children[s], pair, mode=mode, seed=s,
+                                temperature=temp, identity=identity)
+
+        with ThreadPoolExecutor(max_workers=min(workers, k)) as pool:
+            attempts = list(pool.map(one, range(k)))
+    else:
+        attempts = [specify_once(backend, pair, mode=mode, seed=s, temperature=temp,
+                                 identity=identity)
+                    for s in range(k)]
 
     refusals: dict[str, NotSpecifiable] = {}
     for a in attempts:
