@@ -1,6 +1,8 @@
 """Step 4 — the page parses.
 
-Scripts go through ``node --check``. The HTML is walked with a strict
+Scripts go through ``node --check`` and then ``render.js`` drives every
+panel for every example under a DOM stub, failing on an exception or on
+"undefined"/"NaN" in a rendered panel. The HTML is walked with a strict
 balanced-tag check (void elements excepted): a stray or missing close tag
 renders differently across browsers and no offline validator ships with the
 repo, so this is the gate. Also requires ``<title>``, ``lang`` and a single
@@ -12,6 +14,7 @@ import os
 import subprocess
 import tempfile
 from html.parser import HTMLParser
+from pathlib import Path
 
 from common import SITE, fail, ok, pages, scripts
 
@@ -82,11 +85,15 @@ def main() -> None:
             if r.returncode:
                 problems.append(f"{rel}: script #{i} fails node --check: "
                                 f"{r.stderr.strip().splitlines()[-1] if r.stderr.strip() else r.returncode}")
+    r = subprocess.run(["node", str(Path(__file__).with_name("render.js")), str(SITE)],
+                       capture_output=True, text=True)
+    if r.returncode:
+        problems.extend((r.stderr.strip() or r.stdout.strip() or "render failed").splitlines())
     if problems:
         for s in problems:
             print("      " + s)
         fail(f"parse: {len(problems)} problem(s)")
-    ok(f"parse: {len(pages())} page(s) balanced, every script passes node --check")
+    ok(f"parse: {len(pages())} page(s) balanced, every script passes node --check; {r.stdout.strip()}")
 
 
 if __name__ == "__main__":

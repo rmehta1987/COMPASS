@@ -98,6 +98,9 @@ def main() -> int:
         root = copy_site(tmp / "h")
         plant_page(root, "<script>", "<script>const = ;")
         results.append(("parse", "script syntax error", run("parse", root) != 0))
+        root = copy_site(tmp / "h2")
+        plant_page(root, "r.top_cos", "r.top_cosine_renamed")
+        results.append(("parse", "renamed artefact field renders undefined", run("parse", root) != 0))
         # 5 an external script, a font stylesheet, a fetch to a host
         root = copy_site(tmp / "i")
         plant_page(root, "<head>", "<head><script src=\"https://cdn.example.com/x.js\"></script>")
