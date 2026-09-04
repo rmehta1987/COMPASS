@@ -36,6 +36,7 @@ queries with gold keys, the 44 negative requests, and the template fields for
 both, frozen before any scoring. It is the only fixture this test needs, and it
 travels with the repository. The raw retrieval_queries.json and
 fixtures/negative_requests.json stay gitignored and are not required here.
+Not tracked, and needed: deploy/model/ and deploy/targets.json (step 0 says how).
 """
 from __future__ import annotations
 
@@ -231,10 +232,12 @@ def step0_integrity(bundle: Path, rep: dict):
     print(f"  model/model.safetensors sha256 (manifest, matches on disk): "
           f"{rep['integrity']['model_safetensors_sha256']}")
     if bad:
-        if any(b.startswith("MISSING  model/") for b in bad):
-            print("  deploy/model/ is gitignored (133 MB, over GitHub's file limit). "
-                  "Copy it from the training machine, e.g.\n"
-                  "    rsync -av <spark>:COMPASS/deploy/model/ deploy/model/")
+        if any(b.startswith("MISSING  model/") or b.startswith("MISSING  targets.json") for b in bad):
+            print("  deploy/model/ (133 MB, over GitHub's file limit) and deploy/targets.json "
+                  "(the instrument's question wording; this repository is public) are not "
+                  "tracked. Copy both from the training machine, e.g.\n"
+                  "    rsync -av <spark>:COMPASS/deploy/model/ deploy/model/\n"
+                  "    rsync -av <spark>:COMPASS/deploy/targets.json deploy/targets.json")
         raise Failed("integrity: " + "; ".join(bad), 2)
     return m
 

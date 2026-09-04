@@ -24,9 +24,13 @@ multi-relevance ranking).
 | Singleton targets | 1,234 |
 | Largest construct (most sibling options) | 49 |
 
-Built by `build.py` from `dictionary.json`, stripping piped Qualtrics identifiers and
-excluding direct identifiers and free-text companion fields (`src/compass_build.py` /
-`build.py`).
+Built by `src/compass_build.py` from `dictionary.json`, stripping piped Qualtrics
+identifiers and excluding direct identifiers. Since the merge of the pipeline mirror
+(2026-09-03) the root `build.py` is the pipeline's *dictionary* builder (raw codebooks to
+`build/dictionary.json`, hash `3dc8415eccfe`), and `build_targets.py` is arm E's earlier
+target builder. `build_targets.py` emits 1,352 targets against this file's 1,353; the
+one difference is `m2:Q785~2`, a free-text "other mode of transportation" companion row
+that `compass_build.py` keeps.
 
 **Evaluation fixture** (`retrieval_queries.json`, schema `retrieval_eval_queries/1`):
 224 queries, generated 2026-08-31 by `claude-haiku-4-5` (4 phrasings/item, batched 8,

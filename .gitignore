@@ -1,16 +1,38 @@
-# Python
+# ============================================================================
+# Two trees share this repository: the retrieval experiments run on the Spark
+# (src/, deploy/, RESULTS.md and the other reports) and the COMPASS pipeline
+# mirror (agent/, env/, generate/, benchmark/, mcp/, tests/, build.py). The
+# repository is PUBLIC. The rule that governs both halves: the survey instrument
+# -- codebook CSVs, the built dictionary, and any artifact carrying question or
+# option wording per row -- is never tracked. README.md lists what is withheld.
+# ============================================================================
+
+# --- environments and caches -------------------------------------------------
+.venv/
+venv/
 __pycache__/
 *.py[cod]
 *.egg-info/
-.venv/
-venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Logs (added back explicitly on a need basis)
-*.log
-out/
-runs/
+# --- the instrument, in every form --------------------------------------------
+# build/ is reproduced exactly by `python build.py` from raw/ (dictionary version
+# hash 3dc8415eccfe, deterministic across `rm -rf build/`). On the Spark the same
+# dictionary lives at the root as dictionary.json.
+build/
+raw/
+*.csv
+codebook.csv
+dictionary.json
+targets.json
+# deploy/targets.json carries the stem and option wording of all 1,353 targets;
+# it ships with deploy/model/ by rsync and is sha256-checked by the manifest.
+deploy/targets.json
+deploy/model/
 
-# Data, model, and vector artifacts
+# --- data, model and vector artifacts -----------------------------------------
 *.json
 *.jsonl
 *.safetensors
@@ -18,19 +40,24 @@ runs/
 *.pth
 *.bin
 !.claude/**/*.json
-
-# Generated / fixture dirs
-fixtures/
-deploy/model/
-
-# CPU port: the small half of the deploy bundle travels in git so a clone can
-# self-verify. deploy/model/ (133 MB, over GitHub's file limit) does not; copy
-# it from the training machine and let deploy/smoke_test.py step 0 check it.
+!curated/**/*.json
+# the small, wording-free half of the deploy bundle travels in git so a clone
+# can self-verify (deploy/smoke_test.py step 0)
 !deploy/manifest.json
-!deploy/targets.json
 !deploy/target_vectors.safetensors
-# out/smoke_report.json is force-added (git add -f), like the other tracked out/ files
+# out/ and run/ are ignored wholesale; the handful of tracked artifacts under
+# out/ were force-added (git add -f) after a wording scan. See README.md.
+out/
+runs/
+*.log
+run/tool_log.jsonl
+run/logs/
+parked/
+fixtures/
 
-# OS / editor cruft
+# --- OS / editor / WSL cruft ---------------------------------------------------
 .DS_Store
 *.swp
+*.swo
+*~
+*:Zone.Identifier

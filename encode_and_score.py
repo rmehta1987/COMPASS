@@ -1,4 +1,6 @@
-""" 1,241 selection targets and the fixture's requests with a frozen model,
+"""Arm E: zero-shot biomedical embedding retrieval over the COMPASS dictionary.
+
+Encodes 1,241 selection targets and the fixture's requests with a frozen model,
 selects by argmax cosine, and reports the figures BRIEF_arm_e.md asks for.
 
 No training. No fine-tuning. Frozen weights only.
@@ -41,6 +43,59 @@ MODELS = {
                   "order": "stem_first", "pool": "cls",
                   "q_prefix": "Represent this sentence for searching "
                               "relevant passages: "},
+    # --- size ladder, everything but parameter count held constant ---------
+    "bge-base": {"q": "BAAI/bge-base-en-v1.5", "d": "BAAI/bge-base-en-v1.5",
+                 "order": "stem_first", "pool": "cls",
+                 "q_prefix": "Represent this sentence for searching "
+                             "relevant passages: "},
+    "bge-large": {"q": "BAAI/bge-large-en-v1.5", "d": "BAAI/bge-large-en-v1.5",
+                  "order": "stem_first", "pool": "cls",
+                  "q_prefix": "Represent this sentence for searching "
+                              "relevant passages: "},
+    # --- the prefix control ------------------------------------------------
+    # bge-small won the four-config comparison WITH an asymmetric query prefix
+    # while biolord ran symmetric with none, so the winner had a treatment the
+    # runner-up did not. BioLORD's card documents NO query prefix and describes
+    # a symmetric similarity model, so the confound cannot be closed by giving
+    # biolord one -- that would be inventing a convention. It is closed from the
+    # other side: the same winner, its documented prefix removed.
+    "bge-small-noprefix": {"q": "BAAI/bge-small-en-v1.5",
+                           "d": "BAAI/bge-small-en-v1.5",
+                           "order": "stem_first", "pool": "cls",
+                           "q_prefix": ""},
+    # --- Qwen3, which is not the BGE shape ---------------------------------
+    # Per its model card: last-token pooling, queries carry
+    # "Instruct: {task}\nQuery:{q}", documents carry NO instruction, and
+    # embeddings are L2-normalised (which `encode` already does). The card
+    # recommends left padding; `pool(how="last")` indexes the last non-pad token
+    # instead, which the card names as the equivalent for right-padded input.
+    # Running it under the BGE prefix would understate it by a documented 1-5%.
+    # --- EmbeddingGemma: one encoder, but query and document prompts differ ---
+    # Verbatim from the model card, 2026-09-03:
+    #   query    "task: search result | query: {content}"
+    #   document "title: {title | \"none\"} | text: {content}"
+    # so this is the first config needing a DOCUMENT prefix as well as a query
+    # one -- `d_prefix`, added for it. The card also warns that activations do
+    # not support float16 (float32 or bfloat16 only); this script runs float32,
+    # so that is already satisfied.
+    #
+    # POOLING VERIFIED 2026-09-03 from `1_Pooling/config.json` at revision
+    # 57c266a740f5: pooling_mode_mean_tokens true, every other mode false.
+    # The same file's modules list is [Transformer, Pooling, Dense, Dense,
+    # Normalize], so `dense` below is not optional -- without it this config
+    # embeds in the pre-projection space and measures a model nobody ships.
+    "embeddinggemma": {"q": "google/embeddinggemma-300m",
+                       "d": "google/embeddinggemma-300m",
+                       "order": "stem_first", "pool": "mean",
+                       "q_prefix": "task: search result | query: ",
+                       "d_prefix": "title: none | text: ",
+                       "dense": ["2_Dense", "3_Dense"]},
+    "qwen3-0.6b": {"q": "Qwen/Qwen3-Embedding-0.6B",
+                   "d": "Qwen/Qwen3-Embedding-0.6B",
+                   "order": "stem_first", "pool": "last",
+                   "q_prefix": "Instruct: Given a researcher's request for a "
+                               "variable, retrieve the survey question that "
+                               "measures it\nQuery:"},
 }
 
 
@@ -48,12 +103,41 @@ def pool(out, mask, how):
     h = out.last_hidden_state
     if how == "cls":
         return h[:, 0, :]
+    if how == "last":
+        # Qwen3-Embedding pools the LAST token. Its card recommends left padding
+        # and then h[:, -1]; with the right padding this script already uses,
+        # the documented alternative is the last NON-PAD token, which is what
+        # this indexes. Equivalent, and it does not require the tokenizer's
+        # padding side to be changed underneath every other config.
+        idx = mask.sum(dim=1) - 1
+        return h[torch.arange(h.size(0), device=h.device), idx]
     m = mask.unsqueeze(-1).float()
     return (h * m).sum(1) / m.sum(1).clamp(min=1e-9)
 
 
+def load_dense(repo, dirs, device="cpu"):
+    """Post-pooling projection layers, for models whose embedding is not the pool.
+
+    `AutoModel` gives the transformer; it does NOT give the sentence-transformers
+    head. EmbeddingGemma's `modules.json` is
+    [Transformer, Pooling, Dense, Dense, Normalize] -- two 768->3072->768 linear
+    layers with no bias and Identity activation -- so pooling and normalising
+    alone embeds in the PRE-projection space and is not the published model.
+    Every other config in MODELS is [Transformer, Pooling(, Normalize)] and needs
+    none of this; checked against each repo's modules.json 2026-09-03.
+    """
+    from huggingface_hub import hf_hub_download
+    from safetensors.torch import load_file
+    mats = []
+    for d in dirs:
+        w = load_file(hf_hub_download(repo, f"{d}/model.safetensors"))
+        mats.append(w["linear.weight"].to(device))
+    return mats
+
+
 @torch.no_grad()
-def encode(texts, tok, model, how, max_len, device, batch=32, pair=False):
+def encode(texts, tok, model, how, max_len, device, batch=32, pair=False,
+           dense=None):
     vecs = []
     for i in range(0, len(texts), batch):
         chunk = texts[i:i + batch]
@@ -66,6 +150,8 @@ def encode(texts, tok, model, how, max_len, device, batch=32, pair=False):
                       max_length=max_len, return_tensors="pt")
         enc = {k: v.to(device) for k, v in enc.items()}
         v = pool(model(**enc), enc["attention_mask"], how)
+        for w in (dense or ()):                # Pooling -> Dense -> Normalize
+            v = v @ w.T
         vecs.append(torch.nn.functional.normalize(v, dim=-1).cpu())
     return torch.cat(vecs)
 
@@ -113,18 +199,23 @@ def main() -> int:
         tok_d = AutoTokenizer.from_pretrained(cfg["d"])
         mod_d = AutoModel.from_pretrained(cfg["d"]).to(a.device).eval()
 
+    dense = (load_dense(cfg["d"], cfg["dense"], a.device)
+             if cfg.get("dense") else None)
+
     t0 = time.time()
     pairs = [target_text(t, cfg["order"]) for t in targets]
     if cfg["d"] == cfg["q"]:                       # symmetric: one flat string
-        D = encode([f"{x[0]} {x[1]}".strip() for x in pairs],
-                   tok_d, mod_d, cfg["pool"], 256, a.device)
+        d_prefix = cfg.get("d_prefix", "")
+        D = encode([d_prefix + f"{x[0]} {x[1]}".strip() for x in pairs],
+                   tok_d, mod_d, cfg["pool"], 256, a.device, dense=dense)
     else:
-        D = encode(pairs, tok_d, mod_d, cfg["pool"], 256, a.device, pair=True)
+        D = encode(pairs, tok_d, mod_d, cfg["pool"], 256, a.device, pair=True,
+                   dense=dense)
     encode_s = time.time() - t0
 
     reqs = [cfg["q_prefix"] + r["query"] for r in rows]
     t1 = time.time()
-    Q = encode(reqs, tok_q, mod_q, cfg["pool"], 64, a.device)
+    Q = encode(reqs, tok_q, mod_q, cfg["pool"], 64, a.device, dense=dense)
     query_ms = (time.time() - t1) / max(1, len(reqs)) * 1000
 
     sims = Q @ D.T                                 # (rows, targets)

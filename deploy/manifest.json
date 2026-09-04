@@ -33,7 +33,7 @@
   "vectors_computed_on": "cpu",
   "threads": 4,
   "threads_why": "retriever.py calls torch.set_num_threads with this value unless the caller overrides it. Unpinned thread counts make latency unreproducible across machines with different core counts.",
-  "query_ms_isolated_single_at_pinned_threads": 44.23,
+  "query_ms_isolated_single_at_pinned_threads": 44.18,
   "latency_measured_on": "spark-2500 aarch64 Linux-6.17.0-1026-nvidia-aarch64-with-glibc2.39",
   "serving_reference": {
    "machine": {
@@ -212,8 +212,8 @@
    "bytes": 9477
   },
   "smoke_test.py": {
-   "sha256": "98606ca8760a46b57de9f4127eb1fb0293d8dc30d76e0caff9f43370fcd60f0a",
-   "bytes": 26257
+   "sha256": "e54171f5d627054f084252469a23e4bd3f8ca3968f85180c45b84bde4c1f52e2",
+   "bytes": 26584
   },
   "target_vectors.safetensors": {
    "sha256": "941dd61a8ea17f2d35585a068d6e08a453877820a732a5b7a4d8910d0c6b96a4",
