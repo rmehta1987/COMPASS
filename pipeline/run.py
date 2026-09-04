@@ -25,12 +25,13 @@ from __future__ import annotations
 import argparse
 import random
 import sys
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from agent.backends import Backend
-from agent.specifier import specify
+from agent.specifier import Result, RunIdentity, specify
 from generate.funnel import Candidate, Construct, load_constructs
 from generate.funnel import run as funnel_run
 from generate.live_specifier import run_identity
@@ -126,10 +127,53 @@ def default_resolver(retriever: Any, strata: Strata) -> Resolver:
     return lambda cand: auto_intake.resolve_pair(retriever, cand, strata, tpl)
 
 
+def _first_line(e: BaseException) -> str:
+    return (str(e).splitlines() or ["?"])[0][:200]
+
+
+def _specify_surviving_one_error(backend: Backend, pair: resolved_pair.ResolvedPair, *,
+                                 k: int,
+                                 workers: int, parked_dir: Path,
+                                 identity: RunIdentity, retry_pause: float,
+                                 log: Callable[[str], None]) -> tuple[Result, bool]:
+    """Specify a pair; on the backend raising once, wait and try the pair again.
+
+    The 48-pair run of 2026-09-04 died at pair 16 on a single `claude -p`
+    exiting 1 with an empty stderr, one sample of five, and took the other four
+    samples' work and the remaining 32 pairs with it. One retry after a pause
+    covers a transient failure; a second failure is the caller's to record.
+
+    Args:
+        backend: The reasoning backend.
+        pair: The resolved pair.
+        k: Samples per pair.
+        workers: Samples in flight at once.
+        parked_dir: Where losing records go.
+        identity: The run's identity fields.
+        retry_pause: Seconds to wait before the retry.
+        log: Progress sink.
+
+    Returns:
+        The result and whether it came from the retry.
+
+    Raises:
+        RuntimeError: When the backend failed on the retry as well.
+    """
+    try:
+        return specify(backend, pair, k=k, mode="benchmark", workers=workers,
+                       parked_dir=parked_dir, identity=identity), False
+    except RuntimeError as e:
+        log(f"  backend error, retrying the pair once after {retry_pause:g}s: "
+            f"{_first_line(e)}")
+        time.sleep(retry_pause)
+        return specify(backend, pair, k=k, mode="benchmark", workers=workers,
+                       parked_dir=parked_dir, identity=identity), True
+
+
 def run(cands: list[Candidate], *, backend: Backend, resolver: Resolver,
         constructs: dict[str, Construct], version: str, screened_from: int,
         run_dir: Path, k: int = 5, workers: int = 1,
-        allow_unestimable: bool = False,
+        allow_unestimable: bool = False, retry_pause: float = 30.0,
         log: Callable[[str], None] = print) -> RunSummary:
     """Take every candidate through the pipeline and write the run.
 
@@ -144,6 +188,8 @@ def run(cands: list[Candidate], *, backend: Backend, resolver: Resolver,
         run_dir: Where artefacts and the ledger go.
         k: Samples per pair.
         workers: Samples in flight at once; see `agent.specifier.specify`.
+        retry_pause: Seconds to wait before a pair's single retry after the
+            backend raised; a second failure is a `backend_error` row.
         allow_unestimable: The gate's bypass; every passed pair is marked.
         log: Progress sink.
 
@@ -179,15 +225,25 @@ def run(cands: list[Candidate], *, backend: Backend, resolver: Resolver,
             continue
         pair = resolved_pair.from_pair_resolution(pr, constructs, v.estimability)
         identity = run_identity(pair, version, screened_from, backend.name)
-        res = specify(backend, pair, k=k, mode="benchmark", workers=workers,
-                      parked_dir=run_dir / "parked", identity=identity)
+        try:
+            res, retried = _specify_surviving_one_error(
+                backend, pair, k=k, workers=workers, parked_dir=run_dir / "parked",
+                identity=identity, retry_pause=retry_pause, log=log)
+        except RuntimeError as e:
+            # The backend's own failure (a non-zero `claude -p`, a reported
+            # error); anything else is a bug and still stops the run.
+            ledger.append(**common, outcome="backend_error", note=_first_line(e))
+            log(f"[{n}/{len(result.passed)}] {v.pair_id}: backend error twice, recorded")
+            continue
+        retry_note = "retried once after a backend error; " if retried else ""
         if res.selected is None:
             if res.refusal is not None:
                 ledger.append(**common, outcome="refused",
-                              note=str(getattr(res.refusal, "reason", "")))
+                              note=retry_note + str(getattr(res.refusal, "reason", "")))
                 log(f"[{n}/{len(result.passed)}] {v.pair_id}: refused")
             else:
-                ledger.append(**common, outcome="no_valid_record", note=res.reason)
+                ledger.append(**common, outcome="no_valid_record",
+                              note=retry_note + res.reason)
                 log(f"[{n}/{len(result.passed)}] {v.pair_id}: no valid record")
             continue
         rec = validators.apply(hypothesis.build(res.selected, pair), pair)
@@ -199,7 +255,8 @@ def run(cands: list[Candidate], *, backend: Backend, resolver: Resolver,
         ledger.append(**common, outcome="discarded" if blocked else "emitted",
                       protocol_id=res.selected.protocol_id,
                       record_hash=res.selected.record_hash(), artefact=name,
-                      note=validators.rejected_note(rec.critiques) if blocked else "")
+                      note=retry_note + (validators.rejected_note(rec.critiques)
+                                         if blocked else ""))
         state = ("discarded by " + validators.rejected_note(rec.critiques) if blocked
                  else "emitted")
         log(f"[{n}/{len(result.passed)}] {v.pair_id}: {state} -> {name}")

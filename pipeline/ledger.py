@@ -26,7 +26,11 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-OUTCOMES = ("emitted", "refused", "no_valid_record", "gate_blocked", "discarded")
+#: `backend_error` joined on 2026-09-04: a live run of 48 pairs died at pair 16
+#: when one sample's `claude -p` exited 1 with nothing on stderr, and the driver
+#: let it propagate. The pair is counted, the failure named, the run goes on.
+OUTCOMES = ("emitted", "refused", "no_valid_record", "gate_blocked", "discarded",
+            "backend_error")
 LEDGER_NAME = "ledger.jsonl"
 SUMMARY_NAME = "summary.json"
 

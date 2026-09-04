@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 
 import pytest
 
@@ -154,3 +155,72 @@ def test_stamp_run_refuses_an_unclean_env_and_stamps_every_artefact(frame, tmp_p
     assert R.stamp_run(run_dir, clean) == 1
     art = next(f for f in run_dir.glob("*.json") if f.name != "summary.json")
     assert json.loads(art.read_text())["generation"]["tree_sha"] == "a" * 40
+
+
+class _Flaky:
+    """Raises the backend's own error on the first `fails` calls, then delegates.
+
+    The delegate is built on the first call that gets through, so a retried
+    pair replays the fixture script from its start.
+    """
+
+    name = "flaky"
+
+    def __init__(self, make: Callable[[], ScriptedBackend], fails: int) -> None:
+        self.make, self.fails, self.calls = make, fails, 0
+        self.inner: ScriptedBackend | None = None
+
+    def chat(self, messages: list[dict], **kw: object) -> Reply:
+        self.calls += 1
+        if self.calls <= self.fails:
+            raise RuntimeError("claude -p exited 1\nstderr: ")
+        if self.inner is None:
+            self.inner = self.make()
+        return self.inner.chat(messages, **kw)
+
+
+def test_one_backend_failure_is_retried_and_the_row_says_so(frame, tmp_path):
+    C, version, counts, worked, _ = frame
+    run_dir = tmp_path / "retry"
+    flaky = _Flaky(lambda: _backend(version, counts["enumerated"]), fails=1)
+    R.run([worked], backend=flaky, resolver=_resolver(resolve_second=False),
+          constructs=C, version=version, screened_from=counts["enumerated"],
+          run_dir=run_dir, k=1, allow_unestimable=True, retry_pause=0.0,
+          log=lambda s: None)
+    (row,) = ledger.Ledger(run_dir).rows()
+    assert row.outcome == "discarded"
+    assert row.note == "retried once after a backend error; validator:temporality"
+    assert row.artefact and (run_dir / row.artefact).exists()
+
+
+def test_a_second_backend_failure_is_a_row_and_the_run_goes_on(frame, tmp_path):
+    C, version, counts, worked, other = frame
+    run_dir = tmp_path / "twice"
+    flaky = _Flaky(lambda: _backend(version, counts["enumerated"]), fails=10**6)
+    summary = R.run([worked, other], backend=flaky,
+                    resolver=_resolver(resolve_second=False), constructs=C,
+                    version=version, screened_from=counts["enumerated"],
+                    run_dir=run_dir, k=1, allow_unestimable=True, retry_pause=0.0,
+                    log=lambda s: None)
+    rows = ledger.Ledger(run_dir).rows()
+    assert [r.outcome for r in rows] == ["backend_error", "discarded"]
+    assert rows[0].note == "claude -p exited 1" and rows[0].artefact is None
+    assert flaky.calls == 2, "exactly one retry"
+    assert ledger.verify(run_dir).by_outcome == summary.by_outcome == {
+        "backend_error": 1, "discarded": 1}
+
+
+def test_a_failure_that_is_not_the_backends_still_stops_the_run(frame, tmp_path):
+    C, version, counts, worked, _ = frame
+
+    class Bug:
+        name = "bug"
+
+        def chat(self, *a: object, **k: object) -> None:
+            raise KeyError("a bug in the specifier, not a backend failure")
+
+    with pytest.raises(KeyError):
+        R.run([worked], backend=Bug(), resolver=_resolver(resolve_second=False),
+              constructs=C, version=version, screened_from=counts["enumerated"],
+              run_dir=tmp_path / "bug", k=1, allow_unestimable=True, retry_pause=0.0,
+              log=lambda s: None)
