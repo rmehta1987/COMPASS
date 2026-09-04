@@ -138,6 +138,8 @@ const row=(k,v,m)=>`<dt>${k}</dt><dd class="${m?'m':''}">${v}</dd>`;
 const f4=x=>x.toFixed(4);
 
 async function load(){
+  const emb=document.getElementById("embedded-artefacts");
+  if(emb){Object.assign(DATA,JSON.parse(emb.textContent));return;}
   const idx=await (await fetch("artefacts/index.json")).json();
   DATA.index=idx;
   for(const f of idx.files){
@@ -347,7 +349,15 @@ el("#run").onclick=()=>{
   cur=match(q); typed=cur?null:q; draw();
 };
 el("#dl-src").onclick=()=>{
-  const b=new Blob([document.documentElement.outerHTML],{type:"text/html"});
+  /* One self-contained file: the live DOM as rendered, plus every loaded
+     artefact embedded as JSON so load() needs no fetch when opened from disk. */
+  const root=document.documentElement.cloneNode(true);
+  const old=root.querySelector("#embedded-artefacts"); if(old) old.remove();
+  const emb=document.createElement("script");
+  emb.type="application/json"; emb.id="embedded-artefacts";
+  emb.textContent=JSON.stringify(DATA).replace(/<\//g,"<\\/");
+  root.querySelector("head").appendChild(emb);
+  const b=new Blob(["<!DOCTYPE html>\n"+root.outerHTML],{type:"text/html"});
   const a=document.createElement("a");a.href=URL.createObjectURL(b);
   a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
 

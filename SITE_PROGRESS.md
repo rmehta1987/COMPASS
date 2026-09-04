@@ -107,6 +107,11 @@
 - Not verified in a real browser from this machine (no display): the harness proves the
   code path runs without exception, not that the raster is faithful. UNVERIFIED visually.
 
+## 2026-09-04 — item 13
+- Download this page: serialises the live DOM and embeds every loaded artefact as a JSON
+  script that `load()` prefers over fetch. The mockup's version would have shown
+  "Artefacts did not load" when opened from disk. The saved file is one HTML file.
+
 ### Figure trace (done before item 1; primaries opened, not summaries)
 | figure | primary | run id | verdict |
 |---|---|---|---|

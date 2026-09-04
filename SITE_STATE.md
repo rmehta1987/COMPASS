@@ -30,7 +30,7 @@ note: compass-gen/STATE.md (7ef75fa) marks pipeline items 11 and 13 as landed. I
 - [x] 10 Score panel (score.json: GenerationEnv stamp of the generation clone, gated)
 - [x] 11 measurement section (measurements.json: five-encoder sweep parsed from arm_hybrid_e_D.md §2; shipped arms S/I, threshold and latency from the tracked smoke report)
 - [x] 12 PNG export (SVG foreignObject → canvas → PNG; no library)
-- [ ] 13 download page source
+- [x] 13 download page source (live DOM + embedded artefacts; opens from file://)
 - [ ] 14 deploy (Pages workflow; enabling Pages is the operator's action)
 
 ## BLOCKED
