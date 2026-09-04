@@ -66,9 +66,16 @@ $PY -m pipeline.retrieve --reproduce >"$OUT" 2>&1 \
     || { grep -v "Loading weights" "$OUT" | tail -5; fail 6 "pipeline.retrieve --reproduce"; }
 grep "R@1" "$OUT"
 
-# 7. retrieval tripwire, last because slow: frozen and validated, a pipeline
+# 7. canaries C1-C3 (pipeline/canary.py): current behaviour on a resolving
+#    chronic-condition request, five absent constructs, and the household-vs-
+#    neighbourhood income conflation that must stay visible.
+$PY -m pipeline.canary >"$OUT" 2>&1 \
+    || { grep -v "Loading weights" "$OUT"; fail 7 "pipeline.canary"; }
+grep "canaries:" "$OUT"
+
+# 8. retrieval tripwire, last because slow: frozen and validated, a pipeline
 #    change is never the fix. Exact R@1, min_cos and 43/44 negatives.
-$PY deploy/smoke_test.py >"$OUT" 2>&1 || { tail -5 "$OUT"; fail 7 "deploy/smoke_test.py"; }
+$PY deploy/smoke_test.py >"$OUT" 2>&1 || { tail -5 "$OUT"; fail 8 "deploy/smoke_test.py"; }
 echo "smoke_test ALL PASS"
 
 echo; echo "GREEN"
