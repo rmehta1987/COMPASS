@@ -2,7 +2,7 @@
 D1: narrow   (brief default; operator's 2026-09-04 answer was unreadable ("sdfsdfss") — override here if wrong)
 D2: branch = ralph-loop   (cut from main at 265241d, pushed 2026-09-04)
 build: 3dc8415eccfe
-last green: 265241d   (VERIFIED 2026-09-04: build, smoke ALL PASS, pytest 743 passed, ruff 228<=232, mypy 59<=59, retrieval_eval exit 0)
+last green: 9717f73   (VERIFIED 2026-09-04 by ./check.sh, GREEN, 1m32s)
 note: check.sh omits 4 contamination checks by construction (contamination_check,
       input_leakage, scorability, tier_gate) — they import prevalence_key.py,
       which lives on scoring-key. They run in item 15 phase 2 only. A green
