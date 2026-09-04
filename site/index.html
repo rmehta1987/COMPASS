@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COMPASS — survey variable retrieval and study design</title>
+<style>
+  :root{
+    --ground:#EDF0F2; --paper:#F7F9FA; --ink:#16232E; --ink-2:#4A5C69; --ink-3:#7A8B97;
+    --rule:#C3CDD4; --rule-2:#DCE3E7; --signal:#A8621B; --ok:#2C5A4E;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font:400 16px/1.55 var(--sans)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  header{border-bottom:2px solid var(--ink)}
+  .mast{display:flex;flex-wrap:wrap;align-items:baseline;gap:18px;padding:30px 0 18px}
+  h1{font-size:clamp(27px,3.8vw,40px);line-height:1.03;letter-spacing:-.025em;font-weight:640;margin:0}
+  h1 span{display:block;font-family:var(--mono);font-size:.36em;font-weight:400;color:var(--ink-2);
+    margin-top:11px;line-height:1.5;max-width:62ch;letter-spacing:.01em}
+  .links{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12.5px}
+  .links a{color:var(--ink);text-decoration:none;border:1px solid var(--rule);background:var(--paper);padding:7px 12px}
+  .links a:hover,.links a:focus-visible{border-color:var(--ink)}
+
+  .bar{border-bottom:1px solid var(--rule);background:var(--paper)}
+  .bar .wrap{display:flex;gap:12px;align-items:center;padding:13px 24px;flex-wrap:wrap}
+  .bar input{flex:1 1 340px;min-width:0;font:400 15px var(--sans);color:var(--ink);
+    background:#fff;border:1px solid var(--rule);padding:10px 12px}
+  .bar input:focus-visible{outline:2px solid var(--ink);outline-offset:-1px}
+  button{font:500 14px var(--sans);color:var(--paper);background:var(--ink);
+    border:1px solid var(--ink);padding:10px 18px;cursor:pointer}
+  button.g{color:var(--ink);background:transparent}
+  button:hover{opacity:.87} button:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+  .bar .ex{display:flex;gap:6px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px}
+  .bar .ex button{padding:6px 9px;font-family:var(--mono);font-size:11.5px}
+
+  .stage{display:grid;grid-template-columns:236px minmax(0,1fr);border:1px solid var(--rule);
+    background:var(--paper);margin:28px 0 0}
+  .rail{border-right:1px solid var(--rule)}
+  .rail button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);
+    border:0;border-bottom:1px solid var(--rule-2);padding:13px 16px;cursor:pointer;font:400 14px var(--sans)}
+  .rail button:hover{background:#fff}
+  .rail button[aria-current="true"]{background:#fff;box-shadow:inset 3px 0 0 var(--ink);font-weight:600}
+  .rail .n{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-right:8px}
+  .rail .st{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;margin-top:3px}
+  .st.shipped{color:var(--ok)} .st.built{color:var(--ink-3)} .st.blocked{color:var(--signal)}
+
+  .panel{padding:22px 24px 26px;background:#fff}
+  .panel h2{font-size:23px;margin:0 0 3px;letter-spacing:-.012em}
+  .panel .sub{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);margin:0 0 18px}
+  .does{margin:0 0 22px;padding:0;list-style:none;font-size:14.5px}
+  .does li{padding:5px 0 5px 16px;position:relative;color:var(--ink-2)}
+  .does li:before{content:"";position:absolute;left:0;top:13px;width:6px;height:1px;background:var(--ink-3)}
+
+  .sec{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink-2);
+    border-bottom:1px solid var(--ink);padding-bottom:6px;margin:0 0 12px}
+  .sec+.sec{margin-top:26px}
+
+  .tools{border:1px solid var(--rule);margin:0 0 26px;font-family:var(--mono);font-size:12.5px}
+  .tools .t{border-bottom:1px solid var(--rule-2);padding:9px 12px}
+  .tools .t:last-child{border-bottom:0}
+  .tools .call{color:var(--ink)}
+  .tools .call b{font-weight:600}
+  .tools .ret{color:var(--ink-2);padding-left:16px;margin-top:4px;display:block}
+  .tools .ret.no{color:var(--signal)}
+  .tools .gate{background:var(--ground);color:var(--ink-2);font-size:11.5px}
+  .tools .gate.pass{box-shadow:inset 3px 0 0 var(--ok)}
+  .tools .gate.fail{box-shadow:inset 3px 0 0 var(--signal)}
+  .none{border:1px solid var(--rule);padding:14px 12px;margin:0 0 26px;
+    font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
+  .ph{border:1px dashed var(--signal);padding:14px 12px;margin:0 0 26px;
+    font-family:var(--mono);font-size:12.5px;color:var(--signal)}
+  .ph b{letter-spacing:.06em}
+
+  dl{margin:0 0 26px;display:grid;grid-template-columns:150px minmax(0,1fr);border:1px solid var(--rule)}
+  dt,dd{margin:0;padding:8px 12px;border-bottom:1px solid var(--rule-2);font-size:14px}
+  dt{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);background:var(--paper)}
+  dd.m{font-family:var(--mono);font-size:12.5px;word-break:break-word}
+  dl>:nth-last-child(-n+2){border-bottom:0}
+  .flag{color:var(--signal);font-weight:600}
+  .good{color:var(--ok);font-weight:600}
+  .after{display:flex;gap:8px;flex-wrap:wrap}
+  .after button{font-family:var(--mono);font-size:12px;padding:8px 12px}
+
+  footer{border-top:1px solid var(--rule);margin-top:34px;padding:20px 0 54px;font-size:13px;color:var(--ink-2)}
+  footer p{margin:0 0 7px;max-width:82ch}
+  @media (max-width:820px){
+    .stage{grid-template-columns:1fr}
+    .rail{border-right:0;border-bottom:1px solid var(--rule);display:flex;overflow-x:auto}
+    .rail button{border-bottom:0;border-right:1px solid var(--rule-2);white-space:nowrap;width:auto}
+    dl{grid-template-columns:120px minmax(0,1fr)}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header><div class="wrap mast">
+  <h1>COMPASS<span>Type what you want to measure. Watch each stage retrieve, refuse, or block — with the tool calls it made.</span></h1>
+  <nav class="links"><a href="#" id="dl-src">Download this page</a><a href="https://github.com/rmehta1987/COMPASS">Repo</a></nav>
+</div></header>
+
+<div class="bar"><div class="wrap">
+  <input id="q" value="" aria-label="request" placeholder="a construct you want to measure">
+  <button id="run">Run</button>
+  <span class="ex" id="examples"></span>
+</div></div>
+
+<main class="wrap">
+  <div class="stage">
+    <nav class="rail" id="rail" aria-label="pipeline stage"></nav>
+    <section class="panel" id="panel" aria-live="polite"></section>
+  </div>
+  <footer>
+    <p>Every figure on this page is loaded from a committed run artefact with a
+    run id. Panels marked PLACEHOLDER have no committed artefact yet and show
+    no numbers.</p>
+  </footer>
+</main>
+
+<script>
+/* PLACEHOLDER build. The mockup this page replaces carried invented figures;
+   none survive here. Runs, records and measurements arrive as committed
+   artefacts under site/artefacts/ and are rendered from there, never from
+   literals in this file. */
+const EX=[];
+
+const STAGES=[
+ {id:"intake",name:"Intake",st:"built",stl:"PLACEHOLDER",
+  sub:"free text → RetrievalRequest · no model call",
+  does:["Takes a construct, a role and any concrete instances",
+        "Never renders the role; leaves population unset by contract",
+        "Renders one deterministic query string: no paraphrase, no sampling, no model"],
+  ph:"Will show the real RetrievalRequest and the string the shipped template rendered for it."},
+ {id:"retriever",name:"Retriever",st:"shipped",stl:"PLACEHOLDER",
+  sub:"fine-tuned bge-small · argmax cosine over precomputed target vectors · fp32 CPU",
+  does:["Encodes the rendered query on CPU",
+        "Scores against every precomputed target vector: no model call, no network",
+        "Abstains when the top cosine falls below the shipped threshold",
+        "Refuses to serve at all if the dictionary hash does not match"],
+  ph:"Will show a real run: cosine, rank, margin, threshold, abstention and roster fold size, with the target pseudonymised."},
+ {id:"funnel",name:"Funnel",st:"blocked",stl:"PLACEHOLDER",
+  sub:"S1 enumerate · S2 prune · S3 estimability · S4 literature density",
+  does:["S1 enumerates candidate exposure–outcome pairs over distinct constructs",
+        "S2 prunes on construct identity, battery membership, free text",
+        "S3 screens estimability: blocked until two survey metadata exports arrive",
+        "S4 tags literature density; a tag, never a prune"],
+  ph:"Will show the gate's real output: how many pairs were live, passed and blocked, and which exports are missing."},
+ {id:"specifier",name:"Specifier",st:"built",stl:"PLACEHOLDER",
+  sub:"adjudicate → reason → gate → transduce → authority → validate → rank",
+  does:["adjudicate() runs before the first call and returns the same answer for every sample",
+        "The reasoning call has tools and loops until it stops calling or hits the step limit",
+        "_gate() checks the required calls are in the log, not that the prose claims them",
+        "tool_authority overwrites every environment-computed field and drops stale rationales",
+        "_rank() is a pure function of the record: no judge, no self-rating"],
+  ph:"Will show a real reasoning-loop tool log. Waits for the pipeline loop."},
+ {id:"record",name:"Record",st:"built",stl:"PLACEHOLDER",
+  sub:"HypothesisRecord · typed DAG · critique seam",
+  does:["Carries the full retrieval record for every variable, never a bare key",
+        "Stamps estimability, so an unverifiable design cannot read as a verified one",
+        "Holds the causal structure as a typed DAG; a mediator under a cross-sectional design fails validation",
+        "Reserves an empty critique seam, so adding a reviewer later needs no schema change"],
+  ph:"Will show a real HypothesisRecord. Waits for the pipeline loop."},
+ {id:"score",name:"Score",st:"blocked",stl:"PLACEHOLDER",
+  sub:"match rate vs held-out published findings · contamination verdicts",
+  does:["Scores committed artefacts against a key held on a branch the pipeline never sees",
+        "Refuses to score anything generated where the key was reachable",
+        "Reports match rate only beside contamination and leakage verdicts",
+        "Runs exactly once, on a tag, before any tuning, so it cannot become a feedback signal"],
+  ph:"Will show the generation clone's GenerationEnv stamp and why scoring has not run."}
+];
+
+let sel="retriever";
+const el=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function rail(){
+  el("#rail").innerHTML=STAGES.map((s,i)=>
+    `<button data-s="${s.id}" aria-current="${s.id===sel}">
+      <span class="n">${i+1}</span>${s.name}
+      <span class="st ${s.st}">${esc(s.stl)}</span></button>`).join("");
+  document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{sel=b.dataset.s;draw();});
+}
+
+function draw(){
+  const s=STAGES.find(x=>x.id===sel);
+  let h=`<h2>${s.name}</h2><p class="sub">${esc(s.sub)}</p>
+         <ul class="does">${s.does.map(d=>`<li>${esc(d)}</li>`).join("")}</ul>`;
+  h+=`<p class="sec">output</p><div class="ph"><b>PLACEHOLDER</b> — no committed artefact yet. ${esc(s.ph)}</div>`;
+  el("#panel").innerHTML=h;
+}
+
+el("#run").onclick=()=>{
+  const q=el("#q").value.trim(); if(!q)return;
+  el("#panel").innerHTML=`<h2>No committed run</h2><div class="ph"><b>PLACEHOLDER</b> — this page has no encoder and never invents a score. Your request is shown verbatim and nothing else: <em>${esc(q)}</em></div>`;
+};
+el("#dl-src").onclick=e=>{e.preventDefault();
+  const b=new Blob([document.documentElement.outerHTML],{type:"text/html"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(b);
+  a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
+rail();draw();
+</script>
+</body>
+</html>

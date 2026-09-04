@@ -42,6 +42,10 @@ deploy/model/
 *.bin
 !.claude/**/*.json
 !curated/**/*.json
+# the tool page's data lives in site/artefacts as JSON. Without this line a
+# site branch cut from main silently drops every artefact the page loads;
+# site-check.sh step 6 asserts each one is tracked.
+!site/artefacts/*.json
 # the small, wording-free half of the deploy bundle travels in git so a clone
 # can self-verify (deploy/smoke_test.py step 0)
 !deploy/manifest.json
