@@ -12,6 +12,21 @@
   key and margin, the footer figures (parameter count, latency, AUROCs, fixture size),
   the dictionary hash, the nav links to nowhere.
 
+## 2026-09-04 — item 2
+- `./site-check.sh` runs six stdlib checks under `site/tools/`; `plant.py` copies the site,
+  plants one violation per check (13 in all: page literal, artefact without provenance,
+  figure retyped in a string, five instrument words, a variable key, dead anchor, missing
+  fetch target, stray close tag, script syntax error, external script, font @import, fetch
+  to a host, untracked artefact) and requires a non-zero exit from each. Ran: all 13 red.
+- First real catch, before any planting: the tools' own docstrings carried an example
+  variable key and step 2 refused them. The example is now built at run time.
+- Step 2 exits 2 without the dictionary; it never passes vacuously. The dictionary is read
+  by path from the operator's clone (COMPASS_DICTIONARY), never copied into this clone.
+- Data contract fixed here so items 3–11 agree: the page loads `artefacts/index.json`,
+  which lists every other artefact under `files`; every artefact carries a `provenance`
+  object with `source` and one of `run_id` / `commit` / `frozen`; figures are JSON
+  numbers, never digits inside prose strings (request text excepted).
+
 ### Figure trace (done before item 1; primaries opened, not summaries)
 | figure | primary | run id | verdict |
 |---|---|---|---|

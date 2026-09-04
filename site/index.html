@@ -20,8 +20,8 @@
   h1 span{display:block;font-family:var(--mono);font-size:.36em;font-weight:400;color:var(--ink-2);
     margin-top:11px;line-height:1.5;max-width:62ch;letter-spacing:.01em}
   .links{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12.5px}
-  .links a{color:var(--ink);text-decoration:none;border:1px solid var(--rule);background:var(--paper);padding:7px 12px}
-  .links a:hover,.links a:focus-visible{border-color:var(--ink)}
+  .links a,.links button{color:var(--ink);text-decoration:none;border:1px solid var(--rule);background:var(--paper);padding:7px 12px;font:inherit;cursor:pointer}
+  .links a:hover,.links a:focus-visible,.links button:hover,.links button:focus-visible{border-color:var(--ink)}
 
   .bar{border-bottom:1px solid var(--rule);background:var(--paper)}
   .bar .wrap{display:flex;gap:12px;align-items:center;padding:13px 24px;flex-wrap:wrap}
@@ -97,7 +97,7 @@
 <body>
 <header><div class="wrap mast">
   <h1>COMPASS<span>Type what you want to measure. Watch each stage retrieve, refuse, or block — with the tool calls it made.</span></h1>
-  <nav class="links"><a href="#" id="dl-src">Download this page</a><a href="https://github.com/rmehta1987/COMPASS">Repo</a></nav>
+  <nav class="links"><button class="g" id="dl-src">Download this page</button><a href="https://github.com/rmehta1987/COMPASS">Repo</a></nav>
 </div></header>
 
 <div class="bar"><div class="wrap">
@@ -194,7 +194,7 @@ el("#run").onclick=()=>{
   const q=el("#q").value.trim(); if(!q)return;
   el("#panel").innerHTML=`<h2>No committed run</h2><div class="ph"><b>PLACEHOLDER</b> — this page has no encoder and never invents a score. Your request is shown verbatim and nothing else: <em>${esc(q)}</em></div>`;
 };
-el("#dl-src").onclick=e=>{e.preventDefault();
+el("#dl-src").onclick=()=>{
   const b=new Blob([document.documentElement.outerHTML],{type:"text/html"});
   const a=document.createElement("a");a.href=URL.createObjectURL(b);
   a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
