@@ -1,8 +1,16 @@
-"""Freeze the shipped retriever into a self-contained, CPU-only deploy/ bundle.
+"""Freeze the shipped retriever into a CPU-only deploy/ bundle.
 
-The model does not need to live on the Spark. 33M params, 2.94 ms/query on CPU,
-19 s to encode the whole corpus -- there is no reason to couple the retriever to
-a shared box running vLLM, Ollama, Redis and Postgres.
+Self-contained on the machine that builds it; from a clone of the public
+repository two files (deploy/model/, deploy/targets.json) travel by rsync and
+are sha256-checked before anything loads (README.md, deploy/smoke_test.py).
+
+The model does not need to live on the Spark. 33M params, 18.3 ms per isolated
+query on the Spark at 20 threads (2.94 ms/row when 224 queries are encoded in
+one batch -- a throughput figure, not per-call latency), ~21 s to encode the
+whole corpus at 4 threads -- there is no reason to couple the retriever to a
+shared box running vLLM, Ollama, Redis and Postgres. Inputs under out/, runs/
+and the fixtures live on the training machine only (PROVENANCE.md), so a
+re-freeze is possible there and nowhere else.
 
 What gets recorded rather than inferred, because each one is easy to lose and
 each one silently changes the answers:
@@ -201,8 +209,10 @@ def main() -> int:
                 "(out/final_bge-small_ft.json). Not a bug, but that query is the "
                 "hardest row in every report in this project, so the flip lands "
                 "exactly where device parity matters. CPU-only serving avoids it "
-                f"and costs little: {query_ms:.1f} ms per isolated query at "
-                f"{a.threads} threads, {encode_s:.1f}s to encode the whole corpus."),
+                f"and costs little: on the training machine ({platform.node()}), "
+                f"{query_ms:.1f} ms per isolated query at {a.threads} threads and "
+                f"{encode_s:.1f}s to encode the whole corpus; serving-machine figures "
+                "are under serving_reference."),
             "vectors_computed_on": "cpu",
             "threads": a.threads,
             "threads_why": (
@@ -291,7 +301,7 @@ def main() -> int:
                 "needs the study-team-authored request set to confirm."),
             "threshold_grid": (
                 "Candidates are the distinct top-1 scores of the 224 positives "
-                "(221 values). F1 over positives is piecewise constant between "
+                "(221 values; 222 under arm I). F1 over positives is piecewise constant between "
                 "positive scores, so this candidate set is exhaustive: no denser "
                 "grid can find a different optimum, only the same plateau. "
                 "deploy/smoke_test.py step 5 re-derives it exhaustively and over a "
@@ -342,14 +352,16 @@ def main() -> int:
             "why_it_ships": (
                 "Forgetting the template is a silent loss: pre-registered arm F "
                 "measured R@1 0.643 against 0.567 without it "
-                "(out/qx_task2_paired.json, 62 of 224 rows changed, item-clustered "
-                "bootstrap CI excluding zero)."),
+                "(out/qx_task2_paired.json on the training machine, withdrawn from git; "
+                "reproduced in out/smoke_report_x86_64_Wright.json acceptance.F; 62 of 224 "
+                "rows changed, item-clustered bootstrap CI excluding zero)."),
             "population_slot": {
                 "status": "POST-HOC REVISION of pre-registered arm F, which rendered "
                           "population + instances. The revision is to leave the "
                           "population slot unused.",
                 "measured": "net -1 row on the 17 rows it touched: R@1 0.647 -> 0.588 "
-                            "(+2, -3). QUERY_EXPANSION.md section 2a.",
+                            "(+2, -3). QUERY_EXPANSION.md section 2a (figures) and section 5 "
+                            "(the revision, recorded as post hoc).",
                 "mechanism": "the roster noun pulls the query toward the roster "
                              "block's OTHER question about the same cancer, at "
                              "margins down to 0.0001",
@@ -384,6 +396,11 @@ def main() -> int:
             "phrasing each; these are the documented blind spots.",
         ],
         "provenance": {
+            "note": ("Paths under out/, runs/ and fixtures/ are on the training machine "
+                     "and are not in the public repository; PROVENANCE.md lists each with "
+                     "its sha256 and the tracked file that reproduces its figure. "
+                     "Tracked here: out/qx_preregistration.json, deploy/smoke_test.py, "
+                     "out/smoke_report_x86_64_Wright.json."),
             "score_artifact": "out/ft_bge-small_nn0_t0.10.json",
             "parity_artifact": "out/final_bge-small_ft.json",
             "characterisation": ["out/char_task1_phrasing.json",
@@ -395,8 +412,10 @@ def main() -> int:
                 ("stem_option_dup", "stem_option", "stem_dash_option", "verbatim")],
             "negative_fixture": "fixtures/negative_requests.json",
             "training_meta": str(a.checkpoint / "compass_train_meta.json"),
-            "template_paired_artifact": "out/qx_task2_paired.json",
-            "template_abstention_artifact": "out/qx_task3_abstention.json",
+            "template_paired_artifact": "out/qx_task2_paired.json (withdrawn from git 2026-09-03)",
+            "template_abstention_artifact": "out/qx_task3_abstention.json (withdrawn from git 2026-09-03)",
+            "acceptance_reports": ["out/smoke_report_x86_64_Wright.json (tracked)",
+                                   "out/smoke_report_aarch64_spark-2500.json (training machine)"],
             "preregistration_fixture": "out/qx_preregistration.json (tracked; the "
                                        "only fixture deploy/smoke_test.py needs)",
             "cpu_port_acceptance_test": "deploy/smoke_test.py",

@@ -1,7 +1,12 @@
 """Arm E: zero-shot biomedical embedding retrieval over the COMPASS dictionary.
 
-Encodes 1,241 selection targets and the fixture's requests with a frozen model,
-selects by argmax cosine, and reports the figures BRIEF_arm_e.md asks for.
+Encodes the 1,352 selection targets (1,241 before the 2026-09-02 free-text fix)
+and the fixture's requests with a frozen model, selects by argmax cosine, and
+reports the figures docs/arm-e-results.md and arm_hybrid_e_D.md carry. The
+retrieval tree's src/compass_score.py supersedes this driver for RESULTS.md.
+This file has been edited since it produced arm_e.medcpt_a.json (d_prefix,
+load_dense, pool="last", more configs); the MODELS dict below, not the list in
+this docstring, is the authority on configs.
 
 No training. No fine-tuning. Frozen weights only.
 

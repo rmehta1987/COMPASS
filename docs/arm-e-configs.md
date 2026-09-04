@@ -1,7 +1,8 @@
 # Arm E — four encoder configurations compared
 
 **Measured 2026-09-02.** Build `3dc8415eccfe`, frozen weights, no training, CPU.
-Targets `targets.json` (1,241, byte-reproducible from the build). Fixture
+Targets `targets.json` (1,241, byte-reproducible from the build; **superseded** — the
+free-text exclusion was a bug, the corrected set is 1,352, §4). Fixture
 `benchmark/fixtures/retrieval_queries.json`, 224 rows, unchanged.
 
 Notation: **E<sub>config</sub>** names the arm and the encoder it ran under.
@@ -19,14 +20,17 @@ slot and the stem in the abstract slot; `stem_first` is the reverse. BioLORD and
 BGE are symmetric: stem and option are concatenated into one string.
 
 Artifacts: `arm_e.medcpt_a.json`, `arm_e.medcpt_b.json`, `arm_e.biolord.json`,
-`arm_e.bge_small.json`.
+`arm_e.bge_small.json`. All four are withheld from the public repository (`README.md`
+§What is withheld), so the tables below are not verifiable from a clone.
 
 ---
 
 ## Verdict
 
-**E<sub>bge-small</sub> wins on every measure, and it is the only
-general-purpose model of the four.** Both biomedical specialists lose to a 33M
+**E<sub>bge-small</sub> wins on every measure among these four, and it is the only
+general-purpose model of the four.** (Scope: four configs on the pre-fix 1,241-target set.
+The nine-config sweep in `arm_hybrid_e_D.md` §2 puts `bge-large` at 0.460, and the
+fine-tuned `bge-small` in `RESULTS.md` §4 at 0.567.) Both biomedical specialists lose to a 33M
 sentence-embedding model trained on no medical corpus in particular — while
 running 4× faster to encode and 4× faster to query.
 
@@ -173,14 +177,19 @@ fixture rows and the free-text exclusion cost four:
 A researcher asking about commute mode should find `m2:Q776`. The exclusion was
 removed on 2026-09-02; the corrected target set is **1,352 targets with 224/224
 reachable**, and every figure in this document predates that fix and stands on a
-208-row denominator the bug created. See `docs/arm-e-size-curve.md` for the
-corrected numbers.
+208-row denominator the bug created. See `arm_hybrid_e_D.md` §1 and §2 for the
+corrected numbers (a `docs/arm-e-size-curve.md` was planned and never written).
 
 This is a property of the candidate set, not of any encoder.
 
 ---
 
 ## 5. Ensembling — measured, and it is the largest number here
+
+*(Provenance: computed as a join over the four `arm_e.*.json` per-row ranks; the script
+was not preserved and the artifacts are withheld, so this table is unverifiable from a
+clone. A phrasing ensemble over the fine-tuned model was later measured properly in
+`FUSION.md` §2.)*
 
 Best rank across the four configs, per row:
 

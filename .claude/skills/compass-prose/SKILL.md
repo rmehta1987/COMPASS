@@ -15,8 +15,9 @@ They do NOT apply to: code or docstrings (`AGENTS.md` §Code Standards governs t
 `agent/schema.py` docstrings are prompt text); anything under `curated/` or any prompt
 (model-visible surfaces with their own rules); edits to `AGENTS.md` or `DESIGN.md` (their
 legend is VERIFIED / INHERITED — never the chat tags below); commit messages;
-or the per-item acceptance record `/compass-build` asks for — criterion, command, real
-output, `surface_hash` — which is pasted verbatim, no gloss, no added commentary.
+or a per-item acceptance record — criterion, command, real output, `surface_hash` — which
+is pasted verbatim, no gloss, no added commentary. (This record was once requested by a
+`/compass-build` command that no longer exists; the format stands on its own.)
 
 ## Who is reading
 
@@ -37,7 +38,8 @@ document at first use, or drop it. Identifiers that are also code (`surface_hash
 - **Quote primaries verbatim with location** — `AGENTS.md §Section` / `DESIGN.md §N`, the built dictionary (`build/dictionary.json` key), code (`path::symbol`), a
   study-team message (date). Never paraphrase a load-bearing claim: a paraphrase hides
   whether the source was opened and drifts on every retelling.
-- **Tag every quantitative or status claim.** To me, `/compass-build`'s two states:
+- **Tag every quantitative or status claim.** To me, two states (defined here, not by any
+  command):
   **ran** (this session — show the command and its real output) or **per the handoff**
   (repeated, not re-run). Anything else is **UNVERIFIED**, which is a reason to stop and
   check, not a licence to proceed. **cited** (source + location) is for external prior
@@ -66,14 +68,16 @@ cover — so:
 - Never quote OR paraphrase a paper's design choice — exposure–outcome pairing,
   adjustment set, model form, realised analytic n — into any of those surfaces.
   Instrument metadata sourced from the study team is allowed there; paper content is not.
-- Handoff §3's paper table, `benchmark/cohort_papers.py`, the T5 lane report, and
-  any memory file naming scorable PMIDs are paper content wearing project clothing:
+- `benchmark/cohort_papers.py`, any memory file naming scorable PMIDs, and the private
+  handoff documents and lane reports that once listed paper designs (not in this
+  repository) are paper content wearing project clothing:
   quote them to me only, never into a surface, and never label them "per the handoff"
   as if that made them safe.
 - If the prose you are asked for needs a paper's design (e.g. a scorability summary for
   me), write it, and say in the same paragraph that it is user-facing only.
 - After any edit to those surfaces, run `./.venv/bin/python -m benchmark.contamination_check`
-  and report `surface_hash`, whether or not `/compass-build` is loaded.
+  and report `surface_hash`. (Training machine only: the check imports the withheld
+  `benchmark/prevalence_key.py` and needs `pydantic`.)
 
 ## Self-check
 

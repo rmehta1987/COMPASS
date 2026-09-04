@@ -1,10 +1,24 @@
 # AGENTS.md
 Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 
+> **Reading this in the public repository (2026-09-03 merge).** Two things do not
+> resolve here. (1) Every short commit sha in this file, `TASKS.md`, `CHANGELOG.md`
+> and `.claude/` refers to the private pre-publication history; the public history
+> starts at the orphan commit b3d818d and none of those shas is reachable. (2) The
+> instrument and its derivatives are withheld (`README.md` §What is withheld): `raw/`,
+> `build/dictionary.json`, `benchmark/fixtures/`, `run/`, `benchmark/prevalence_key.py`.
+> Any instruction below that reads them runs only on the training machine. The
+> repository also carries a second tree, the retrieval experiments (`src/`, `deploy/`,
+> `RESULTS.md`, `CHARACTERISATION.md`, `FUSION.md`, `QUERY_EXPANSION.md`); its authority
+> order is `deploy/manifest.json` + `src/` > `RESULTS.md` > the other three, and
+> `PROVENANCE.md` maps its figures to artifacts and commits.
+
 ## Source of Truth
 - Authority: built dictionary + code (`agent/ env/ generate/ benchmark/`) > `AGENTS.md` >
   `DESIGN.md` > `TASKS.md` > `CHANGELOG.md` > `CLAUDE.md` (last, deliberately) >
   `.claude/projects/-home-rmeht-Projects-COMPASS/memory/` (Claude-only; others ignore it).
+- Deployed retriever → `deploy/manifest.json` (conventions, checksums, threshold);
+  retrieval results → `RESULTS.md`; provenance of both → `PROVENANCE.md`.
 - Not a total order — no-peer domains: instrument → `build/dictionary.json`; bibliography
   → `benchmark/cohort_papers.py`; prior art → `references/PRIOR_ART_CONTAMINATION.md`;
   what code *does*, never what it *should* → module + tests; open work → `TASKS.md`;
@@ -15,7 +29,8 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 - Operator pushback triggers a primary re-read, not a reversal; never flip unchecked.
 
 ## Hard Constraints [never violate]
-- `codebook.csv` in the project root is not project data. Never read it.
+- `codebook.csv` in the project root of the training machine is not project data. Never
+  read it. (It is not in the public tree; `.gitignore` excludes it.)
 - 🛑 `env/` may never make a network call — the leak channel the argument rests on. The ban
   is on `env/` code CALLING out, not on a closure holding such a package (`8042f4d`).
 - That check is literal-import regex: transitive blindness is CORRECT scoping, not a hole;
@@ -93,8 +108,11 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 - If that pin reddens it is telling the truth: re-derive the floors, never adjust the pin.
 - Fixture queries saw each gold wording (`benchmark/fixtures/retrieval_queries.json`):
   recall is an UPPER BOUND, cross-method comparison indicative only — `KNOWN_BIAS`.
-- Embedding, RRF and rapidfuzz runs need `numpy`/`sentence-transformers`, absent from
-  `pyproject.toml`: unreproducible here, and never an acceptance gate.
+- The pipeline's own embedding, RRF and rapidfuzz runs need `numpy`/`sentence-transformers`,
+  absent from `pyproject.toml`: unreproducible here, and never an acceptance gate for
+  `tests/` or `benchmark/`. The deployed retriever is the exception by design:
+  `deploy/smoke_test.py` IS its acceptance gate (exit 0 only on exact reproduction; needs
+  `torch`, `transformers`, `safetensors`, also undeclared).
 - No oracle in the measurement: a filter or facet experiment takes its input from the
   query alone, never the gold item's label, and reports gold-excluded beside recall.
 - `tests/test_search_scoring.py` ratchets age-query recall: red only when it worsens.
@@ -176,8 +194,13 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 ./.venv/bin/python -m benchmark.contamination_check
 ```
 - Run all six from the repo root, paste real output, and trust no number in any document.
+  In the public tree only `ruff check .` runs: `pytest`, `mypy` and `pydantic` are
+  undeclared and not installed, `build.py` needs the withheld `raw/`, and the two
+  `benchmark` modules need `build/dictionary.json` and `benchmark/fixtures/`. The
+  retrieval tree's equivalent is `python deploy/smoke_test.py` (README).
 - Two stop conditions, only these: the test count FELL, or the build hash moved off
-  `3dc8415eccfe`. A grown test count and a moved `surface_hash` are progress.
+  `3dc8415eccfe`. A grown test count and a moved `surface_hash` are progress. Both are
+  evaluable on the training machine only.
 - The build hash is now a function of the RULES, not of a version string
   (`build.py::_rule_fingerprint`), so it moves whenever a regex, the shape table,
   a parsing function's source or a column changes. Moving it deliberately is

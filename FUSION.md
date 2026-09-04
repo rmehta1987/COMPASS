@@ -1,7 +1,8 @@
 # COMPASS — phrasing fusion, measured
 
 **Model under test:** `bge-small` fine-tuned (`nn0, t=0.10`), the `deploy/` bundle,
-build `3dc8415eccfe`. Fixture, gold rule, `stem_option_dup` and [`build.py`](build.py) unchanged.
+build `3dc8415eccfe`. Fixture, gold rule, `stem_option_dup` and the dictionary build
+([`build.py`](build.py), the dictionary builder since the 2026-09-03 merge) at `3dc8415eccfe` unchanged.
 Companion to [`CHARACTERISATION.md`](CHARACTERISATION.md), which characterises the shipped retriever; this
 document tests whether a phrasing ensemble improves it. The brief this answers is
 recorded verbatim in [`BRIEF_ensemble.md`](BRIEF_ensemble.md), so the decision rules and expectations quoted
@@ -33,7 +34,7 @@ rejecting 43/44 to **35/44**.
 
 | | headline | § | source |
 |---|---|---|---|
-| **1. Overlap** | **The lexical leakage caveat dissolves; a structural one is opened.** R@1 by query/gold overlap quartile is **0.482 / 0.554 / 0.643 / 0.589** — non-monotonic. Item-level correlation with k/4 is **−0.023 (perm p 0.87)**. Within every query-length stratum, overlap buys nothing. What *does* predict correctness is the absolute count of shared content words (**rho 0.186, perm p 0.005**) — query informativeness, not lexical copying. What the test *cannot* see: whether sight of the gold conferred structural knowledge of which framing to write. §4's rewriter loses to the fixture's phrasings 0.625 vs 0.563, and 4× on `residence_commute`, which is what that would look like. | §1 | [`out/fusion_task1_overlap.json`](out/fusion_task1_overlap.json) |
+| **1. Overlap** | **The lexical leakage caveat dissolves; a structural one is opened.** R@1 by query/gold overlap quartile is **0.482 / 0.554 / 0.643 / 0.589** — non-monotonic. Item-level correlation with k/4 is **−0.023 (perm p 0.87)**. Within every query-length stratum, overlap buys nothing. What *does* predict correctness is the absolute count of shared content words (**rho 0.186, perm p 0.005**) — query informativeness, not lexical copying. What the test *cannot* see: whether sight of the gold conferred structural knowledge of which framing to write. §4's rewriter loses to the fixture's phrasings 0.625 vs 0.563, and 4× on `residence_commute`, which is what that would look like. | §1 | `out/fusion_task1_overlap.json` (withdrawn from git 2026-09-03: quotes gold stems per row; sha256 `0808bb02944a39f6…`, [`PROVENANCE.md`](PROVENANCE.md)) |
 | **2. Fusion** | **No demonstrated effect, underpowered.** Best deployable rule **0.625** (`max_cos`, tied by `min_rank`) against 0.567 shipped and 0.821 oracle — a point estimate of 22.8% of the gap, but [0.494, 0.740] overlaps the control's [0.441, 0.692] and spans the 25% floor it is tested against. **Decision: do not build the rewriter** — the burden was on fusion to show the gain. The 10 items at 0/4 are **not** rescued, exactly as §1a predicts. `residence_commute` moves 0.062 → 0.250, which *is* its oracle. | §2 | [`out/fusion_task2_rules.json`](out/fusion_task2_rules.json) |
 | **2a. RRF** | **The brief's prediction was wrong.** RRF was expected to lose to the control. It gains: **0.589 vs 0.567**, third of five rules. Reported as a measured correction. | §2 | same |
 | **3. Abstention** | **Separation survives; the threshold does not.** AUROC holds at 0.974–0.991. But with negatives rewritten too, `max_cos` at the shipped τ = 0.7295 rejects **35/44, not 43/44**. Re-deriving τ → 0.7737 restores 42/44 at the same recall. `mean_cos` does not inflate and keeps 43/44 at the **unchanged** τ. | §3 | [`out/fusion_task3_abstention.json`](out/fusion_task3_abstention.json) |
@@ -66,24 +67,28 @@ Corrected in place, because in each case the task survived the correction.
 
 | Script | Produces | Purpose |
 |---|---|---|
-| [`src/phrase_overlap.py`](src/phrase_overlap.py) | [`out/fusion_task1_overlap.json`](out/fusion_task1_overlap.json) | Task 1. No model loaded; ranks are read from the committed `out/char_pos_bge-small_ft.json`. |
+| [`src/phrase_overlap.py`](src/phrase_overlap.py) | `out/fusion_task1_overlap.json` (withdrawn, see below) | Task 1. No model loaded; ranks are read from the committed `out/char_pos_bge-small_ft.json`. |
 | [`src/fusion_eval.py`](src/fusion_eval.py) | [`out/fusion_task2_rules.json`](out/fusion_task2_rules.json) | Task 2. Loads `deploy/` with all guards on; refuses to continue unless the `single` control reproduces the committed artifact row for row. |
 | [`src/gen_paraphrases.py`](src/gen_paraphrases.py) | [`out/rewrites_positives.json`](out/rewrites_positives.json), [`out/rewrites_negatives.json`](out/rewrites_negatives.json) | The inference-time rewriter. `claude-haiku-4-5` via `claude -p --allowed-tools ""` — no network, no tools — matching [`src/gen_training.py`](src/gen_training.py). One prompt, blind to which set a request came from. |
 | [`src/fusion_abstain.py`](src/fusion_abstain.py) | [`out/fusion_task3_abstention.json`](out/fusion_task3_abstention.json) | Task 3, four configurations. |
 | [`src/fusion_rewriter.py`](src/fusion_rewriter.py) | [`out/fusion_task4_rewriter.json`](out/fusion_task4_rewriter.json) | Task 4's measurement, with paired flip tests. |
 
-Nothing existing was modified. `deploy/`, `retrieval_queries.json`,
-`fixtures/negative_requests.json`, [`build.py`](build.py) and every `src/char_*.py` are untouched.
+Nothing existing was modified by this work (as of its date, 2026-09-03, before the CPU
+port of the same day added `deploy/template.py`, `deploy/smoke_test.py` and new manifest
+fields, commit e446cf8). `retrieval_queries.json`, `fixtures/negative_requests.json`, the
+dictionary build and every `src/char_*.py` are untouched.
 
 ### The artifacts
 
-Every figure in this document reads from one of these six. All are tracked in the
-repository, so the links resolve; each is the complete record for its task, not a summary
-of one.
+Every figure in this document reads from one of these six. Five are tracked in the
+repository, so their links resolve; each is the complete record for its task, not a summary
+of one. The sixth, task 1's, was withdrawn from git on 2026-09-03 because it quotes the gold
+stem of every row and the repository is public; its sha256 and size are in
+[`PROVENANCE.md`](PROVENANCE.md) and its figures are all in §1.
 
 | artifact | schema | size | what it holds |
 |---|---|---|---|
-| [`out/fusion_task1_overlap.json`](out/fusion_task1_overlap.json) | `compass_phrase_overlap/1` | 254 KB | Per-row overlap under all four tokenisation × gold-text variants, the correlations with their permutation p-values, R@1 by fixed bin and by quartile, the length-confound control, and the 27 zero-overlap rows named. |
+| `out/fusion_task1_overlap.json` (withdrawn, training machine only) | `compass_phrase_overlap/1` | 254 KB | Per-row overlap under all four tokenisation × gold-text variants, the correlations with their permutation p-values, R@1 by fixed bin and by quartile, the length-confound control, and the 27 zero-overlap rows named. |
 | [`out/fusion_task2_rules.json`](out/fusion_task2_rules.json) | `compass_phrasing_fusion/1` | 32 KB | Five fusion rules plus the oracle ceiling, the parity check against the shipped artifact, per-item fused ranks, the single→fused transition table, and per-stratum recall. |
 | [`out/fusion_task3_abstention.json`](out/fusion_task3_abstention.json) | `compass_fusion_abstention/1` | 24 KB | Four configurations × two rules: score distributions, three AUROCs each, the re-derived threshold, behaviour at the shipped τ, and the hardest negatives per configuration. |
 | [`out/fusion_task4_rewriter.json`](out/fusion_task4_rewriter.json) | `compass_rewriter_fusion/1` | 30 KB | Per-rule paired flip tables, exact McNemar and item-clustered bootstrap CIs, worked gained/lost examples with their rewrites, strata, and the latency measurements. |
@@ -91,11 +96,13 @@ of one.
 | [`out/rewrites_negatives.json`](out/rewrites_negatives.json) | `compass_query_rewrites/1` | 15 KB | The same for the 44 held-out negatives, from the same prompt. |
 
 **A convention worth knowing when reading the links.** A file reference is a link when the
-file is tracked in git and plain code when it is not. So [`src/char_report.py`](src/char_report.py)
-and the six artifacts above are clickable, while `out/char_pos_bge-small_ft.json`,
-`retrieval_queries.json`, `fixtures/negative_requests.json` and `deploy/manifest.json` are
-not — `.gitignore` excludes `out/`, `*.json` and `fixtures/` wholesale, and the artifacts
-behind [`RESULTS.md`](RESULTS.md) and [`CHARACTERISATION.md`](CHARACTERISATION.md) were never added.
+file is tracked in git and plain code when it is not. So [`src/char_report.py`](src/char_report.py),
+[`deploy/manifest.json`](deploy/manifest.json) and five of the six artifacts above are
+clickable, while `out/fusion_task1_overlap.json`, `out/char_pos_bge-small_ft.json`,
+`retrieval_queries.json` and `fixtures/negative_requests.json` are not — `.gitignore`
+excludes `out/`, `*.json` and `fixtures/` wholesale with named exceptions, and the artifacts
+behind [`RESULTS.md`](RESULTS.md) and [`CHARACTERISATION.md`](CHARACTERISATION.md) were never
+added ([`PROVENANCE.md`](PROVENANCE.md) lists them with checksums).
 They exist in the working tree and every claim resting on them was re-verified here; they
 are simply not retrievable from the remote. Two intermediates from this work are also
 deliberately untracked: `out/fusion_sims_pos.pt` (a 224 × 1,353 cosine cache, a torch
@@ -106,7 +113,10 @@ shards, whose content is fully contained in the two `rewrites_*.json` files.
 the bundle and compares against `out/char_pos_bge-small_ft.json`: R@1 **0.567**, **0 of
 224 rows with a differing rank**, max |Δcos| **7.21e-07**. [`src/fusion_abstain.py`](src/fusion_abstain.py)
 re-derives the threshold from scratch and gets τ = **0.729476**, 43/44 rejected, AUROC
-**0.9823** — the shipped figures to the last digit. If either check fails the script
+**0.9823** — the shipped figures to the last digit, under the same batched encoding that
+produced them (encoding queries one at a time moves τ* to 0.731902 on the Spark: the knife
+edge in `CHARACTERISATION.md` §3 and `deploy/manifest.json::abstention.knife_edge`). If
+either check fails the script
 raises rather than reporting.
 
 ---
@@ -411,8 +421,9 @@ tract and block group explicitly, overtaking the green-space row that topped
 ## 4. Task 4 — measured, not built
 
 **Status.** Task 2 failed its decision rule, so no rewriter was built as a deployable
-component: `deploy/` is unmodified, its threshold is unchanged, and its guards still pass
-4/4. The numbers below exist because **task 3 could not be answered honestly without a
+component: `deploy/` was unmodified by this work, its threshold is unchanged, and its
+guards still pass 4/4 (the same-day CPU port, commit e446cf8, later added files to `deploy/`
+without touching the threshold). The numbers below exist because **task 3 could not be answered honestly without a
 rewriter** — a symmetric abstention comparison requires running one over the negatives,
 and making it symmetric requires running the same prompt over the positives. The R@1
 figures fall out of the same encodings.
@@ -468,8 +479,8 @@ stratum a top-10 list does not rescue is not helped by a real rewriter at all.
 | LLM calls per request | **1** |
 | measured latency, unbatched | **33.8 s** mean (median 30.0, range 22.9–50.7, n=5) |
 | what that number is | `claude -p` CLI session overhead, **not** API latency. A direct API call is ~1 s, as the brief estimates. |
-| retriever alone | 2.94 ms |
-| encode, 4 draws vs 1 | 11.8 ms vs 2.94 ms — **negligible**, as predicted |
+| retriever alone | 2.94 ms/row **batched** (the brief's figure); isolated per-call latency is 18.3 ms on the Spark at 20 threads, 13.4 ms median on the serving machine ([`PROVENANCE.md`](PROVENANCE.md)) |
+| encode, 4 draws vs 1 | 11.8 ms vs 2.94 ms batched, i.e. 4× the retriever's cost either way — **negligible** against the 1 s API call, as predicted; against the isolated 13–18 ms per call the same 4× ratio holds |
 
 The LLM dominates by two to four orders of magnitude depending on the route. More
 important than the latency: it ends the properties that made argmax attractive — zero
@@ -572,14 +583,12 @@ fixture's numbers in the same direction.
 3. **Never evaluate query expansion against un-expanded negatives.** §3 sizes that error at
    34 points of apparent rejection rate. If the 44-row negative set is ever used to
    validate an expansion scheme, it must be expanded by the same prompt.
-4. **Two documents should be updated to reflect §1**, and both are outside this work's
-   write scope: [`CHARACTERISATION.md`](CHARACTERISATION.md) §7's leakage framing, and
-   `deploy/manifest.json::known_limitations[0]`, which still reads "an unknown share of the
-   +0.192 over frozen `bge-small` is register alignment" with the leakage clause attached.
-   The register-alignment half stands; the gold-wording-leakage half is now measured and
-   does not survive. Editing `manifest.json` does not break the bundle's checksums (it is
-   not in its own `files` list) but it is a change to a frozen artifact and should be made
-   deliberately, with [`src/freeze_deploy.py`](src/freeze_deploy.py) re-run.
+4. **Two documents should be updated to reflect §1** — *done, 2026-09-03, commit e446cf8
+   and the merge that followed*: [`CHARACTERISATION.md`](CHARACTERISATION.md) §7 now carries
+   the §1 result, and [`deploy/manifest.json`](deploy/manifest.json)`::known_limitations[0]`
+   keeps the register-alignment half and states that the gold-wording-leakage half was
+   measured and does not survive. The manifest change was made through
+   [`src/freeze_deploy.py`](src/freeze_deploy.py), re-run, guards 4/4.
 
 ---
 
@@ -590,13 +599,13 @@ fixture's numbers in the same direction.
 | No retraining, re-tuning or checkpoint modification | **Held.** No script under `runs/` or [`src/train.py`](src/train.py) was run. |
 | `deploy/` guards keep passing all 4 tamper tests | **Re-run: 4/4 pass** — untampered bundle scores R@1 0.567; stale hash, modified file and permuted row order each raise. |
 | Negatives never used to select a threshold | **Held, and tightened.** Candidate τ values are drawn from the positives alone (§3), stricter than [`src/char_report.py`](src/char_report.py)'s union grid. |
-| 224-row fixture, gold rule, `stem_option_dup`, [`build.py`](build.py) at `3dc8415eccfe` unchanged | **Held.** No existing file modified; all five new scripts are additive. |
+| 224-row fixture, gold rule, `stem_option_dup`, the dictionary build at `3dc8415eccfe` unchanged | **Held.** No existing file modified; all five new scripts are additive. |
 | Load dtype pinned to fp32 | **Held.** Every fusion run goes through [`deploy/retriever.py`](deploy/retriever.py), which loads with `dtype=torch.float32` explicitly (the manifest records it as `float32`); the two fallback re-runs go through [`src/compass_score.py`](src/compass_score.py), which forces the same. Cosine algebra is done in fp64. |
 | Frozen `bge-small` (0.375) and `mxbai-l1` (0.469) stay runnable | **Both re-run on CPU, both reproduce.** `bge-small` R@1 **0.375** (@5 0.750, @10 0.866, singleton 0.399, folded 0.304, near-dup 0.434, 140 top-1 errors, within-construct cos p50 0.9099). `mxbai-l1` R@1 **0.469** (@5 0.808, @10 0.915) — the `overall`, `singleton`, `folded_family`, `near_duplicate`, `errors` and `within_construct_cosine` blocks are **byte-identical** to `out/recheck_frozen_mxbai-l1.json`. |
-| Every number traceable to a committed JSON artifact | **Held, in the strict sense.** Six artifacts, cited per section, and all six are **tracked in git** (`git add -f` past the `out/` and `*.json` ignore rules, 420 KB total). [`CHARACTERISATION.md`](CHARACTERISATION.md) had to define "committed" as "written to a file in the tree" because the repository was not under version control when it was written; that workaround is no longer needed here. |
+| Every number traceable to a committed JSON artifact | **Held at the time; one artifact since withdrawn.** Six artifacts, cited per section, were tracked in git (`git add -f` past the `out/` and `*.json` ignore rules, 420 KB total). On 2026-09-03 `out/fusion_task1_overlap.json` was withdrawn because it quotes gold stems per row and the repository is public; its checksum is in [`PROVENANCE.md`](PROVENANCE.md) and every §1 figure is stated in this document. Five remain tracked. |
 
 ---
 
-*Generated 2026-09-03 from [`out/fusion_task1_overlap.json`](out/fusion_task1_overlap.json), [`out/fusion_task2_rules.json`](out/fusion_task2_rules.json),
+*Generated 2026-09-03 from `out/fusion_task1_overlap.json` (withdrawn from git), [`out/fusion_task2_rules.json`](out/fusion_task2_rules.json),
 [`out/fusion_task3_abstention.json`](out/fusion_task3_abstention.json), [`out/fusion_task4_rewriter.json`](out/fusion_task4_rewriter.json),
 [`out/rewrites_positives.json`](out/rewrites_positives.json) and [`out/rewrites_negatives.json`](out/rewrites_negatives.json).*

@@ -2,7 +2,8 @@
 
     python build.py
 
-Reads the three public COMPASS codebook CSVs (2 columns, no header) and emits a
+Reads the three COMPASS module codebook CSVs (2 columns, no header; the survey
+instrument, withheld from the public repository -- README.md) and emits a
 deterministic, version-hashed dictionary plus the collision, grid and origin tables.
 
 Everything in build/ is disposable: delete it and re-run. Nothing here imports a

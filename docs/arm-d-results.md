@@ -3,7 +3,8 @@
 **Measured 2026-09-02.** Build `3dc8415eccfe`, model `claude-haiku-4-5`, prompt
 `3a28d114ff64`, artifact `run/arm_d.claude-haiku-4-5.3a28d114ff64.json`.
 Fixture `benchmark/fixtures/retrieval_queries.json`, 224 rows, unchanged.
-Reproduce: `python -m generate.arm_d measure`.
+Reproduce: `python -m generate.arm_d measure` (training machine only: the artifact under
+`run/` and the fixture are withheld from the public repository).
 
 ## Verdict
 

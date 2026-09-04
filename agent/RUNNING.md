@@ -3,8 +3,9 @@
 **Two backends exist, and they are not interchangeable in practice yet.**
 `agent/cli_backend.py:ClaudeCliBackend` drives Claude via the headless CLI and
 is what `generate/live_specifier.py` actually calls today — that is the
-pipeline's current live path; see HANDOFF_AGENT_PIPELINE.md §2, §4b and T2 for
-its status, and run it with:
+pipeline's current live path; its status was recorded in `HANDOFF_AGENT_PIPELINE.md`
+§2, §4b and its item T2 (a private-history document, not in this repository). Run it with
+(training machine only: needs `build/dictionary.json` and `pydantic`, both absent here):
 
 ```bash
 ./.venv/bin/python generate/live_specifier.py [k] [model]     # e.g. k=1 claude-haiku-4-5
@@ -51,7 +52,8 @@ export COMPASS_LLM_URL=http://localhost:8000/v1
 
 ## Two consequences of this model choice
 
-INHERITED (HANDOFF_AGENT_PIPELINE.md §7, not re-verified this session):
+INHERITED (HANDOFF_AGENT_PIPELINE.md §7, a private-history document not in this
+repository; not re-verified this session and not verifiable from a clone):
 
 **Qwen3 publishes no knowledge cutoff.** Tier B in the benchmark is defined as
 "first public after the model's stated cutoff." With no stated cutoff no Tier B is
@@ -67,7 +69,8 @@ the scores of models that share its mistakes.
 
 ## Why two calls and not one
 
-INHERITED (HANDOFF_AGENT_PIPELINE.md §7, not re-verified this session): this size
+INHERITED (HANDOFF_AGENT_PIPELINE.md §7, private history, not in this repository; not
+re-verified this session): this size
 class loses 4–10 points of combined reasoning-and-formatting quality in a single
 constrained pass. Guided decoding alone costs about 1.6 points of reasoning while
 lifting parse validity from 55.7% to 92.2%. Prompted JSON with no grammar was

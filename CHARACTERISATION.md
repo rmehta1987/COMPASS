@@ -1,13 +1,16 @@
 # COMPASS — characterisation of the shipped retriever
 
 **Model under test:** `bge-small` fine-tuned (`nn0, t=0.10`), argmax cosine, no LLM call.
-R@1 0.567, 2.94 ms/query, 134 MB, `runs/bge-small_nn0_t0.10/`.
+R@1 0.567, 18.3 ms isolated per query on the training machine (2.94 ms/row batched, see
+[`PROVENANCE.md`](PROVENANCE.md)), 133.5 MB checkpoint, `runs/bge-small_nn0_t0.10/`.
 Companion to `RESULTS.md`, which selects the model; this document characterises it.
 
 Every number is read from a JSON artifact in `out/` written by a script in `src/`, cited
-on the row. Nothing here is re-typed from a prior report. The repository is **not** a git
-repository (`git status` → *not a git repository*), so "committed" below means "written to
-a file in the tree", not "committed to version control".
+on the row. Nothing here is re-typed from a prior report. The `out/` artifacts, the
+fixtures and the checkpoint are on the training machine, not in this public tree; the
+sha256 of each, the command that regenerates it and the tracked file that reproduces its
+figure are in [`PROVENANCE.md`](PROVENANCE.md). A backticked path below is a
+training-machine path.
 
 **One-line answer.** The tool is *reliable on some constructs and blind on others*, not a
 coin flip — the blind spots are enumerable and listed in §1. It can tell when a requested
@@ -30,7 +33,7 @@ caveats, in the numbered section named on the row.
 | **2. Negatives** | **They separate.** 44-row held-out set: negatives p50 0.596 / max 0.772 against positives p10 0.741. AUROC **0.982** (0.995 vs correct positives). 0/44 negatives above the positive median. The **margin does not separate** (0.550). Lay-register and `adjacent` rows score higher, as predicted, and still fall below the threshold. | §2 | `out/char_task2_negatives.json`, `out/negatives_absence_check.json` |
 | **3. Calibration** | At τ = **0.7295** (max-F1 on positives only) the model refuses **43/44** absent-construct requests for **0.9 recall points** — this replaces arm D's `absent` verdict. But cosine separates correct from incorrect top-1 at AUROC **0.640** only, and **precision 0.90 is unreachable at any τ**. It detects absence, not error. Fine-tuning *degraded* the margin as a confidence signal (0.774 → 0.633). | §3 | `out/char_task3_calibration.json` |
 | **4. Stratification** | Recall is **10× lopsided**: `residence_commute` **0.062** (R@10 0.688, also worst) against cancer 0.613, `sleep` 0.000 at rank 1 but 1.000 by rank 10. And the brief's question cannot be answered — SES/employment, insurance/access, cancer-screening and demographics have **zero fixture rows** (61 targets / 51 constructs the benchmark never touches). | §4 | `out/char_task4_strata.json` |
-| **5. Deployment artifact** | `deploy/`, 137.2 MB, 7 files, CPU-pinned, no pickle. **Reproduces R@1 0.567 from its own frozen vectors**; vectors bit-identical across rebuilds. Guards fail rather than warn and this is **tested**: 4/4 tamper cases raise (stale hash, modified file, permuted row order). Row 107 — the one GPU/CPU disagreement — scores 0.6239 and is abstained on anyway. | §5 | `deploy/manifest.json` |
+| **5. Deployment artifact** | `deploy/`, 137.2 MB, 9 files (7 at the original freeze; `template.py` and `smoke_test.py` added by the CPU port, commit e446cf8), CPU-pinned, 4 threads, no pickle. **Reproduces R@1 0.567 from its own frozen vectors**; vectors bit-identical across rebuilds. Guards fail rather than warn and this is **tested**: 4/4 tamper cases raise (stale hash, modified file, permuted row order). Row 107 — the one GPU/CPU disagreement — scores 0.6239 and is abstained on anyway. | §5 | [`deploy/manifest.json`](deploy/manifest.json) `files`; [`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json) `integrity.files` = 9 |
 | **6a. `stem_option_dup`** | **Confirmed at +8.0 R@1** on the full 1,353 / 224 set (vs +8.2 on the superseded subset). The full corpus also exposes the mechanism the subset hid: the gain is almost entirely **folded-family recall, 0.304 vs 0.089**. | §6a | `out/gate_full_*.json` |
 | **6b. Qwen3 discrepancy** | **Resolved: it is the load dtype, not two harnesses and not the pooling convention.** Loading `qwen3-06b` in its config-declared bfloat16 reproduces the earlier log line for line. The models the two runs agree on are exactly those declaring fp32; `granite-s2` moved ten times further than `qwen3`. | §6b | `out/diag_qwen3-06b_dtype_from_config.json` |
 
@@ -251,8 +254,17 @@ but it did not make the model's confidence more honest about *which* item it pic
 |---|---|---|---|---|---|---|
 | no threshold (today) | — | 1.000 | 0.567 | 0.567 | 0.567 | 0 / 44 |
 | **max F1** | **0.7295** | **0.924** | **0.604** | **0.558** | **0.580** | **43 / 44 (97.7%)** |
+| *(the same rule, queries encoded one at a time on the Spark)* | *0.7319* | *0.9241* | *0.6039* | *0.558* | *0.580* | *43 / 44* |
 | all negatives rejected | 0.7722 | 0.821 | 0.625 | 0.513 | 0.564 | 44 / 44 |
 | precision ≥ 0.90 | — | **unreachable at any τ** | | | | |
+
+The italic row is the knife edge, found by the CPU port: 0.729476 is the 6-dp rounding of
+an *incorrect* positive's score (fixture row 68). Batch encoding, which produced the bold
+row, puts that row 1.9e-8 below the threshold; encoding the query alone, as `select()`
+does, puts it 4.5e-8 above on the Spark (so τ* moves to the next candidate, 0.731902) and
+below again on the x86 serving machine. Recall is identical either way. The shipped value
+is unchanged; `deploy/manifest.json::abstention.knife_edge` records the finding and a
+robust alternative, and [`deploy/smoke_test.py`](deploy/smoke_test.py) asserts the pair.
 
 **This is the mechanism that replaces arm D's `absent` verdict, and it costs almost
 nothing.** At τ = 0.7295 the model refuses 43 of 44 requests for data the instrument does
@@ -351,7 +363,10 @@ gap in the benchmark, and it is a concrete requirement for the study-team reques
 
 ## 5. Task 5 — the frozen deployment artifact
 
-`deploy/`, built by `src/freeze_deploy.py`, 137.2 MB, 7 files, CPU-only.
+`deploy/`, built by `src/freeze_deploy.py`, 137.2 MB, 9 files, CPU-only. Five of the nine
+are tracked in this public repository; `deploy/model/` (over GitHub's file limit) and
+`deploy/targets.json` (question wording) are copied from the training machine and verified
+by sha256 before anything loads.
 **The bundle reproduces R@1 = 0.567 from its own frozen vectors** — asserted at build time
 and re-asserted by `src/test_deploy_asserts.py`.
 
@@ -364,8 +379,10 @@ and re-asserted by `src/test_deploy_asserts.py`.
 | pooling | CLS (not mean) — recorded |
 | padding / dtype / max-len | right / float32 / 256 doc, 64 query — recorded |
 | target-text rendering | `stem_option_dup` — recorded, with its definition *and* its measured worth |
-| runtime | `deploy/retriever.py` — no `torch.load`, no pickle; safetensors both sides |
-| CPU encode-all | 18.2 s (isolated; the first build measured 34.8 s under CPU contention) |
+| runtime | [`deploy/retriever.py`](deploy/retriever.py) — no `torch.load`, no pickle; safetensors both sides; thread count pinned to 4 from the manifest |
+| template | [`deploy/template.py`](deploy/template.py) — the instances-only query template, re-exported by `retriever.py` (added by the CPU port) |
+| acceptance test | [`deploy/smoke_test.py`](deploy/smoke_test.py) — exits 0 only if arms S, F and I reproduce to the digit; passed on the Spark and on the x86 serving machine ([`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json)) |
+| CPU encode-all | 18.2 s at this freeze (default threads); 21.2 s at the pinned 4 threads (`deploy/manifest.json::measured`); 57.9 s on the serving machine (smoke report `reencode.wall_s`); the first build measured 34.8 s under CPU contention |
 
 **Hash assertion fails, it does not warn** — and this is tested, not asserted in prose.
 `src/test_deploy_asserts.py` tampers with a copy of the bundle three ways and requires each
@@ -378,13 +395,16 @@ to raise. **4/4 pass:**
 | any shipped file modified after freezing | `BundleIntegrityError` (sha256 in the manifest) ✅ |
 | vector row order permuted | `BundleIntegrityError` (row *i* must be `target_id` *i*+1) ✅ |
 
-**Device pinned to CPU.** `retriever.py` has no device parameter. Vectors are bit-identical
+**Device pinned to CPU, threads pinned to 4.** `retriever.py` has no device parameter; it
+reads the thread count from the manifest unless the caller overrides it, because an
+unpinned count makes latency unreproducible across machines. Vectors are bit-identical
 across rebuilds (`sha256 941dd61a…b96a4` twice), so CPU encoding is deterministic here.
 Incidentally, the row that motivates the pin — row 107, *"primary method used to get to
 work"*, the single GPU/CPU disagreement at max vector delta 4.06e-7 — scores **cos 0.6239**,
 below the abstention threshold. The bundle refuses that query anyway.
 
-**Abstention is wired in.** `select()` applies `min_cos = 0.7295` and returns `None` below
+**Abstention is wired in.** `select()` applies `min_cos = 0.729476` (the knife-edge value,
+§3) and returns `None` below
 it; `search()` returns the top-k unfiltered and lets the caller decide. The threshold was
 chosen by maximising F1 **on the 224 positives only**; the 44 negatives were then used to
 *report* that it rejects 43/44, not to select it. The manifest records this, records the
@@ -406,7 +426,8 @@ so they travel with the artifact rather than living only in this document.
 
 ### 6a. `stem_option_dup` on the full corpus — **confirmed**
 
-The +8.2 R@1 ablation was measured on the superseded 1,241-target / 208-row subset. Re-run
+The +8.2 R@1 ablation was measured on the superseded 1,241-target / 208-row subset (built by
+the since-deleted root `build.py` target builder, which dropped free-text rows). Re-run
 at 1,353 targets / 224 rows, `bge-small` frozen, CPU (`out/gate_full_*.json`):
 
 | rendering | R@1 | R@5 | R@10 | singleton R@1 | **folded-family R@1** | near-dup R@1 |
@@ -477,10 +498,14 @@ flag added for this diagnosis is documented as diagnostic-only.
 
 ## 7. What this does not settle, and the one measurement that would
 
-Unchanged from the brief, and now more sharply specified. R@1 0.567 carries the fixture's
-declared leakage bias **plus** register alignment: the same generator family wrote the 224
-fixture queries and the 13,528 training pairs. An unknown share of the +0.192 over frozen
-`bge-small` is that alignment.
+Now more sharply specified, and narrowed once since the brief. R@1 0.567 carries register
+alignment: the same generator family wrote the 224 fixture queries and the 13,528 training
+pairs, and an unknown share of the +0.192 over frozen `bge-small` is that alignment. The
+fixture's declared *lexical leakage* bias, which this section originally listed alongside
+it, was then measured and does not survive (`FUSION.md` §1): item-level Spearman between
+query/gold word overlap and rank-1 is −0.023 (permutation p 0.867), R@1 by overlap quartile
+is 0.482 / 0.554 / 0.643 / 0.589, non-monotonic, and flat within every query-length
+stratum. `deploy/manifest.json::known_limitations[0]` carries the same correction.
 
 The measurement that settles it is a request set written by the study team **without sight
 of the instrument**. §1–§4 change what it costs: the model is now described, so an unbiased

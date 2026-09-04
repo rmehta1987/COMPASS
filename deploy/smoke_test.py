@@ -56,7 +56,10 @@ HERE = Path(__file__).resolve().parent
 
 # ---------------------------------------------------------------- expectations
 # From out/qx_task2_paired.json (arms S and F, rounded to 3 dp as the brief
-# states them; ranks exact) and out/qx_task3_abstention.json (negatives).
+# states them; ranks exact) and out/qx_task3_abstention.json (negatives). Both
+# artifacts were withdrawn from git on 2026-09-03 (they quote gold stems; the
+# repository is public); checksums in PROVENANCE.md. The values are reproduced
+# by this test itself in out/smoke_report_x86_64_Wright.json.
 # Arm I ("instances only") is the SHIPPED contract: population left None. It is
 # a post-hoc revision of pre-registered arm F and was measured on the training
 # machine's CPU through this script.

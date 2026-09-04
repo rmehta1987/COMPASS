@@ -48,8 +48,11 @@ Corollaries:
 
 ## Prior art
 
-Four comparable systems read at source, commit-pinned, 2026-08-30. Attribution
-in `references/PRIOR_ART_CONTAMINATION.md`; the mechanisms:
+Four comparable systems read at source, 2026-08-30 (the attribution file,
+`references/PRIOR_ART_CONTAMINATION.md`, records its own reading as 2026-08-27/28; the two
+dates are two readings, and that file is the primary). Neither file records the pinned
+commit shas or repository URLs, so "commit-pinned" is asserted, not reproducible here.
+The mechanisms:
 
 1. Renders its entire catalogue — tools, data items, libraries; 55,234
    characters at its pinned commit — into one prompt and asks for **indices**,
@@ -69,7 +72,7 @@ than exclude it when in doubt — and none of the four returns a per-hit score o
 thresholds a retrieval path. COMPASS cannot copy either posture. Its measured
 failure runs the opposite way: on the 2026-09-01 run, all four requests the
 codebook cannot pin down were answered with one confident item — 5 false
-positives in 21 rows.
+positives in 21 rows (run record under `run/`, withheld; unverifiable from a clone).
 
 So `refusal` is a required field of every contract, and it must name a value the
 output schema can actually produce. Never a downstream text heuristic: system 3

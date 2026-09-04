@@ -2,13 +2,25 @@
 
 **Model under test:** `bge-small` fine-tuned (`nn0, t=0.10`), the `deploy/` bundle,
 build `3dc8415eccfe`, guards live, fp32, threshold unchanged. Fixture, gold rule,
-`stem_option_dup` and [`build.py`](build.py) unchanged. The brief is recorded verbatim in
+`stem_option_dup` and the dictionary build at `3dc8415eccfe` unchanged. The brief is recorded verbatim in
 [`BRIEF_query_expansion.md`](BRIEF_query_expansion.md). Companion to
 [`FUSION.md`](FUSION.md), whose §1 length gradient this tests.
 
-Every number below is read from one of four JSON artifacts in `out/`, all tracked in
-git. Every retrieval goes through the shipped bundle, single query, no fusion, and every
-table is anchored to a control that reproduces R@1 0.567 row for row.
+Every number below is read from one of four JSON artifacts in `out/`. Two are tracked in
+git; the other two (§2's and §3's) were withdrawn from git on 2026-09-03 because they quote
+gold stems per row and the repository is public. Their checksums are in
+[`PROVENANCE.md`](PROVENANCE.md), and every figure they carry is reproduced by
+[`deploy/smoke_test.py`](deploy/smoke_test.py) in
+[`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json) (`acceptance.F`,
+`threshold.F`). Every retrieval goes through the shipped bundle, single query, no fusion,
+and every table is anchored to a control that reproduces R@1 0.567 row for row.
+
+> **What ships is arm I, not arm F.** After this document was written the population slot
+> was dropped from the shipped contract (a post-hoc revision, §2a and §5): the deployed
+> template renders instances only. Arm I measures R@1 **0.6429**, R@5 0.8884, R@10
+> **0.9375**, rank p90 7, 43/44 negatives rejected, AUROC 0.9874 — the same R@1 as F, four
+> rows gained and four lost, and 0.4 points lower at R@10 (smoke report `acceptance.I`;
+> `deploy/manifest.json::template`).
 
 ---
 
@@ -34,9 +46,9 @@ are **untested here** because no metadata can fill them.
 |---|---|---|---|
 | **0. Pre-registration** | Template, field-derivation rules, negatives' fields, decision rule and predictions committed at `d9d7be4` with sha256 `5f890fa5…` before any retrieval. Rendered strings for all 268 requests frozen there; the scoring scripts refuse to run if the template's hash changes. | §0 | [`out/qx_preregistration.json`](out/qx_preregistration.json) |
 | **1. What could be tested** | Metadata supplies only **population** (roster block) and **instances** (matrix column label). 62 of 224 rows in 18 items change; **162 rows in 38 items are unchanged**, including every `residence_commute`, `tobacco`, `medication` and `sleep` row. Timeframe and construct elaboration have no metadata source and are untested. | §1 | same |
-| **2. Paired test** | **F: +0.076 R@1, CI [+0.009, +0.147]**, 22/5/197. P (population only): +0.005, CI [−0.022, +0.027]. 1–2-word subgroup F: +0.113, CI [+0.026, +0.214]. R@5 0.862 → 0.888, R@10 0.920 → 0.942. One 0/4 item rescued to 4/4 (bladder cancer, ranks 82/36/38/59 → 1). `residence_commute` **unchanged at 0.062**. | §2 | [`out/qx_task2_paired.json`](out/qx_task2_paired.json) |
+| **2. Paired test** | **F: +0.076 R@1, CI [+0.009, +0.147]**, 22/5/197. P (population only): +0.005, CI [−0.022, +0.027]. 1–2-word subgroup F: +0.113, CI [+0.026, +0.214]. R@5 0.862 → 0.888, R@10 0.920 → 0.942. One 0/4 item rescued to 4/4 (bladder cancer, ranks 82/36/38/59 → 1). `residence_commute` **unchanged at 0.062**. | §2 | `out/qx_task2_paired.json` (withdrawn from git; sha256 `913736170edb6e83…`; figures reproduced in the smoke report `acceptance.F`) |
 | **2a. Where it comes from** | Post hoc. Population-only rows **0.647 → 0.588** (+2 −3). Instance rows 0.511 → 0.911 (+20 −2). Excluding the 7 rows where the option label supplied a concept the query never contained: **+0.046, CI [−0.014, +0.106]**. | §2 | same |
-| **3. Abstention** | **Threshold survives unchanged.** F: shipped τ rejects **43/44** (clean 27/27, adjacent 16/17), AUROC **0.9867**, negative max **falls** 0.772 → 0.732, τ* re-derived on positives only is the same 0.729476. At that τ: precision 0.604 → **0.683**, recall 0.558 → **0.634**, coverage 0.924 → 0.929. The negative side is the weaker half of the symmetry (§3). | §3 | [`out/qx_task3_abstention.json`](out/qx_task3_abstention.json) |
+| **3. Abstention** | **Threshold survives unchanged.** F: shipped τ rejects **43/44** (clean 27/27, adjacent 16/17), AUROC **0.9867**, negative max **falls** 0.772 → 0.732, τ* re-derived on positives only is the same 0.729476. At that τ: precision 0.604 → **0.683**, recall 0.558 → **0.634**, coverage 0.924 → 0.929. The negative side is the weaker half of the symmetry (§3). | §3 | `out/qx_task3_abstention.json` (withdrawn from git; sha256 `221dbc4946fd2f67…`; figures reproduced in the smoke report `threshold`) |
 | **4. Corpus size** | Sensitivity curve, not a benchmark. R@1 **0.673 / 0.624 / 0.589 / 0.567** at 40 / 60 / 80 / 100 % of constructs; **−1.45 R@1 points per 100 targets**, −0.38 R@10 points. A module the size of module 3 (329 targets) would cost ~4.8 R@1 points. The template's gain is flat across pool sizes (+7.0 to +7.6). | §4 | [`out/qx_task4_corpus_size.json`](out/qx_task4_corpus_size.json) |
 
 ### Premises checked
@@ -250,11 +262,13 @@ numbers are reported; the decision rule was registered on the first.
 
 ### Decision
 
-**F ships under the pre-registered rule** (CI excludes zero, +0.076 > +0.05), subject to
-§3, which it passes. What it ships *as* is narrower than the brief's framing: a query
-contract in which the specifier's population and instance fields are appended
-deterministically. That is justified for roster and matrix targets, on this evidence,
-with the population slot flagged as net negative here and worth a held-out re-check.
+**F passes the pre-registered rule** (CI excludes zero, +0.076 > +0.05), subject to §3,
+which it passes. What ships is narrower than F: a query contract in which the specifier's
+**instance** field is appended deterministically and the population slot is left unused
+(arm I, the post-hoc revision recorded in §5 and in `deploy/manifest.json::template`; R@1
+0.6429 / R@5 0.8884 / R@10 0.9375, p90 7). That is justified for matrix targets, on this
+evidence; the population slot was net negative here (−1 row on the 17 it touched) and
+awaits the study-team request set as its held-out check.
 **It is not evidence that lengthening a singleton request recovers the length
 gradient** — that is untested and remains the study-team request set's question.
 
@@ -263,7 +277,9 @@ gradient** — that is untested and remains the study-team request set's questio
 ## 3. Task 3 — the negatives and the threshold
 
 The same template applied to both sides in every arm. Arm S reproduces
-CHARACTERISATION.md §3: τ 0.729476, 43/44, AUROC 0.9823, R@1 0.567.
+CHARACTERISATION.md §3: τ 0.729476, 43/44, AUROC 0.9823, R@1 0.567. Queries were encoded
+in batches of 64, as in every artifact this table compares against; the τ* column depends
+on that (see the knife-edge note below the table).
 
 | arm | pos R@1 | neg p10 | p50 | p90 | **max** | **AUROC** | τ* (positives only) | rej @ τ* | recall @ τ* | **rej @ shipped τ** | admitted |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -272,10 +288,25 @@ CHARACTERISATION.md §3: τ 0.729476, 43/44, AUROC 0.9823, R@1 0.567.
 | **F** | **0.643** | 0.412 | 0.578 | 0.687 | **0.732** | **0.9867** | **0.7295** | **43/44** | **0.634** | **43/44** | n42 |
 
 **The case that applies: the threshold survives unchanged.** Under F the shipped τ still
-rejects 43/44, τ* re-derived on positives only lands on the same value (the F1-maximising
-candidate is the score of a row the template did not change, so it is a coincidence of the
-grid, not a property of the template), and no re-derivation is needed. Nothing here
-requires the re-derive-once-and-freeze path the brief allowed for.
+rejects 43/44, τ* re-derived on positives only lands on the same value, and no re-derivation
+is needed. Nothing here requires the re-derive-once-and-freeze path the brief allowed for.
+
+Why τ* is the same value under S, P and F is not a grid accident. The candidate set is the
+distinct top-1 scores of the 224 positives (221 values), and F1 over positives is piecewise
+constant between positive scores, so that set is exhaustive: no denser grid can find a
+different optimum (the smoke test re-derives it over the exhaustive set and a 20,001-point
+dense grid on every run, `threshold.*`). The F1-maximising candidate is the score of a row
+the template did not change, which is why the value survives templating.
+
+**The knife edge, found by the CPU port.** 0.729476 is the 6-dp rounding of an *incorrect*
+positive's score (fixture row 68). In the batched encoding above that row sits 1.9e-8 below
+the threshold; encoding the query alone, as `select()` does, puts it 4.5e-8 above on the
+Spark, so τ* moves to the next candidate, 0.731902, in every arm — and back below on the x86
+serving machine. Recall is identical at both values and 43/44 holds in every arm; under F
+and I the one surviving negative (n42, 0.7316) sits inside that window. The shipped value is
+unchanged; `deploy/manifest.json::abstention.knife_edge` records the finding and a robust
+alternative (0.73174), and [`deploy/smoke_test.py`](deploy/smoke_test.py) asserts the pair
+{0.729476, 0.731902} rather than one side.
 
 **The operating point at the unchanged τ**, in full:
 
@@ -348,10 +379,16 @@ in opposite directions.
 **It does not touch the four unmeasured strata.** SES/employment, insurance/access,
 cancer-screening and demographics still have zero fixture rows.
 
-**The population slot needs its own confirmation before it ships.** It is pre-registered
-as part of F, F clears the rule, and P alone does not — on 17 rows it loses 3 and gains 2.
-Dropping it would be a revision in light of results, which the brief says needs a held-out
-check rather than a re-report. It stays in, flagged.
+**The population slot was dropped from the shipped contract — a post-hoc revision, recorded
+as one.** It is pre-registered as part of F, F clears the rule, and P alone does not — on 17
+rows it loses 3 and gains 2 (0.647 → 0.588), with one mechanism: the roster noun pulls the
+query toward the roster block's *other* question about the same cancer, at margins down to
+0.0001. This document originally kept the slot in, flagged, because dropping it is a
+revision in light of results. The CPU port (commit e446cf8) made the revision and recorded
+it as such in `deploy/manifest.json::template.population_slot`, shipping instances only
+(arm I: R@1 0.6429, the same as F; R@10 0.9375 vs 0.942). The held-out check the brief asks
+for is the study-team request set; until it runs, the revision is unconfirmed and both
+figures are reported.
 
 ---
 
@@ -366,15 +403,15 @@ check rather than a re-report. It stays in, flagged.
 | fp32 | **Held.** All retrieval through [`deploy/retriever.py`](deploy/retriever.py); cosine algebra in fp64. |
 | No model call at query time | **Held.** The template is string concatenation. The negatives' fields were authored by hand once, before scoring, and are frozen. |
 | Template committed with sha256 before task 2 | **Held**, `d9d7be4`; scripts assert the hash. |
-| Every number traceable to a committed JSON artifact | **Held.** Four artifacts, `git add -f` past the `out/` and `*.json` ignore rules. |
+| Every number traceable to a committed JSON artifact | **Held at the time; two artifacts since withdrawn.** Four artifacts were `git add -f`'d past the `out/` and `*.json` ignore rules. On 2026-09-03 `out/qx_task2_paired.json` and `out/qx_task3_abstention.json` were withdrawn (gold stems per row, public repository); their checksums are in [`PROVENANCE.md`](PROVENANCE.md) and their figures are reproduced by the tracked smoke report. |
 
 ## Scripts and artifacts
 
 | script | produces |
 |---|---|
 | [`src/query_expand.py`](src/query_expand.py) | the template; `--preregister` → [`out/qx_preregistration.json`](out/qx_preregistration.json) |
-| [`src/qx_paired.py`](src/qx_paired.py) | [`out/qx_task2_paired.json`](out/qx_task2_paired.json) |
-| [`src/qx_abstain.py`](src/qx_abstain.py) | [`out/qx_task3_abstention.json`](out/qx_task3_abstention.json) |
+| [`src/qx_paired.py`](src/qx_paired.py) | `out/qx_task2_paired.json` (withdrawn from git) |
+| [`src/qx_abstain.py`](src/qx_abstain.py) | `out/qx_task3_abstention.json` (withdrawn from git) |
 | [`src/qx_corpus_size.py`](src/qx_corpus_size.py) | [`out/qx_task4_corpus_size.json`](out/qx_task4_corpus_size.json) |
 
 *Generated 2026-09-03.*

@@ -41,11 +41,16 @@ testable; seed its failure first.
 
 ## Open — retrieval, in order
 
+*Scope note (2026-09-03):* the items below concern the pipeline's **lexical** index
+(`env/tools.py::search_variables`). A fine-tuned embedding retriever now ships separately
+in `deploy/` (R@1 0.567, 0.643 templated; `RESULTS.md` §10) and is not governed by these
+items; its open questions are in `CHARACTERISATION.md` §7.
+
 `build.py` is CLOSED. No open items there: the dictionary is correct, identifier tiers
 landed, `version_hash` covers the rules, the checks are split, and `roster_family_size`
 is computed where construct identity is owned. Findings are cheap to produce in a fully
-documented, fully hashed 569-line file; that is a property of its auditability, not
-evidence of open work. A finding earns an item only if it can change a number the project
+documented, fully hashed file; that is a property of its auditability, not evidence of
+open work. A finding earns an item only if it can change a number the project
 publishes or blocks a downstream stage.
 
 - **R3 — `retrieval_text` as a new column.** Additive: `searchable_text` stays
@@ -156,7 +161,8 @@ publishes or blocks a downstream stage.
 - The C24 commit messages state a false mechanism ("hash order picks the survivor"); the
   selector was seed order via `setdefault`. Primaries corrected, messages immutable
   (`0b41239`).
-- Keep `lane-b-referent` unmerged: its hard target filter measured negative recall@20 and
+- *(private history: neither branch nor sha below exists in the public repository)* Keep
+  `lane-b-referent` unmerged: its hard target filter measured negative recall@20 and
   dropped the gold item on ~10% of queries (UNVERIFIED here; measured in-lane, three
   runs), and one `continue` in `lane-b-referent:env/tools.py::_hit_referent` is untested.
 - `lane-honest-miss` holds `64c7bd2` worth salvaging; its `3933ecb` is UNREVIEWED WIP

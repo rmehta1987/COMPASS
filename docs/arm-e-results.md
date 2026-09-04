@@ -2,7 +2,9 @@
 
 **Measured 2026-09-02.** Build `3dc8415eccfe`, model `medcpt-a`
 (`ncbi/MedCPT-Query-Encoder` / `ncbi/MedCPT-Article-Encoder`), frozen weights, no
-training, CPU. Artifact `arm_e.medcpt_a.json`, targets `targets.json`.
+training, CPU. Artifact `arm_e.medcpt_a.json`, targets `targets.json` (both withheld from
+the public repository, with `build/dictionary.json` and `benchmark/fixtures/`; the
+reproduce block runs on the training machine only, `README.md` §What is withheld).
 
 ```
 python build_targets.py --dictionary build/dictionary.json --out targets.json
@@ -52,8 +54,8 @@ fixture rows and the free-text exclusion cost four:
 A researcher asking about commute mode should find `m2:Q776`. The exclusion was
 removed on 2026-09-02; the corrected target set is **1,352 targets with 224/224
 reachable**, and every figure in this document predates that fix and stands on a
-208-row denominator the bug created. See `docs/arm-e-size-curve.md` for the
-corrected numbers.
+208-row denominator the bug created. See `arm_hybrid_e_D.md` §1 and §2 for the
+corrected numbers (a `docs/arm-e-size-curve.md` was planned and never written).
 
 The script reports over its own 208. Counting the 16 as misses gives the figure
 comparable to every other arm. **Both are stated everywhere below; neither
@@ -186,6 +188,8 @@ hash change.
 
 ## 6. Provenance and scope
 
+*(As of 2026-09-02, before the free-text fix in §1; `build_targets.py` now emits 1,352.)*
+
 - **`targets.json` is byte-reproducible.** Re-running `build_targets.py` against
   `build/dictionary.json` produced an identical file: same `3dc8415eccfe`, same
   1,241 targets, same skip counts (43 identifier, 151 text capture). The script
@@ -203,9 +207,12 @@ hash change.
   the venv but not declared in `pyproject.toml`.** `AGENTS.md` records embedding
   arms as unreproducible here and **never an acceptance gate**; that second
   clause stands regardless of what is installed.
-- **`build_targets.py` and `encode_and_score.py` are excluded from `ruff`,
-  unmodified**, with the reason recorded in `pyproject.toml`. They contributed 26
-  of 249 errors and would have raised `RUFF_CEILING` on code it is not about.
+- **`build_targets.py` and `encode_and_score.py` are excluded from `ruff`**, with the
+  reason recorded in `pyproject.toml`. They contributed 26 of 249 errors (ruff version
+  not recorded; `tests/test_code_standards.py` later measured 236 then 232 on the merged
+  tree, and 2026-09-03 with ruff 0.16.6 gives 224) and would have raised `RUFF_CEILING` on
+  code it is not about. They were unmodified at this date; the hybrid work then edited both
+  (`arm_hybrid_e_D.md` §7).
 
 ## 7. Known bias
 
@@ -220,6 +227,14 @@ Settling it needs a request set written without sight of the instrument.
 ---
 
 ## 8. Would fine-tuning help? — assessment, not measurement
+
+> **Measured since, 2026-09-03.** Contrastive fine-tuning of `bge-small` on 13,528
+> synthetic pairs lifted R@1 from 0.375 to **0.567** on this same 224-row fixture
+> (`RESULTS.md` §4; `CHARACTERISATION.md`), and the gold-wording-leakage share of the gain
+> that this section predicts would make it unfalsifiable was measured and does not survive
+> (`FUSION.md` §1: overlap quartiles 0.482 / 0.554 / 0.643 / 0.589, Spearman −0.023). The
+> register-alignment caveat below stands and is carried in
+> `deploy/manifest.json::known_limitations[0]`. The assessment is kept as written.
 
 **Probably yes for the measured deficit, but not on this fixture, and not
 first.** The reasoning:

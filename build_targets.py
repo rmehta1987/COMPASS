@@ -1,4 +1,8 @@
-"""Build the 1,395 arm-E selection targets from build/dictionary.json.
+"""Build the 1,352 arm-E selection targets from build/dictionary.json.
+
+(1,352 since the free-text exclusion was removed on 2026-09-02; the retrieval
+tree's src/compass_build.py emits 1,353, the extra row being m2:Q785~2. The
+dictionary is withheld from the public repository.)
 
 Pure stdlib. No model, no network. Output feeds encode_and_score.py.
 """

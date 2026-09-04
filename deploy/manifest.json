@@ -29,11 +29,11 @@
  },
  "device": {
   "pinned": "cpu",
-  "why": "The fine-tuned checkpoint has exactly one GPU/CPU top-1 disagreement in 224 rows -- row 107, 'primary method used to get to work', max |vector delta| 4.06e-7 (out/final_bge-small_ft.json). Not a bug, but that query is the hardest row in every report in this project, so the flip lands exactly where device parity matters. CPU-only serving avoids it and costs little: 44.2 ms per isolated query at 4 threads, 21.2s to encode the whole corpus.",
+  "why": "The fine-tuned checkpoint has exactly one GPU/CPU top-1 disagreement in 224 rows -- row 107, 'primary method used to get to work', max |vector delta| 4.06e-7 (out/final_bge-small_ft.json). Not a bug, but that query is the hardest row in every report in this project, so the flip lands exactly where device parity matters. CPU-only serving avoids it and costs little: on the training machine (spark-2500), 44.4 ms per isolated query at 4 threads and 21.3s to encode the whole corpus; serving-machine figures are under serving_reference.",
   "vectors_computed_on": "cpu",
   "threads": 4,
   "threads_why": "retriever.py calls torch.set_num_threads with this value unless the caller overrides it. Unpinned thread counts make latency unreproducible across machines with different core counts.",
-  "query_ms_isolated_single_at_pinned_threads": 44.18,
+  "query_ms_isolated_single_at_pinned_threads": 44.45,
   "latency_measured_on": "spark-2500 aarch64 Linux-6.17.0-1026-nvidia-aarch64-with-glibc2.39",
   "serving_reference": {
    "machine": {
@@ -111,7 +111,7 @@
  "measured": {
   "recall_at1_224_row_fixture": 0.567,
   "reproduces_out_ft_bge-small_nn0_t0.10_json": true,
-  "cpu_encode_all_targets_s": 21.2,
+  "cpu_encode_all_targets_s": 21.3,
   "cos_top1_min_over_fixture": 0.5683,
   "cos_top1_max_over_fixture": 0.9874
  },
@@ -133,7 +133,7 @@
   },
   "what_it_does_NOT_do": "This threshold detects ABSENT constructs (AUROC 0.982 positives vs negatives). It does NOT detect a wrong pick among present constructs: cosine separates correct from incorrect top-1 at AUROC 0.640 only, and precision 0.90 is unreachable at any threshold. Do not read a returned result as verified.",
   "not_independently_validated": "The threshold is derived from a model-authored negative set. It needs the study-team-authored request set to confirm.",
-  "threshold_grid": "Candidates are the distinct top-1 scores of the 224 positives (221 values). F1 over positives is piecewise constant between positive scores, so this candidate set is exhaustive: no denser grid can find a different optimum, only the same plateau. deploy/smoke_test.py step 5 re-derives it exhaustively and over a 20,001-point dense grid and reports the plateau on every run.",
+  "threshold_grid": "Candidates are the distinct top-1 scores of the 224 positives (221 values; 222 under arm I). F1 over positives is piecewise constant between positive scores, so this candidate set is exhaustive: no denser grid can find a different optimum, only the same plateau. deploy/smoke_test.py step 5 re-derives it exhaustively and over a 20,001-point dense grid and reports the plateau on every run.",
   "knife_edge": {
    "finding": "The shipped value is the 6-dp rounding of an INCORRECT positive's top-1 score (fixture row 68, 'electronic nicotine delivery frequency', gold m3:Q6.3). Encoded in a batch of 64 that row scores 0.729475981, 1.9e-8 BELOW the threshold, and is refused; encoded alone, as retriever.select() does, it scores 0.729476045, 4.5e-8 ABOVE, and is answered (wrongly). Under single-query serving the F1 optimum by the same rule is therefore the next candidate, 0.731902, in every arm; F1(shipped) is 0.0013 to 0.0015 below it: one row. Recall is identical at both values. Confirmed across machines: on the x86 serving machine (Wright, WSL2) single-query encoding put row 68 BELOW again and tau* came back as the shipped 0.729476, with max vector delta 2.9e-7 against the Arm-computed vectors. The same row, the same threshold, opposite sides by machine.",
    "not_changed_because": "one row of F1 is not material, 0.7295 is cited across every document, and 0.731902 is itself the exact score of a CORRECT positive (row 212), so it is the same knife-edge on the other side. Changing the operating point is the operator's call.",
@@ -148,10 +148,10 @@
   "file": "template.py",
   "what": "[population] construct [timeframe][: instance, ...] -- RetrievalRequest.to_query(); pure string concatenation, no model call. Re-exported by retriever.py as RetrievalRequest / VariableRole, with search_request() and select_request().",
   "shipped_contract": "INSTANCES ONLY. Leave population=None (its default).",
-  "why_it_ships": "Forgetting the template is a silent loss: pre-registered arm F measured R@1 0.643 against 0.567 without it (out/qx_task2_paired.json, 62 of 224 rows changed, item-clustered bootstrap CI excluding zero).",
+  "why_it_ships": "Forgetting the template is a silent loss: pre-registered arm F measured R@1 0.643 against 0.567 without it (out/qx_task2_paired.json on the training machine, withdrawn from git; reproduced in out/smoke_report_x86_64_Wright.json acceptance.F; 62 of 224 rows changed, item-clustered bootstrap CI excluding zero).",
   "population_slot": {
    "status": "POST-HOC REVISION of pre-registered arm F, which rendered population + instances. The revision is to leave the population slot unused.",
-   "measured": "net -1 row on the 17 rows it touched: R@1 0.647 -> 0.588 (+2, -3). QUERY_EXPANSION.md section 2a.",
+   "measured": "net -1 row on the 17 rows it touched: R@1 0.647 -> 0.588 (+2, -3). QUERY_EXPANSION.md section 2a (figures) and section 5 (the revision, recorded as post hoc).",
    "mechanism": "the roster noun pulls the query toward the roster block's OTHER question about the same cancer, at margins down to 0.0001",
    "held_out_confirmation": "the study-team-authored request set; until then the revision is unconfirmed"
   },
@@ -169,6 +169,7 @@
   "10 of 56 gold items are retrieved on 0 of their 4 phrasings and 9 on 1 of 4. out/char_task1_phrasing.json lists them with an example phrasing each; these are the documented blind spots."
  ],
  "provenance": {
+  "note": "Paths under out/, runs/ and fixtures/ are on the training machine and are not in the public repository; PROVENANCE.md lists each with its sha256 and the tracked file that reproduces its figure. Tracked here: out/qx_preregistration.json, deploy/smoke_test.py, out/smoke_report_x86_64_Wright.json.",
   "score_artifact": "out/ft_bge-small_nn0_t0.10.json",
   "parity_artifact": "out/final_bge-small_ft.json",
   "characterisation": [
@@ -185,8 +186,12 @@
   ],
   "negative_fixture": "fixtures/negative_requests.json",
   "training_meta": "runs/bge-small_nn0_t0.10/compass_train_meta.json",
-  "template_paired_artifact": "out/qx_task2_paired.json",
-  "template_abstention_artifact": "out/qx_task3_abstention.json",
+  "template_paired_artifact": "out/qx_task2_paired.json (withdrawn from git 2026-09-03)",
+  "template_abstention_artifact": "out/qx_task3_abstention.json (withdrawn from git 2026-09-03)",
+  "acceptance_reports": [
+   "out/smoke_report_x86_64_Wright.json (tracked)",
+   "out/smoke_report_aarch64_spark-2500.json (training machine)"
+  ],
   "preregistration_fixture": "out/qx_preregistration.json (tracked; the only fixture deploy/smoke_test.py needs)",
   "cpu_port_acceptance_test": "deploy/smoke_test.py"
  },
@@ -208,12 +213,12 @@
    "bytes": 443
   },
   "retriever.py": {
-   "sha256": "24ccefb4bffdbeb17b51fcf2d8357aeba547282a034a2cd0d5a596975cd4f2e7",
-   "bytes": 9477
+   "sha256": "5392ad828cfb98ce6136626913d86f066adfe6fdc97d76db23f58fe82fa8984d",
+   "bytes": 9842
   },
   "smoke_test.py": {
-   "sha256": "e54171f5d627054f084252469a23e4bd3f8ca3968f85180c45b84bde4c1f52e2",
-   "bytes": 26584
+   "sha256": "d02718fe432b5fe68d73706130aabd00a004493de0169c1ab2c7ee2eb36fd0bd",
+   "bytes": 26808
   },
   "target_vectors.safetensors": {
    "sha256": "941dd61a8ea17f2d35585a068d6e08a453877820a732a5b7a4d8910d0c6b96a4",

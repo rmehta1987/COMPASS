@@ -18,13 +18,14 @@ __pycache__/
 .ruff_cache/
 
 # --- the instrument, in every form --------------------------------------------
-# build/ is reproduced exactly by `python build.py` from raw/ (dictionary version
-# hash 3dc8415eccfe, deterministic across `rm -rf build/`). On the Spark the same
+# build/ is reproduced exactly by `python build.py` from raw/ on the training
+# machine (the hash pin lives in tests/test_dictionary.py::BUILD_HASH). Neither
+# is obtainable from a clone: README.md, "What is withheld". On the Spark the same
 # dictionary lives at the root as dictionary.json.
 build/
 raw/
 *.csv
-codebook.csv
+codebook.csv        # redundant under *.csv; kept as the training machine's no-read guard
 dictionary.json
 targets.json
 # deploy/targets.json carries the stem and option wording of all 1,353 targets;
@@ -49,11 +50,13 @@ deploy/model/
 # out/ were force-added (git add -f) after a wording scan. See README.md.
 out/
 runs/
+run/
 *.log
-run/tool_log.jsonl
-run/logs/
 parked/
 fixtures/
+# the one fixture that carries no instrument wording: hand-authored template
+# fields for the 44 negative requests
+!fixtures/negative_expansion_fields.json
 
 # --- OS / editor / WSL cruft ---------------------------------------------------
 .DS_Store

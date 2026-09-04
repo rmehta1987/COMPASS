@@ -7,7 +7,12 @@ later emits 1,353, the extra being `m2:Q785~2`, see `RESULTS.md` §1). Selector
 `claude-haiku-4-5`, one call per row (k=1), `VariableSelection` unchanged.
 
 Artifacts: `run/hybrid_ed.bge-large.d{10,25,50}.json`,
-`run/hybrid_pools.bge-large.json`, `arm_e2.*.json` (9 encoder configs).
+`run/hybrid_pools.bge-large.json`, `arm_e2.*.json` (9 encoder configs). All are withheld
+from the public repository (`README.md` §What is withheld: `run/`, `arm_e*.json`), as are
+the inputs the reproduce block below reads (`build/dictionary.json`,
+`benchmark/fixtures/`); the block runs on the training machine only. Each row of the §2
+table reads from `arm_e2.<config>.json` for its config; the §3 tables read from the three
+`run/hybrid_ed.bge-large.d<depth>.json` files.
 
 ```
 python build_targets.py --dictionary build/dictionary.json --out targets.json
@@ -77,7 +82,9 @@ All on 224 rows, `rows scored 224, gold not a target: 0`.
 | medcpt-b | 109M | 0.254 | 0.737 | 0.826 | 0.906 | 0.955 | 3 | 24 | 413 | 155 s | 12.2 |
 | medcpt-a | 109M | 0.259 | 0.670 | 0.799 | 0.893 | 0.920 | 3 | 28 | 359 | 162 s | 34.6 |
 
-Machine: 14 cores, 9.9 GB RAM, CPU only, `torch 2.14.0+cpu`,
+Machine: 14 cores, 9.9 GB RAM, CPU only, `torch 2.14.0+cpu` (by these specs the x86
+machine `deploy/manifest.json::device.serves` later names as Wright; not the Arm Spark that
+produced `RESULTS.md`),
 `transformers 5.16.1`. Peak RSS: bge-small 0.74 GB, bge-base 1.27 GB, bge-large
 2.14 GB. EmbeddingGemma ran with `OMP_NUM_THREADS=6` (sharing the box with
 Qwen3), so its 222.9 ms/query is an overestimate.
@@ -376,7 +383,9 @@ surface (a deterministic pool is rendered, since the scan cannot import `torch`)
 **The `ruff` exclusion on `build_targets.py` and `encode_and_score.py` needs a
 review date.** It was taken so two dropped-in scripts could not raise
 `RUFF_CEILING` on code the ceiling is not about. Both have since been edited by
-this work (`d_prefix`, `load_dense`, `pool="last"`, four new configs), so they are
-no longer purely external. If arm E is adopted they move into `generate/` and
+this work (`d_prefix`, `load_dense`, `pool="last"`, new configs), so they are
+no longer purely external and **not byte-identical** to the versions that produced
+`arm_e.medcpt_a.json`; `pyproject.toml`'s comment was corrected to say so on
+2026-09-03. If arm E is adopted they move into `generate/` and
 come under the standards; if it is not, the exclusion should be removed with the
 scripts.

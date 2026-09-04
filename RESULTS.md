@@ -3,7 +3,15 @@
 Aggregated results for all retrieval experiments run against the COMPASS survey-codebook
 variable-retrieval benchmark. Every number below is read directly from the JSON reports
 in `out/` (produced by `src/compass_score.py`, `src/train.py`, and `src/finalize.py`); the
-source file is cited on every row so any number here can be traced back to its run.
+source file is cited on every row.
+
+> **Where the sources are.** The repository is public and the instrument is withheld, so
+> the `out/` artifacts, `runs/` checkpoints and fixtures cited below live on the training
+> machine, not in this tree. [`PROVENANCE.md`](PROVENANCE.md) lists each one with its
+> sha256, the command that regenerates it, the tracked file that reproduces the figure
+> ([`deploy/manifest.json`](deploy/manifest.json),
+> [`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json)) and the
+> commit. A path in backticks here is a training-machine path.
 
 ## 1. Task and dataset
 
@@ -62,7 +70,7 @@ All metrics are computed in `src/compass_score.py::evaluate` / `subset_stats`, o
 | **Near-duplicate R@1** (and its ratio to overall R@1) | R@1 restricted to gold targets that have sibling options under the *same* question stem (n=76, `gold_multi_option`) — this is the **discrimination / constraint metric**: it isolates cases where the wrong answer is lexically almost the query's paraphrase but semantically the wrong *option* (e.g. "sibling breast cancer" vs "sibling lung cancer"). A ratio < 1 means the model is disproportionately worse exactly where option-level discrimination matters. |
 | **Wrong-construct / right-construct-wrong-option** (of top-1 errors) | Error-type decomposition, i.e. the retrieval **false-positive breakdown**: *wrong-construct* = the model returned an entirely different survey question (coarse failure); *right-construct-wrong-option* = it found the right question but picked the wrong sibling (fine-grained, near-duplicate failure). Reported as count/total-errors and as a fraction. |
 | **Sibling cosine p50/p90** (`within_construct_cosine`) | Document-side cosine similarity between sibling target embeddings under the same construct. High values (→1.0) mean the encoder barely separates distinct options belonging to the same question — a direct, label-free signal of a model's option-discrimination ceiling, independent of the query set. |
-| **query ms/row, encode s** | Cost: mean per-query encode latency and total corpus (target) encode wall-clock, on the device used for that scoring run (CPU unless noted). |
+| **query ms/row, encode s** | Cost: **batched** query-encode wall clock divided by rows (224 queries encoded together), and total corpus (target) encode wall-clock, on the device used for that scoring run (CPU unless noted). `query ms/row` is an amortised throughput figure, **not per-call latency**; isolated single-query latency is in §7 and `PROVENANCE.md`. |
 
 ## 3. Experiment 1 — Frozen (zero-shot) embedding models
 
@@ -211,7 +219,9 @@ separable, not just marginally. `mxbai-l1` rises from 0.469 → 0.545 (+7.6 pts)
 `embeddinggemma-300m` from 0.371 → 0.504 (+13.3 pts). **The best fine-tuned `bge-small`
 (33M params) outperforms every frozen model tested, including `mxbai-l1` (335M) and
 `qwen35-08b` (752M)** on R@1, at roughly 1/10 and 1/23 the parameter count respectively,
-and at 2.94ms/query vs. their 32.4ms and 139.8ms.
+and at 2.94 ms/row batched vs. their 32.4 and 139.8 (isolated per-call latency for the
+shipped checkpoint is 18.3 ms at 20 threads, §7; 44 ms at the pinned 4 threads on the
+Spark and 13.4 ms median on the x86 serving machine, `deploy/manifest.json::device`).
 
 **Hyperparameter pattern (bge-small):** `t=0.10` dominates across `nn` ∈ {0,4,8}
 (0.567/0.540/0.536); moving to `t=0.05` or `t=0.15`/`0.20` costs 3–8 R@1 points at every
@@ -227,8 +237,9 @@ even though the loss still converged.
 
 Tests how the *document side* text is constructed from `(stem, option)` before encoding
 (`src/compass_score.py::target_text`), holding the model (`bge-small`, frozen) and a fixed
-1,241-target / 208-row subset constant (`out/targets_1241.json` era, predates the full
-1,353-target corpus — hence the different `n`). Command:
+1,241-target / 208-row subset constant (`out/targets_1241.json`, built by the since-deleted
+root `build.py` target builder that still dropped free-text rows; predates the full
+1,353-target corpus from `src/compass_build.py` — hence the different `n`). Command:
 `python src/compass_score.py --model bge-small --target-text <mode> ...`.
 
 | Target-text rendering | R@1 | R@5 | R@10 | R@25 | R@50 | rank p50/p90/max | source |
@@ -241,11 +252,16 @@ Tests how the *document side* text is constructed from `(stem, option)` before e
 (n_targets = 1,241, n_rows_scored = 208 for all four rows.)
 
 Duplicating the stem as a stand-in when a target has no option (`stem_option_dup`) is
-worth **+8.2 R@1 points** over the otherwise-identical `stem_option` rendering, and every
-alternative rendering underperforms it — this is why `stem_option_dup` is the convention
-used as the default document text for every other table in this report. The gap is
-concentrated at R@1/R@5 and narrows by R@50, i.e. the rendering choice mainly affects
-top-of-list precision, not whether the gold target is retrievable at all.
+worth **+8.2 R@1 points** over the otherwise-identical `stem_option` rendering on this
+subset (**+8.0 on the full 1,353-target / 224-row corpus**, 0.375 vs 0.295,
+`out/gate_full_stem_option_dup.json` vs `out/gate_full_stem_option.json`, the figure the
+manifest ships), and every alternative rendering underperforms it — this is why
+`stem_option_dup` is the convention used as the default document text for every other
+table in this report. The mechanism was measured on the full corpus in
+`CHARACTERISATION.md` §6a: the gain is almost entirely **folded-family recall** (0.304 vs
+0.089). Duplicating the stem is what makes a roster representative, which has no option
+text, retrievable at all. An earlier reading of this table as "top-of-list precision" is
+withdrawn.
 
 ## 6. Experiment 4 — MRL (Matryoshka) dimension truncation, `qwen35-08b`
 
@@ -281,7 +297,7 @@ stress (see module docstring).
 | Config | Embed dim | CPU encode-all (1,353 targets) | CPU query latency (isolated) | GPU vs CPU top-1 identical | Agreement | Checkpoint size | source |
 |---|---|---|---|---|---|---|---|
 | bge-small, frozen | 384 | 19.4s | 17.82 ms | ✅ True | 1.0000 (0/224 disagree) | 0.0 MB (no fine-tune) | `out/final_bge-small_frozen.json` |
-| bge-small, fine-tuned (nn0, t=0.10) | 384 | 19.2s | 18.3 ms | ⚠️ False | 0.9955 (1/224 disagree) | 134.2 MB | `out/final_bge-small_ft.json` |
+| bge-small, fine-tuned (nn0, t=0.10) | 384 | 19.2s | 18.3 ms (20 threads; 44 ms at the pinned 4, `deploy/manifest.json::device`) | ⚠️ False | 0.9955 (1/224 disagree) | 134.2 MB | `out/final_bge-small_ft.json` |
 | embeddinggemma-300m, fine-tuned | 768 | 81.3s | 55.92 ms | ✅ True | 1.0000 (0/224 disagree) | 1,263.7 MB | `out/final_embgemma_ft.json` |
 | mxbai-large-v1, fine-tuned | 1024 | 184.4s | 107.22 ms | ✅ True | 1.0000 (0/224 disagree) | 1,341.3 MB | `out/final_mxbai_ft.json` |
 
@@ -300,9 +316,9 @@ checkpoints are ~10x the disk size of `bge-small`'s.
 |---|---|---|
 | Best R@1 overall | **bge-small, fine-tuned (nn0, t=0.10)** — 0.567 | Beats every frozen model including 10–23x-larger ones; `out/ft_bge-small_nn0_t0.10.json` |
 | Best frozen (no training) | **mxbai-embed-large-v1** — 0.469 R@1, best near-dup ratio (1.066) of the frozen set | `out/frozen_mxbai-l1.json` |
-| Best latency/accuracy trade-off | **bge-small, fine-tuned** — 0.567 R@1 at 2.94ms/query | 33M params, `runs/bge-small_nn0_t0.10/` |
+| Best latency/accuracy trade-off | **bge-small, fine-tuned** — 0.567 R@1 at 18.3 ms isolated per query on the Spark (13.4 ms median on the serving machine; 2.94 ms/row batched) | 33M params, `runs/bge-small_nn0_t0.10/`; §7, `PROVENANCE.md` |
 | Best sibling/option discrimination (lowest sibling cosine) | **mxbai, fine-tuned (nn0, t=0.10)** — sibling cos p50 0.2488 | `out/ft_mxbai_nn0_t0.10.json` |
-| Best document-text rendering | **`stem_option_dup`** — +8.2 R@1 pts vs. next best | §5 |
+| Best document-text rendering | **`stem_option_dup`** — +8.2 R@1 pts vs. next best on the §5 subset, +8.0 on the full corpus | §5, `CHARACTERISATION.md` §6a |
 | Safest MRL truncation | **768-dim `qwen35-08b`** — R@1 unchanged from full dim, ~2x faster encode | `out/mrl_qwen35_768.json` |
 
 ## 9. Caveats that apply to every number above
@@ -330,3 +346,18 @@ the frozen/fine-tuned/MRL aggregate table with `python src/report.py` (writes
 `out/report_table.json`); this document adds the gate ablation (§5) and deployment parity
 (§7) sections, definitions (§2), and narrative comparison that `report.py`'s raw table
 does not include.*
+
+## 10. What ships, and where it is proven
+
+This document stops at the checkpoint selection. What is deployed is that checkpoint plus
+a query template, frozen into [`deploy/`](deploy/) and proven on two machines:
+
+| | value | source |
+|---|---|---|
+| bundle | `bge-small` fine-tuned (nn0, t=0.10), argmax cosine over 1,353 CPU-computed target vectors, CPU-pinned, 4 threads, 9 files, 137.2 MB (5 tracked; `deploy/model/` and `deploy/targets.json` copied by rsync) | [`deploy/manifest.json`](deploy/manifest.json) |
+| shipped contract | instances-only query template ([`deploy/template.py`](deploy/template.py)); the population slot of pre-registered arm F is left unused (net −1 row on the 17 it touched) | `deploy/manifest.json::template`, `QUERY_EXPANSION.md` §2a and §5 |
+| R@1 / R@5 / R@10 as shipped (arm I) | 0.6429 / 0.8884 / 0.9375, rank p50 1, p90 7, max 61 | [`out/smoke_report_x86_64_Wright.json`](out/smoke_report_x86_64_Wright.json) `acceptance.I` |
+| abstention | `min_cos` 0.729476; 43/44 negatives rejected; AUROC 0.9874 (arm I) | same, `threshold`; knife edge in `deploy/manifest.json::abstention.knife_edge` |
+| acceptance test | [`deploy/smoke_test.py`](deploy/smoke_test.py) exits 0 only if arms S, F and I reproduce to the digit; 36 checks, 0 failures on the Spark (aarch64) and on Wright (x86_64) | smoke reports; commits e446cf8, da317d6, 4b8abee |
+| serving machine | Wright; isolated 13.41 ms median per query at 4 threads | `deploy/manifest.json::device.serves`, `serving_reference` |
+

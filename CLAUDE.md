@@ -23,8 +23,9 @@ Architecture: `DESIGN.md`. Backlog: `TASKS.md`. History: `CHANGELOG.md`.
 - Give every dispatched lane an explicit file list including what it must NOT touch, and
   re-derive its load-bearing claims before relaying them (`AGENTS.md` §Parallel Lanes).
 - `/code-review ultra` (branch or PR#) is user-triggered and billed; never run it.
-- `/compass-contam` works the backlog; `/compass-prose` sets the rules for prose
-  addressed to a person (`.claude/skills/compass-prose/SKILL.md`).
+- `/compass-contam` (a command) works the backlog; `compass-prose` (a skill, invoked via
+  the Skill tool) sets the rules for prose addressed to a person
+  (`.claude/skills/compass-prose/SKILL.md`).
 - A slash command carries no task list, state or count — backlog `TASKS.md`, ordering the
   operator's. Never restore `/compass-build`: it pinned a stale count (`a02eda7`).
 - Temporary files go in the session scratchpad, never `/tmp` directly — parallel jobs
@@ -32,9 +33,11 @@ Architecture: `DESIGN.md`. Backlog: `TASKS.md`. History: `CHANGELOG.md`.
 - A `-k` selector silently narrows a seeded-failure check: `-k gate` matched 2 of 8 new
   gate tests and reported a mutation as undetected. Seed against the whole file.
 - A `build.py` mutation is invisible to tests that read `build/dictionary.json`. Re-run
-  the build between seeding and testing, and rebuild after reverting.
-- `git worktree` checkouts under `.claude/` are inside the repo, so `ruff check .` walked
-  them and double-counted every error. Excluded in `pyproject.toml`; leave it excluded.
+  the build between seeding and testing, and rebuild after reverting. (Training machine
+  only: `raw/` and `build/` are withheld from the public tree.)
+- `git worktree` checkouts under `.claude/` on the training machine are inside the repo, so
+  `ruff check .` walked them and double-counted every error. Excluded in `pyproject.toml`;
+  leave it excluded even though the public tree holds no worktrees.
 
 ## Critical anchors
 

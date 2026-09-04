@@ -19,6 +19,11 @@ Design commitments, all of them because the alternative fails silently:
     accuracy and raises no error.
   * `select()` abstains below the manifest's threshold. `search()` returns
     everything and lets the caller decide.
+  * The torch thread count is read from the manifest (4) unless the caller
+    overrides it: an unpinned count makes latency unreproducible.
+  * The query template ships in the bundle (template.py, sha256 in the
+    manifest) and is re-exported here as RetrievalRequest / VariableRole with
+    search_request() / select_request(). Shipped contract: instances only.
 
 No torch.load, no pickle: weights and vectors are both safetensors.
 """

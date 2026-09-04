@@ -1,3 +1,8 @@
+> Historical specimen card, kept as an example of the pipeline's output format. Its header
+> names dictionary build `8573993d8450`, a build that predates the current `3dc8415eccfe`
+> (lineage in `tests/test_dictionary.py`); it has not been regenerated. The quoted item
+> wording is counted in `README.md`'s residual scan.
+
 P-014                                            build 8573993d8450
 
 Is perceived neighbourhood crime associated with lower total physical

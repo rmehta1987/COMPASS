@@ -7,6 +7,35 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 - Never restate a ratchet, ceiling, count or hash below; name its owning module instead.
 - Treat a merge sha as the anchor, not the evidence: open the commit or the primary before
   repeating what a line here says a task did.
+- **Shas below 2026-09-03 belong to the private pre-publication history** and do not
+  resolve in the public repository, whose history starts at the orphan commit b3d818d.
+  Open the primary instead.
+
+---
+
+## 2026-09-03
+
+- **Two trees merged into one public repository** (2ede8f7). The pipeline mirror was
+  published from an orphan branch without the instrument (b3d818d); the retrieval
+  experiments (`src/`, `deploy/`, `RESULTS.md`, `CHARACTERISATION.md`, `FUSION.md`,
+  `QUERY_EXPANSION.md`) were `main`. `README.md` maps both and lists what is withheld;
+  `PROVENANCE.md` maps every retrieval figure to its artifact and commit. Name collisions:
+  `build.py` is the dictionary builder; arm E's target builder is `build_targets.py`
+  (1,352) beside `src/compass_build.py` (1,353, one free-text row apart).
+- **The fine-tuned retriever was ported to the x86 serving machine and proven there**
+  (e446cf8, da317d6, 4b8abee, 31a096d): `deploy/smoke_test.py` reproduces R@1 0.567 /
+  0.643 to the digit on both machines; threads pinned to 4; the query template ships in
+  the bundle; `deploy/manifest.json::device.serves` names Wright.
+- **Four artifacts withdrawn from git** for quoting instrument wording per row
+  (`deploy/targets.json`, `out/fusion_task1_overlap.json`, `out/qx_task2_paired.json`,
+  `out/qx_task3_abstention.json`); they remain in `main`'s history from e446cf8 until the
+  operator rewrites it. Residual wording scan: `README.md` §What is withheld.
+- Corrections recorded rather than silently replaced: the 2.94 ms/query figure was
+  batched throughput, not latency (`PROVENANCE.md`); the shipped threshold is a knife edge
+  (`CHARACTERISATION.md` §3); `arm_hybrid_e_D.md` §6 and `docs/arm-e-results.md` §8 argued
+  against fine-tuning before it was measured at +0.192 (dated notes in place); the two
+  arm-E scripts are not byte-identical to their artifact-producing versions
+  (`pyproject.toml`).
 
 ---
 
@@ -41,9 +70,11 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 - **The doc surface consolidated to five files**: `AGENTS.md` (rules), `DESIGN.md` (what
   the system is), `TASKS.md` (open backlog), `CHANGELOG.md` (history) and `CLAUDE.md`
-  (Claude Code only). `PROMPT_CONTAMINATION_SESSION.md` and `NEXT_SESSION.md` were folded
-  into them and deleted, with four superseded handoffs; recover any of them with
-  `git show 7c1ad88:<path>`.
+  (Claude Code only). *(Superseded by the 2026-09-03 merge, which added `README.md`,
+  `PROVENANCE.md` and the retrieval reports; `DESIGN.md` §1 is current.)*
+  `PROMPT_CONTAMINATION_SESSION.md` and `NEXT_SESSION.md` were folded into them and
+  deleted, with four superseded handoffs; they are recoverable only from the private
+  history (`7c1ad88`), not from this repository.
 - Two rules came out of it and are now enforced by the split: no document restates a
   number a module owns (`AGENTS.md` §Testing Patterns), and a merged item leaves its rule
   in `AGENTS.md`/`DESIGN.md`, never in the changelog line that records it.

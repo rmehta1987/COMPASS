@@ -6,22 +6,31 @@
 [tool.ruff]
 line-length = 90
 target-version = "py312"
-# `.claude` holds git worktrees, which are whole checkouts of this repo: left
-# in, `ruff check .` reports every error twice and RUFF_CEILING fires on a
-# leftover lane rather than on any code that changed.
+# `.claude` held git worktrees on the training machine (whole checkouts of this
+# repo): left in, `ruff check .` reported every error twice and RUFF_CEILING fired
+# on a leftover lane rather than on any code that changed. The published tree has
+# no worktrees under `.claude`; the exclusion stays so the ceiling is comparable.
 # `build_targets.py` and `encode_and_score.py` arrived from outside the project
-# on 2026-09-02 as arm E's drivers and are linted nowhere, contributing 26 of the
-# 249 errors `ruff check .` then reported — enough on their own to raise
-# RUFF_CEILING, which measures THIS project's code. They are excluded UNMODIFIED,
-# so the script that produced `arm_e.medcpt_a.json` is byte-identical to the one
-# on disk. If arm E is adopted they move into `generate/` and come under the
-# standards with everything else; until then, excluding them keeps the ceiling
-# about the code the ceiling is for.
+# on 2026-09-02 as arm E's drivers and are linted nowhere; on that date they
+# contributed 26 of the 249 errors `ruff check .` reported — enough on their own
+# to raise RUFF_CEILING, which measures THIS project's code. They have SINCE BEEN
+# EDITED by the hybrid E->D work (`d_prefix`, `load_dense`, `pool="last"`, five
+# more configs; arm_hybrid_e_D.md section 7), so they are not byte-identical to
+# the version that produced `arm_e.medcpt_a.json`; that version is in the private
+# history only. The exclusion is kept because they remain unannotated external
+# drivers, not because they are unmodified. If arm E is adopted they move into
+# `generate/` and come under the standards with everything else.
+# Ceiling provenance: RUFF_CEILING and MYPY_CEILING (tests/test_code_standards.py)
+# were measured with unpinned ruff/mypy versions; no version is recorded in this
+# repository. On 2026-09-03 with ruff 0.16.6, `ruff check .` (this exclude list)
+# reports 224. A ruff minor bump can move the count without any code change.
 # `src/` and `deploy/` are the Spark retrieval experiments, merged 2026-09-03 from
 # the box repository. They were written against a different standard (no
 # docstring or annotation rules) and add 1,000+ findings under this config, so
 # they are excluded for the same reason as the two arm-E scripts: RUFF_CEILING
-# measures the pipeline's code. deploy/smoke_test.py is their acceptance test.
+# measures the pipeline's code. deploy/smoke_test.py is the deployed retriever's
+# acceptance test (AGENTS.md section Hard Constraints exempts it from the "never an
+# acceptance gate" rule that covers the pipeline's own embedding runs).
 exclude = [".venv", "build", ".claude", "build_targets.py", "encode_and_score.py",
            "src", "deploy"]
 
@@ -56,14 +65,17 @@ files = ["agent", "env", "generate", "mcp", "benchmark", "build.py"]
 # reason recorded above the ruff exclusion: they arrived from outside the
 # project and are unannotated, and mypy only began following them when
 # `generate/hybrid_ed.py` started importing the encoder rather than
-# reimplementing it. They contributed 29 of 88 errors against a ceiling of
-# 59 that measures THIS project's code. Same review date as the ruff entry.
+# reimplementing it. Two undated measurements of their share exist in this
+# file's history (29 of 88 errors, and 17 of 76 in the override below), neither
+# with a mypy version; treat both as "enough to breach the ceiling of 59", not
+# as reproducible counts.
 exclude = "(^|/)\\.venv/"
 warn_unused_ignores = true
 warn_redundant_casts = true
 warn_return_any = true
 no_implicit_optional = true
-# Not `strict` yet: 23 of 109 functions are unannotated as of 2026-08-26.
+# Not `strict` yet: 23 of 109 functions were unannotated as of 2026-08-26 (pipeline
+# packages only, before the 2026-09-03 merge; the counting command was not recorded).
 # disallow_untyped_defs is the goal — turn it on per-package as each is cleaned,
 # rather than switching it on globally and drowning the next agent in errors.
 disallow_untyped_defs = false
@@ -72,9 +84,8 @@ check_untyped_defs = true
 # The two arm-E scripts, for the reason recorded above the ruff exclusion: they
 # arrived from outside the project and are unannotated. `exclude` does not cover
 # them because `generate/hybrid_ed.py` IMPORTS the encoder rather than
-# reimplementing it, and mypy follows imports past its own exclude list. They
-# contributed 17 of 76 errors against a ceiling of 59 that measures this
-# project's code. Same review date as the ruff entry.
+# reimplementing it, and mypy follows imports past its own exclude list. See the
+# note on the `exclude` entry above about the two undated counts.
 [[tool.mypy.overrides]]
 module = ["encode_and_score", "build_targets"]
 ignore_errors = true

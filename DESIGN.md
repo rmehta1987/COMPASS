@@ -17,6 +17,11 @@ What the system is. Operating rules: `AGENTS.md`. Open work: `TASKS.md`.
 | `CHANGELOG.md` | Merged history |
 | `references/PRIOR_ART_CONTAMINATION.md` | Contamination and retrieval prior art |
 | `benchmark/cohort_papers.py` | The cohort bibliography, held out from the tools |
+| `README.md` | Map of the two trees in the public repository; what is withheld and why |
+| `RESULTS.md`, `CHARACTERISATION.md`, `FUSION.md`, `QUERY_EXPANSION.md` | The retrieval experiments (merged 2026-09-03): model selection, characterisation, fusion and query-template measurements |
+| `PROVENANCE.md` | Every retrieval figure mapped to its artifact, checksum, command and commit |
+| `deploy/manifest.json` | The deployed retriever's conventions, checksums and threshold; the authority on what ships |
+| `arm_hybrid_e_D.md`, `docs/` | The arm C16/D/E/hybrid measurement reports |
 
 - The `## N.` numbers are stable IDs: append-only, never renumbered. Cite prose `doc §N`,
   code `path::symbol`, never line numbers.
@@ -77,6 +82,9 @@ enumeration (Python) -> one pair
 | `benchmark/` | Held-out keys, contamination check, `benchmark/retrieval_eval.py` gate |
 | `benchmark/resolver_eval.py` | Scores a prose resolver: k shortlists, one critic, 3 arms |
 | `benchmark/leak_facts.py` | Seal-probe key; platform spellings; the §7 contest |
+| `build_targets.py`, `encode_and_score.py` | Arm E's target builder (1,352 targets) and frozen-encoder driver; external drivers, excluded from the lint ceiling |
+| `src/` | The retrieval experiments: `compass_build.py` (1,353 targets), `compass_score.py`, `train.py`, `freeze_deploy.py`, characterisation and fusion scripts; not in this map's standards |
+| `deploy/` | The deployed retriever: `retriever.py`, `template.py`, `smoke_test.py`, `manifest.json`; CPU-only, checksummed, self-asserting |
 
 ## 4. The instrument, and what it does not contain
 - The instrument is the module codebooks, exported two-column: question id and question
@@ -178,6 +186,11 @@ Three routes by which a published analysis reaches the model. **Only one closes.
   is often the wrong item (ratchets: `tests/test_search_scoring.py`).
 - Bridging it is semantics, so the remedy is an agent-side rewrite stage OUTSIDE `env/` —
   a second model in the pipeline, `TASKS.md` C16/C17. Do not re-litigate by argument.
+  *Measured since (2026-09-03):* a fine-tuned embedding retriever bridges it at R@1 0.567 on
+  the 224-row fixture (frozen 0.375), 0.643 with the instances-only query template, and
+  ships in `deploy/` (`RESULTS.md` §4 and §10, `QUERY_EXPANSION.md`). A rewriter was also
+  measured and lost to the fixture's own phrasings (`FUSION.md` §4). The `env/` boundary is
+  unchanged: the encoder runs outside it.
 - **`env/tools.py::search_variables` silently OR-decomposes a phrase**, so 'green space'
   can return a phone-number item; read the decomposition before any "zero hits, therefore
   absent".
