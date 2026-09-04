@@ -24,7 +24,8 @@ SITE = Path(os.environ.get("SITE_ROOT", REPO / "site")).resolve()
 ARTEFACTS = SITE / "artefacts"
 INDEX = "artefacts/index.json"
 
-FETCH_RE = re.compile(r"""fetch\(\s*(["'])([^"']+)\1""")
+# only a complete literal counts; fetch("artefacts/"+f) is covered by the index
+FETCH_RE = re.compile(r"""fetch\(\s*(["'])([^"']+)\1\s*\)""")
 SCRIPT_RE = re.compile(r"<script\b[^>]*>(.*?)</script>", re.S | re.I)
 STYLE_RE = re.compile(r"<style\b[^>]*>(.*?)</style>", re.S | re.I)
 

@@ -1,0 +1,10 @@
+{
+  "schema": "compass_site/index/1",
+  "provenance": {
+    "source": "lists every artefact the page loads; site-check steps 1, 3 and 6 read it",
+    "commit": "site branch"
+  },
+  "files": [
+    "stages.json"
+  ]
+}

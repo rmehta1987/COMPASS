@@ -1,0 +1,100 @@
+{
+  "schema": "compass_site/stages/1",
+  "provenance": {
+    "source": "authored 2026-09-04 from generate/funnel.py, pipeline/gate.py, pipeline/generation_env.py, agent/specifier.py docstrings and deploy/manifest.json prose; carries no figures",
+    "commit": "COMPASS main 265241d; generation clone ralph-loop 7ef75fa",
+    "tier": "A"
+  },
+  "stages": [
+    {
+      "id": "intake",
+      "name": "Intake",
+      "sub": "free text → RetrievalRequest · no model call",
+      "does": [
+        "Takes a construct, a role and any concrete instances",
+        "Never renders the role; leaves population unset by contract",
+        "Renders one deterministic query string: no paraphrase, no sampling, no model"
+      ],
+      "status_label": "PLACEHOLDER",
+      "status": "built",
+      "placeholder": "Will show the real RetrievalRequest and the string the shipped template rendered for it.",
+      "waits_for": null
+    },
+    {
+      "id": "retriever",
+      "name": "Retriever",
+      "sub": "fine-tuned bge-small · argmax cosine over precomputed target vectors · fp32 CPU",
+      "does": [
+        "Encodes the rendered query on CPU",
+        "Scores against every precomputed target vector: no model call, no network",
+        "Abstains when the top cosine falls below the shipped threshold",
+        "Refuses to serve at all if the dictionary hash does not match"
+      ],
+      "status_label": "PLACEHOLDER",
+      "status": "shipped",
+      "placeholder": "Will show a real run: cosine, rank, margin, threshold, abstention and roster fold size, with the target pseudonymised.",
+      "waits_for": null
+    },
+    {
+      "id": "funnel",
+      "name": "Funnel",
+      "sub": "S1 enumerate · S2 prune · S3 estimability · S4 literature density",
+      "does": [
+        "S1 enumerates candidate exposure–outcome pairs over distinct constructs",
+        "S2 prunes on construct identity, battery membership, free text",
+        "S3 screens estimability: blocked until two survey metadata exports arrive",
+        "S4 tags literature density; a tag, never a prune"
+      ],
+      "status_label": "PLACEHOLDER",
+      "status": "blocked",
+      "placeholder": "Will show the gate's real output: how many pairs were live, passed and blocked, and which exports are missing.",
+      "waits_for": null
+    },
+    {
+      "id": "specifier",
+      "name": "Specifier",
+      "sub": "adjudicate → reason → gate → transduce → authority → validate → rank",
+      "does": [
+        "adjudicate() runs before the first call and returns the same answer for every sample",
+        "The reasoning call has tools and loops until it stops calling or hits the step limit",
+        "_gate() checks the required calls are in the log, not that the prose claims them",
+        "tool_authority overwrites every environment-computed field and drops stale rationales",
+        "_rank() is a pure function of the record: no judge, no self-rating"
+      ],
+      "status_label": "PLACEHOLDER",
+      "status": "built",
+      "placeholder": "Will show a real reasoning-loop tool log. Waits for the pipeline loop.",
+      "waits_for": "the pipeline loop's item 11 (specifier emits the record), then a tier-A redaction of its keys"
+    },
+    {
+      "id": "record",
+      "name": "Record",
+      "sub": "HypothesisRecord · typed DAG · critique seam",
+      "does": [
+        "Carries the full retrieval record for every variable, never a bare key",
+        "Stamps estimability, so an unverifiable design cannot read as a verified one",
+        "Holds the causal structure as a typed DAG; a mediator under a cross-sectional design fails validation",
+        "Reserves an empty critique seam, so adding a reviewer later needs no schema change"
+      ],
+      "status_label": "PLACEHOLDER",
+      "status": "built",
+      "placeholder": "Will show a real HypothesisRecord. Waits for the pipeline loop.",
+      "waits_for": "the pipeline loop's item 13 (output artefact schema), then a tier-A redaction of its keys"
+    },
+    {
+      "id": "score",
+      "name": "Score",
+      "sub": "match rate vs held-out published findings · contamination verdicts",
+      "does": [
+        "Scores committed artefacts against a key held on a branch the pipeline never sees",
+        "Refuses to score anything generated where the key was reachable",
+        "Reports match rate only beside contamination and leakage verdicts",
+        "Runs exactly once, on a tag, before any tuning, so it cannot become a feedback signal"
+      ],
+      "status_label": "PLACEHOLDER",
+      "status": "blocked",
+      "placeholder": "Will show the generation clone's GenerationEnv stamp and why scoring has not run.",
+      "waits_for": null
+    }
+  ]
+}

@@ -119,74 +119,37 @@
 </main>
 
 <script>
-/* PLACEHOLDER build. The mockup this page replaces carried invented figures;
-   none survive here. Runs, records and measurements arrive as committed
-   artefacts under site/artefacts/ and are rendered from there, never from
-   literals in this file. */
-const EX=[];
-
-const STAGES=[
- {id:"intake",name:"Intake",st:"built",stl:"PLACEHOLDER",
-  sub:"free text → RetrievalRequest · no model call",
-  does:["Takes a construct, a role and any concrete instances",
-        "Never renders the role; leaves population unset by contract",
-        "Renders one deterministic query string: no paraphrase, no sampling, no model"],
-  ph:"Will show the real RetrievalRequest and the string the shipped template rendered for it."},
- {id:"retriever",name:"Retriever",st:"shipped",stl:"PLACEHOLDER",
-  sub:"fine-tuned bge-small · argmax cosine over precomputed target vectors · fp32 CPU",
-  does:["Encodes the rendered query on CPU",
-        "Scores against every precomputed target vector: no model call, no network",
-        "Abstains when the top cosine falls below the shipped threshold",
-        "Refuses to serve at all if the dictionary hash does not match"],
-  ph:"Will show a real run: cosine, rank, margin, threshold, abstention and roster fold size, with the target pseudonymised."},
- {id:"funnel",name:"Funnel",st:"blocked",stl:"PLACEHOLDER",
-  sub:"S1 enumerate · S2 prune · S3 estimability · S4 literature density",
-  does:["S1 enumerates candidate exposure–outcome pairs over distinct constructs",
-        "S2 prunes on construct identity, battery membership, free text",
-        "S3 screens estimability: blocked until two survey metadata exports arrive",
-        "S4 tags literature density; a tag, never a prune"],
-  ph:"Will show the gate's real output: how many pairs were live, passed and blocked, and which exports are missing."},
- {id:"specifier",name:"Specifier",st:"built",stl:"PLACEHOLDER",
-  sub:"adjudicate → reason → gate → transduce → authority → validate → rank",
-  does:["adjudicate() runs before the first call and returns the same answer for every sample",
-        "The reasoning call has tools and loops until it stops calling or hits the step limit",
-        "_gate() checks the required calls are in the log, not that the prose claims them",
-        "tool_authority overwrites every environment-computed field and drops stale rationales",
-        "_rank() is a pure function of the record: no judge, no self-rating"],
-  ph:"Will show a real reasoning-loop tool log. Waits for the pipeline loop."},
- {id:"record",name:"Record",st:"built",stl:"PLACEHOLDER",
-  sub:"HypothesisRecord · typed DAG · critique seam",
-  does:["Carries the full retrieval record for every variable, never a bare key",
-        "Stamps estimability, so an unverifiable design cannot read as a verified one",
-        "Holds the causal structure as a typed DAG; a mediator under a cross-sectional design fails validation",
-        "Reserves an empty critique seam, so adding a reviewer later needs no schema change"],
-  ph:"Will show a real HypothesisRecord. Waits for the pipeline loop."},
- {id:"score",name:"Score",st:"blocked",stl:"PLACEHOLDER",
-  sub:"match rate vs held-out published findings · contamination verdicts",
-  does:["Scores committed artefacts against a key held on a branch the pipeline never sees",
-        "Refuses to score anything generated where the key was reachable",
-        "Reports match rate only beside contamination and leakage verdicts",
-        "Runs exactly once, on a tag, before any tuning, so it cannot become a feedback signal"],
-  ph:"Will show the generation clone's GenerationEnv stamp and why scoring has not run."}
-];
-
+/* Nothing on this page is typed in. Every stage description, run, record and
+   figure is fetched from site/artefacts/*.json, each carrying its provenance.
+   site-check.sh fails the build if a numeric literal appears here. */
+const DATA={};
 let sel="retriever";
 const el=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
+async function load(){
+  const idx=await (await fetch("artefacts/index.json")).json();
+  DATA.index=idx;
+  for(const f of idx.files){
+    const name=f.replace(/\.json$/,"");
+    DATA[name]=await (await fetch("artefacts/"+f)).json();
+  }
+}
+
 function rail(){
-  el("#rail").innerHTML=STAGES.map((s,i)=>
+  el("#rail").innerHTML=DATA.stages.stages.map((s,i)=>
     `<button data-s="${s.id}" aria-current="${s.id===sel}">
-      <span class="n">${i+1}</span>${s.name}
-      <span class="st ${s.st}">${esc(s.stl)}</span></button>`).join("");
+      <span class="n">${i+1}</span>${esc(s.name)}
+      <span class="st ${esc(s.status)}">${esc(s.status_label)}</span></button>`).join("");
   document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{sel=b.dataset.s;draw();});
 }
 
 function draw(){
-  const s=STAGES.find(x=>x.id===sel);
-  let h=`<h2>${s.name}</h2><p class="sub">${esc(s.sub)}</p>
+  const s=DATA.stages.stages.find(x=>x.id===sel);
+  let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
          <ul class="does">${s.does.map(d=>`<li>${esc(d)}</li>`).join("")}</ul>`;
-  h+=`<p class="sec">output</p><div class="ph"><b>PLACEHOLDER</b> — no committed artefact yet. ${esc(s.ph)}</div>`;
+  h+=`<p class="sec">output</p><div class="ph"><b>PLACEHOLDER</b> — no committed artefact yet. ${esc(s.placeholder)}`
+    +(s.waits_for?` Waits for ${esc(s.waits_for)}.`:"")+`</div>`;
   el("#panel").innerHTML=h;
 }
 
@@ -198,7 +161,10 @@ el("#dl-src").onclick=()=>{
   const b=new Blob([document.documentElement.outerHTML],{type:"text/html"});
   const a=document.createElement("a");a.href=URL.createObjectURL(b);
   a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
-rail();draw();
+
+load().then(()=>{rail();draw();}).catch(e=>{
+  el("#panel").innerHTML=`<h2>Artefacts did not load</h2><div class="ph"><b>NO DATA</b> — ${esc(e.message)}. Serve this directory over HTTP; a file:// open cannot fetch the artefacts.</div>`;
+});
 </script>
 </body>
 </html>

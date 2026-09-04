@@ -78,8 +78,8 @@ def artefact_provenance() -> list[str]:
             bad.append(f"artefacts/{name} is on disk but nothing loads it")
     for rel in loaded:
         p = SITE / rel
-        if not p.exists():
-            bad.append(f"{rel} is loaded by the page but missing")
+        if not p.is_file():
+            bad.append(f"{rel} is loaded by the page but is not a file")
             continue
         try:
             data = json.loads(p.read_text(encoding="utf-8"))

@@ -5,7 +5,7 @@ clone: /home/mehta5/compass-site  (--single-branch main from GitHub, cut at 2652
        deploy/model/ copied from the operator's clone, sha-verified by retriever.py at load;
        deploy/targets.json and the dictionary are read from the operator's clone by path,
        never copied here — see site/tools/*.py for the env vars)
-last green: c3ce663   (VERIFIED 2026-09-04 by ./site-check.sh, GREEN)
+last green: 9677403   (VERIFIED 2026-09-04 by ./site-check.sh on that sha, GREEN)
 check: ./site-check.sh
 note: main's .gitignore excludes *.json — site/artefacts is un-ignored (item 1)
       and step 6 asserts every loaded artefact is tracked.
