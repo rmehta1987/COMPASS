@@ -94,6 +94,19 @@
   AUROC and negatives rejected. The wrong-pick AUROC is named as absent, not quoted.
 - Placement: below the stage rail, as the brief asks.
 
+## 2026-09-04 — item 12
+- Save panel as PNG: the panel is cloned into an SVG foreignObject with the page's own
+  stylesheet, serialised, loaded as a data: image and drawn to a canvas at the device
+  pixel ratio. No library, no server, no external resource. `Download this record as
+  JSON` (the current example plus every artefact's provenance) and the PNG button render
+  on every panel; the headless harness exercises both handlers.
+- The offline check flagged the two W3C namespace identifiers. They are names an SVG node
+  carries, never fetched; offline.py now allows exactly those two strings and says why.
+- A first attempt committed on a red check because a heredoc split the `&&` chain; reset
+  to 8e3fd4d and redone. State files are now edited before the check, never after.
+- Not verified in a real browser from this machine (no display): the harness proves the
+  code path runs without exception, not that the raster is faithful. UNVERIFIED visually.
+
 ### Figure trace (done before item 1; primaries opened, not summaries)
 | figure | primary | run id | verdict |
 |---|---|---|---|

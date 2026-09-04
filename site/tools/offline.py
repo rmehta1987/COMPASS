@@ -5,7 +5,8 @@ that names a scheme or a protocol-relative host; on any URL inside a script
 or stylesheet (``fetch``, ``@import``, ``url(http…)``, ``@font-face``); on
 ``<iframe>``, ``<link rel=preconnect|dns-prefetch|preload>`` to a host; and
 on ``sendBeacon`` / ``XMLHttpRequest``. ``<a href="https://…">`` is navigation
-the reader chooses, not a request the page makes, and is allowed.
+the reader chooses, not a request the page makes, and is allowed; so are the
+two W3C namespace identifiers an SVG/XHTML node carries, which nothing fetches.
 """
 from __future__ import annotations
 
@@ -14,7 +15,9 @@ from html.parser import HTMLParser
 
 from common import SITE, STYLE_RE, fail, ok, pages, scripts
 
-URL_RE = re.compile(r"(?:https?:)?//[\w.-]+\.[a-z]{2,}", re.I)
+URL_RE = re.compile(r"(?:https?:)?//[\w.-]+\.[a-z]{2,}(?:/[\w./-]*)?", re.I)
+# XML namespace identifiers: names the parser compares, never requests it makes
+NS_ALLOW = {"http://www.w3.org/2000/svg", "http://www.w3.org/1999/xhtml"}
 CODE_BAD = [
     (URL_RE, "URL in code"),
     (re.compile(r"@import\b"), "@import"),
@@ -57,6 +60,8 @@ def main() -> None:
         for body in code:
             for rx, why in CODE_BAD:
                 for m in rx.finditer(body):
+                    if m.group(0) in NS_ALLOW:
+                        continue
                     problems.append(f"{rel}: {why}: {m.group(0)!r}")
     if problems:
         for s in problems:

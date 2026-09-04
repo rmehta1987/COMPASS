@@ -294,6 +294,34 @@ function measure(){
   <p>Every figure above is loaded from <code>site/artefacts/</code> with its run id or commit. Panels marked PLACEHOLDER have no committed artefact and show no numbers.</p>`;
 }
 
+function panelPNG(){
+  const panel=el("#panel"), rect=panel.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  const css=[...document.querySelectorAll("style")].map(x=>x.textContent).join("\n");
+  const w=Math.ceil(rect.width), hgt=Math.ceil(panel.scrollHeight), o=Number();
+  const svgNS="http://www.w3.org/2000/svg", xhtml="http://www.w3.org/1999/xhtml";
+  const svg=document.createElementNS(svgNS,"svg");
+  svg.setAttribute("xmlns",svgNS); svg.setAttribute("width",w); svg.setAttribute("height",hgt);
+  const fo=document.createElementNS(svgNS,"foreignObject");
+  fo.setAttribute("width",w); fo.setAttribute("height",hgt);
+  const body=document.createElementNS(xhtml,"div");
+  body.setAttribute("xmlns",xhtml);
+  const style=document.createElementNS(xhtml,"style"); style.textContent=css; body.appendChild(style);
+  const clone=panel.cloneNode(true); clone.setAttribute("style",`width:${w}px;background:#fff`);
+  body.appendChild(clone); fo.appendChild(body); svg.appendChild(fo);
+  const xml=new XMLSerializer().serializeToString(svg);
+  const img=new Image();
+  img.onload=()=>{
+    const c=document.createElement("canvas"); c.width=w*dpr; c.height=hgt*dpr;
+    const ctx=c.getContext("2d"); ctx.scale(dpr,dpr); ctx.fillStyle="#fff"; ctx.fillRect(o,o,w,hgt);
+    ctx.drawImage(img,o,o);
+    c.toBlob(b=>{const a=document.createElement("a");a.href=URL.createObjectURL(b);
+      a.download=`compass_${sel}_${cur?cur.id:"none"}.png`;a.click();URL.revokeObjectURL(a.href);},"image/png");
+  };
+  img.onerror=()=>alert("The browser refused to rasterise the panel. The SVG route needs same-origin styles only, which this page has, so this is a browser limitation; download the page instead.");
+  img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(xml);
+}
+
 function draw(){
   const s=DATA.stages.stages.find(x=>x.id===sel);
   let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
@@ -304,7 +332,14 @@ function draw(){
   else if(sel==="funnel") h+=funnelPanel();
   else if(sel==="score") h+=scorePanel();
   else h+=placeholder(s);
+  h+=`<div class="after"><button class="g" id="dl-json">Download this record as JSON</button><button class="g" id="png">Save panel as PNG</button></div>`;
   el("#panel").innerHTML=h;
+  el("#dl-json").onclick=()=>{
+    const doc={stage:sel,example:cur,artefact_provenance:Object.fromEntries(Object.entries(DATA).filter(([k])=>k!=="index").map(([k,v])=>[k,v.provenance]))};
+    const b=new Blob([JSON.stringify(doc,null,2)],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(b);
+    a.download=`compass_${sel}_${cur?cur.id:"none"}.json`;a.click();URL.revokeObjectURL(a.href);};
+  el("#png").onclick=panelPNG;
 }
 
 el("#run").onclick=()=>{

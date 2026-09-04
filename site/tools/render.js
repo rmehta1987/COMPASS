@@ -10,13 +10,15 @@ const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(
 
 const nodes = {};
 function node(id) {
-  if (!nodes[id]) nodes[id] = { id, innerHTML: "", value: "", onclick: null, dataset: {}, style: {} };
+  if (!nodes[id]) nodes[id] = { id, innerHTML: "", value: "", onclick: null, dataset: {}, style: {}, scrollHeight: 10,
+    getBoundingClientRect: () => ({ width: 10, height: 10 }), cloneNode: () => ({ setAttribute() {} }), textContent: "" };
   return nodes[id];
 }
 const byData = [];
 const document = {
   querySelector: s => node(s),
   querySelectorAll: s => {
+    if (s === "style") return [{ textContent: "" }];
     const m = /\[data-(\w+)\]/.exec(s); if (!m) return [];
     // one stub per rendered button, carrying its data-* value
     const attr = m[1], html = Object.values(nodes).map(n => n.innerHTML).join("");
@@ -24,14 +26,19 @@ const document = {
     for (const x of html.matchAll(re)) { const b = { dataset: { [attr]: x[1] }, onclick: null }; out.push(b); byData.push(b); }
     return out;
   },
-  createElement: () => ({ click() {}, set href(v) {}, get href() { return ""; } }),
-  documentElement: { outerHTML: "<html>" },
+  createElement: () => ({ click() {}, set href(v) {}, get href() { return ""; }, width: 0, height: 0,
+    getContext: () => ({ scale() {}, fillRect() {}, drawImage() {} }), toBlob(cb) { cb(new global.Blob([""])); } }),
+  createElementNS: () => ({ setAttribute() {}, appendChild() {}, textContent: "" }),
+  documentElement: { outerHTML: "<html>", cloneNode: () => ({ appendChild() {}, querySelector: () => ({ appendChild() {}, remove() {} }), outerHTML: "<html>" }) },
+  getElementById: () => null,
 };
 global.document = document;
 global.window = { devicePixelRatio: 1 };
 global.Blob = class { constructor(parts) { this.size = parts.join("").length; } };
 global.URL = { createObjectURL: () => "blob:x", revokeObjectURL() {} };
 global.alert = () => {};
+global.Image = class { set src(v) { if (this.onload) this.onload(); } };
+global.XMLSerializer = class { serializeToString() { return "<svg/>"; } };
 global.fetch = async rel => ({ json: async () => JSON.parse(fs.readFileSync(path.join(site, rel), "utf8")) });
 
 let failed = 0;
