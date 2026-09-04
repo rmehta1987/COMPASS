@@ -48,7 +48,7 @@ note: WORDING TENSION for items 11 and 15 (found at item 8). A funnel pair's
 - [x] 9  estimability gate + --allow-unestimable (pipeline/gate.py; check.sh step 9)
 - [x] 10 specifier takes RetrievalRecord (PairLike; pipeline/resolved_pair.py)
 - [x] 11 specifier emits the record (pipeline/artefact.py; redact() is the committable form)
-- [ ] 12 ledger append
+- [x] 12 ledger append (pipeline/ledger.py; verify() is the denominator check)
 - [ ] 13 output artefact schema
 - [ ] 13a critique seam + GenerationEnv
 - [ ] 14 DAG validators
