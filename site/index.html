@@ -123,16 +123,17 @@
    figure is fetched from site/artefacts/*.json, each carrying its provenance.
    site-check.sh fails the build if a numeric literal appears here. */
 const DATA={};
-let sel="retriever";
+let sel="retriever", cur=null, typed=null;
 const el=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const row=(k,v,m)=>`<dt>${k}</dt><dd class="${m?'m':''}">${v}</dd>`;
+const f4=x=>x.toFixed(4);
 
 async function load(){
   const idx=await (await fetch("artefacts/index.json")).json();
   DATA.index=idx;
   for(const f of idx.files){
-    const name=f.replace(/\.json$/,"");
-    DATA[name]=await (await fetch("artefacts/"+f)).json();
+    DATA[f.replace(/\.json$/,"")]=await (await fetch("artefacts/"+f)).json();
   }
 }
 
@@ -144,25 +145,87 @@ function rail(){
   document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{sel=b.dataset.s;draw();});
 }
 
+function examples(){
+  el("#examples").innerHTML=DATA.runs.examples.map((e,i)=>
+    `<button class="g" data-ex="${i}">${esc(e.label)}</button>`).join("");
+  document.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>{
+    cur=DATA.runs.examples[+b.dataset.ex]; typed=null; el("#q").value=cur.request.text; draw();});
+}
+
+const norm=s=>s.toLowerCase().replace(/[^a-z0-9 ]+/g," ").split(/\s+/).filter(Boolean).join(" ");
+function match(q){
+  const n=norm(q);
+  return DATA.runs.examples.find(e=>norm(e.request.text)===n||norm(e.rendered_query)===n)||null;
+}
+
+function placeholder(s){
+  return `<p class="sec">output</p><div class="ph"><b>PLACEHOLDER</b> — no committed artefact yet. ${esc(s.placeholder)}`
+    +(s.waits_for?` Waits for ${esc(s.waits_for)}.`:"")+`</div>`;
+}
+function noRun(){
+  return `<p class="sec">output</p><div class="ph"><b>NO COMMITTED RUN</b> — this page has no encoder and never invents a score. The request is shown verbatim and nothing else: <em>${esc(typed)}</em>. The example buttons load the runs that were committed with this page.</div>`;
+}
+
+function toolLog(log){
+  let h=`<div class="tools">`;
+  for(const t of log){
+    const args=Object.entries(t.args).map(([k,v])=>`${k}=${typeof v==="string"?JSON.stringify(v):(typeof v==="number"&&!Number.isInteger(v)?f4(v):v)}`).join(", ");
+    let ret;
+    if(t.returned===null) ret=`<span class="ret no">→ null — abstained</span>`;
+    else ret=`<span class="ret">→ ${esc(Object.entries(t.returned).map(([k,v])=>`${k} ${typeof v==="number"&&!Number.isInteger(v)?f4(v):v}`).join(" · "))}</span>`;
+    h+=`<div class="t"><span class="call"><b>${esc(t.tool)}</b>(${esc(args)})</span>${ret}</div>`;
+  }
+  return h+`</div>`;
+}
+
+function retrieverPanel(){
+  const r=cur.record, p=DATA.runs.provenance, t=r.target||r.nearest_if_abstained;
+  let h=`<p class="sec">tool calls · run ${esc(p.run_id)}</p>`+toolLog(cur.tool_log);
+  h+=`<p class="sec">RetrievalRecord</p><dl>`
+    +row("target",r.abstained?`<span class="flag">none — abstained</span> · nearest ${esc(t.pseudonym)}`:esc(t.pseudonym),true)
+    +row("domain",esc(t.domain),true)
+    +row("level",esc(t.level),true)
+    +row("top cosine",f4(r.top_cos),true)
+    +row("min_cos",`${f4(DATA.runs.threshold.min_cos)} · ${r.abstained?`<span class="flag">not cleared, short by ${f4(-r.gap_above_threshold)}</span>`:`cleared by ${f4(r.gap_above_threshold)}`}`,true)
+    +row("abstained",r.abstained?`<span class="flag">true</span>`:"false",true)
+    +row("margin to rank two",f4(r.margin_12),true)
+    +row("roster fold",`${t.fold_size} roster row(s) folded into this target`,true)
+    +row("option",t.option_position?`option ${t.option_position} of ${t.option_count}`:"stem-level target, no option",true)
+    +row("query time",`${r.query_ms_median} ms median, isolated, this machine (${esc(p.machine.machine)}, ${p.machine.threads} threads)`,true)
+    +row("targets scored",`${DATA.runs.corpus.n_targets.toLocaleString()} vectors · dictionary ${esc(p.bundle.dictionary_version_hash)}`,true)
+    +`</dl>`;
+  h+=`<p class="sec">next candidates</p><div class="tools">`+cur.candidates.map(c=>
+    `<div class="t"><span class="call">${c.rank}. <b>${esc(c.pseudonym)}</b> · ${esc(c.domain)}</span><span class="ret">cos ${f4(c.cos)}${c.cos<DATA.runs.threshold.min_cos?" · below min_cos":""}</span></div>`).join("")+`</div>`;
+  if(r.abstained){
+    const a=DATA.absence;
+    h+=`<p class="sec">absence check · dictionary ${esc(a.provenance.dictionary_version_hash)}</p><div class="tools">`
+      +a.domains.map(d=>`<div class="t"><span class="call"><b>${esc(d.domain)}</b></span><span class="ret">dictionary entries matching ${d.dictionary_entries_matching} · targets matching ${d.targets_matching} · adjacent constructs present ${d.adjacent_constructs_present}</span></div>`).join("")
+      +`<div class="t gate ${a.all_domains_absent?"pass":"fail"}">all ${a.domains.length} negative domains absent from ${a.n_dictionary_entries.toLocaleString()} entries and ${a.n_targets.toLocaleString()} targets: ${a.all_domains_absent}</div></div>`;
+  }
+  if(cur.note) h+=`<p class="sec">known limitation</p><div class="none" style="color:var(--signal)">${esc(cur.note)}</div>`;
+  return h;
+}
+
 function draw(){
   const s=DATA.stages.stages.find(x=>x.id===sel);
   let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
          <ul class="does">${s.does.map(d=>`<li>${esc(d)}</li>`).join("")}</ul>`;
-  h+=`<p class="sec">output</p><div class="ph"><b>PLACEHOLDER</b> — no committed artefact yet. ${esc(s.placeholder)}`
-    +(s.waits_for?` Waits for ${esc(s.waits_for)}.`:"")+`</div>`;
+  if(typed!==null&&!cur) h+=noRun();
+  else if(sel==="retriever"&&cur) h+=retrieverPanel();
+  else h+=placeholder(s);
   el("#panel").innerHTML=h;
 }
 
 el("#run").onclick=()=>{
   const q=el("#q").value.trim(); if(!q)return;
-  el("#panel").innerHTML=`<h2>No committed run</h2><div class="ph"><b>PLACEHOLDER</b> — this page has no encoder and never invents a score. Your request is shown verbatim and nothing else: <em>${esc(q)}</em></div>`;
+  cur=match(q); typed=cur?null:q; draw();
 };
 el("#dl-src").onclick=()=>{
   const b=new Blob([document.documentElement.outerHTML],{type:"text/html"});
   const a=document.createElement("a");a.href=URL.createObjectURL(b);
   a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
 
-load().then(()=>{rail();draw();}).catch(e=>{
+load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); draw();}).catch(e=>{
   el("#panel").innerHTML=`<h2>Artefacts did not load</h2><div class="ph"><b>NO DATA</b> — ${esc(e.message)}. Serve this directory over HTTP; a file:// open cannot fetch the artefacts.</div>`;
 });
 </script>

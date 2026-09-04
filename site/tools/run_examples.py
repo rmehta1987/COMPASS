@@ -124,7 +124,7 @@ def main() -> int:
              {"target": name(chosen["key"]), "cos": chosen["cos"], "margin_12": chosen["margin_12"]}},
         ]
         public.append({
-            "id": ex["id"], "label": ex["label"], "origin": ex["origin"],
+            "id": ex["id"], "label": ex["label"], "origin": ex["origin"], "note": ex.get("note"),
             "request": {"text": ex["request"], "construct": ex["request"], "role": ex["role"],
                         "instances": ex["instances"], "population": None},
             "rendered_query": q, "instances_dropped_as_covered": dropped,

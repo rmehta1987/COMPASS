@@ -47,6 +47,19 @@
 - Latency here is ~45 ms/query, consistent with the manifest's Spark figure at four
   pinned threads; the artefact says so and does not call it the serving figure.
 
+## 2026-09-04 — item 5
+- Retriever panel renders from runs.json: the search/select tool log with the run id,
+  the record (pseudonym, domain, level, cosine, threshold and gap, abstention, margin,
+  fold, option position, query time with machine, targets scored with dictionary hash),
+  the ten candidates, and for the abstaining example the absence check (absence.json,
+  re-run of src/verify_negatives.py: five domains, zero matches). The false-accept note
+  is prose in requests.json with no figures; the figures beside it are the run's.
+- The check refused the first version for the code's own small integers (`,1)` flags,
+  `examples[0]`, `>=0`, `>1`). Removed rather than allowlisted: boolean flags,
+  destructuring, and no fold comparison. The allowlist did not grow.
+- The Run bar matches a typed request against the committed requests only; anything else
+  renders NO COMMITTED RUN with the text verbatim. No score is ever synthesised.
+
 ### Figure trace (done before item 1; primaries opened, not summaries)
 | figure | primary | run id | verdict |
 |---|---|---|---|

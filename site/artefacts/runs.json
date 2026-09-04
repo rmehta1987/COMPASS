@@ -2,8 +2,8 @@
  "schema": "compass_site/runs/1",
  "provenance": {
   "source": "site/tools/run_examples.py calling deploy/retriever.py search() and select() on the frozen bundle; requests from site/tools/requests.json",
-  "run_id": "site-20260904T213836Z",
-  "git_head": "12ade2c",
+  "run_id": "site-20260904T214051Z",
+  "git_head": "befbca2",
   "machine": {
    "node": "spark-2500",
    "machine": "aarch64",
@@ -43,6 +43,7 @@
    "id": "resolved",
    "label": "resolved",
    "origin": "operator-authored",
+   "note": null,
    "request": {
     "text": "how often siblings were diagnosed with breast cancer",
     "construct": "how often siblings were diagnosed with breast cancer",
@@ -97,7 +98,7 @@
      "n_siblings": 0
     },
     "nearest_if_abstained": null,
-    "query_ms_median": 44.7
+    "query_ms_median": 46.98
    },
    "candidates": [
     {
@@ -216,6 +217,7 @@
    "id": "resolved-2",
    "label": "resolved · demo query",
    "origin": "deploy/retriever.py __main__ demo query",
+   "note": null,
    "request": {
     "text": "exogenous hormone medication",
     "construct": "exogenous hormone medication",
@@ -268,7 +270,7 @@
      "n_siblings": 0
     },
     "nearest_if_abstained": null,
-    "query_ms_median": 44.82
+    "query_ms_median": 43.41
    },
    "candidates": [
     {
@@ -387,6 +389,7 @@
    "id": "absent",
    "label": "absent",
    "origin": "negative fixture n01 + negative_expansion_fields",
+   "note": "The construct is not in the instrument: the absence check finds no air-pollution measure in any dictionary field, only self-reported proximity to a pollution source. The retriever's nearest target is far below the threshold and it abstains, which is the correct verdict.",
    "request": {
     "text": "ambient PM2.5 concentration at the residential address",
     "construct": "ambient PM2.5 concentration at the residential address",
@@ -437,7 +440,7 @@
      "fold_size": 1,
      "n_siblings": 0
     },
-    "query_ms_median": 47.3
+    "query_ms_median": 48.54
    },
    "candidates": [
     {
@@ -556,6 +559,7 @@
    "id": "false-accept",
    "label": "false accept",
    "origin": "negative fixture n42 + negative_expansion_fields",
+   "note": "The request is area-level. The instrument has no area-level measure: no deprivation index, no census tract, no geocode (absence check). The retriever returns an individual household-income variable and does not abstain, clearing the threshold by a hair. Known failure; the threshold detects absent constructs, not wrong picks.",
    "request": {
     "text": "what kind of neighborhood income level they live in",
     "construct": "what kind of neighborhood income level they live in",
@@ -610,7 +614,7 @@
      "n_siblings": 0
     },
     "nearest_if_abstained": null,
-    "query_ms_median": 44.87
+    "query_ms_median": 47.17
    },
    "candidates": [
     {
