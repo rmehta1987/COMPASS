@@ -130,8 +130,17 @@ def test_a_match_needs_both_sides_and_the_denominator_is_the_ledgers(tmp_path):
     assert b.strata == ("chronic_condition", "reproductive_hormonal")
     assert b.generation == CLEAN and b.dictionary_hash == HASH
     assert b.verdicts == OK and b.qualifier == B.QUALIFIER
+    # the ceiling: 36702470, 33333333 and 44444444 are matchable (outcome key
+    # on record and an exposure that resolved); 22222222 abstained, 11111111
+    # has no outcome key. The one artefact hits on both sides, so N == max.
+    c = b.ceiling
+    assert (c.papers_matchable, c.outcome_side, c.exposure_side,
+            c.max_matched) == (3, 1, 1, 1)
+    assert c.max_rate == 1.0 and c.at_ceiling
     text = B.render(b)
     assert B.QUALIFIER in text
+    assert text.splitlines()[2].startswith("**Ceiling: at most 1 of 1 artefacts")
+    assert "at its ceiling" in text.splitlines()[2]
     for cell in ("| matched (N) | 1 |", "(M) | 1 |", "| match rate N/M | 1.000 |",
                  "total_generated_this_run | 3 |", "PMID 36702470"):
         assert cell in text, cell
@@ -207,3 +216,22 @@ def test_the_key_side_modules_are_imported_inside_functions_only():
     assert {n.module for n in inner} >= {"benchmark.scorability",
                                          "benchmark.input_leakage",
                                          "benchmark.unearned_assertions"}
+
+
+def test_a_zero_ceiling_names_itself_as_not_a_measurement(tmp_path):
+    d = _run_dir(tmp_path, _record())
+    unmatchable = (B.PaperKey("36702470", ("household income",), ("m2:Q5.9",)),)
+    b = B.score([d / "p1.r1.json"], table=unmatchable, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12])
+    assert b.matched == 0 and b.ceiling.max_matched == 0 and b.ceiling.at_ceiling
+    assert b.ceiling.papers_matchable == 1 and b.ceiling.max_rate == 0.0
+    line = B.render(b).splitlines()[2]
+    assert "The observed rate IS the ceiling" in line
+    assert "not a measurement of hypothesis quality" in line
+    # a matchable paper the artefact misses on one side only: ceiling above N
+    one_side = (B.PaperKey("36702470", ("hormone therapy",), ("m2:Q5.9",)),
+                B.PaperKey("44444444", ("household income",), ("m2:Q5.2",)))
+    b = B.score([d / "p1.r1.json"], table=one_side, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12])
+    assert b.matched == 0 and b.ceiling.max_matched == 1 and not b.ceiling.at_ceiling
+    assert "gap below the ceiling is the pipeline's" in B.render(b).splitlines()[2]

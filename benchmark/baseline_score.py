@@ -113,6 +113,60 @@ class Match(NamedTuple):
     outcome_key: str
 
 
+class Ceiling(BaseModel):
+    """The most the match rule could have found, given the key and the frame.
+
+    The rule is conjunctive, so the rate is bounded by a product: a paper must
+    carry an outcome key on record AND an exposure term the retriever resolved
+    before any artefact can match it, and an artefact must hit a matchable
+    paper on both sides. `max_matched` counts artefacts that hit some
+    matchable paper's outcome keys and some matchable paper's resolved
+    exposure keys, not necessarily the same paper, so it is an upper bound on
+    `matched`. A run at its ceiling says the harness works; it does not
+    measure hypothesis quality, and the report says which.
+
+    Attributes:
+        papers_matchable: Papers with an outcome key on record and at least
+            one exposure term resolved.
+        outcome_side: Artefacts whose outcome keys hit a matchable paper.
+        exposure_side: Artefacts whose exposure keys hit a matchable paper.
+        max_matched: Artefacts hitting on both sides; `matched` cannot exceed it.
+        max_rate: `max_matched / scored`; None when nothing was scored.
+        at_ceiling: `matched == max_matched`.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    papers_matchable: int = Field(ge=0)
+    outcome_side: int = Field(ge=0)
+    exposure_side: int = Field(ge=0)
+    max_matched: int = Field(ge=0)
+    max_rate: float | None
+    at_ceiling: bool
+
+    def sentence(self, matched: int, scored: int) -> str:
+        """The reading a rate must travel with.
+
+        Args:
+            matched: N.
+            scored: M.
+
+        Returns:
+            One paragraph.
+        """
+        head = (f"Ceiling: at most {self.max_matched} of {scored} artefacts could "
+                f"match under this key and frame ({self.papers_matchable} matchable "
+                f"papers); observed {matched}.")
+        if self.max_matched == 0:
+            return (head + " The observed rate IS the ceiling. What this run "
+                    "establishes is that the harness runs end to end, refuses "
+                    "unstamped artefacts and emits clean verdicts; it is not a "
+                    "measurement of hypothesis quality.")
+        if self.at_ceiling:
+            return head + " The observed rate is at its ceiling."
+        return head + " The gap below the ceiling is the pipeline's."
+
+
 class Baseline(BaseModel):
     """The baseline, whole: the four numbers, their qualifier, and provenance.
 
@@ -136,6 +190,7 @@ class Baseline(BaseModel):
         exposure_abstentions: Per pmid, the exposure terms that abstained.
         matches: Every match, in artefact order.
         verdicts: Named check to its verdict string.
+        ceiling: The most the rule could have found; see `Ceiling`.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -158,6 +213,7 @@ class Baseline(BaseModel):
     exposure_abstentions: dict[str, tuple[str, ...]]
     matches: tuple[Match, ...]
     verdicts: dict[str, str]
+    ceiling: Ceiling
 
 
 # ---------------------------------------------------------------- loading
@@ -324,6 +380,36 @@ def match(rec: HypothesisRecord, paper: PaperKey,
     return e[0], o[0]
 
 
+def ceiling(loaded: Sequence[Loaded], table: Sequence[PaperKey],
+            exposure_keys: dict[str, frozenset[str]], matched: int) -> Ceiling:
+    """Bound the match count from above; see `Ceiling`.
+
+    Args:
+        loaded: The accepted artefacts.
+        table: The papers.
+        exposure_keys: `resolve_exposures` output.
+        matched: The observed N.
+
+    Returns:
+        The ceiling.
+    """
+    matchable = [p for p in table if p.outcome_keys and exposure_keys[p.pmid]]
+    out_keys = frozenset(k for p in matchable for k in p.outcome_keys)
+    exp_keys = frozenset(k for p in matchable for k in exposure_keys[p.pmid])
+    o_hit = e_hit = both = 0
+    for _, rec in loaded:
+        o = bool(keys_of(rec.artefact.retrieval["outcome"]) & out_keys)
+        e = bool(keys_of(rec.artefact.retrieval["exposure"]) & exp_keys)
+        o_hit += o
+        e_hit += e
+        both += o and e
+    scored = len(loaded)
+    return Ceiling(papers_matchable=len(matchable), outcome_side=o_hit,
+                   exposure_side=e_hit, max_matched=both,
+                   max_rate=None if scored == 0 else both / scored,
+                   at_ceiling=matched == both)
+
+
 def score(paths: Sequence[Path], *, table: Sequence[PaperKey],
           retriever: RetrieverLike, verdicts: dict[str, str],
           require_sha: str | None = None, strata: Strata | None = None) -> Baseline:
@@ -371,7 +457,8 @@ def score(paths: Sequence[Path], *, table: Sequence[PaperKey],
         papers_with_outcome_key=sum(1 for p in table if p.outcome_keys),
         papers_exposure_resolved=sum(1 for p in table if exposure_keys[p.pmid]),
         papers_matched=len({m.pmid for m in matches}),
-        exposure_abstentions=abstained, matches=tuple(matches), verdicts=verdicts)
+        exposure_abstentions=abstained, matches=tuple(matches), verdicts=verdicts,
+        ceiling=ceiling(loaded, table, exposure_keys, len(matched_artefacts)))
 
 
 # ---------------------------------------------------------------- verdicts
@@ -428,6 +515,8 @@ def render(b: Baseline) -> str:
     lines = [
         f"# Baseline {b.run_id}",
         "",
+        f"**{b.ceiling.sentence(b.matched, b.scored)}**",
+        "",
         f"Question answered: {b.qualifier}.",
         "",
         "| number | value |",
@@ -436,6 +525,8 @@ def render(b: Baseline) -> str:
         f"| scored, the ledger's emitted count (M) | {b.scored} |",
         f"| match rate N/M | {rate} |",
         f"| ledger denominator, total_generated_this_run | {b.denominator} |",
+        f"| ceiling: max matched / max rate | {b.ceiling.max_matched} / "
+        f"{'n/a' if b.ceiling.max_rate is None else f'{b.ceiling.max_rate:.3f}'} |",
         "",
         f"ledger by outcome: {b.by_outcome}",
         f"strata: {', '.join(b.strata) or '(none)'}",
