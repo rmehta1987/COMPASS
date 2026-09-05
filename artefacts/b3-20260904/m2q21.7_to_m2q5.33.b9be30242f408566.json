@@ -1,0 +1,604 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q21.7_to_m2q5.33",
+    "record_hash": "b9be30242f408566",
+    "pair_id": "m2:Q21.7 -> m2:Q5.33",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q21.7_to_m2q5.33",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does prior prescription proton pump inhibitor use influence the age at which Crohn's disease is first diagnosed?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q21.7",
+        "quoted_wording": "sha256:198169924791d9d512d021c2dd18bec3711136225ad91f265153889b36234cbd"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.33",
+        "quoted_wording": "sha256:7a6b5cde0bc1b9f1372c03ec975c94f0d1212843fbeb0cc8fcd3d1bd4c969544"
+      },
+      "expected_direction": {
+        "direction": "decrease",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "Among persons with a Crohn's disease diagnosis, those with longer prior histories of prescription PPI use (longest quintile vs. shortest quintile) show a systematically earlier (or later) mean age at diagnosis, with effect magnitude and direction consistent with microbiome-mediated disease acceleration or with reverse causation from early disease triggering PPI therapy.",
+      "falsifier_threshold": null,
+      "model_spec": {
+        "form": "Linear regression of age at Crohn's disease diagnosis on years-since-PPI-use (in quintiles), adjusted for sex, age at reflux diagnosis, and age at UC diagnosis.",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area. Although the exposure and outcome are person-level measures (not determined by place), unmeasured place-level confounders (neighborhood socioeconomic status, environmental exposures, healthcare access patterns) may induce within-community correlation of residuals. Cluster-robust standard errors at the community area level protect against downward bias from this spatial correlation."
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q1.8",
+            "quoted_wording": "sha256:dd506fb26782a15e8b85ef427d7c49a15e1f410cad8f95d65022706f7d14555f"
+          },
+          "mechanism": "Sex assigned at birth is associated with both PPI prescribing patterns and Crohn's disease epidemiology; the relationship between sex and these outcomes is not mediated through PPI use history but reflects underlying biological and social determinants.",
+          "justification": "Person-level biological characteristic that independently influences both exposure receipt and outcome probability.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.37",
+            "quoted_wording": "sha256:ea4e177aa01219b26ec395f58208901c904e8ed76b756c3a0f758f44148466d1"
+          },
+          "mechanism": "Esophageal acid reflux is a primary indication for PPI therapy. Reflux and Crohn's disease may arise from shared underlying gastrointestinal susceptibility (e.g., mucosal barrier dysfunction, visceral hypersensitivity). The common cause (GI health status) affects both the likelihood of PPI prescription and the manifestation of Crohn's disease.",
+          "justification": "Age at reflux diagnosis reflects underlying gastrointestinal health status present before Crohn's diagnosis. Persons with reflux history are preferentially exposed to PPIs, but reflux itself is not caused by PPI use (the exposure predates or coincides with PPI initiation). Reflux represents a confounder of the relationship between PPI duration and CD diagnosis age.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.63",
+            "quoted_wording": "sha256:8e17a3f89fa2767915a3ab7a9d5681e812e1af3bbc8d84c97c3b86723f89897a"
+          },
+          "mechanism": "Ulcerative colitis is a distinct inflammatory bowel disease entity with overlapping genetic and environmental risk factors with Crohn's disease. A diagnosis of UC reflects underlying IBD genetic susceptibility and/or environmental exposure patterns. This susceptibility is not caused by PPI use but is an independent risk factor for IBD manifestation.",
+          "justification": "Age at UC diagnosis indicates the presence of IBD susceptibility, which may increase both the probability of Crohn's diagnosis (through shared etiology or diagnostic overlap) and health-seeking behavior leading to PPI exposure. UC history is causally upstream of and independent from PPI use.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.47",
+            "quoted_wording": "sha256:ad42ffe781e271bf42415f1cd0f282524f22dfd1ceca545b12326f31dc35eba8"
+          },
+          "mechanism": "The construct 'inflammatory bowel disease' (IBD) is a diagnostic category that encompasses Crohn's disease as a subcategory, creating definitional overlap rather than a causal relationship.",
+          "justification": "Including this variable would conflate measurement of the outcome with adjustment, violating the independence assumption for covariates. The variable is excluded to prevent specification error.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.18",
+            "quoted_wording": "sha256:9b99356b9e919aeea0d6bf9fcc84627f9f8cb7128bf188cd97c33abc5ded3191"
+          },
+          "mechanism": "Psychological stress and anxiety can increase gastrointestinal symptoms, symptom reporting, and health-seeking behavior, potentially increasing PPI prescriptions. Alternatively, undiagnosed or early-stage Crohn's disease (presenting with abdominal pain and systemic inflammation) may precipitate anxiety diagnoses.",
+          "justification": "Age at anxiety diagnosis compared to age at Crohn's diagnosis provides weak temporal ordering. Diagnoses occurring in close temporal proximity (e.g., within 1–2 years) do not clearly establish causation. At the cohort level, the aggregate relationship is ambiguous without individual-level clinical sequencing.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.30",
+            "quoted_wording": "sha256:1b3efc7594d0cc4d06035229a893f6e98f899e0e4a4c97c79830a2e86d15b990"
+          },
+          "mechanism": "Depression can contribute to GI symptom severity and health-seeking behavior, while chronic GI disease can precipitate mood disorders.",
+          "justification": "Temporal ordering is similarly ambiguous without individual-level clinical sequencing.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [
+        {
+          "construct_sought": "Antibiotic use history",
+          "search_phrases": [
+            "antibiotic use history",
+            "antibiotic medication health condition"
+          ],
+          "why_rejected": "search_variables with phrase 'antibiotic medication health condition' returned low_confidence; no specific antibiotic use history variable was found in module 2",
+          "exposes_the_estimate_to": "Antibiotic exposure (which directly disrupts the microbiome and is prescribed frequently in developed nations) will confound the relationship, and the design cannot isolate the microbiome pathway even if PPI use and Crohn's diagnosis are associated."
+        },
+        {
+          "construct_sought": "Family history of Crohn's disease or inflammatory bowel disease",
+          "search_phrases": [
+            "family history parents siblings relatives",
+            "Crohn's disease family history"
+          ],
+          "why_rejected": "search_variables with phrase 'family history parents siblings relatives' returned low_confidence; no variable specifically capturing family history of IBD was located",
+          "exposes_the_estimate_to": "Genetic susceptibility is a major risk factor for CD and would be a critical confounder; the design lacks this key confounder and will overestimate the association between PPI use and CD diagnosis age."
+        },
+        {
+          "construct_sought": "Dietary patterns or eating habits",
+          "search_phrases": [
+            "diet",
+            "food nutrition"
+          ],
+          "why_rejected": "search_variables with phrase 'diet food nutrition' returned low_confidence",
+          "exposes_the_estimate_to": "Dietary patterns are environmental risk factors for IBD and may confound the exposure-outcome relationship."
+        },
+        {
+          "construct_sought": "Early childhood infections or acute gastroenteritis episodes",
+          "search_phrases": [
+            "infection illness",
+            "bacterial viral gastroenteritis"
+          ],
+          "why_rejected": "search_variables with phrase 'infection illness bacterial viral gastroenteritis' returned low_confidence",
+          "exposes_the_estimate_to": "Early infections are environmental factors affecting microbiome development and IBD risk."
+        },
+        {
+          "construct_sought": "Participant's current age or interview date",
+          "search_phrases": [
+            "current age",
+            "present now today years"
+          ],
+          "why_rejected": "search_variables with phrase 'current age present now today years' returned low_confidence",
+          "exposes_the_estimate_to": "Without current age or interview date, diagnostic ages cannot be contextualized relative to cohort assembly and birth cohort."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m2"
+        ],
+        "exposure_contrast": "Highest versus lowest quintile of the years-since-PPI-use scale (per design convention for scale variables)",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 20.01
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 11.55
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 6.33
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 3.65
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.0
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.15,
+          "value": 20.01,
+          "unit": "percentage points",
+          "at_n": 100,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.15; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "Epidemiological evidence suggests PPIs may increase inflammatory bowel disease risk through microbiome disruption.",
+        "why_this_cohort": "COMPASS cohort contains detailed health history data including PPI use history and age-at-diagnosis information for Crohn's disease and related gastrointestinal conditions in module 2."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "361e6c36d6cd871c",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 3,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q21.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.33\"}) -> unique",
+          "get_contrast_convention({\"key_or_kind\": \"scale\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"age birth date years old\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity African American Hispanic White Asian\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"medication drug proton pump inhibitor acid reflux GERD\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking tobacco cigarette\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"alcohol drink drinking\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"Crohn's disease inflammatory bowel disease ulcerative colitis\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"family history parents siblings relatives\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"education income socioeconomic status employment\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"diet food nutrition\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"stress mental health anxiety depression\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"antibiotic medication health condition\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"BMI weight obesity overweight\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"digestive stomach gastric nausea vomiting heartburn reflux\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.37\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.47\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.18\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.30\"}) -> unique",
+          "get_design_convention({\"topic\": \"clustering:community_area\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age present now today years\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"ulcerative colitis IBD inflammatory\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex male female birth assigned\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"H2 blocker antacid acid medication stomach\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.63\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q1.8\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"currently taking using medications prescriptions use\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"infection illness bacterial viral gastroenteritis\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"Crohn's disease diagnosed first told family member parent sibling\"}) -> low_confidence",
+          "estimate_n({\"keys\": [\"m2:Q21.7\", \"m2:Q5.33\", \"m2:Q1.8\", \"m2:Q5.37\", \"m2:Q5.63\", \"m2:Q5.18\", \"m2:Q5.30\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.15}) -> ok",
+          "check_access({\"keys\": [\"m2:Q21.7\", \"m2:Q5.33\", \"m2:Q1.8\", \"m2:Q5.37\", \"m2:Q5.63\", \"m2:Q5.18\", \"m2:Q5.30\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "per_item_non_missing_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:198169924791d9d512d021c2dd18bec3711136225ad91f265153889b36234cbd",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:198169924791d9d512d021c2dd18bec3711136225ad91f265153889b36234cbd",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.976546,
+        "margin": 0.24707,
+        "margin_12": 0.035934,
+        "abstained": false,
+        "nearest_key": "m2:Q21.7",
+        "hit": {
+          "key": "m2:Q21.7",
+          "construct_key": "m2:Q21.7",
+          "dict_construct_key": "m2:Q21.7",
+          "module": "2",
+          "target_id": 856,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q21.7"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:7a6b5cde0bc1b9f1372c03ec975c94f0d1212843fbeb0cc8fcd3d1bd4c969544",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:7a6b5cde0bc1b9f1372c03ec975c94f0d1212843fbeb0cc8fcd3d1bd4c969544",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.98718,
+        "margin": 0.25770399999999993,
+        "margin_12": 0.07645,
+        "abstained": false,
+        "nearest_key": "m2:Q5.33",
+        "hit": {
+          "key": "m2:Q5.33",
+          "construct_key": "m2:Q5.33",
+          "dict_construct_key": "m2:Q5.33",
+          "module": "2",
+          "target_id": 230,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.33"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q21.7",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:198169924791d9d512d021c2dd18bec3711136225ad91f265153889b36234cbd",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:198169924791d9d512d021c2dd18bec3711136225ad91f265153889b36234cbd",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.976546,
+          "margin": 0.24707,
+          "margin_12": 0.035934,
+          "abstained": false,
+          "nearest_key": "m2:Q21.7",
+          "hit": {
+            "key": "m2:Q21.7",
+            "construct_key": "m2:Q21.7",
+            "dict_construct_key": "m2:Q21.7",
+            "module": "2",
+            "target_id": 856,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q21.7"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.33",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:7a6b5cde0bc1b9f1372c03ec975c94f0d1212843fbeb0cc8fcd3d1bd4c969544",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:7a6b5cde0bc1b9f1372c03ec975c94f0d1212843fbeb0cc8fcd3d1bd4c969544",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.98718,
+          "margin": 0.25770399999999993,
+          "margin_12": 0.07645,
+          "abstained": false,
+          "nearest_key": "m2:Q5.33",
+          "hit": {
+            "key": "m2:Q5.33",
+            "construct_key": "m2:Q5.33",
+            "dict_construct_key": "m2:Q5.33",
+            "module": "2",
+            "target_id": 230,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.33"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q1.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.37",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.63",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.47",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.18",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.30",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q21.7",
+    "outcome": "m2:Q5.33",
+    "expected_direction": "decrease",
+    "nodes": [
+      {
+        "key": "m2:Q21.7",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.33",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q1.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.37",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.63",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.47",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.18",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      },
+      {
+        "key": "m2:Q5.30",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q21.7",
+        "target": "m2:Q5.33",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q21.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q5.33",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.37",
+        "target": "m2:Q21.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.37",
+        "target": "m2:Q5.33",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.63",
+        "target": "m2:Q21.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.63",
+        "target": "m2:Q5.33",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m2:Q1.8",
+      "m2:Q5.37",
+      "m2:Q5.63"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.18 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q5.18",
+      "severity": "major",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.30 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q5.30",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

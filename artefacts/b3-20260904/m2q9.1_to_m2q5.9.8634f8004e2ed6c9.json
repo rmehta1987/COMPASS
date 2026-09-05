@@ -1,0 +1,734 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q9.1_to_m2q5.9",
+    "record_hash": "8634f8004e2ed6c9",
+    "pair_id": "m2:Q9.1 -> m2:Q5.9",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q9.1_to_m2q5.9",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does earlier age at menarche predict earlier age at hypertension diagnosis?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q9.1",
+        "quoted_wording": "sha256:8652b8f9c63255a9344653cdd6a973a798c5d70f1d147e2303e91a926d12c27a"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.9",
+        "quoted_wording": "sha256:9ff8fbc4935c4f25c214e574a9ebc29a3f2c1a3dd8aa7d72b55c49c99e24689f"
+      },
+      "expected_direction": {
+        "direction": "decrease",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "A clinically meaningful association exists between age at menarche and age at hypertension diagnosis. At n=1,000, we can detect a risk difference of 8.86 percentage points comparing early (before age 12) versus late (age 14 and after) menarche groups.",
+      "falsifier_threshold": {
+        "value": 8.86,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Multiple linear regression with age at hypertension diagnosis as outcome and age at menarche as exposure, with adjusted covariates. Alternatively, logistic regression with binary outcome (hypertension diagnosed before vs at or after median age) comparing early vs late menarche groups.",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors at community area level to account for within-community correlation of outcomes."
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Racial and ethnic groups differ in both age at menarche and hypertension incidence due to genetic, nutritional, socioeconomic, and healthcare access factors.",
+          "justification": "Confounding. Without adjustment, racial/ethnic differences would bias the estimated effect of menarche on hypertension diagnosis age.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education serves as a socioeconomic status proxy, affecting childhood nutrition and growth (which influences menarche timing) and adult healthcare access and preventive screening (which affects diagnosis age).",
+          "justification": "Confounding and precision. Low SES is associated with earlier menarche and may affect when hypertension is diagnosed due to differences in healthcare utilization.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:79590ca38c808b483369e51527ceca6aca100f2472a404c51b46d36b4411c743"
+          },
+          "mechanism": "Household income directly affects nutrition, physical environment, stress exposure, and access to healthcare—all factors that influence both age at menarche and age at hypertension diagnosis.",
+          "justification": "Confounding. Income is independently associated with both menarche timing and hypertension diagnosis patterns.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.9#1_1",
+            "quoted_wording": "sha256:e30a159d94d34e7a3b602c00d1f86c21376380e38318aad6cf08cc81403a6845"
+          },
+          "mechanism": "Height is associated with growth trajectory and pubertal timing, both of which correlate with menarche age. Height also affects body composition and BMI calculations relevant to hypertension risk.",
+          "justification": "Precision variable. Height captures underlying growth and developmental factors associated with menarche timing; adjustment reduces residual confounding and improves precision.",
+          "role": "precision",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q5.5",
+            "quoted_wording": "sha256:de9dcac5ebc6d726296a67ec78524bb13c5da9982763c0234ce9ca8653cc6c0a"
+          },
+          "mechanism": "Smoking directly increases hypertension risk and affects blood pressure.",
+          "justification": "Precision variable for the hypertension outcome. Reduces unexplained variance in hypertension diagnosis age.",
+          "role": "precision",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q15.7",
+            "quoted_wording": "sha256:ed5b18e3585428555a7a752d8719073435ee873307bc6fa8ce6a726ccceb866f"
+          },
+          "mechanism": "Alcohol consumption is a known risk factor for hypertension. Current alcohol use affects hypertension diagnosis and management timing.",
+          "justification": "Precision variable for the hypertension outcome.",
+          "role": "precision",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Current weight sits on the causal pathway from exposure to outcome. Early menarche is associated with subsequent weight gain and higher BMI in adulthood, and elevated BMI directly causes hypertension risk.",
+          "justification": "Mediator. Including weight in adjustment would block or attenuate the indirect effect of menarche through metabolic and weight-related pathways, biasing the total effect estimate downward.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.7",
+            "quoted_wording": "sha256:2a99aa2ee8d501144ff2d193eec3c3465ad7d13a1e4569efb916c8eeaa5e31b5"
+          },
+          "mechanism": "This variable is a descendant of the exposure. Age at last menstruation is determined partly by age at menarche and is influenced by current reproductive and health status at the time of data collection.",
+          "justification": "Descendant variable. Including this would condition on post-exposure information and bias estimates.",
+          "role": "descendant_of_exposure",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.36",
+            "quoted_wording": "sha256:477be3f46751accc9ccc672d67be3ba99a33a4d33362d3e3bd1d97da1293aeca"
+          },
+          "mechanism": "Oral contraceptive use affects blood pressure and cardiovascular risk. Use of hormonal contraceptives may be influenced by menarche characteristics or menstrual patterns related to age at menarche, making it a post-exposure factor.",
+          "justification": "Mediator. Oral contraceptive use is a post-exposure factor that may mediate effects of early menarche on hypertension risk; adjustment would attenuate the true effect.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Family history of hypertension",
+          "search_phrases": [
+            "family history hypertension blood pressure"
+          ],
+          "why_rejected": "Search returned low-confidence results. No specific instrument item clearly identified for family history of hypertension despite its importance for genetic predisposition.",
+          "exposes_the_estimate_to": "Confounding by genetic predisposition to hypertension."
+        },
+        {
+          "construct_sought": "Participant current age or birth year",
+          "search_phrases": [
+            "age current age years old",
+            "participant age current age now years",
+            "birth date born when year",
+            "What is your age"
+          ],
+          "why_rejected": "Multiple searches returned 'ok' but no clearly resolvable questionnaire item. Despite successfully searching, no item could be bound that definitively provides participant current age or birth year in a usable form.",
+          "exposes_the_estimate_to": "Confounding by age-at-data-collection and inability to account for differential follow-up time since menarche in age-at-event analysis. This is critical: without participant age, interpretation of the menarche-hypertension diagnosis association is compromised because two participants with identical menarche and diagnosis ages have vastly different risk profiles if they are different current ages."
+        },
+        {
+          "construct_sought": "Physical activity level",
+          "search_phrases": [
+            "physical activity exercise sports"
+          ],
+          "why_rejected": "Search returned low-confidence results. Instrument may contain activity questions but they were not clearly accessible or indexable via search.",
+          "exposes_the_estimate_to": "Confounding if physical activity in childhood/adolescence is associated with menarche timing and if adult physical activity is associated with hypertension diagnosis."
+        },
+        {
+          "construct_sought": "Stress and psychological factors",
+          "search_phrases": [
+            "depression anxiety stress mental health"
+          ],
+          "why_rejected": "Searches returned low-confidence results. Constructs (depression, anxiety, chronic stress) may be measured in the instrument but are not clearly indexed.",
+          "exposes_the_estimate_to": "Confounding if psychological stress or mental health conditions are associated with developmental timing and/or hypertension risk."
+        },
+        {
+          "construct_sought": "Dietary sodium intake and diet quality",
+          "search_phrases": [
+            "dietary sodium diet nutrition"
+          ],
+          "why_rejected": "Not found in search results. Dietary factors not identified in available instrument documentation.",
+          "exposes_the_estimate_to": "Confounding if childhood nutrition affects menarche timing and if sodium intake and overall diet quality affect hypertension risk and diagnosis."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "Per year decrease in age at menarche (continuous); or alternatively, comparison of participants with menarche before age 12 versus age 14 and after (binary groups).",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 26.73
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 15.43
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.45
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.88
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.67
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.35,
+          "value": 8.45,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.35; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "Existing epidemiologic evidence of association between early pubertal development (marked by early menarche) and cardiovascular disease risk. Early menarche is associated with metabolic dysfunction, insulin resistance, dyslipidemia, higher BMI, and accelerated cardiovascular aging.",
+        "why_this_cohort": "COMPASS is a population-based cohort study of women's health with detailed reproductive and cardiovascular questionnaire data spanning multiple life stages."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "23cb506192d902b0",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 3,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q9.1\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.9\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"age current age years old\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"race ethnicity racial ethnic\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"body mass index weight BMI\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"smoking tobacco cigarette\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"physical activity exercise sports\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"family history hypertension blood pressure\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"menopause age perimenopause\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"height inches tall\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"alcohol drinking beverage\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"education school college degree income\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"depression anxiety stress mental health\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"birth control contraceptive oral pill\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.9#1_1\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q5.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q15.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.36\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"participant age current age now years\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"birth date born when year\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"systolic diastolic blood pressure reading measurement\"}) -> low_confidence",
+          "registry_coverage({}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"What is your age\"}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.35}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q2.9#2_1\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q9.1\", \"m2:Q5.9\", \"m1:Q3.10\", \"m1:Q3.11\", \"m1:Q5.4\", \"m1:Q2.9#1_1\", \"m1:Q2.9#2_1\", \"m3:Q5.5\", \"m3:Q15.7\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q9.1\", \"m2:Q5.9\", \"m1:Q3.10\", \"m1:Q3.11\", \"m1:Q5.4\", \"m1:Q2.9#1_1\", \"m1:Q2.9#2_1\", \"m3:Q5.5\", \"m3:Q15.7\", \"m1:Q2.10\", \"m2:Q9.7\", \"m2:Q9.36\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:8652b8f9c63255a9344653cdd6a973a798c5d70f1d147e2303e91a926d12c27a",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:8652b8f9c63255a9344653cdd6a973a798c5d70f1d147e2303e91a926d12c27a",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.986168,
+        "margin": 0.25669200000000003,
+        "margin_12": 0.166624,
+        "abstained": false,
+        "nearest_key": "m2:Q9.1",
+        "hit": {
+          "key": "m2:Q9.1",
+          "construct_key": "m2:Q9.1",
+          "dict_construct_key": "m2:Q9.1",
+          "module": "2",
+          "target_id": 293,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q9.1"
+          ],
+          "stratum": "reproductive_hormonal",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:9ff8fbc4935c4f25c214e574a9ebc29a3f2c1a3dd8aa7d72b55c49c99e24689f",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:9ff8fbc4935c4f25c214e574a9ebc29a3f2c1a3dd8aa7d72b55c49c99e24689f",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.992087,
+        "margin": 0.26261100000000004,
+        "margin_12": 0.127168,
+        "abstained": false,
+        "nearest_key": "m2:Q5.9",
+        "hit": {
+          "key": "m2:Q5.9",
+          "construct_key": "m2:Q5.9",
+          "dict_construct_key": "m2:Q5.9",
+          "module": "2",
+          "target_id": 158,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.9"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q9.1",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:8652b8f9c63255a9344653cdd6a973a798c5d70f1d147e2303e91a926d12c27a",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:8652b8f9c63255a9344653cdd6a973a798c5d70f1d147e2303e91a926d12c27a",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.986168,
+          "margin": 0.25669200000000003,
+          "margin_12": 0.166624,
+          "abstained": false,
+          "nearest_key": "m2:Q9.1",
+          "hit": {
+            "key": "m2:Q9.1",
+            "construct_key": "m2:Q9.1",
+            "dict_construct_key": "m2:Q9.1",
+            "module": "2",
+            "target_id": 293,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q9.1"
+            ],
+            "stratum": "reproductive_hormonal",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.9",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:9ff8fbc4935c4f25c214e574a9ebc29a3f2c1a3dd8aa7d72b55c49c99e24689f",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:9ff8fbc4935c4f25c214e574a9ebc29a3f2c1a3dd8aa7d72b55c49c99e24689f",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.992087,
+          "margin": 0.26261100000000004,
+          "margin_12": 0.127168,
+          "abstained": false,
+          "nearest_key": "m2:Q5.9",
+          "hit": {
+            "key": "m2:Q5.9",
+            "construct_key": "m2:Q5.9",
+            "dict_construct_key": "m2:Q5.9",
+            "module": "2",
+            "target_id": 158,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.9"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.9#1_1",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q5.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q15.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.7",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.36",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q9.1",
+    "outcome": "m2:Q5.9",
+    "expected_direction": "decrease",
+    "nodes": [
+      {
+        "key": "m2:Q9.1",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.9",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.9#1_1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "precision",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "precision",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q15.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "precision",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q9.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_exposure",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q9.36",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q9.1",
+        "target": "m2:Q5.9",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q9.1",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q9.1",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q5.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q9.1",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q5.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.9#1_1",
+        "target": "m2:Q5.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q5.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m2:Q5.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.1",
+        "target": "m1:Q2.10",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q5.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.1",
+        "target": "m2:Q9.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.1",
+        "target": "m2:Q9.36",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.36",
+        "target": "m2:Q5.9",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.10",
+      "m1:Q3.11",
+      "m1:Q5.4",
+      "m1:Q2.9#1_1",
+      "m3:Q5.5",
+      "m3:Q15.7"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m1:Q2.10 is asserted to mediate m2:Q9.1 -> m2:Q5.9, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m1:Q2.10",
+      "severity": "blocking",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q9.7 carries role 'descendant_of_exposure', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q9.7",
+      "severity": "major",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q9.36 is asserted to mediate m2:Q9.1 -> m2:Q5.9, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q9.36",
+      "severity": "blocking",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

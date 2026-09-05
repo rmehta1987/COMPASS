@@ -1,0 +1,811 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q23.15_to_m2q5.26",
+    "record_hash": "050ff2c935ce4585",
+    "pair_id": "m2:Q23.15 -> m2:Q5.26",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q23.15_to_m2q5.26",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does self-reported history of regular insulin use associate with age at diagnosis of celiac disease or gluten sensitivity?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q23.15",
+        "quoted_wording": "sha256:fc2a40d29ba418ea6e16fa27b8f8045f5a9ee92ecadf18d6c52269de3e0ddfab"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.26",
+        "quoted_wording": "sha256:9863c97472c3ad645a0cfb303e852e5a56540236f564da3c71f416b8ded80c19"
+      },
+      "expected_direction": {
+        "direction": "increase",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "The null hypothesis is that insulin use history does not associate with age at celiac diagnosis after adjusting for autoimmune tendency, diabetes type, and demographic confounders. A true association would manifest as a difference in mean age at celiac diagnosis between insulin users and non-users, or a difference in celiac disease prevalence between groups at comparable ages.",
+      "falsifier_threshold": {
+        "value": 10.0,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear or logistic regression with cluster-robust standard errors stratified by community area",
+        "unit_of_analysis": "participant",
+        "clustering": "by community area"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Both Type 1 diabetes and celiac disease show marked sex differences in prevalence, age of onset, and clinical presentation; sex determines biological exposure to sex hormones (estrogen dominance in females may amplify autoimmune responses) and affects healthcare-seeking behavior and screening patterns.",
+          "justification": "Sex is a confounder that causes variation in both likelihood of insulin use and age at celiac diagnosis.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Prevalence of Type 1 diabetes and celiac disease vary substantially across racial and ethnic groups; race/ethnicity also correlates with healthcare access, screening likelihood, and clinical recognition of autoimmune conditions.",
+          "justification": "Race/ethnicity is a confounder that operates through both biological and healthcare access pathways.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_3",
+            "quoted_wording": "sha256:ad7c805a862e7b7a8108d049792b0ac9c0565ecf18fb6bd6180854a61aed5e2c"
+          },
+          "mechanism": "Current age determines the time window during which celiac disease diagnosis could occur; a 50-year-old has had 50 years for diagnosis while a 20-year-old has had 20 years. Current age also correlates with cumulative lifetime risk of insulin use onset.",
+          "justification": "Age is a confounder and precision variable because both insulin use history and celiac diagnosis age are age-dependent.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.4",
+            "quoted_wording": "sha256:06f26b3aeabb79ed39bb2db875106fa6274622a3256efef6a48f1c1f55525305"
+          },
+          "mechanism": "Type 1 diabetes is autoimmune and shares biological pathways with celiac disease; Type 1 diabetes diagnosis is a key predictor of insulin use because Type 1 patients require insulin.",
+          "justification": "Type 1 diabetes status is both a confounder (marker of autoimmune tendency) and necessary for mechanistic precision to separate autoimmune from metabolic pathways.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:55600e24b14333ff4c2cea0d744d84df721ba906ace8329551ba8072ef427427"
+          },
+          "mechanism": "Type 2 diabetes is distinct from celiac disease etiologically (metabolic, not autoimmune); some Type 2 patients progress to insulin use. Including Type 2 status allows separation of autoimmune from metabolic pathways.",
+          "justification": "Type 2 status is a precision variable to distinguish mechanisms and improve specificity of the autoimmune pathway.",
+          "role": "precision",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.5",
+            "quoted_wording": "sha256:d937c9a5e0752b7d4dca9e10a5da07320f475c90f87509f9651ee7784ee965cc"
+          },
+          "mechanism": "Early onset of Type 1 diabetes indicates entry into autoimmune disease trajectory early in life; both early T1D onset and early celiac onset correlate with genetic autoimmune susceptibility. Individuals with early-onset T1D have had longer exposure to the autoimmune environment.",
+          "justification": "Age at T1D diagnosis is a confounder because it marks early activation of the autoimmune system.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.7",
+            "quoted_wording": "sha256:feb48f11c86453b98ad0851786a09c58f9d1e8e132724ccd7d6ea779c5a96e39"
+          },
+          "mechanism": "Age at Type 2 diabetes diagnosis reflects metabolic aging and time of insulin initiation (later in Type 2 disease course), affecting both likelihood of current insulin use and age-related baseline risk for other conditions.",
+          "justification": "Age at T2D diagnosis is a confounder for temporal patterning and insulin use recency.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.21",
+            "quoted_wording": "sha256:3a097c0aa537d50e16158ddae33a50919dc52803eb1138fc498527c0d87a2c02"
+          },
+          "mechanism": "Other autoimmune conditions are markers of underlying immune dysregulation (autoimmune diathesis) that predisposes to multiple autoimmune diseases; age at diagnosis of other autoimmune disorders indicates when the person's immune dysfunction became clinically apparent.",
+          "justification": "Autoimmune disorder history is a confounder because it proxies for autoimmune susceptibility and correlates with both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.20",
+            "quoted_wording": "sha256:cab2a4842a03d48ce8b63052a7db8b628e3ed6033b26ff3ac11bcded10178dd7"
+          },
+          "mechanism": "While arthritis is autoimmune, it is not a recognized component of the shared pathophysiology linking Type 1 diabetes and celiac disease. Arthritis prevalence increases with age and is more common in Type 2 diabetes through obesity pathways.",
+          "justification": "Arthritis is not a cause of the exposure (insulin use) or outcome (celiac diagnosis age) through relevant mechanisms; it would add noise rather than reduce confounding.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.62",
+            "quoted_wording": "sha256:9aad795c7de74a5ec241cf93a6b7c1bede47167e87fdfb9a297a93f506eac99a"
+          },
+          "mechanism": "Thyroid disease is common in both Type 1 diabetes and celiac disease due to shared autoimmune pathways, but it is likely a descendant (mediator) of the same underlying autoimmune susceptibility rather than a confounder. Adjusting for thyroid disease would partial out the autoimmune signal.",
+          "justification": "Thyroid disease is a potential mediator of the exposure-outcome relationship; including it in the model would inappropriately adjust away the causal pathway of interest.",
+          "role": "descendant_of_exposure",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education is a proxy for health literacy and healthcare engagement; higher education correlates with proactive health-seeking behavior and more thorough medical screening. Education could confound if it affects both likelihood of receiving an insulin prescription and likelihood of celiac diagnosis.",
+          "justification": "Causal mechanism is unclear; education could be confounder or mediator depending on healthcare system context and whether it affects screening directly or through post-diagnosis engagement.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:79590ca38c808b483369e51527ceca6aca100f2472a404c51b46d36b4411c743"
+          },
+          "mechanism": "Household income is a proxy for socioeconomic status and healthcare access; income affects ability to afford diabetes management, healthcare utilization, and screening for other conditions. However, the specific pathway by which income confounds the insulin-celiac relationship is not clear without stratification data.",
+          "justification": "Socioeconomic proxy with plausible but unconfirmed confounding mechanism; marked for sensitivity analysis without firm causal adjudication.",
+          "role": "unadjudicated",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [
+        {
+          "construct_sought": "Healthcare access or healthcare utilization",
+          "search_phrases": [
+            "healthcare access",
+            "healthcare utilization",
+            "insurance",
+            "screening"
+          ],
+          "why_rejected": "No direct measure of healthcare access, healthcare utilization, insurance status, or access to gastroenterology available in the instrument.",
+          "exposes_the_estimate_to": "Residual confounding by healthcare access if high-access individuals both receive insulin prescriptions more readily and undergo celiac screening more often."
+        },
+        {
+          "construct_sought": "Screening frequency for autoimmune or gastrointestinal conditions",
+          "search_phrases": [
+            "screening",
+            "screening frequency",
+            "celiac screening"
+          ],
+          "why_rejected": "No variable directly measures screening patterns, screening intensity, or screening frequency.",
+          "exposes_the_estimate_to": "Bias from differential ascertainment if screening intensity differs between insulin users and non-users, leading to detection bias."
+        },
+        {
+          "construct_sought": "Body mass index",
+          "search_phrases": [
+            "height",
+            "BMI",
+            "body mass",
+            "weight height"
+          ],
+          "why_rejected": "Weight is available in m1:Q2.10 but height is not directly available; BMI was not constructed.",
+          "exposes_the_estimate_to": "Confounding by obesity if BMI is associated with both Type 2 diabetes insulin initiation and celiac disease screening or diagnosis."
+        },
+        {
+          "construct_sought": "Family history of celiac disease or diabetes",
+          "search_phrases": [
+            "family history",
+            "relative",
+            "parent",
+            "sibling"
+          ],
+          "why_rejected": "No variables found measuring family history of celiac disease or diabetes in available modules.",
+          "exposes_the_estimate_to": "Confounding by genetic predisposition if family history affects both autoimmune disease onset and healthcare engagement patterns."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "history of regular insulin use versus no such history",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 7.84
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 4.53
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 2.48
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 1.43
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 0.78
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.02,
+          "value": 2.48,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.02; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS study: community-based cohort in Chicago with Module 1 (demographics, anthropometrics), Module 2 (health conditions and treatments), and Module 3 (behaviors).",
+        "why_this_cohort": "Module 2 contains both exposure (insulin use history m2:Q23.15) and outcome (celiac disease diagnosis age m2:Q5.26) with relevant Module 1 confounders available; cross-sectional design enables association estimation and statistical adjustment."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "394242a3ae144f71",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 3,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q23.15\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.26\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"age years old\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"ethnicity race ethnic background\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"family history diabetes relative\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"autoimmune immune thyroid arthritis\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"current age now present\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.21\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"born birth year when born\"}) -> low_confidence",
+          "browse_variables({\"module\": \"1\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q2.15_3\"}) -> unique",
+          "list_derivations({}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "estimate_detectability({\"baseline_prevalence\": 0.02}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.20\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.62\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q23.15\", \"m2:Q5.26\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q2.15_3\", \"m2:Q5.4\", \"m2:Q5.6\", \"m2:Q5.5\", \"m2:Q5.7\", \"m2:Q5.21\", \"m1:Q3.11\", \"m1:Q5.4\", \"m2:Q5.20) -> ok",
+          "check_access({\"keys\": [\"m2:Q23.15\", \"m2:Q5.26\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q2.15_3\", \"m2:Q5.4\", \"m2:Q5.6\", \"m2:Q5.5\", \"m2:Q5.7\", \"m2:Q5.21\", \"m1:Q3.11\", \"m1:Q5.4\", \"m2:Q5.20) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:0439a21cb8d2b0de35c0a14f04837f3137d8cf98f9bfd9c5c1eb4e3c81aea244",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:0439a21cb8d2b0de35c0a14f04837f3137d8cf98f9bfd9c5c1eb4e3c81aea244",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.98705,
+        "margin": 0.25757399999999997,
+        "margin_12": 0.102823,
+        "abstained": false,
+        "nearest_key": "m2:Q23.15",
+        "hit": {
+          "key": "m2:Q23.15",
+          "construct_key": "m2:Q23.15",
+          "dict_construct_key": "m2:Q23.15",
+          "module": "2",
+          "target_id": 913,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q23.15"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:9863c97472c3ad645a0cfb303e852e5a56540236f564da3c71f416b8ded80c19",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:9863c97472c3ad645a0cfb303e852e5a56540236f564da3c71f416b8ded80c19",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.987217,
+        "margin": 0.257741,
+        "margin_12": 0.10372,
+        "abstained": false,
+        "nearest_key": "m2:Q5.26",
+        "hit": {
+          "key": "m2:Q5.26",
+          "construct_key": "m2:Q5.26",
+          "dict_construct_key": "m2:Q5.26",
+          "module": "2",
+          "target_id": 223,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.26"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q23.15",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:0439a21cb8d2b0de35c0a14f04837f3137d8cf98f9bfd9c5c1eb4e3c81aea244",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:0439a21cb8d2b0de35c0a14f04837f3137d8cf98f9bfd9c5c1eb4e3c81aea244",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.98705,
+          "margin": 0.25757399999999997,
+          "margin_12": 0.102823,
+          "abstained": false,
+          "nearest_key": "m2:Q23.15",
+          "hit": {
+            "key": "m2:Q23.15",
+            "construct_key": "m2:Q23.15",
+            "dict_construct_key": "m2:Q23.15",
+            "module": "2",
+            "target_id": 913,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q23.15"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.26",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:9863c97472c3ad645a0cfb303e852e5a56540236f564da3c71f416b8ded80c19",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:9863c97472c3ad645a0cfb303e852e5a56540236f564da3c71f416b8ded80c19",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.987217,
+          "margin": 0.257741,
+          "margin_12": 0.10372,
+          "abstained": false,
+          "nearest_key": "m2:Q5.26",
+          "hit": {
+            "key": "m2:Q5.26",
+            "construct_key": "m2:Q5.26",
+            "dict_construct_key": "m2:Q5.26",
+            "module": "2",
+            "target_id": 223,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.26"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.21",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.20",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.62",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q23.15",
+    "outcome": "m2:Q5.26",
+    "expected_direction": "increase",
+    "nodes": [
+      {
+        "key": "m2:Q23.15",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.26",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "precision",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.21",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.20",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.62",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_exposure",
+        "decision": "excluded"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "unadjudicated",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q23.15",
+        "target": "m2:Q5.26",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q23.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.26",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q23.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.26",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q23.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q5.26",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q23.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q5.26",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q5.26",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.5",
+        "target": "m2:Q23.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.5",
+        "target": "m2:Q5.26",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.7",
+        "target": "m2:Q23.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.7",
+        "target": "m2:Q5.26",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.21",
+        "target": "m2:Q23.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.21",
+        "target": "m2:Q5.26",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q23.15",
+        "target": "m2:Q5.62",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q3.10",
+      "m1:Q2.15_3",
+      "m2:Q5.4",
+      "m2:Q5.6",
+      "m2:Q5.5",
+      "m2:Q5.7",
+      "m2:Q5.21"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.62 carries role 'descendant_of_exposure', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q5.62",
+      "severity": "major",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m1:Q3.11 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m1:Q3.11",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

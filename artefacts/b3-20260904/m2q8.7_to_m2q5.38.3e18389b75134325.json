@@ -1,0 +1,621 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q8.7_to_m2q5.38",
+    "record_hash": "3e18389b75134325",
+    "pair_id": "m2:Q8.7 -> m2:Q5.38",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q8.7_to_m2q5.38",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does a mother's history of breastfeeding her children relate to the age at which she is diagnosed with gout?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:1_Q8.7",
+        "quoted_wording": "sha256:d0e33cd5bd9e132b52cddb9e4f162f1d85a216b06e637b82f319a28036efb7d0"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.38",
+        "quoted_wording": "sha256:7dce2dd02d1a8822a5034773e675c4a6feff8626ac6de67db59ad87ae5271be3"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "If breastfeeding history has a true causal effect on age at gout diagnosis, the magnitude of that effect (estimated as a difference in mean age at diagnosis between those who breastfed and those who did not) should be at least 5.11 percentage points in absolute terms.",
+      "falsifier_threshold": {
+        "value": 5.11,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear regression of age at gout diagnosis on breastfeeding status (yes/no), adjusted for sex at birth, birth year, weight, alcohol consumption, and income. Alternatively, Cox proportional hazards model if framed as time-to-gout-diagnosis with censoring.",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors at the community area level (COMPASS design convention; Chicago Multiethnic Prevention and Surveillance Study is geographically stratified by community area)"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex at birth is a cause of the exposure (only females can breastfeed) and a cause of the outcome (males have higher gout prevalence).",
+          "justification": "Without adjustment, any sex imbalance in the sample would bias the exposure-outcome association.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_3",
+            "quoted_wording": "sha256:ad7c805a862e7b7a8108d049792b0ac9c0565ecf18fb6bd6180854a61aed5e2c"
+          },
+          "mechanism": "Birth year determines the participant's current age, which structures the observation window for gout diagnosis (older age increases opportunity for gout onset, and it affects when the participant was having children and breastfeeding). Age is a strong confounder of gout risk.",
+          "justification": "Age is universally a strong confounder in gout studies. Without adjustment, age-related differences in gout prevalence and incidence would be confounded with exposure.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Obesity (measured by weight, or more precisely BMI if height is included) is a well-established risk factor for gout. Weight may also relate to the breastfeeding decision (mothers with higher weight may have been less likely to breastfeed, or conversely weight gain may follow poor health behaviors that also include not breastfeeding). Weight confounds the relationship.",
+          "justification": "Obesity is causal for gout; adjustment reduces residual confounding from metabolic status.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q15.7",
+            "quoted_wording": "sha256:ec4fdf58d3e2253c2c77a03507408d4bd73dad0ab475da70b422c3a76b48073d"
+          },
+          "mechanism": "Alcohol consumption is a well-established risk factor for gout, particularly beer consumption in men. Alcohol consumption patterns may also reflect lifestyle and health behaviors that could associate with breastfeeding decisions. This is a confounder.",
+          "justification": "Alcohol is causal for gout; adjustment removes this source of confounding.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:13d3548965635d4117cbd0b28b41f20541d0d0827da994eef2ca27064ff58d60"
+          },
+          "mechanism": "Socioeconomic status (measured by income) affects both the exposure and the outcome. SES determines access to healthcare (and thus opportunity to be diagnosed with gout), diet quality and patterns (associated with gout risk), and historically has complex associations with breastfeeding (currently higher SES mothers are more likely to breastfeed, but this relationship has reversed over time). SES confounds both directions.",
+          "justification": "SES is a source of confounding; adjustment improves causal inference.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:883085f9e05c1ff52e186d0ca76208723c1d81024663315e7f20b7cc5c94c2d4"
+          },
+          "mechanism": "Type 2 Diabetes is a metabolic disease that could lie on the pathway between breastfeeding history (as a marker of maternal health behaviors and early-life circumstances) and gout (both metabolic outcomes). If breastfeeding marks maternal health consciousness or nutritional status, this may influence the child's metabolic programming or the mother's later metabolic health, which then increases gout risk via diabetes and related metabolic dysfunction.",
+          "justification": "Including a mediator in the model would attenuate the exposure-outcome association, obscuring the full effect of breastfeeding history (interpreted broadly as health behavior marker) on gout timing. Exclusion preserves the total effect.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "breastfeeding yes (breastfed this child) versus no (did not breastfeed)",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 12.21
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 7.05
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 3.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 2.23
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 1.22
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.05,
+          "value": 2.23,
+          "unit": "percentage points",
+          "at_n": 3000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.05; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS (Chicago Multiethnic Prevention and Surveillance Study) is a longitudinal cohort study of cardiovascular health behaviors and outcomes in a multiethnic urban population.",
+        "why_this_cohort": "COMPASS provides comprehensive data on maternal reproductive histories (including breastfeeding) and clinical diagnoses (including gout) across multiple survey modules. The cohort's geographic stratification by community area and multiethnic composition support investigation of social and metabolic determinants of gout risk."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "74892ff239dcba61",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 4,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:1_Q8.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.38\"}) -> unique",
+          "list_derivations({}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"gout arthritis joint\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"age years old\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"alcohol drink beer wine\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"diet food nutrition meat seafood\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"income education socioeconomic status\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"current age present today weight height BMI\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"family history parent relative gout\"}) -> low_confidence",
+          "browse_variables({\"module\": \"2\"}) -> ok",
+          "browse_variables({\"module\": \"2\", \"section\": \"5\"}) -> ok",
+          "browse_variables({\"module\": \"2\", \"section\": \"8\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q15.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.29\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"how old are you today participant respondent\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.7\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"birth date year born date of birth\"}) -> low_confidence",
+          "browse_variables({\"module\": \"1\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q2.15_3\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity Hispanic African American\"}) -> low_confidence",
+          "estimate_n({\"keys\": [\"m2:1_Q8.7\", \"m2:Q5.38\", \"m1:Q3.3\", \"m1:Q2.15_3\", \"m1:Q2.10\", \"m3:Q15.7\", \"m1:Q5.4\", \"m2:Q5.6\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:1_Q8.7\", \"m2:Q5.38\", \"m1:Q3.3\", \"m1:Q2.15_3\", \"m1:Q2.10\", \"m3:Q15.7\", \"m1:Q5.4\", \"m2:Q5.6\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.05}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:bc30eb6dda4360c1306de130de18e27a4922703ff349b7c26d7468954c694bee",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:bc30eb6dda4360c1306de130de18e27a4922703ff349b7c26d7468954c694bee",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.963997,
+        "margin": 0.23452099999999998,
+        "margin_12": 0.016683,
+        "abstained": false,
+        "nearest_key": "m2:1_Q8.7",
+        "hit": {
+          "key": "m2:1_Q8.7",
+          "construct_key": "m2:Q8.7",
+          "dict_construct_key": "m2:Q8.7",
+          "module": "2",
+          "target_id": 290,
+          "fold_size": 20,
+          "n_siblings": 0,
+          "members": [
+            "m2:1_Q8.7",
+            "m2:2_Q8.7",
+            "m2:3_Q8.7",
+            "m2:4_Q8.7",
+            "m2:5_Q8.7",
+            "m2:6_Q8.7",
+            "m2:7_Q8.7",
+            "m2:8_Q8.7",
+            "m2:9_Q8.7",
+            "m2:10_Q8.7",
+            "m2:11_Q8.7",
+            "m2:12_Q8.7",
+            "m2:13_Q8.7",
+            "m2:14_Q8.7",
+            "m2:15_Q8.7",
+            "m2:16_Q8.7",
+            "m2:17_Q8.7",
+            "m2:18_Q8.7",
+            "m2:19_Q8.7",
+            "m2:20_Q8.7"
+          ],
+          "stratum": "reproductive_hormonal",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:7dce2dd02d1a8822a5034773e675c4a6feff8626ac6de67db59ad87ae5271be3",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:7dce2dd02d1a8822a5034773e675c4a6feff8626ac6de67db59ad87ae5271be3",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.984341,
+        "margin": 0.254865,
+        "margin_12": 0.111704,
+        "abstained": false,
+        "nearest_key": "m2:Q5.38",
+        "hit": {
+          "key": "m2:Q5.38",
+          "construct_key": "m2:Q5.38",
+          "dict_construct_key": "m2:Q5.38",
+          "module": "2",
+          "target_id": 235,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.38"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:1_Q8.7",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:bc30eb6dda4360c1306de130de18e27a4922703ff349b7c26d7468954c694bee",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:bc30eb6dda4360c1306de130de18e27a4922703ff349b7c26d7468954c694bee",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.963997,
+          "margin": 0.23452099999999998,
+          "margin_12": 0.016683,
+          "abstained": false,
+          "nearest_key": "m2:1_Q8.7",
+          "hit": {
+            "key": "m2:1_Q8.7",
+            "construct_key": "m2:Q8.7",
+            "dict_construct_key": "m2:Q8.7",
+            "module": "2",
+            "target_id": 290,
+            "fold_size": 20,
+            "n_siblings": 0,
+            "members": [
+              "m2:1_Q8.7",
+              "m2:2_Q8.7",
+              "m2:3_Q8.7",
+              "m2:4_Q8.7",
+              "m2:5_Q8.7",
+              "m2:6_Q8.7",
+              "m2:7_Q8.7",
+              "m2:8_Q8.7",
+              "m2:9_Q8.7",
+              "m2:10_Q8.7",
+              "m2:11_Q8.7",
+              "m2:12_Q8.7",
+              "m2:13_Q8.7",
+              "m2:14_Q8.7",
+              "m2:15_Q8.7",
+              "m2:16_Q8.7",
+              "m2:17_Q8.7",
+              "m2:18_Q8.7",
+              "m2:19_Q8.7",
+              "m2:20_Q8.7"
+            ],
+            "stratum": "reproductive_hormonal",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.38",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:7dce2dd02d1a8822a5034773e675c4a6feff8626ac6de67db59ad87ae5271be3",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:7dce2dd02d1a8822a5034773e675c4a6feff8626ac6de67db59ad87ae5271be3",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.984341,
+          "margin": 0.254865,
+          "margin_12": 0.111704,
+          "abstained": false,
+          "nearest_key": "m2:Q5.38",
+          "hit": {
+            "key": "m2:Q5.38",
+            "construct_key": "m2:Q5.38",
+            "dict_construct_key": "m2:Q5.38",
+            "module": "2",
+            "target_id": 235,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.38"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q15.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:1_Q8.7",
+    "outcome": "m2:Q5.38",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:1_Q8.7",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.38",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q15.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:1_Q8.7",
+        "target": "m2:Q5.38",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:1_Q8.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.38",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:1_Q8.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q5.38",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:1_Q8.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q5.38",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m2:1_Q8.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m2:Q5.38",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:1_Q8.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q5.38",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:1_Q8.7",
+        "target": "m2:Q5.6",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q5.38",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q2.15_3",
+      "m1:Q2.10",
+      "m3:Q15.7",
+      "m1:Q5.4"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.6 is asserted to mediate m2:1_Q8.7 -> m2:Q5.38, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q5.6",
+      "severity": "blocking",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

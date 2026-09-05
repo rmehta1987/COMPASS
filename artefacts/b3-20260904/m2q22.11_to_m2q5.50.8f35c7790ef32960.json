@@ -1,0 +1,652 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q22.11_to_m2q5.50",
+    "record_hash": "8f35c7790ef32960",
+    "pair_id": "m2:Q22.11 -> m2:Q5.50",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q22.11_to_m2q5.50",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does regular antihistamine use increase the risk or alter the age at which someone receives a diagnosis of liver cirrhosis?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q22.11",
+        "quoted_wording": "sha256:2ab3b5d0e23347dd6ef5acb597941763f58b3081d0f1fdca3b7fe9ef37b731a9"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.50",
+        "quoted_wording": "sha256:6867280f8390b0597e7ca1865a77c314f79f159bce463e0d4650285c3283408e"
+      },
+      "expected_direction": {
+        "direction": "decrease",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "The antihistamine effect is not detectable if the difference in age at cirrhosis diagnosis between the highest and lowest antihistamine use quintiles is smaller than the smallest detectable effect (SDE) computed at the analytic sample size.",
+      "falsifier_threshold": {
+        "value": 5.11,
+        "unit": "percentage points",
+        "comparator": "<"
+      },
+      "model_spec": {
+        "form": "Linear regression of age at cirrhosis diagnosis on antihistamine pill count quintile (binary: highest vs. lowest), adjusted for covariates listed above. Response variable is continuous (age in years); exposure is binary comparison of quintiles.",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors or generalized estimating equations with community area as the cluster unit"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q1.8",
+            "quoted_wording": "sha256:dd506fb26782a15e8b85ef427d7c49a15e1f410cad8f95d65022706f7d14555f"
+          },
+          "mechanism": "Sex at birth is associated with both OTC medication use patterns (women use antihistamines more frequently) and cirrhosis diagnosis patterns (sex differences in alcohol-related liver disease incidence and disease presentation).",
+          "justification": "Confounding by a common cause.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.28",
+            "quoted_wording": "sha256:afb21ffe06fa68347d4c87cb990bbfb3a2591a24f19b3cc50f1ee9fe1810ecf1"
+          },
+          "mechanism": "Hepatitis B and C infection are major independent risk factors for cirrhosis development. Hepatitis status may also correlate with medication use patterns (e.g., health-seeking behavior leading to antihistamine use). Controlling for hepatitis status separates antihistamine effects on hepatitis-related cirrhosis from other etiologies.",
+          "justification": "Confounding by hepatitis status, which independently determines cirrhosis risk and may correlate with healthcare engagement and OTC medication use.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:883085f9e05c1ff52e186d0ca76208723c1d81024663315e7f20b7cc5c94c2d4"
+          },
+          "mechanism": "Type 2 diabetes is independently associated with liver disease (fatty liver, advanced fibrosis) and may predict cirrhosis risk. Diabetes also correlates with healthcare-seeking behavior and medication use patterns.",
+          "justification": "Confounding by diabetes status.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q11.7",
+            "quoted_wording": "sha256:314933774bd221d1e8c65417da45c84aef2fe0a4ad051519dac72772b993b8f1"
+          },
+          "mechanism": "Allergies are the primary clinical indication for antihistamine use; allergy treatment history indicates both predisposition to antihistamine use and presence of an allergic phenotype.",
+          "justification": "Precision gain by conditioning on the reason for exposure.",
+          "role": "cause_of_exposure_only",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q19.24",
+            "quoted_wording": "sha256:bb78adaabdbb0aed9cfd789c3e5ac9c8a59c695f8d218ea53795f3946cbeafb3"
+          },
+          "mechanism": "Ibuprofen use indicates general OTC medication-taking behavior. NSAIDs are also hepatotoxic and may independently affect liver disease risk. People who use antihistamines regularly are more likely to use multiple OTC medications concurrently.",
+          "justification": "Confounding by concurrent OTC medication use.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q19.46",
+            "quoted_wording": "sha256:d7aab90e7c71bcb93120751d16464b10df0beb893092511d09d012d4515a39f4"
+          },
+          "mechanism": "Same as ibuprofen—indicates OTC medication use patterns and potential hepatotoxicity.",
+          "justification": "Confounding by concurrent OTC medication use.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q19.35",
+            "quoted_wording": "sha256:6c1c4cca2535386576966e6c43b362771413ac518415ba0d2573aed3ab204e0f"
+          },
+          "mechanism": "Acetaminophen is the OTC analgesic with the strongest established hepatotoxic potential, especially at cumulative doses and in combination with alcohol. People who use antihistamines regularly may also use acetaminophen. Acetaminophen use independently predicts cirrhosis risk.",
+          "justification": "Confounding by concurrent hepatotoxic medication use.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.40",
+            "quoted_wording": "sha256:5c211e315544228b7bfcc72d908921996b65b5bd80e7b9c61b6464f8d5711c69"
+          },
+          "mechanism": "While hay fever itself is the clinical indication for antihistamine use, the age at which hay fever was first diagnosed is a demographic artifact reflecting healthcare access at a point in time, not a causal determinant of adult antihistamine dosing or cirrhosis diagnosis timing. Current allergy status and treatment behavior are captured by m2:Q11.7.",
+          "justification": "Not a cause of either the exposure measure (daily pill count) or the outcome (age at cirrhosis diagnosis).",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Alcohol use history (frequency, quantity, current status)",
+          "search_phrases": [
+            "alcohol use drinking consumption"
+          ],
+          "why_rejected": "Alcohol use variables found in module 3 (m3:Q15.2, m3:Q15.7, m3:Q15.10-19). Cross-module analysis is blocked on co-completion statistics because exposure and outcome are in module 2.",
+          "exposes_the_estimate_to": "Confounding by alcohol use, the strongest risk factor for cirrhosis risk and a potential confounder of the antihistamine relationship"
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m2"
+        ],
+        "exposure_contrast": "Highest versus lowest quintile of daily antihistamine pill count among antihistamine users",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 5.58
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 3.22
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 1.76
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 1.02
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 0.56
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.01,
+          "value": 1.02,
+          "unit": "percentage points",
+          "at_n": 3000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.01; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS study, a longitudinal cohort study in Chicago that collects data on over-the-counter medication use, health conditions, and outcomes within community areas.",
+        "why_this_cohort": "COMPASS study participants provide data on antihistamine exposure (m2:Q22.11) and age at cirrhosis diagnosis (m2:Q5.50) needed to address the causal question within a defined community-based population."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "59105502e7f96131",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 1,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q22.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.50\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"alcohol use drinking consumption\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"age years old\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"hepatitis B C virus infection\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"drug use injection IV needle sharing\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"race ethnicity white black Asian Hispanic\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"weight BMI obesity body mass\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.43\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.44\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.28\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"current alcohol drinking recent past 12 months beverages\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"medication pill tablet dose regularly daily\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"acetaminophen Tylenol pain relief over counter OTC\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"liver disease hepatic function fatty liver\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q19.35\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q19.36\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"diabetes diabetic glucose blood sugar\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex assigned at birth male female biological\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q1.8\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"allergy allergic reaction hay fever seasonal\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.40\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q11.7\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"NSAID nonsteroidal anti-inflammatory ibuprofen aspirin naproxen\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"ethnicity race African American Hispanic White Chinese\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"ever taken regularly 4 times month 6 months\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"birth year date age now current today\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q22.8\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"ibuprofen Motrin Advil ever taken regularly\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"naproxen Naprosyn Aleve ever taken regularly\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q19.24\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q19.46\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q11.7\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q22.11\", \"m2:Q5.50\", \"m2:Q1.8\", \"m2:Q5.28\", \"m2:Q5.6\", \"m2:Q11.7\", \"m2:Q19.24\", \"m2:Q19.46\", \"m2:Q19.35\", \"m2:Q5.40\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.01}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"hepatitis B C chronic have been told diagnosis\"}) -> low_confidence",
+          "get_contrast_convention({\"key_or_kind\": \"scale\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.28\"}) -> unique",
+          "check_access({\"keys\": [\"m2:Q22.11\", \"m2:Q5.50\", \"m2:Q1.8\", \"m2:Q5.28\", \"m2:Q5.6\", \"m2:Q11.7\", \"m2:Q19.24\", \"m2:Q19.46\", \"m2:Q19.35\", \"m2:Q5.40\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "per_item_non_missing_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:738ddede3f9594698e29520e365daff83c69ef4c263f0fb71a940bb95a56113b",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:738ddede3f9594698e29520e365daff83c69ef4c263f0fb71a940bb95a56113b",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.983736,
+        "margin": 0.25426000000000004,
+        "margin_12": 0.150498,
+        "abstained": false,
+        "nearest_key": "m2:Q22.11",
+        "hit": {
+          "key": "m2:Q22.11",
+          "construct_key": "m2:Q22.11",
+          "dict_construct_key": "m2:Q22.11",
+          "module": "2",
+          "target_id": 881,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q22.11"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:6867280f8390b0597e7ca1865a77c314f79f159bce463e0d4650285c3283408e",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:6867280f8390b0597e7ca1865a77c314f79f159bce463e0d4650285c3283408e",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.986718,
+        "margin": 0.25724199999999997,
+        "margin_12": 0.09455,
+        "abstained": false,
+        "nearest_key": "m2:Q5.50",
+        "hit": {
+          "key": "m2:Q5.50",
+          "construct_key": "m2:Q5.50",
+          "dict_construct_key": "m2:Q5.50",
+          "module": "2",
+          "target_id": 247,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.50"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q22.11",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:738ddede3f9594698e29520e365daff83c69ef4c263f0fb71a940bb95a56113b",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:738ddede3f9594698e29520e365daff83c69ef4c263f0fb71a940bb95a56113b",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.983736,
+          "margin": 0.25426000000000004,
+          "margin_12": 0.150498,
+          "abstained": false,
+          "nearest_key": "m2:Q22.11",
+          "hit": {
+            "key": "m2:Q22.11",
+            "construct_key": "m2:Q22.11",
+            "dict_construct_key": "m2:Q22.11",
+            "module": "2",
+            "target_id": 881,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q22.11"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.50",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:6867280f8390b0597e7ca1865a77c314f79f159bce463e0d4650285c3283408e",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:6867280f8390b0597e7ca1865a77c314f79f159bce463e0d4650285c3283408e",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.986718,
+          "margin": 0.25724199999999997,
+          "margin_12": 0.09455,
+          "abstained": false,
+          "nearest_key": "m2:Q5.50",
+          "hit": {
+            "key": "m2:Q5.50",
+            "construct_key": "m2:Q5.50",
+            "dict_construct_key": "m2:Q5.50",
+            "module": "2",
+            "target_id": 247,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.50"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q1.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.28",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q11.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q19.24",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q19.46",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q19.35",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.40",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q22.11",
+    "outcome": "m2:Q5.50",
+    "expected_direction": "decrease",
+    "nodes": [
+      {
+        "key": "m2:Q22.11",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.50",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q1.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.28",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q11.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "cause_of_exposure_only",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q19.24",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q19.46",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q19.35",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.40",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q22.11",
+        "target": "m2:Q5.50",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q22.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.28",
+        "target": "m2:Q22.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.28",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q22.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q11.7",
+        "target": "m2:Q22.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.24",
+        "target": "m2:Q22.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.24",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.46",
+        "target": "m2:Q22.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.46",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.35",
+        "target": "m2:Q22.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.35",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m2:Q1.8",
+      "m2:Q5.28",
+      "m2:Q5.6",
+      "m2:Q11.7",
+      "m2:Q19.24",
+      "m2:Q19.46",
+      "m2:Q19.35"
+    ]
+  },
+  "critiques": [],
+  "revision": 0,
+  "generation": null
+}

@@ -1,0 +1,790 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q22.9_to_m2q5.45",
+    "record_hash": "decbe54ea88f4028",
+    "pair_id": "m2:Q22.9 -> m2:Q5.45",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q22.9_to_m2q5.45",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does the frequency of regular over-the-counter antihistamine use causally affect the age at which an individual is first diagnosed with HIV/AIDS?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q22.9",
+        "quoted_wording": "sha256:0ac1ffabc321b8f3f336576f5fe3edba5c2ae6321d93bc5a45cfc9e7c516b41b"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.45",
+        "quoted_wording": "sha256:4fd4b5e8c6da5523798a1aaca864daa72a9067b7b0f63445ca0f3ed7ae8874b4"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "The study will be considered to falsify the hypothesis if, after adjustment for covariates, the regression coefficient for antihistamine frequency is statistically indistinguishable from zero (p > 0.05, two-tailed) AND the 95% confidence interval for the effect excludes a risk difference of 5 percentage points or greater.",
+      "falsifier_threshold": null,
+      "model_spec": {
+        "form": "Linear regression with age at HIV diagnosis as continuous outcome and antihistamine use frequency as continuous predictor, adjusted for eight covariates",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors accounting for clustering at Chicago community-area level"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_1",
+            "quoted_wording": "sha256:46e495ff1af69d39e95c0112462db5a57f13af22b3836624e0bca17d751737bb"
+          },
+          "mechanism": "Older participants have had more years at risk for both regular antihistamine use and HIV diagnosis.",
+          "justification": "Age is a fundamental confounder as a cause of both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_2",
+            "quoted_wording": "sha256:5e6b339ecc5cfcfd4a1c76d5420934e4d2c47a30bd881a389fc7e01edd39bfdd"
+          },
+          "mechanism": "Older participants have had more years at risk for both regular antihistamine use and HIV diagnosis.",
+          "justification": "Age is a fundamental confounder as a cause of both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_3",
+            "quoted_wording": "sha256:ad7c805a862e7b7a8108d049792b0ac9c0565ecf18fb6bd6180854a61aed5e2c"
+          },
+          "mechanism": "Older participants have had more years at risk for both regular antihistamine use and HIV diagnosis.",
+          "justification": "Age is a fundamental confounder as a cause of both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q1.8",
+            "quoted_wording": "sha256:dd506fb26782a15e8b85ef427d7c49a15e1f410cad8f95d65022706f7d14555f"
+          },
+          "mechanism": "Sex at birth is fundamental to HIV epidemiology, affecting both infection risk through sexual behavior patterns and healthcare-seeking behaviors and diagnosis patterns.",
+          "justification": "Sex at birth causally determines both the exposure (healthcare engagement patterns affecting medication use) and the outcome (HIV infection and diagnosis timing).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Racial and ethnic differences in HIV epidemiology, healthcare access, healthcare quality, and health behaviors are well-documented, affecting both likelihood of HIV infection and diagnosis timing and patterns of healthcare engagement including OTC medication use.",
+          "justification": "COMPASS is designed as a multiethnic study and racial and ethnic differences in both antihistamine use patterns and HIV diagnosis must be accounted for.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.6",
+            "quoted_wording": "sha256:86013eba768e1467e021e99635e08310e49f1e3195c1546c965b21116f52f664"
+          },
+          "mechanism": "Sexual orientation shapes sexual behavior patterns, which is the strongest determinant of HIV infection risk in most populations, and also affects healthcare-seeking behaviors and community engagement with health information.",
+          "justification": "Sexual orientation is a critical confounder likely masking a spurious or marginal association between antihistamine use and diagnosis age, and must be controlled for.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q2.2",
+            "quoted_wording": "sha256:e83a2c35edfd30f2ea3f17c0b6baf7cdf5f2a7d34ed56f0fa0780a6749a21bba"
+          },
+          "mechanism": "Insurance status is a direct determinant of both regular healthcare contact enabling HIV diagnosis and access to medications including OTC antihistamines, with uninsured or poorly insured individuals having both lower rates of HIV testing and lower rates of regular medication use.",
+          "justification": "Insurance is a confounding cause of both exposure and outcome and must be adjusted for.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:13d3548965635d4117cbd0b28b41f20541d0d0827da994eef2ca27064ff58d60"
+          },
+          "mechanism": "Socioeconomic status affects healthcare access, health behaviors, and ability to purchase OTC medications, with lower income associated with both lower likelihood of regular medical care and delayed HIV diagnosis.",
+          "justification": "Income directly causes both the exposure and outcome and must be adjusted for.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education affects health literacy, awareness of HIV transmission and testing, healthcare-seeking behavior, and awareness of when to seek diagnosis, and may also correlate with access to antihistamines and health information.",
+          "justification": "While education may partly operate through healthcare access already captured by insurance, it captures independent variation in health knowledge and behavior that reduces outcome variance.",
+          "role": "precision",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q11.5",
+            "quoted_wording": "sha256:1988764166598130cb66e276c44712faf10b6f297c4d0f6486ef35e219b600cb"
+          },
+          "mechanism": "Allergic conditions are the primary indication for antihistamine use, making this a strong predictor of the exposure; allergic disease may also affect immune function and healthcare-engagement patterns influencing HIV diagnosis timing.",
+          "justification": "This variable captures the degree to which antihistamine use is driven by actual allergic disease, acting as a confounder by the indication for treatment.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q24.1",
+            "quoted_wording": "sha256:3e60b9662b3e69c75db57a3800bc7532ddee7b580ab9583dd1448c70ebe7fa2f"
+          },
+          "mechanism": "Housing transitions are not direct causes of antihistamine use or HIV diagnosis age.",
+          "justification": "While housing stability might proxy for socioeconomic status or healthcare access, these are already captured by income, insurance, and other covariates, and recent moves do not causally influence historical antihistamine use patterns or the timing of past HIV diagnosis.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.2",
+            "quoted_wording": "sha256:9ecd6856d45a759270a1fce0a9ad0239852cf8bcecc18f7143e41c3757f1de41"
+          },
+          "mechanism": "Duration of residence at the current address is not a direct cause of antihistamine use or HIV diagnosis age.",
+          "justification": "While stability might proxy for socioeconomic status already captured by income or healthcare engagement, the length of time at a current address does not causally determine past antihistamine use or the age at which HIV diagnosis occurred.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Sexual behavior detail",
+          "search_phrases": [
+            "sexual activity",
+            "sexual partners",
+            "number of partners",
+            "unprotected sex",
+            "condom use"
+          ],
+          "why_rejected": "Searches for these terms did not yield variables capturing detailed sexual behavior or number of partners. The instrument captures broadly-defined sexual orientation (m1:Q3.6) but lacks granular sexual behavior data.",
+          "exposes_the_estimate_to": "Residual confounding by sexual behavior, which is a primary determinant of HIV infection risk. Associations with antihistamine use may reflect unmeasured confounding by sexual behavior rather than true causal effects."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "per 1 day per week of antihistamine use",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 12.21
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 7.05
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 3.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 2.23
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 1.22
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.05,
+          "value": 2.23,
+          "unit": "percentage points",
+          "at_n": 3000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.05; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS (Communities and Health Disparities Research Program) is a multiethnic prospective cohort study of adults in Chicago designed to examine health disparities.",
+        "why_this_cohort": "COMPASS includes extensive questionnaire data spanning modules 1 and 2 covering demographics, socioeconomic factors, health conditions, and health outcomes, enabling analysis of antihistamine use frequency and HIV/AIDS diagnosis age with multiple potential confounders measured."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "a5744395b7e1f732",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 2,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q22.9\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.45\"}) -> unique",
+          "search_variables({\"limit\": 5, \"phrase\": \"age at interview current age\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"race ethnicity racial ethnic background\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"sexual orientation sexual behavior partner\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"allergies allergy allergic condition\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"health insurance coverage healthcare access medical\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"income education employment socioeconomic\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"birth date born year of birth\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"HIV testing AIDS diagnosis medication\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"sexual activity sexual partners unprotected sex\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"What is your age how old are you participant\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q1.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q2.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q11.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q11.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"currently years old\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"gay lesbian bisexual men who have sex with men MSM\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"condom safe sex protection contraception\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.15\"}) -> construct",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"demographic information age respondent participant\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"living situation household members adults children\"}) -> low_confidence",
+          "list_derivations({}) -> ok",
+          "browse_variables({\"module\": \"1\"}) -> ok",
+          "browse_variables({\"module\": \"2\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.15\"}) -> construct",
+          "browse_variables({\"module\": \"2\", \"section\": \"5\"}) -> ok",
+          "browse_variables({\"module\": \"2\", \"section\": \"22\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.40\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q22.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q11.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q24.1\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.2\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q22.9\", \"m2:Q5.45\", \"m1:Q2.15_1\", \"m1:Q2.15_2\", \"m1:Q2.15_3\", \"m2:Q1.8\", \"m1:Q3.10\", \"m1:Q3.6\", \"m2:Q2.2\", \"m1:Q5.4\", \"m1:Q3.11\", \"m2:Q11.5\", \"m2:) -> ok",
+          "check_access({\"keys\": [\"m2:Q22.9\", \"m2:Q5.45\", \"m1:Q2.15_1\", \"m1:Q2.15_2\", \"m1:Q2.15_3\", \"m2:Q1.8\", \"m1:Q3.10\", \"m1:Q3.6\", \"m2:Q2.2\", \"m1:Q5.4\", \"m1:Q3.11\", \"m2:Q11.5\", \"m2:) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.05}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:0ac1ffabc321b8f3f336576f5fe3edba5c2ae6321d93bc5a45cfc9e7c516b41b",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:0ac1ffabc321b8f3f336576f5fe3edba5c2ae6321d93bc5a45cfc9e7c516b41b",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.978076,
+        "margin": 0.24859999999999993,
+        "margin_12": 0.089261,
+        "abstained": false,
+        "nearest_key": "m2:Q22.9",
+        "hit": {
+          "key": "m2:Q22.9",
+          "construct_key": "m2:Q22.9",
+          "dict_construct_key": "m2:Q22.9",
+          "module": "2",
+          "target_id": 879,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q22.9"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:4fd4b5e8c6da5523798a1aaca864daa72a9067b7b0f63445ca0f3ed7ae8874b4",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:4fd4b5e8c6da5523798a1aaca864daa72a9067b7b0f63445ca0f3ed7ae8874b4",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.984184,
+        "margin": 0.25470799999999993,
+        "margin_12": 0.156142,
+        "abstained": false,
+        "nearest_key": "m2:Q5.45",
+        "hit": {
+          "key": "m2:Q5.45",
+          "construct_key": "m2:Q5.45",
+          "dict_construct_key": "m2:Q5.45",
+          "module": "2",
+          "target_id": 242,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.45"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q22.9",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:0ac1ffabc321b8f3f336576f5fe3edba5c2ae6321d93bc5a45cfc9e7c516b41b",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:0ac1ffabc321b8f3f336576f5fe3edba5c2ae6321d93bc5a45cfc9e7c516b41b",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.978076,
+          "margin": 0.24859999999999993,
+          "margin_12": 0.089261,
+          "abstained": false,
+          "nearest_key": "m2:Q22.9",
+          "hit": {
+            "key": "m2:Q22.9",
+            "construct_key": "m2:Q22.9",
+            "dict_construct_key": "m2:Q22.9",
+            "module": "2",
+            "target_id": 879,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q22.9"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.45",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:4fd4b5e8c6da5523798a1aaca864daa72a9067b7b0f63445ca0f3ed7ae8874b4",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:4fd4b5e8c6da5523798a1aaca864daa72a9067b7b0f63445ca0f3ed7ae8874b4",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.984184,
+          "margin": 0.25470799999999993,
+          "margin_12": 0.156142,
+          "abstained": false,
+          "nearest_key": "m2:Q5.45",
+          "hit": {
+            "key": "m2:Q5.45",
+            "construct_key": "m2:Q5.45",
+            "dict_construct_key": "m2:Q5.45",
+            "module": "2",
+            "target_id": 242,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.45"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q2.15_1",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.15_2",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q1.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q2.2",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q11.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q24.1",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.2",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q22.9",
+    "outcome": "m2:Q5.45",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:Q22.9",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.45",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q2.15_1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.15_2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q1.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q2.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "precision",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q11.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q24.1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m1:Q5.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q22.9",
+        "target": "m2:Q5.45",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q2.15_1",
+        "target": "m2:Q22.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_1",
+        "target": "m2:Q5.45",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_2",
+        "target": "m2:Q22.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_2",
+        "target": "m2:Q5.45",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q22.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q5.45",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q22.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q5.45",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q22.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.45",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.6",
+        "target": "m2:Q22.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.6",
+        "target": "m2:Q5.45",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q2.2",
+        "target": "m2:Q22.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q2.2",
+        "target": "m2:Q5.45",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q22.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q5.45",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q5.45",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q11.5",
+        "target": "m2:Q22.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q11.5",
+        "target": "m2:Q5.45",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q2.15_1",
+      "m1:Q2.15_2",
+      "m1:Q2.15_3",
+      "m2:Q1.8",
+      "m1:Q3.10",
+      "m1:Q3.6",
+      "m2:Q2.2",
+      "m1:Q5.4",
+      "m1:Q3.11",
+      "m2:Q11.5"
+    ]
+  },
+  "critiques": [],
+  "revision": 0,
+  "generation": null
+}

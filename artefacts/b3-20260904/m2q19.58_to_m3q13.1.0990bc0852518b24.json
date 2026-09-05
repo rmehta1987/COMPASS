@@ -1,0 +1,711 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.58_to_m3q13.1",
+    "record_hash": "0990bc0852518b24",
+    "pair_id": "m2:Q19.58 -> m3:Q13.1",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.58_to_m3q13.1",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does regular celecoxib (Celebrex/NSAIDs) use affect lifetime marijuana vaping behavior among adults?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.58",
+        "quoted_wording": "sha256:2c7cc302c4c63a96802a9f08141b022e12fc0e142b616f4a031916ab498a6414"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m3:Q13.1",
+        "quoted_wording": "sha256:506dbb501d9d68e9ae7d699005de93968b5300a76b77cad3427c4ab39d196988"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "The null hypothesis is no association between celecoxib use frequency and lifetime marijuana vaping days. A falsifiable alternative is that regular celecoxib use is associated with differences in lifetime vaping days. The direction of effect is not specified a priori.",
+      "falsifier_threshold": {
+        "value": 8.86,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear regression with continuous outcome (lifetime days of marijuana vaping) or logistic regression if outcome is dichotomized (any vaping vs. none)",
+        "unit_of_analysis": "participant",
+        "clustering": "community area (COMPASS design includes community-area clustering; cluster-robust standard errors required)"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex/biological sex influences the prevalence of chronic pain conditions (e.g., women have higher rates of arthritis, fibromyalgia) and influences prescribing patterns (differential NSAID vs. opioid prescribing by sex). Sex also influences substance use patterns and social norms around drug use.",
+          "justification": "Sex is a demographic confounder affecting both exposure likelihood (pain condition prevalence, prescribing access) and outcome likelihood (substance use patterns).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Race/ethnicity is associated with differential healthcare access, prescribing patterns (e.g., differential NSAID and opioid prescribing by race/ethnicity), prevalence of chronic pain conditions, and substance use norms. These factors influence both celecoxib use and marijuana vaping independently.",
+          "justification": "Ethnicity is a demographic confounder reflecting broader structural and social differences in healthcare and substance use.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race is associated with differential pain condition prevalence, healthcare access, provider prescribing patterns, and substance use patterns.",
+          "justification": "Race is a demographic confounder reflecting structural inequities in healthcare and health outcomes.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.15#1_5",
+            "quoted_wording": "sha256:a603bbc099d69e6c3cfedc0a68e1f198a8aebaf370f7b33083ad3525d3aa04ce"
+          },
+          "mechanism": "Arthritis is a direct clinical indication for celecoxib use (strong cause of exposure). Arthritis also causes chronic pain, which may motivate self-medication with cannabis (potential cause of outcome). Both pathways exist independently: arthritis → celecoxib, and arthritis → cannabis use for pain management.",
+          "justification": "Arthritis is a common indication for NSAID use and a condition that might drive cannabis self-medication; it must be controlled to avoid bias from the shared etiology.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q2.1",
+            "quoted_wording": "sha256:8bf19c5680503fcf9b7b276de9082b99380a66febb459021f7d497181bb4f1ae"
+          },
+          "mechanism": "Self-rated health is associated with actual disease burden and functional limitations. People with worse health are more likely to use prescription pain medications including celecoxib. People with worse health (or greater functional impairment) might also be more likely to self-medicate with cannabis.",
+          "justification": "Overall health status is a confounder affecting both celecoxib use (indication for pain relief) and marijuana vaping (motivation for symptom management).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q15.2",
+            "quoted_wording": "sha256:3d6739b193ceaa886e1cdb2d124dc9773635a38ec720b02ef57aac8b3a72879d"
+          },
+          "mechanism": "Lifetime history of any alcohol use is a proxy indicator for substance use propensity or willingness to use psychoactive/pharmacological agents. Individuals with higher substance use propensity may be more likely to both use prescribed medications (celecoxib) when available and to try self-administered substances (cannabis).",
+          "justification": "Substance use propensity is an unmeasured confounder; lifetime alcohol use serves as a proxy for this underlying predisposition.",
+          "role": "proxy",
+          "proxy_for": "Substance use propensity or willingness to use pharmacological agents",
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q11.1",
+            "quoted_wording": "sha256:e4eea771dd6ce9bee1f2f87085ead63dbed95af42dd4d45cdf4ff4377b384df6"
+          },
+          "mechanism": "This variable measures lifetime cannabis use history in a specific form (smoking). It reflects underlying cannabis use propensity. Someone with a lifetime history of marijuana smoking is more likely to also have tried or use vaping as an alternative form of cannabis administration.",
+          "justification": "Lifetime cannabis use propensity confounds the relationship between celecoxib use and marijuana vaping. Individuals with higher cannabis use propensity are more likely to vape, and this propensity is independent of celecoxib use.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.1",
+            "quoted_wording": "sha256:cb90ebab960b02949b903b578a6d1a6bd147f5bcbf3dc520def38e0d71bcfbb1"
+          },
+          "mechanism": "Geographic origin (country of birth or origin) does not itself directly cause celecoxib use or marijuana vaping. Geographic origin is captured more specifically by the race/ethnicity variables already adjusted.",
+          "justification": "Country of origin does not create a distinct confounding pathway beyond ethnicity/race; inclusion would reduce precision without reducing bias.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.7",
+            "quoted_wording": "sha256:16d7eea5541bf8da230e2fb4e326b08f86bc108ca54590dbe34a047428ed7bea"
+          },
+          "mechanism": "While marital status might correlate with substance use patterns, the causal mechanism is not clear. Marital status does not directly cause celecoxib prescribing, nor is there a direct mechanism by which marital status causes marijuana vaping. Any association is likely mediated by confounders already controlled.",
+          "justification": "Marital status is not a direct cause of either variable; exclusion improves precision.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.4",
+            "quoted_wording": "sha256:6d466dcc5981bd3ba56449e7e907aaaff7c3dc666df8fdb33233a8c1c258156c"
+          },
+          "mechanism": "Gender identity is distinct from sex at birth and may influence substance use norms and healthcare provider interactions; however, with sex at birth already adjusted, any independent causal pathways are unclear and not distinctly identified.",
+          "justification": "The independent confounding contribution of gender identity cannot be determined from available evidence. With sex at birth (m1:Q3.3) already adjusted, excluding this variable improves precision while likely capturing the primary demographic confounding pathways.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Current age / age at baseline",
+          "search_phrases": [
+            "age years old born",
+            "birth year date when born",
+            "currently presently today how old are you",
+            "year 2024 age at enrollment interview date"
+          ],
+          "why_rejected": "No direct measure of participant current age or birth year was found despite multiple search attempts across modules and demographic sections.",
+          "exposes_the_estimate_to": "Substantial uncontrolled confounding bias from generational differences in pain condition prevalence, prescribing practices, and substance use norms."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "Highest category versus lowest category of reported days per week of regular celecoxib use",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 20.01
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 11.55
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 6.33
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 3.65
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.0
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.15,
+          "value": 6.33,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.15; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS is an established cohort study based in Chicago with detailed longitudinal data collection across multiple modules.",
+        "why_this_cohort": "COMPASS provides relevant measures of celecoxib use (pain management) and marijuana vaping (substance use) with demographic and health status covariates across multiple data collection waves, enabling cross-module analysis of the exposure-outcome relationship."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "bb2e4c308234a2d0",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 4,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.58\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q13.1\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years old born\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity Hispanic Latino Black White Asian\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"chronic pain arthritis fibromyalgia back pain\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarettes tobacco nicotine\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"alcohol drink beer wine liquor\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"income education employment job\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"health status overall health condition disease\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q15.2\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"birth year date when born\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"cannabis marijuana weed pot joints blunts\"}) -> ok",
+          "resolve_variable({\"key\": \"m3:Q2.1\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q11.1\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"currently presently today how old are you\"}) -> low_confidence",
+          "list_derivations({}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"participant respondent age demographic baseline\"}) -> low_confidence",
+          "search_variables({\"limit\": 20, \"phrase\": \"m1 Q3 participant profile background\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.20\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.15\"}) -> construct",
+          "get_item_group({\"group_id\": \"group:m2:Q5.15#1\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.1\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.7\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"current presently at the time study interview enrollment\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_5\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_43\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"year 2024 2023 2022 age at enrollment interview date\"}) -> low_confidence",
+          "estimate_detectability({\"baseline_prevalence\": 0.15}) -> ok",
+          "estimate_n({\"keys\": [\"m2:Q19.58\", \"m3:Q13.1\", \"m1:Q3.3\", \"m1:Q3.8\", \"m1:Q3.10\", \"m3:Q15.2\", \"m3:Q2.1\", \"m2:Q5.15#1_5\", \"m3:Q11.1\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.58\", \"m3:Q13.1\", \"m1:Q3.3\", \"m1:Q3.8\", \"m1:Q3.10\", \"m3:Q15.2\", \"m3:Q2.1\", \"m2:Q5.15#1_5\", \"m3:Q11.1\"]}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.1\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.7\"}) -> unique"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:2c7cc302c4c63a96802a9f08141b022e12fc0e142b616f4a031916ab498a6414",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:2c7cc302c4c63a96802a9f08141b022e12fc0e142b616f4a031916ab498a6414",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.983313,
+        "margin": 0.253837,
+        "margin_12": 0.150283,
+        "abstained": false,
+        "nearest_key": "m2:Q19.58",
+        "hit": {
+          "key": "m2:Q19.58",
+          "construct_key": "m2:Q19.58",
+          "dict_construct_key": "m2:Q19.58",
+          "module": "2",
+          "target_id": 806,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.58"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:f2af31eeb2ffd09daada152b206462f416bae111e524e392c1daf8037495de55",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:f2af31eeb2ffd09daada152b206462f416bae111e524e392c1daf8037495de55",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.948006,
+        "margin": 0.21853,
+        "margin_12": 0.073077,
+        "abstained": false,
+        "nearest_key": "m3:Q13.1",
+        "hit": {
+          "key": "m3:Q13.1",
+          "construct_key": "m3:Q13.1",
+          "dict_construct_key": "m3:Q13.1",
+          "module": "3",
+          "target_id": 1291,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m3:Q13.1"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.58",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:2c7cc302c4c63a96802a9f08141b022e12fc0e142b616f4a031916ab498a6414",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:2c7cc302c4c63a96802a9f08141b022e12fc0e142b616f4a031916ab498a6414",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.983313,
+          "margin": 0.253837,
+          "margin_12": 0.150283,
+          "abstained": false,
+          "nearest_key": "m2:Q19.58",
+          "hit": {
+            "key": "m2:Q19.58",
+            "construct_key": "m2:Q19.58",
+            "dict_construct_key": "m2:Q19.58",
+            "module": "2",
+            "target_id": 806,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.58"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m3:Q13.1",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:f2af31eeb2ffd09daada152b206462f416bae111e524e392c1daf8037495de55",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:f2af31eeb2ffd09daada152b206462f416bae111e524e392c1daf8037495de55",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.948006,
+          "margin": 0.21853,
+          "margin_12": 0.073077,
+          "abstained": false,
+          "nearest_key": "m3:Q13.1",
+          "hit": {
+            "key": "m3:Q13.1",
+            "construct_key": "m3:Q13.1",
+            "dict_construct_key": "m3:Q13.1",
+            "module": "3",
+            "target_id": 1291,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m3:Q13.1"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.15#1_5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q2.1",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q15.2",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q11.1",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.1",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.7",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.4",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.58",
+    "outcome": "m3:Q13.1",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:Q19.58",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m3:Q13.1",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.15#1_5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q2.1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q15.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "proxy",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q11.1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m1:Q3.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m1:Q3.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.58",
+        "target": "m3:Q13.1",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q19.58",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m3:Q13.1",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q19.58",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m3:Q13.1",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q19.58",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m3:Q13.1",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.15#1_5",
+        "target": "m2:Q19.58",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.15#1_5",
+        "target": "m3:Q13.1",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q2.1",
+        "target": "m2:Q19.58",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q2.1",
+        "target": "m3:Q13.1",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.2",
+        "target": "m2:Q19.58",
+        "relation": "proxies"
+      },
+      {
+        "source": "m3:Q15.2",
+        "target": "m3:Q13.1",
+        "relation": "proxies"
+      },
+      {
+        "source": "m3:Q11.1",
+        "target": "m2:Q19.58",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q11.1",
+        "target": "m3:Q13.1",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q3.8",
+      "m1:Q3.10",
+      "m2:Q5.15#1_5",
+      "m3:Q2.1",
+      "m3:Q15.2",
+      "m3:Q11.1"
+    ]
+  },
+  "critiques": [],
+  "revision": 0,
+  "generation": null
+}

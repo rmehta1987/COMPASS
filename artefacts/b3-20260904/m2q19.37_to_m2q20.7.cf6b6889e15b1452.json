@@ -1,0 +1,557 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.37_to_m2q20.7",
+    "record_hash": "cf6b6889e15b1452",
+    "pair_id": "m2:Q19.37 -> m2:Q20.7",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.37_to_m2q20.7",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does the frequency of regular acetaminophen use (days per month during periods of regular use) relate to how long ago an individual regularly took statins?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.37",
+        "quoted_wording": "sha256:3ce9e4f24f9162e25272a153b6b46ea747135370a028dac6b3f929e598f35334"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q20.7",
+        "quoted_wording": "sha256:ef2d30ba104abbad7145dff4bb9974f1b08d3f98e514e41394c20b3090e25132"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "Acetaminophen use frequency (days per month during regular use) is statistically significantly associated with the timing (years ago) of regular statin use, adjusting for age, sex at birth, hypertension diagnosis, and diabetes status (Type 1 or Type 2).",
+      "falsifier_threshold": null,
+      "model_spec": {
+        "form": "Linear regression with statin use timing (years ago, continuous outcome) regressed on acetaminophen frequency (days per month, continuous exposure) with adjustment for five covariates.",
+        "unit_of_analysis": "participant",
+        "clustering": "cluster-robust standard errors at the community area level"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_3",
+            "quoted_wording": "sha256:ad7c805a862e7b7a8108d049792b0ac9c0565ecf18fb6bd6180854a61aed5e2c"
+          },
+          "mechanism": "Age is the primary confounder. Older participants have longer medical histories, making them more likely to have taken statins in the distant past. Age also correlates with chronic pain conditions (arthritis, degenerative joint disease) that drive acetaminophen use.",
+          "justification": "Age confounds because it affects both the exposure (medication use patterns across the lifespan) and the outcome (opportunity for healthcare encounters where statins might have been prescribed).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q1.8",
+            "quoted_wording": "sha256:dd506fb26782a15e8b85ef427d7c49a15e1f410cad8f95d65022706f7d14555f"
+          },
+          "mechanism": "Sex at birth relates to the prevalence of cardiovascular disease and pain conditions. Males have higher early coronary artery disease risk, affecting statin prescribing patterns. Sex also varies in pain condition prevalence and pain medication use behaviors.",
+          "justification": "Confounds through sex-dependent cardiovascular risk profiles and pain-related medication engagement.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.8",
+            "quoted_wording": "sha256:5522bc79a69cdb0f9bcf39abca278fe5e82c1e226c81b522a7fd9afdd097716f"
+          },
+          "mechanism": "Hypertension is a major cardiovascular risk factor and a direct trigger for statin prescribing in clinical practice. People diagnosed with hypertension are substantially more likely to have cardiovascular screening and statin initiation. Hypertension also reflects overall disease burden and medication use patterns.",
+          "justification": "Hypertension is a causal risk factor for statin prescribing and must be adjusted to isolate the effect of acetaminophen frequency from the confounding due to cardiovascular disease risk.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:883085f9e05c1ff52e186d0ca76208723c1d81024663315e7f20b7cc5c94c2d4"
+          },
+          "mechanism": "Type 2 diabetes substantially increases cardiovascular disease risk. People with Type 2 diabetes are routinely evaluated for cardiovascular disease and prescribed statins for primary prevention, even without prior cardiac events.",
+          "justification": "Confounder through cardiovascular disease risk stratification protocols in clinical practice.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.4",
+            "quoted_wording": "sha256:0dc03e0aff41272217dd560ef65d0f5e95dbef85e9a956bfc84997bdad4ea035"
+          },
+          "mechanism": "Type 1 diabetes is also associated with elevated cardiovascular risk and statin prescribing recommendations.",
+          "justification": "Confounder for statin use through CVD risk assessment.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q19.13",
+            "quoted_wording": "sha256:189878b056a59f67b223ec14512433cdcaa9967cf6fdf7b88e316b540e367b68"
+          },
+          "mechanism": "Regular aspirin use is an alternative pain medication choice. It does not lie in the causal pathway between acetaminophen frequency and statin use timing. Aspirin use does not determine statin prescribing decisions, nor is it determined by acetaminophen frequency.",
+          "justification": "While both aspirin and acetaminophen are pain medications, aspirin use is independent of the acetaminophen-to-statin relationship. Including it would add complexity without addressing confounding.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "continuous (days per month)",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 25.68
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 14.82
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.12
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.69
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.57
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.3,
+          "value": 8.12,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.3; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS study: longitudinal cohort of adults with multi-module baseline survey data",
+        "why_this_cohort": "COMPASS study provides measured data on acetaminophen and statin use, along with cardiovascular risk factors and demographic covariates needed for confounding adjustment."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "d503c18ebbfdf192",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 0,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.37\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q20.7\"}) -> unique",
+          "search_variables({\"limit\": 5, \"phrase\": \"age years old birth date\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"diabetes diabetic blood sugar\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"high blood pressure hypertension\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"heart disease cardiovascular coronary\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"weight height BMI body mass obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"current weight how much do you weigh\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"chronic pain arthritis joint pain\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"participant age participant respondent age\"}) -> low_confidence",
+          "browse_variables({\"module\": \"1\"}) -> ok",
+          "browse_variables({\"module\": \"2\"}) -> ok",
+          "browse_variables({\"module\": \"2\", \"section\": \"5\"}) -> ok",
+          "browse_variables({\"module\": \"2\", \"section\": \"19\"}) -> ok",
+          "browse_variables({\"module\": \"2\", \"section\": \"20\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q1.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.32\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.15_3\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.41\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q19.13\"}) -> unique",
+          "estimate_detectability({\"baseline_prevalence\": 0.3}) -> ok",
+          "estimate_n({\"keys\": [\"m2:Q19.37\", \"m2:Q20.7\", \"m1:Q2.15_3\", \"m2:Q1.8\", \"m2:Q5.8\", \"m2:Q5.6\", \"m2:Q5.4\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.37\", \"m2:Q20.7\", \"m1:Q2.15_3\", \"m2:Q1.8\", \"m2:Q5.8\", \"m2:Q5.6\", \"m2:Q5.4\", \"m2:Q19.13\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:3ce9e4f24f9162e25272a153b6b46ea747135370a028dac6b3f929e598f35334",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:3ce9e4f24f9162e25272a153b6b46ea747135370a028dac6b3f929e598f35334",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.98343,
+        "margin": 0.253954,
+        "margin_12": 0.18659,
+        "abstained": false,
+        "nearest_key": "m2:Q19.37",
+        "hit": {
+          "key": "m2:Q19.37",
+          "construct_key": "m2:Q19.37",
+          "dict_construct_key": "m2:Q19.37",
+          "module": "2",
+          "target_id": 785,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.37"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:ef2d30ba104abbad7145dff4bb9974f1b08d3f98e514e41394c20b3090e25132",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:ef2d30ba104abbad7145dff4bb9974f1b08d3f98e514e41394c20b3090e25132",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.977723,
+        "margin": 0.248247,
+        "margin_12": 0.108662,
+        "abstained": false,
+        "nearest_key": "m2:Q20.7",
+        "hit": {
+          "key": "m2:Q20.7",
+          "construct_key": "m2:Q20.7",
+          "dict_construct_key": "m2:Q20.7",
+          "module": "2",
+          "target_id": 842,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q20.7"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.37",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:3ce9e4f24f9162e25272a153b6b46ea747135370a028dac6b3f929e598f35334",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:3ce9e4f24f9162e25272a153b6b46ea747135370a028dac6b3f929e598f35334",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.98343,
+          "margin": 0.253954,
+          "margin_12": 0.18659,
+          "abstained": false,
+          "nearest_key": "m2:Q19.37",
+          "hit": {
+            "key": "m2:Q19.37",
+            "construct_key": "m2:Q19.37",
+            "dict_construct_key": "m2:Q19.37",
+            "module": "2",
+            "target_id": 785,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.37"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q20.7",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:ef2d30ba104abbad7145dff4bb9974f1b08d3f98e514e41394c20b3090e25132",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:ef2d30ba104abbad7145dff4bb9974f1b08d3f98e514e41394c20b3090e25132",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.977723,
+          "margin": 0.248247,
+          "margin_12": 0.108662,
+          "abstained": false,
+          "nearest_key": "m2:Q20.7",
+          "hit": {
+            "key": "m2:Q20.7",
+            "construct_key": "m2:Q20.7",
+            "dict_construct_key": "m2:Q20.7",
+            "module": "2",
+            "target_id": 842,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q20.7"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q1.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q19.13",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.37",
+    "outcome": "m2:Q20.7",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:Q19.37",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q20.7",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q1.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q19.13",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.37",
+        "target": "m2:Q20.7",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q20.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q20.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q20.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q20.7",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q20.7",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q2.15_3",
+      "m2:Q1.8",
+      "m2:Q5.8",
+      "m2:Q5.6",
+      "m2:Q5.4"
+    ]
+  },
+  "critiques": [],
+  "revision": 0,
+  "generation": null
+}

@@ -1,0 +1,624 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q9.3_to_m2q5.35",
+    "record_hash": "56957431516516d7",
+    "pair_id": "m2:Q9.3 -> m2:Q5.35",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q9.3_to_m2q5.35",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Is menstrual cycle length associated with the age at which women are first diagnosed with emphysema or chronic obstructive pulmonary disease (COPD)?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q9.3",
+        "quoted_wording": "sha256:be76c30774b399cd9ae98bde7d6399d5ee56541a0986230058ee980ae49cf0cf"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.35",
+        "quoted_wording": "sha256:af42e265babfe8d0235f0e393becba6767add43f2a10b602c4587910d6e04081"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "A risk difference (in percentage points) between the highest and lowest categories or a 1 unit increase in menstrual cycle length (measured continuously) and emphysema diagnosis.",
+      "falsifier_threshold": {
+        "value": 8.86,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear or logistic regression with age at emphysema/COPD diagnosis as the outcome, menstrual cycle length as the primary exposure, and six adjusted covariates entered as linear terms or categorical indicators as appropriate",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors adjusting for community area clustering"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.1",
+            "quoted_wording": "sha256:8652b8f9c63255a9344653cdd6a973a798c5d70f1d147e2303e91a926d12c27a"
+          },
+          "mechanism": "Age at menarche reflects constitutional development and pubertal timing, which are associated with long-term hormone profile and developmental factors that can influence both menstrual cycle characteristics in adulthood and respiratory health outcomes.",
+          "justification": "Age at menarche is a common cause of both the exposure (menstrual cycle characteristics) and the outcome (respiratory health and COPD risk).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.2",
+            "quoted_wording": "sha256:e672fe3877afaccf4fdb8494eb3a52b9b49409338fc5e962bf41e697ec74fbfb"
+          },
+          "mechanism": "Asthma diagnosis indicates underlying airway reactivity and inflammatory tendency. These same inflammatory pathways may relate to menstrual cycle regularity through immune-endocrine interactions and also directly increase risk of COPD as part of a shared obstructive airway disease predisposition.",
+          "justification": "Asthma captures common underlying inflammatory/immune status that affects both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q7.4",
+            "quoted_wording": "sha256:57b4c7a3bb52e7ceb482afd32a9b1b361d747696a8d88ae55a64a2664351c6e4"
+          },
+          "mechanism": "Parity directly affects hormonal exposure over the life course and alters long-term metabolic and immune function. Pregnancies themselves cause physiologic changes that can affect both menstrual cycle patterns and respiratory function.",
+          "justification": "Parity is associated with both exposure (pregnant women experience cycle changes) and outcome (pregnancy history affects later health), and adjustment improves precision in this female-only cohort.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Body weight affects estrogen metabolism (obesity increases circulating estrogen through adipose tissue production) and is strongly associated with menstrual cycle characteristics. Weight also directly affects respiratory mechanics, inflammation, and COPD risk.",
+          "justification": "Body weight is a common cause of variation in both cycle length and respiratory disease.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race captures differences in genetic predisposition to hormonal and respiratory phenotypes, environmental exposures (including occupational and air quality), healthcare access and diagnostic practices (affecting whether COPD diagnosis is made), and socioeconomic factors that influence both health behaviors and disease development.",
+          "justification": "Race is associated with variation in exposure and outcome through multiple pathways including genetic predisposition, environmental exposures, and healthcare access.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q5.5",
+            "quoted_wording": "sha256:de9dcac5ebc6d726296a67ec78524bb13c5da9982763c0234ce9ca8653cc6c0a"
+          },
+          "mechanism": "Cigarette smoking is the leading cause of COPD and also affects reproductive hormone metabolism. Smoking exposure directly damages lungs and increases COPD risk while simultaneously affecting menstrual function through endocrine disruption.",
+          "justification": "Cigarette smoking is a strong common cause of both altered menstrual patterns and emphysema/COPD development.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.2",
+            "quoted_wording": "sha256:c0dabdc73be1f0682984f1b9570bde80138c9fd50f80e20985ce62560f8334ca"
+          },
+          "mechanism": "Time to menstrual regularity is a direct downstream consequence of pubertal development and menstrual maturation. The exposure (m2:Q9.3) is explicitly conditioned on periods having become regular, so this variable is on the causal pathway from puberty to the establishment of regular cycles and measurement of cycle length.",
+          "justification": "This variable is on the causal pathway from puberty to the exposure (regular menstrual cycle length measurement), not a cause of either exposure or outcome.",
+          "role": "descendant_of_exposure",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Participant age at interview/baseline study date",
+          "search_phrases": [
+            "age years baseline visit enrollment date today"
+          ],
+          "why_rejected": "Multiple searches returned low_confidence results; no definitive instrument key was found despite searches for current age, baseline age, and interview date indicators.",
+          "exposes_the_estimate_to": "Improper specification of the outcome censoring structure; age at diagnosis is inherently truncated by the participant's current age and without baseline age the follow-up period cannot be properly specified."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "1 unit increase in menstrual cycle length (continuous) or highest versus lowest category of cycle length (if stratified)",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 12.21
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 7.05
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 3.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 2.23
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 1.22
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.05,
+          "value": 3.86,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.05; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "Causal mechanism is plausible but not direct: menstrual cycle characteristics may reflect underlying hormonal, inflammatory, or constitutional factors that also influence respiratory health and disease onset.",
+        "why_this_cohort": "This is an exploratory analysis of the exposure-outcome pair assigned; the COMPASS cohort design provides detailed menstrual history and respiratory disease diagnoses in women with longitudinal follow-up."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "8acee557048146b4",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 2,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q9.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.35\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"age years old current\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"smoking cigarette tobacco\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"hormone birth control oral contraceptive\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"weight height body mass index BMI\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"menarche first period menstrual age\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"asthma respiratory lung disease\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"race ethnicity ancestry\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"current age interview study now present\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q9.1\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"born date of birth year when\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"pregnancy pregnant number parity children\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q7.4\"}) -> unique",
+          "search_variables({\"limit\": 20, \"phrase\": \"smoking currently smoke cigarette status ever former\"}) -> low_confidence",
+          "list_derivations({}) -> ok",
+          "search_variables({\"limit\": 20, \"phrase\": \"how old are you participant respondent\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m3:Q5.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q5.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.9\"}) -> construct",
+          "search_variables({\"limit\": 15, \"phrase\": \"age years baseline visit enrollment date today\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"regular periods menstrual regularity become established\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q9.2\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q9.3\", \"m2:Q5.35\", \"m2:Q9.1\", \"m2:Q5.2\", \"m2:Q7.4\", \"m1:Q2.10\", \"m1:Q3.10\", \"m3:Q5.5\", \"m2:Q9.2\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.05}) -> ok",
+          "check_access({\"keys\": [\"m2:Q9.3\", \"m2:Q5.35\", \"m2:Q9.1\", \"m2:Q5.2\", \"m2:Q7.4\", \"m1:Q2.10\", \"m1:Q3.10\", \"m3:Q5.5\", \"m2:Q9.2\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:2a2eea12c4bb6e9ef7da294507c1fb501183273587d41b947d6fa083318b4b1a",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:2a2eea12c4bb6e9ef7da294507c1fb501183273587d41b947d6fa083318b4b1a",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.979497,
+        "margin": 0.25002099999999994,
+        "margin_12": 0.018026,
+        "abstained": false,
+        "nearest_key": "m2:Q9.3",
+        "hit": {
+          "key": "m2:Q9.3",
+          "construct_key": "m2:Q9.3",
+          "dict_construct_key": "m2:Q9.3",
+          "module": "2",
+          "target_id": 295,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q9.3"
+          ],
+          "stratum": "reproductive_hormonal",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:af42e265babfe8d0235f0e393becba6767add43f2a10b602c4587910d6e04081",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:af42e265babfe8d0235f0e393becba6767add43f2a10b602c4587910d6e04081",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.988656,
+        "margin": 0.25917999999999997,
+        "margin_12": 0.100408,
+        "abstained": false,
+        "nearest_key": "m2:Q5.35",
+        "hit": {
+          "key": "m2:Q5.35",
+          "construct_key": "m2:Q5.35",
+          "dict_construct_key": "m2:Q5.35",
+          "module": "2",
+          "target_id": 232,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.35"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q9.3",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:2a2eea12c4bb6e9ef7da294507c1fb501183273587d41b947d6fa083318b4b1a",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:2a2eea12c4bb6e9ef7da294507c1fb501183273587d41b947d6fa083318b4b1a",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.979497,
+          "margin": 0.25002099999999994,
+          "margin_12": 0.018026,
+          "abstained": false,
+          "nearest_key": "m2:Q9.3",
+          "hit": {
+            "key": "m2:Q9.3",
+            "construct_key": "m2:Q9.3",
+            "dict_construct_key": "m2:Q9.3",
+            "module": "2",
+            "target_id": 295,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q9.3"
+            ],
+            "stratum": "reproductive_hormonal",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.35",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:af42e265babfe8d0235f0e393becba6767add43f2a10b602c4587910d6e04081",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:af42e265babfe8d0235f0e393becba6767add43f2a10b602c4587910d6e04081",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.988656,
+          "margin": 0.25917999999999997,
+          "margin_12": 0.100408,
+          "abstained": false,
+          "nearest_key": "m2:Q5.35",
+          "hit": {
+            "key": "m2:Q5.35",
+            "construct_key": "m2:Q5.35",
+            "dict_construct_key": "m2:Q5.35",
+            "module": "2",
+            "target_id": 232,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.35"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q9.1",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.2",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q7.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q5.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.2",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q9.3",
+    "outcome": "m2:Q5.35",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:Q9.3",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.35",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q9.1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q7.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q9.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_exposure",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q9.3",
+        "target": "m2:Q5.35",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m2:Q9.1",
+        "target": "m2:Q9.3",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.1",
+        "target": "m2:Q5.35",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.2",
+        "target": "m2:Q9.3",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.2",
+        "target": "m2:Q5.35",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q7.4",
+        "target": "m2:Q9.3",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q7.4",
+        "target": "m2:Q5.35",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q9.3",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q5.35",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q9.3",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.35",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q9.3",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q5.35",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.3",
+        "target": "m2:Q9.2",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m2:Q9.1",
+      "m2:Q5.2",
+      "m2:Q7.4",
+      "m1:Q2.10",
+      "m1:Q3.10",
+      "m3:Q5.5"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q9.2 carries role 'descendant_of_exposure', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q9.2",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

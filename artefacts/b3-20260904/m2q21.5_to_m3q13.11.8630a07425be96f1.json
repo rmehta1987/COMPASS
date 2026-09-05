@@ -1,0 +1,665 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q21.5_to_m3q13.11",
+    "record_hash": "8630a07425be96f1",
+    "pair_id": "m2:Q21.5 -> m3:Q13.11",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q21.5_to_m3q13.11",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does longer-term regular use of prescription proton pump inhibitors causally affect the intensity or duration of marijuana vaping (on days of use)?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q21.5",
+        "quoted_wording": "sha256:1f37f7feab32cf2f1807ed6be294b21e149fe2aa59afc88658951fa54e0d366f"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m3:Q13.11",
+        "quoted_wording": "sha256:60bcd59ec0b58016a8c221989aff31137d79586a2f483899bc858a68d8fbb85e"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "If the outcome variable is dichotomized into high vs. low daily vaping intensity (using the sample median as the cutpoint), then a statistically significant risk difference of at least 10 percentage points comparing high-duration PPI users (e.g., ≥5 years regular use) to low-duration users (e.g., <1 year), would constitute falsification of the null hypothesis of no association (two-sided alpha = 0.05, power = 0.80).",
+      "falsifier_threshold": {
+        "value": 10.0,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear regression with continuous or categorical predictors, or logistic regression if the outcome is dichotomized into high vs. low intensity. The specific functional form depends on the outcome's measured scale and distribution.",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area level, with cluster-robust standard errors estimated at the community area level (Chicago defines 77 community areas)."
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex classifications correlate with healthcare-seeking behaviors and diagnosis/treatment patterns affecting medication prescribing (exposure) and substance use (outcome).",
+          "justification": "Sex differences in GERD prevalence and PPI prescribing patterns are documented; substance use initiation and patterns differ by sex classification.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Systemic racism creates differential healthcare access affecting medication prescribing (exposure) and substance use disparities (outcome).",
+          "justification": "Documented racial disparities in GERD treatment and diagnosis; racial disparities in substance use surveillance and treatment.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_3",
+            "quoted_wording": "sha256:ad7c805a862e7b7a8108d049792b0ac9c0565ecf18fb6bd6180854a61aed5e2c"
+          },
+          "mechanism": "Age affects prevalence of gastrointestinal conditions prompting PPI use (exposure) and substance use initiation patterns differ substantially by age cohort (outcome).",
+          "justification": "GERD prevalence increases steeply with age; marijuana use prevalence and patterns are age-cohort dependent.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:79590ca38c808b483369e51527ceca6aca100f2472a404c51b46d36b4411c743"
+          },
+          "mechanism": "Income affects access to and affordability of both prescription medications (exposure pathway) and substances (outcome pathway).",
+          "justification": "Medication access is income-dependent; substance purchase and use patterns correlate with economic resources.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.37",
+            "quoted_wording": "sha256:ea4e177aa01219b26ec395f58208901c904e8ed76b756c3a0f758f44148466d1"
+          },
+          "mechanism": "Esophageal acid reflux (GERD) is the primary clinical indication for PPI prescription (exposure) and GERD patients may use marijuana for symptom management (outcome).",
+          "justification": "PPIs are prescribed specifically for GERD; GERD may motivate both conventional medical treatment and self-medication with substances.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.18",
+            "quoted_wording": "sha256:9b99356b9e919aeea0d6bf9fcc84627f9f8cb7128bf188cd97c33abc5ded3191"
+          },
+          "mechanism": "Anxiety disorders are bidirectionally related to GERD and PPI use (exposure) and anxiety is a strong risk factor for substance use (outcome).",
+          "justification": "Psychological stress exacerbates GERD; anxiety is a documented risk factor for cannabis and other substance use.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.30",
+            "quoted_wording": "sha256:1b3efc7594d0cc4d06035229a893f6e98f899e0e4a4c97c79830a2e86d15b990"
+          },
+          "mechanism": "Depression is associated with increased chronic disease burden including GERD (exposure) and depression is a strong predictor of substance use (outcome).",
+          "justification": "Mental health comorbidity drives both medical treatment and substance use behaviors.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education could affect both exposure through healthcare literacy affecting medication adherence and outcome through substance use patterns.",
+          "justification": "Effects of education are likely mediated entirely through household income (m1:Q5.4), which is already adjusted. Including education would introduce multicollinearity without materially reducing confounding bias.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.5",
+            "quoted_wording": "sha256:dcc0797a07705beb77a9d45291043d9f7badaa1c29014a39dcf4c5ff8128ef9f"
+          },
+          "mechanism": "Household size could affect per-capita income but is not independently related to PPI use or marijuana use frequency.",
+          "justification": "Household size affects the income-per-person ratio but does not causally affect GERD treatment or substance use independent of the income level already adjusted.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "High vs. low duration of regular PPI use (e.g., ≥5 years vs. <1 year, or per-year comparison)",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 25.68
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 14.82
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.12
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.69
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.57
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.3,
+          "value": 8.12,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.3; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS cohort study with comprehensive health surveys spanning three modules.",
+        "why_this_cohort": "COMPASS provides detailed data on prescription medications including PPIs (module 2), marijuana use patterns (module 3), and demographic and clinical confounders spanning modules 1–3."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "8c57acbbf424179b",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 3,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q21.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q13.11\"}) -> unique",
+          "list_derivations({}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"age demographic\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"participant age years born\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"gastrointestinal stomach acid reflux GERD\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"marijuana cannabis vaping use substance\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"mental health depression anxiety\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarette tobacco\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.37\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q13.1\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.30\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"current age today how old are you now\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"income socioeconomic education employment\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"cocaine heroin drug use opioid methamphetamine\"}) -> low_confidence",
+          "browse_variables({\"module\": \"1\"}) -> ok",
+          "get_design_convention({\"topic\": \"clustering:community_area\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q2.15_3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q6.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.18\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.7\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q21.5\", \"m3:Q13.11\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q2.15_3\", \"m1:Q5.4\", \"m2:Q5.37\", \"m2:Q5.18\", \"m2:Q5.30\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q21.5\", \"m3:Q13.11\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q2.15_3\", \"m1:Q5.4\", \"m2:Q5.37\", \"m2:Q5.18\", \"m2:Q5.30\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.3}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:1f37f7feab32cf2f1807ed6be294b21e149fe2aa59afc88658951fa54e0d366f",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:1f37f7feab32cf2f1807ed6be294b21e149fe2aa59afc88658951fa54e0d366f",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.982122,
+        "margin": 0.25264600000000004,
+        "margin_12": 0.03927,
+        "abstained": false,
+        "nearest_key": "m2:Q21.5",
+        "hit": {
+          "key": "m2:Q21.5",
+          "construct_key": "m2:Q21.5",
+          "dict_construct_key": "m2:Q21.5",
+          "module": "2",
+          "target_id": 854,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q21.5"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:60bcd59ec0b58016a8c221989aff31137d79586a2f483899bc858a68d8fbb85e",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:60bcd59ec0b58016a8c221989aff31137d79586a2f483899bc858a68d8fbb85e",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.97995,
+        "margin": 0.250474,
+        "margin_12": 0.002669,
+        "abstained": false,
+        "nearest_key": "m3:Q13.11",
+        "hit": {
+          "key": "m3:Q13.11",
+          "construct_key": "m3:Q13.11",
+          "dict_construct_key": "m3:Q13.11",
+          "module": "3",
+          "target_id": 1301,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m3:Q13.11"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q21.5",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:1f37f7feab32cf2f1807ed6be294b21e149fe2aa59afc88658951fa54e0d366f",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:1f37f7feab32cf2f1807ed6be294b21e149fe2aa59afc88658951fa54e0d366f",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.982122,
+          "margin": 0.25264600000000004,
+          "margin_12": 0.03927,
+          "abstained": false,
+          "nearest_key": "m2:Q21.5",
+          "hit": {
+            "key": "m2:Q21.5",
+            "construct_key": "m2:Q21.5",
+            "dict_construct_key": "m2:Q21.5",
+            "module": "2",
+            "target_id": 854,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q21.5"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m3:Q13.11",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:60bcd59ec0b58016a8c221989aff31137d79586a2f483899bc858a68d8fbb85e",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:60bcd59ec0b58016a8c221989aff31137d79586a2f483899bc858a68d8fbb85e",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.97995,
+          "margin": 0.250474,
+          "margin_12": 0.002669,
+          "abstained": false,
+          "nearest_key": "m3:Q13.11",
+          "hit": {
+            "key": "m3:Q13.11",
+            "construct_key": "m3:Q13.11",
+            "dict_construct_key": "m3:Q13.11",
+            "module": "3",
+            "target_id": 1301,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m3:Q13.11"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.37",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.18",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.30",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.5",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q21.5",
+    "outcome": "m3:Q13.11",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:Q21.5",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m3:Q13.11",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.37",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.18",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.30",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m1:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q21.5",
+        "target": "m3:Q13.11",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q21.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m3:Q13.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q21.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m3:Q13.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q21.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m3:Q13.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q21.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m3:Q13.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.37",
+        "target": "m2:Q21.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.37",
+        "target": "m3:Q13.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.18",
+        "target": "m2:Q21.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.18",
+        "target": "m3:Q13.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.30",
+        "target": "m2:Q21.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.30",
+        "target": "m3:Q13.11",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q3.10",
+      "m1:Q2.15_3",
+      "m1:Q5.4",
+      "m2:Q5.37",
+      "m2:Q5.18",
+      "m2:Q5.30"
+    ]
+  },
+  "critiques": [],
+  "revision": 0,
+  "generation": null
+}

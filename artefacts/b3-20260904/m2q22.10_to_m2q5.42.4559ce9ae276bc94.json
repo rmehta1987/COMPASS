@@ -1,0 +1,683 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q22.10_to_m2q5.42",
+    "record_hash": "4559ce9ae276bc94",
+    "pair_id": "m2:Q22.10 -> m2:Q5.42",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q22.10_to_m2q5.42",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does regular over-the-counter antihistamine use associate with earlier diagnosis of heart valve problems?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q22.10",
+        "quoted_wording": "sha256:4cb07dc3b6b46cc70d313c1a12a48af818eb7e92e1137ea206d0d40664b54bd1"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.42",
+        "quoted_wording": "sha256:c907cdc050458359f8763d8241f72993b217795055f0adf6e5489a718754f223"
+      },
+      "expected_direction": {
+        "direction": "decrease",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "Antihistamine use is associated with a clinically and epidemiologically meaningful earlier diagnosis of heart valve problems: participants in the highest quintile of antihistamine use frequency will receive their diagnosis of heart valve problems at an age that is meaningfully younger than those in the lowest quintile, after adjustment for cardiovascular risk factors and allergic disease severity indicators.",
+      "falsifier_threshold": null,
+      "model_spec": {
+        "form": "Linear regression with continuous age at heart valve diagnosis as the outcome. The model will regress age at diagnosis on the dichotomous indicator of exposure quintile (highest vs. lowest) with adjustment for the seven covariates listed above.",
+        "unit_of_analysis": "participant",
+        "clustering": "cluster-robust at the community area level"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q1.8",
+            "quoted_wording": "sha256:dd506fb26782a15e8b85ef427d7c49a15e1f410cad8f95d65022706f7d14555f"
+          },
+          "mechanism": "Sex at birth is a common cause of both exposure and outcome. Biological sex differences drive allergic disease prevalence (hence antihistamine use) and independently influence baseline cardiovascular disease risk, clinical presentation, and age of diagnosis.",
+          "justification": "Sex is foundational to both allergy epidemiology and cardiac disease epidemiology; without adjustment, sex-specific disease burdens would confound the exposure-outcome association.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.8",
+            "quoted_wording": "sha256:54859c0b47368445f04b396a67b96ed6934dcd16cef08c3db16e3357147c596b"
+          },
+          "mechanism": "Hypertension is a direct cause of cardiac disease progression and valve involvement. It may also share lifestyle and metabolic antecedents with both antihistamine use patterns and cardiovascular vulnerability.",
+          "justification": "Hypertension is among the strongest modifiable risk factors for heart valve pathology and earlier clinical recognition of cardiac disease; controlling for it prevents confounding through cardiac disease severity.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.4",
+            "quoted_wording": "sha256:06f26b3aeabb79ed39bb2db875106fa6274622a3256efef6a48f1c1f55525305"
+          },
+          "mechanism": "Type 1 diabetes independently increases the risk of cardiac disease and may be associated with antihistamine use through shared inflammatory or immune pathways.",
+          "justification": "Diabetes is a strong driver of both microvascular and macrovascular cardiac disease; controlling for it prevents confounding by diabetes-associated cardiac risk.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:55600e24b14333ff4c2cea0d744d84df721ba906ace8329551ba8072ef427427"
+          },
+          "mechanism": "Type 2 diabetes is a major cause of cardiac disease, including valve disease and cardiomyopathy, and may share common metabolic or lifestyle antecedents with antihistamine use frequency.",
+          "justification": "Type 2 diabetes is highly prevalent and a potent risk factor for valve disease and earlier cardiac diagnosis in many populations.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.14",
+            "quoted_wording": "sha256:f0b0976512c4170b51cf92eb8fad551bfbbe1c4e806a0ef7132e5c1151b2e74b"
+          },
+          "mechanism": "High cholesterol is a direct cause of atherosclerotic and valve disease progression and is also associated with lifestyle patterns that might relate to medication use.",
+          "justification": "Hypercholesterolemia accelerates valve calcification and cardiomyopathy; controlling for cholesterol status prevents confounding by lipid-driven disease severity.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.2",
+            "quoted_wording": "sha256:e672fe3877afaccf4fdb8494eb3a52b9b49409338fc5e962bf41e697ec74fbfb"
+          },
+          "mechanism": "Asthma diagnosis is a marker of atopic/allergic disease predisposition, which directly causes antihistamine use (exposure) and may associate with inflammatory or immune factors that also affect cardiac disease risk.",
+          "justification": "Asthma serves as a proxy for underlying allergic disease burden; participants with asthma will use antihistamines more frequently, and the asthma-related inflammatory phenotype may independently relate to cardiac outcomes.",
+          "role": "proxy",
+          "proxy_for": "allergic disease predisposition",
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q11.5",
+            "quoted_wording": "sha256:1988764166598130cb66e276c44712faf10b6f297c4d0f6486ef35e219b600cb"
+          },
+          "mechanism": "History of allergic reactions indicates current allergic disease severity and symptom burden, which directly drives the need for antihistamine use (exposure). Allergic disease severity may also indicate inflammatory or immune dysfunction relevant to cardiac disease pathogenesis.",
+          "justification": "Controlling for allergy attack history isolates exposure variation that is not merely a marker of allergic disease presence (already captured by asthma) but reflects active disease burden and symptom frequency, the direct trigger for antihistamine use.",
+          "role": "proxy",
+          "proxy_for": "allergy severity",
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q11.7",
+            "quoted_wording": "sha256:708775dac317495bfca89717fde6881b6014e0447e3c3fa900419f161e8a88b4"
+          },
+          "mechanism": "This variable is too proximal to the exposure. Over-the-counter antihistamine use is a form of allergy treatment, and this question asks about treatment broadly. Adjusting for 'any allergy treatment ever' would remove exposure variation that specifically distinguishes antihistamine use frequency, obscuring the exposure-outcome association the design aims to measure.",
+          "justification": "Including this variable would conflate the specific effect of antihistamine medication with the general effect of receiving any allergy treatment.",
+          "role": "descendant_of_exposure",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Race/ethnicity",
+          "search_phrases": [
+            "race",
+            "ethnicity",
+            "ethnic background",
+            "racial"
+          ],
+          "why_rejected": "Multiple search terms returned primarily module 1 items. A module 2 version of race/ethnicity, if available, would be an important confounder affecting both allergy prevalence and cardiovascular disease risk.",
+          "exposes_the_estimate_to": "confounding by race/ethnicity differences in allergy prevalence, cardiovascular disease risk, and healthcare access"
+        },
+        {
+          "construct_sought": "Smoking status",
+          "search_phrases": [
+            "current",
+            "smoking",
+            "status",
+            "now",
+            "smokes",
+            "currently"
+          ],
+          "why_rejected": "Searched with multiple terms and found primarily module 3 items. Smoking is a major confounder for cardiac disease diagnosis but appears unavailable in module 2.",
+          "exposes_the_estimate_to": "confounding by smoking status, a major risk factor for cardiac disease and valve pathology"
+        },
+        {
+          "construct_sought": "Body mass index / weight",
+          "search_phrases": [
+            "weight",
+            "BMI",
+            "body mass index",
+            "obesity"
+          ],
+          "why_rejected": "Multiple search strategies did not yield a reliable module 2 BMI or weight variable suitable for adjustment.",
+          "exposes_the_estimate_to": "confounding by obesity or BMI, which may be associated with both antihistamine use patterns and cardiovascular disease risk"
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m2"
+        ],
+        "exposure_contrast": "Highest versus lowest quintile of the derived scale, per design convention for scale-type exposures",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 16.81
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 9.7
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 5.32
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 3.07
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 1.68
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.1,
+          "value": 16.81,
+          "unit": "percentage points",
+          "at_n": 100,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.1; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "",
+        "why_this_cohort": ""
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "f8d9d259e49ba112",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 3,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q22.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.42\"}) -> unique",
+          "get_contrast_convention({\"key_or_kind\": \"scale\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"age demographics sex gender\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"current age now years old born\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"race ethnicity racial ethnic background\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"allergies allergy allergic asthma hay fever\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"hypertension blood pressure high blood pressure\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"cholesterol triglycerides lipid high cholesterol\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"diabetes sugar blood glucose type 2 diabetes\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"smoking cigarette tobacco smoke\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"weight BMI body mass index obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"heart disease family history cardiac heart attack\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"sex birth assigned born sex at birth\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q1.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.14\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.40\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q11.4\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"current smoking status now smokes currently\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"allergy diagnosed told have allergies condition\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"medication drug currently taking use pills prescription\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q11.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q11.5\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q22.10\", \"m2:Q5.42\", \"m2:Q1.8\", \"m2:Q5.8\", \"m2:Q5.4\", \"m2:Q5.6\", \"m2:Q5.14\", \"m2:Q5.2\", \"m2:Q11.5\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.1}) -> ok",
+          "check_access({\"keys\": [\"m2:Q22.10\", \"m2:Q5.42\", \"m2:Q1.8\", \"m2:Q5.8\", \"m2:Q5.4\", \"m2:Q5.6\", \"m2:Q5.14\", \"m2:Q5.2\", \"m2:Q11.5\", \"m2:Q11.7\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "per_item_non_missing_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:4cb07dc3b6b46cc70d313c1a12a48af818eb7e92e1137ea206d0d40664b54bd1",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:4cb07dc3b6b46cc70d313c1a12a48af818eb7e92e1137ea206d0d40664b54bd1",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.978761,
+        "margin": 0.24928499999999998,
+        "margin_12": 0.105097,
+        "abstained": false,
+        "nearest_key": "m2:Q22.10",
+        "hit": {
+          "key": "m2:Q22.10",
+          "construct_key": "m2:Q22.10",
+          "dict_construct_key": "m2:Q22.10",
+          "module": "2",
+          "target_id": 880,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q22.10"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:c907cdc050458359f8763d8241f72993b217795055f0adf6e5489a718754f223",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:c907cdc050458359f8763d8241f72993b217795055f0adf6e5489a718754f223",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.986413,
+        "margin": 0.25693699999999997,
+        "margin_12": 0.085494,
+        "abstained": false,
+        "nearest_key": "m2:Q5.42",
+        "hit": {
+          "key": "m2:Q5.42",
+          "construct_key": "m2:Q5.42",
+          "dict_construct_key": "m2:Q5.42",
+          "module": "2",
+          "target_id": 239,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.42"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q22.10",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:4cb07dc3b6b46cc70d313c1a12a48af818eb7e92e1137ea206d0d40664b54bd1",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:4cb07dc3b6b46cc70d313c1a12a48af818eb7e92e1137ea206d0d40664b54bd1",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.978761,
+          "margin": 0.24928499999999998,
+          "margin_12": 0.105097,
+          "abstained": false,
+          "nearest_key": "m2:Q22.10",
+          "hit": {
+            "key": "m2:Q22.10",
+            "construct_key": "m2:Q22.10",
+            "dict_construct_key": "m2:Q22.10",
+            "module": "2",
+            "target_id": 880,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q22.10"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.42",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:c907cdc050458359f8763d8241f72993b217795055f0adf6e5489a718754f223",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:c907cdc050458359f8763d8241f72993b217795055f0adf6e5489a718754f223",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.986413,
+          "margin": 0.25693699999999997,
+          "margin_12": 0.085494,
+          "abstained": false,
+          "nearest_key": "m2:Q5.42",
+          "hit": {
+            "key": "m2:Q5.42",
+            "construct_key": "m2:Q5.42",
+            "dict_construct_key": "m2:Q5.42",
+            "module": "2",
+            "target_id": 239,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.42"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q1.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.14",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.2",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q11.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q11.7",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q22.10",
+    "outcome": "m2:Q5.42",
+    "expected_direction": "decrease",
+    "nodes": [
+      {
+        "key": "m2:Q22.10",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.42",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q1.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.14",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "proxy",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q11.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "proxy",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q11.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_exposure",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q22.10",
+        "target": "m2:Q5.42",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q22.10",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q5.42",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q22.10",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q5.42",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q22.10",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q5.42",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q22.10",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q5.42",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.14",
+        "target": "m2:Q22.10",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.14",
+        "target": "m2:Q5.42",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.2",
+        "target": "m2:Q22.10",
+        "relation": "proxies"
+      },
+      {
+        "source": "m2:Q5.2",
+        "target": "m2:Q5.42",
+        "relation": "proxies"
+      },
+      {
+        "source": "m2:Q11.5",
+        "target": "m2:Q22.10",
+        "relation": "proxies"
+      },
+      {
+        "source": "m2:Q11.5",
+        "target": "m2:Q5.42",
+        "relation": "proxies"
+      },
+      {
+        "source": "m2:Q22.10",
+        "target": "m2:Q11.7",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m2:Q1.8",
+      "m2:Q5.8",
+      "m2:Q5.4",
+      "m2:Q5.6",
+      "m2:Q5.14",
+      "m2:Q5.2",
+      "m2:Q11.5"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q11.7 carries role 'descendant_of_exposure', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q11.7",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

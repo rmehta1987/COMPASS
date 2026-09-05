@@ -1,0 +1,811 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.25_to_m2q5.13",
+    "record_hash": "563cb4a3b1c6113b",
+    "pair_id": "m2:Q19.25 -> m2:Q5.13",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.25_to_m2q5.13",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does regular ibuprofen use (measured as frequency of weekly use) affect preventive health behavior, specifically the recency of blood cholesterol screening?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.25",
+        "quoted_wording": "sha256:08951ff38a7bebe7056af8faa120cb2522dbe3db4b2c42166657b3654493e010"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.13",
+        "quoted_wording": "sha256:3a0b6bbb7c755cf9f793b88d0d9c559767a36ad051294f1dacf96d8eb43a5880"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "A risk difference of at least 10 percentage points in recent blood cholesterol screening (operationalized as screening within a specified recent timeframe determined from the outcome question) between participants in the highest versus lowest quintile of weekly NSAID use frequency would constitute a substantial effect indicating that NSAID use patterns have meaningful association with preventive health behavior.",
+      "falsifier_threshold": {
+        "value": 10.0,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Logistic or proportional odds regression, depending on the final operationalization of the outcome",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors at the community area level"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:1_Q6.3",
+            "quoted_wording": "sha256:a7f1a965f2d4e230e633b3aba0c26c291a94ec2a9dc873db9bf9d18ff2ca8c8c"
+          },
+          "mechanism": "Age is a common cause of both exposure and outcome. Older age increases chronic pain prevalence and accompanying regular NSAID use; simultaneously, older adults engage more frequently in preventive health screening due to higher cardiovascular risk.",
+          "justification": "Age satisfies the definition of a confounder—it affects both the propensity to use NSAIDs regularly and the likelihood of cholesterol screening, independent of any causal effect of NSAID use on screening.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.4",
+            "quoted_wording": "sha256:6d466dcc5981bd3ba56449e7e907aaaff7c3dc666df8fdb33233a8c1c258156c"
+          },
+          "mechanism": "Gender affects the prevalence and phenotype of pain conditions (women report higher rates of certain chronic pain syndromes) and influences health-seeking behavior patterns.",
+          "justification": "Gender differences in pain prevalence and healthcare engagement create confounding, as both NSAID use and screening behavior may vary by gender independently of any causal connection.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race serves as a proxy for structural exposure to healthcare disparities, residential disinvestment, and unequal access to both OTC medications and preventive healthcare services. These structural exposures shape both medication use patterns and preventive screening uptake.",
+          "justification": "Per the adjustment set design convention, race is included as a proxy for structural factors affecting both medication access and healthcare engagement, with the understanding that the causal mechanism operates through social determinants, not biological pathways.",
+          "role": "proxy",
+          "proxy_for": "structural exposure to healthcare disparities",
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Ethnicity similarly operates as a proxy for cultural, linguistic, and structural factors influencing healthcare access, health literacy, and medication use patterns.",
+          "justification": "Cultural and structural factors associated with Hispanic/Latino ethnicity can independently affect both NSAID use patterns and preventive screening engagement.",
+          "role": "proxy",
+          "proxy_for": "structural and cultural factors affecting healthcare engagement",
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q2.2",
+            "quoted_wording": "sha256:e83a2c35edfd30f2ea3f17c0b6baf7cdf5f2a7d34ed56f0fa0780a6749a21bba"
+          },
+          "mechanism": "Insurance status directly determines financial access to both OTC medications and preventive screening services. It is a primary determinant of whether individuals can afford regular NSAID purchases and whether they have coverage for preventive health visits.",
+          "justification": "Insurance is a direct common cause of both exposure (ability to purchase NSAIDs) and outcome (access to screening services), making it a necessary confounder to adjust.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:13d3548965635d4117cbd0b28b41f20541d0d0827da994eef2ca27064ff58d60"
+          },
+          "mechanism": "Income affects the affordability of both OTC medications and healthcare access more broadly, shaping NSAID use patterns and preventive care utilization.",
+          "justification": "Household income is a fundamental socioeconomic determinant confounding both regular medication use and engagement in preventive screening.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.5",
+            "quoted_wording": "sha256:dcc0797a07705beb77a9d45291043d9f7badaa1c29014a39dcf4c5ff8128ef9f"
+          },
+          "mechanism": "Household size normalizes the income measure, allowing per-capita socioeconomic positioning to be assessed. Fewer people per household income dollar increases purchasing power for medications and healthcare.",
+          "justification": "Including household size with income allows for an adjusted socioeconomic position measure, improving precision of SES adjustment.",
+          "role": "precision",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.8",
+            "quoted_wording": "sha256:5522bc79a69cdb0f9bcf39abca278fe5e82c1e226c81b522a7fd9afdd097716f"
+          },
+          "mechanism": "Hypertension is both a chronic disease that motivates healthcare engagement (increasing preventive screening) and a condition frequently co-occurring with pain syndromes or arthritis that drives NSAID use. It serves as a marker of higher chronic disease burden.",
+          "justification": "Hypertension status represents general engagement with the healthcare system and presence of chronic disease that might predispose individuals to both regular medication use and preventive care participation.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.4",
+            "quoted_wording": "sha256:0dc03e0aff41272217dd560ef65d0f5e95dbef85e9a956bfc84997bdad4ea035"
+          },
+          "mechanism": "Type 1 Diabetes represents a specific disease indication for which individuals may use NSAIDs (for diabetes-related pain or complications). It is entangled with the exposure as a primary reason for NSAID use in affected individuals.",
+          "justification": "Adjusting for Type 1 Diabetes would condition on a major indication for NSAID use, thereby removing the disease burden that actually drives the exposure behavior. This would attenuate rather than clarify the exposure-outcome association by filtering out a substantial portion of the causal mechanism behind regular NSAID use.",
+          "role": "descendant_of_exposure",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:883085f9e05c1ff52e186d0ca76208723c1d81024663315e7f20b7cc5c94c2d4"
+          },
+          "mechanism": "Type 2 Diabetes represents a disease indication for NSAID use.",
+          "justification": "Adjusting for Type 2 Diabetes would condition on a major indication for NSAID use, thereby removing the disease burden that actually drives the exposure behavior. This would attenuate rather than clarify the exposure-outcome association by filtering out a substantial portion of the causal mechanism behind regular NSAID use.",
+          "role": "descendant_of_exposure",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.15#1_5",
+            "quoted_wording": "sha256:a603bbc099d69e6c3cfedc0a68e1f198a8aebaf370f7b33083ad3525d3aa04ce"
+          },
+          "mechanism": "Arthritis is the primary indication for regular NSAID use in the general population. Individuals with arthritis use NSAIDs to manage pain and inflammation; the diagnosis is a strong predictor of regular NSAID exposure.",
+          "justification": "Adjusting for arthritis diagnosis would condition on the single most important reason individuals take NSAIDs regularly. This would obscure the observed association between NSAID use and preventive screening behavior, as it would remove the primary motivation for the exposed behavior itself. The question posed is whether regular NSAID use (regardless of indication) relates to screening behavior; conditioning on arthritis removes the population at highest risk of exposure.",
+          "role": "descendant_of_exposure",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q2.1",
+            "quoted_wording": "sha256:8bf19c5680503fcf9b7b276de9082b99380a66febb459021f7d497181bb4f1ae"
+          },
+          "mechanism": "General health perception could operate as a confounder (reflecting overall health consciousness that drives both NSAID use and preventive screening), as a mediator (NSAID use improves pain, leading to improved health perception and increased screening), or as a consequence of outcome-level healthcare engagement.",
+          "justification": "The causal role of general health perception is unclear. It may proxy for health-consciousness (confounder), be influenced by successful pain management from NSAID use (mediator), or reflect recent healthcare interactions (partially descendant of screening behavior). Without clearer evidence of its causal position, it remains undetermined.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [
+        {
+          "construct_sought": "current participant pain status or pain severity",
+          "search_phrases": [
+            "pain arthritis joint muscle ache"
+          ],
+          "why_rejected": "The instrument does not appear to include a direct pain measurement separate from diagnosis-based questions. No variable for current pain status could be identified in search results.",
+          "exposes_the_estimate_to": "Bias if pain severity independently affects both NSAID use patterns and preventive screening engagement separate from diagnosed conditions."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "highest vs lowest quintile",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 26.73
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 15.43
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.45
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.88
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.67
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.35,
+          "value": 8.45,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.35; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "Design convention for scale-type exposures (highest vs lowest quintile) and cluster-robust adjustment at community area level.",
+        "why_this_cohort": "Exposure (NSAID use frequency, m2:Q19.25) and outcome (cholesterol screening recency, m2:Q5.13) are both measured in this multi-module instrument, enabling assessment of their association with comprehensive covariate control across demographic, economic, and health status domains."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "849df0ace3b0f059",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 3,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.25\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.13\"}) -> unique",
+          "get_contrast_convention({\"key_or_kind\": \"scale\"}) -> ok",
+          "get_design_convention({\"topic\": \"clustering:community_area\"}) -> ok",
+          "get_design_convention({\"topic\": \"adjustment_set:area_exposure\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years old birth\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"chronic disease condition diabetes hypertension heart\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"insurance health coverage medical\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"education income socioeconomic economic status\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"participant respondent age currently now\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex male female gender woman man\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity ancestry background Hispanic Latino Black White\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"high blood pressure hypertension\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q2.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"born year date when were you\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"pain arthritis joint muscle ache\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"diabetes type\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"health general status excellent poor\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.20\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q2.1\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.5\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"ever told diagnosed arthritis\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"household member age years first person\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_5\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:1_Q6.3\"}) -> unique",
+          "estimate_detectability({\"baseline_prevalence\": 0.35}) -> ok",
+          "estimate_n({\"keys\": [\"m2:Q19.25\", \"m2:Q5.13\", \"m1:1_Q6.3\", \"m1:Q3.4\", \"m1:Q3.10\", \"m1:Q3.8\", \"m2:Q2.2\", \"m1:Q5.4\", \"m1:Q5.5\", \"m2:Q5.8\", \"m3:Q2.1\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.25\", \"m2:Q5.13\", \"m1:1_Q6.3\", \"m1:Q3.4\", \"m1:Q3.10\", \"m1:Q3.8\", \"m2:Q2.2\", \"m1:Q5.4\", \"m1:Q5.5\", \"m2:Q5.8\", \"m2:Q5.4\", \"m2:Q5.6\", \"m2:Q5.15#1_) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:08951ff38a7bebe7056af8faa120cb2522dbe3db4b2c42166657b3654493e010",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:08951ff38a7bebe7056af8faa120cb2522dbe3db4b2c42166657b3654493e010",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.985242,
+        "margin": 0.25576599999999994,
+        "margin_12": 0.155063,
+        "abstained": false,
+        "nearest_key": "m2:Q19.25",
+        "hit": {
+          "key": "m2:Q19.25",
+          "construct_key": "m2:Q19.25",
+          "dict_construct_key": "m2:Q19.25",
+          "module": "2",
+          "target_id": 773,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.25"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:4b291c1529022ec018e3543d4b3c00f2654888a872171fb142be130e57afbaee",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:4b291c1529022ec018e3543d4b3c00f2654888a872171fb142be130e57afbaee",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.982256,
+        "margin": 0.25278,
+        "margin_12": 0.233364,
+        "abstained": false,
+        "nearest_key": "m2:Q5.13",
+        "hit": {
+          "key": "m2:Q5.13",
+          "construct_key": "m2:Q5.13",
+          "dict_construct_key": "m2:Q5.13",
+          "module": "2",
+          "target_id": 162,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.13"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.25",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:08951ff38a7bebe7056af8faa120cb2522dbe3db4b2c42166657b3654493e010",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:08951ff38a7bebe7056af8faa120cb2522dbe3db4b2c42166657b3654493e010",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.985242,
+          "margin": 0.25576599999999994,
+          "margin_12": 0.155063,
+          "abstained": false,
+          "nearest_key": "m2:Q19.25",
+          "hit": {
+            "key": "m2:Q19.25",
+            "construct_key": "m2:Q19.25",
+            "dict_construct_key": "m2:Q19.25",
+            "module": "2",
+            "target_id": 773,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.25"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.13",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:4b291c1529022ec018e3543d4b3c00f2654888a872171fb142be130e57afbaee",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:4b291c1529022ec018e3543d4b3c00f2654888a872171fb142be130e57afbaee",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.982256,
+          "margin": 0.25278,
+          "margin_12": 0.233364,
+          "abstained": false,
+          "nearest_key": "m2:Q5.13",
+          "hit": {
+            "key": "m2:Q5.13",
+            "construct_key": "m2:Q5.13",
+            "dict_construct_key": "m2:Q5.13",
+            "module": "2",
+            "target_id": 162,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.13"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:1_Q6.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q2.2",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.4",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.15#1_5",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q2.1",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.25",
+    "outcome": "m2:Q5.13",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:Q19.25",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.13",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:1_Q6.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "proxy",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "proxy",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q2.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "precision",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_exposure",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_exposure",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.15#1_5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_exposure",
+        "decision": "excluded"
+      },
+      {
+        "key": "m3:Q2.1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.25",
+        "target": "m2:Q5.13",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:1_Q6.3",
+        "target": "m2:Q19.25",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:1_Q6.3",
+        "target": "m2:Q5.13",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.4",
+        "target": "m2:Q19.25",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.4",
+        "target": "m2:Q5.13",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q19.25",
+        "relation": "proxies"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.13",
+        "relation": "proxies"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q19.25",
+        "relation": "proxies"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q5.13",
+        "relation": "proxies"
+      },
+      {
+        "source": "m2:Q2.2",
+        "target": "m2:Q19.25",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q2.2",
+        "target": "m2:Q5.13",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q19.25",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q5.13",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.5",
+        "target": "m2:Q5.13",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q19.25",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q5.13",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.25",
+        "target": "m2:Q5.4",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.25",
+        "target": "m2:Q5.6",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.25",
+        "target": "m2:Q5.15#1_5",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:1_Q6.3",
+      "m1:Q3.4",
+      "m1:Q3.10",
+      "m1:Q3.8",
+      "m2:Q2.2",
+      "m1:Q5.4",
+      "m1:Q5.5",
+      "m2:Q5.8"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.4 carries role 'descendant_of_exposure', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q5.4",
+      "severity": "major",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.6 carries role 'descendant_of_exposure', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q5.6",
+      "severity": "major",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.15#1_5 carries role 'descendant_of_exposure', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q5.15#1_5",
+      "severity": "major",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m3:Q2.1 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m3:Q2.1",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

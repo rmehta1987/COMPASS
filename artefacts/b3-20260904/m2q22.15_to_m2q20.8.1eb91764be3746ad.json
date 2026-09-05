@@ -1,0 +1,745 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q22.15_to_m2q20.8",
+    "record_hash": "1eb91764be3746ad",
+    "pair_id": "m2:Q22.15 -> m2:Q20.8",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q22.15_to_m2q20.8",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does regular over-the-counter melatonin use influence the likelihood of using antihypertensive medication regularly?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q22.15",
+        "quoted_wording": "sha256:4e100b4a9f72e7c393db50b95b09a5914dd341f548dd3a6c1525fed16027b4b6"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q20.8",
+        "quoted_wording": "sha256:1fb5af950eb4cdd1fe89fc76a98a1f4300582e231673f0026dd99465d8a3b0cb"
+      },
+      "expected_direction": {
+        "direction": "non_monotonic",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "A meaningful biological or behavioral difference in antihypertensive medication use between regular melatonin users and non-users. We operationalize this as a minimum detectable risk difference.",
+      "falsifier_threshold": {
+        "value": 6.0,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Logistic regression predicting binary outcome (ever regular antihypertensive medication use: yes/no) from binary exposure (ever regular melatonin use: yes/no), adjusted for the covariate set listed above. The model will take the form: logit(P(HTN meds)) = β₀ + β_melatonin · Melatonin + Σ βᵢ · Covariateᵢ",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area clustering. Participants are nested within Chicago community areas. Standard errors must be cluster-robust, computed at the community area level."
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex is associated with both sleep patterns/disorders and hypertension prevalence. Sex differences in circadian physiology, hormone metabolism, and healthcare-seeking behavior create pathways from sex to both melatonin use and antihypertensive medication use.",
+          "justification": "Documented sex differences in sleep quality, insomnia prevalence, and hypertension prevalence in midlife and older adults; men and women differ in medication-seeking behavior and supplement use.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race is associated with hypertension prevalence, healthcare access, medication use patterns, and sleep quality. Structural and biological factors related to race affect both exposure and outcome independently.",
+          "justification": "Well-documented racial disparities in hypertension prevalence and control; racial differences in sleep disorders and supplement use; racial differences in healthcare access and medication patterns.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Hispanic/Latino ethnicity is associated with hypertension prevalence and medication access; may relate to sleep quality and supplement use through cultural, healthcare access, and socioeconomic pathways.",
+          "justification": "Ethnic differences in cardiovascular risk profiles and medication patterns; Hispanic/Latino populations show specific hypertension prevalence patterns.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q3.21",
+            "quoted_wording": "sha256:6396df41900b04ec3da8f8ddef54fc13f5fe8c913623a7f9bd6a5d572152e211"
+          },
+          "mechanism": "Poor sleep quality is an upstream common cause of both melatonin use (people with poor sleep proactively use melatonin to improve sleep) and antihypertensive medication use (poor sleep increases hypertension risk and cardiovascular burden independently of other pathways). Sleep quality affects both behavioral choices (supplement use) and physiologic outcomes (HTN risk).",
+          "justification": "Sleep quality is bidirectionally associated with hypertension; poor sleep is strongly associated with supplement and melatonin use; sleep quality is an independent risk factor for hypertension independent of diagnosed sleep disorders.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q3.28",
+            "quoted_wording": "sha256:c99d8c3145f2c330020fbaa79c75298bd194e7e21b10240e87e9837fa8669a40"
+          },
+          "mechanism": "Diagnosed or clinically significant sleep problems directly prompt melatonin use as a first-line intervention and are associated with elevated hypertension through circadian disruption, sympathetic activation, and repeated blood pressure surges during arousals.",
+          "justification": "Sleep disorders (insomnia, obstructive sleep apnea, restless leg syndrome) are strongly associated with hypertension and HTN medication use; diagnosis of sleep problems directly drives melatonin use; sleep disorders are bidirectionally related to hypertension risk.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.8",
+            "quoted_wording": "sha256:54859c0b47368445f04b396a67b96ed6934dcd16cef08c3db16e3357147c596b"
+          },
+          "mechanism": "Hypertension diagnosis indicates underlying HTN condition/status. HTN causes sleep complications and fragmentation (prompting melatonin use through poor sleep quality pathway) and directly necessitates antihypertensive medication. HTN diagnosis creates a confounding path: HTN → sleep disruption → melatonin use, and HTN → medication use.",
+          "justification": "Hypertension is known to cause sleep fragmentation and poor sleep quality; HTN is the direct indication for antihypertensive medication; HTN affects both sides of the exposure-outcome pair through sleep mechanisms and direct medication indication.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:55600e24b14333ff4c2cea0d744d84df721ba906ace8329551ba8072ef427427"
+          },
+          "mechanism": "Type 2 diabetes is associated with both hypertension prevalence (T2DM is a major risk factor for HTN) and sleep quality issues (neuropathy, nocturia, sleep apnea comorbidity). Diabetic patients are more likely to use multiple medications and may have different health-seeking and supplement-use behaviors.",
+          "justification": "T2DM is strongly associated with hypertension prevalence and HTN medication use; T2DM is associated with sleep disorders and poor sleep quality; diabetic patients typically use more medications overall.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q15.2",
+            "quoted_wording": "sha256:3d6739b193ceaa886e1cdb2d124dc9773635a38ec720b02ef57aac8b3a72879d"
+          },
+          "mechanism": "Alcohol use disrupts sleep architecture and is associated with hypertension. Alcohol use affects sleep quality (prompting melatonin use) and is independently associated with elevated hypertension risk and medication use.",
+          "justification": "Alcohol is a known sleep disruptor and is associated with hypertension; alcohol use patterns affect both sleep quality and cardiovascular risk independently.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q5.5",
+            "quoted_wording": "sha256:de9dcac5ebc6d726296a67ec78524bb13c5da9982763c0234ce9ca8653cc6c0a"
+          },
+          "mechanism": "Smoking disrupts sleep quality and is an independent risk factor for hypertension. Smoking affects both melatonin use (through sleep disruption) and antihypertensive medication use (through direct HTN risk).",
+          "justification": "Smoking is associated with sleep fragmentation and poor sleep quality; smoking is an independent risk factor for hypertension; smoking is associated with medication use patterns and healthcare engagement.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.32",
+            "quoted_wording": "sha256:27d4ee29ea7b33f51e9adf9423afcb48482787d3e94cc8a6d1459635ba34c64a"
+          },
+          "mechanism": "Coronary artery disease is a consequence of chronic hypertension and hypertensive end-organ damage. It is downstream of the outcome (antihypertensive medication targets the hypertension condition; prolonged uncontrolled hypertension leads to coronary disease).",
+          "justification": "Coronary disease results from chronic hypertensive injury to the coronary vasculature; it is a collateral outcome of hypertension, not a confounder of the exposure-outcome relationship.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Respondent's current age",
+          "search_phrases": [
+            "current age",
+            "How old are you today",
+            "respondent age",
+            "What is your age",
+            "What is your age How old are you today",
+            "born date birth month year"
+          ],
+          "why_rejected": "Searched with multiple phrases. The instrument contains age-related information (m1:Q2.9 resolves as a construct), but a direct age-in-years variable for the respondent could not be resolved. Attempt to retrieve the construct group returned an error.",
+          "exposes_the_estimate_to": "Confounding bias from age, an important demographic predictor of both melatonin use and hypertension medication use, whose effect cannot be statistically controlled."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "Ever regular use (4 times a month or more, for 6 months or longer) versus never regular use",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 20.01
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 11.55
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 6.33
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 3.65
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.0
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.15,
+          "value": 3.65,
+          "unit": "percentage points",
+          "at_n": 3000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.15; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS (Community and Metropolitan Participation in Study of Environments)",
+        "why_this_cohort": "COMPASS is an existing multiethnic epidemiologic cohort study based in Chicago with detailed behavioral, health status, and demographic data across multiple modules, enabling multi-module analysis of medication use patterns and supplement behaviors."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "dcfc1925f794b72d",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 2,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q22.15\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q20.8\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years old\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"sleep quality duration hours\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"body weight BMI obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"exercise physical activity\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity Hispanic Black African American White\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"stress anxiety depression worry mental health\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"hypertension high blood pressure diagnosis\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"cardiovascular heart disease coronary\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarette tobacco\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"alcohol drink beer wine liquor\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"diabetes blood sugar glucose type 2\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age respondent participant years\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q3.21\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"What is your age How old are you today\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.32\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q3.28\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q15.2\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"born date birth month year\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q2.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.9\"}) -> construct",
+          "resolve_variable({\"key\": \"m1:Q2.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.1\"}) -> not_found",
+          "resolve_variable({\"key\": \"m1:Q2.2\"}) -> construct",
+          "resolve_variable({\"key\": \"m1:Q2.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.6\"}) -> unique",
+          "get_item_group({\"key\": \"group:m1:Q2.9#1\"}) -> error",
+          "list_derivations({}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"currently smoke cigarette now\"}) -> ok",
+          "resolve_variable({\"key\": \"m3:Q5.1\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q5.5\"}) -> unique",
+          "estimate_detectability({\"baseline_prevalence\": 0.15}) -> ok",
+          "estimate_n({\"keys\": [\"m2:Q22.15\", \"m2:Q20.8\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q3.8\", \"m3:Q3.21\", \"m3:Q3.28\", \"m2:Q5.8\", \"m2:Q5.6\", \"m3:Q15.2\", \"m3:Q5.5\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q22.15\", \"m2:Q20.8\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q3.8\", \"m3:Q3.21\", \"m3:Q3.28\", \"m2:Q5.8\", \"m2:Q5.6\", \"m3:Q15.2\", \"m3:Q5.5\", \"m2:Q5.32\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:4e100b4a9f72e7c393db50b95b09a5914dd341f548dd3a6c1525fed16027b4b6",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:4e100b4a9f72e7c393db50b95b09a5914dd341f548dd3a6c1525fed16027b4b6",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.973085,
+        "margin": 0.24360899999999996,
+        "margin_12": 0.140154,
+        "abstained": false,
+        "nearest_key": "m2:Q22.15",
+        "hit": {
+          "key": "m2:Q22.15",
+          "construct_key": "m2:Q22.15",
+          "dict_construct_key": "m2:Q22.15",
+          "module": "2",
+          "target_id": 885,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q22.15"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:1fb5af950eb4cdd1fe89fc76a98a1f4300582e231673f0026dd99465d8a3b0cb",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:1fb5af950eb4cdd1fe89fc76a98a1f4300582e231673f0026dd99465d8a3b0cb",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.943621,
+        "margin": 0.21414500000000003,
+        "margin_12": 0.136445,
+        "abstained": false,
+        "nearest_key": "m2:Q20.8",
+        "hit": {
+          "key": "m2:Q20.8",
+          "construct_key": "m2:Q20.8",
+          "dict_construct_key": "m2:Q20.8",
+          "module": "2",
+          "target_id": 843,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q20.8"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q22.15",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:4e100b4a9f72e7c393db50b95b09a5914dd341f548dd3a6c1525fed16027b4b6",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:4e100b4a9f72e7c393db50b95b09a5914dd341f548dd3a6c1525fed16027b4b6",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.973085,
+          "margin": 0.24360899999999996,
+          "margin_12": 0.140154,
+          "abstained": false,
+          "nearest_key": "m2:Q22.15",
+          "hit": {
+            "key": "m2:Q22.15",
+            "construct_key": "m2:Q22.15",
+            "dict_construct_key": "m2:Q22.15",
+            "module": "2",
+            "target_id": 885,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q22.15"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q20.8",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:1fb5af950eb4cdd1fe89fc76a98a1f4300582e231673f0026dd99465d8a3b0cb",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:1fb5af950eb4cdd1fe89fc76a98a1f4300582e231673f0026dd99465d8a3b0cb",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.943621,
+          "margin": 0.21414500000000003,
+          "margin_12": 0.136445,
+          "abstained": false,
+          "nearest_key": "m2:Q20.8",
+          "hit": {
+            "key": "m2:Q20.8",
+            "construct_key": "m2:Q20.8",
+            "dict_construct_key": "m2:Q20.8",
+            "module": "2",
+            "target_id": 843,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q20.8"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q3.21",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q3.28",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q15.2",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q5.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.32",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q22.15",
+    "outcome": "m2:Q20.8",
+    "expected_direction": "non_monotonic",
+    "nodes": [
+      {
+        "key": "m2:Q22.15",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q20.8",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q3.21",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q3.28",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q15.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.32",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q22.15",
+        "target": "m2:Q20.8",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q22.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q20.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q22.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q20.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q22.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q20.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q3.21",
+        "target": "m2:Q22.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q3.21",
+        "target": "m2:Q20.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q3.28",
+        "target": "m2:Q22.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q3.28",
+        "target": "m2:Q20.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q22.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q20.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q22.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q20.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.2",
+        "target": "m2:Q22.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.2",
+        "target": "m2:Q20.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q22.15",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q20.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q20.8",
+        "target": "m2:Q5.32",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q3.10",
+      "m1:Q3.8",
+      "m3:Q3.21",
+      "m3:Q3.28",
+      "m2:Q5.8",
+      "m2:Q5.6",
+      "m3:Q15.2",
+      "m3:Q5.5"
+    ]
+  },
+  "critiques": [],
+  "revision": 0,
+  "generation": null
+}

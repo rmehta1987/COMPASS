@@ -1,0 +1,666 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q9.91_to_m3q2.6",
+    "record_hash": "175107dee2f78f70",
+    "pair_id": "m2:Q9.91 -> m3:Q2.6",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q9.91_to_m3q2.6",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does earlier age at initiation of combined estrogen-progestin prescription hormones influence the amount of time individuals currently spend in occupational light-duty physical work (walking and carrying materials weighing less than 50 pounds)?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q9.91",
+        "quoted_wording": "sha256:24058ea54024726b502fec609c7e382c2cb450d51a1a519020622b7770372cb2"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m3:Q2.6",
+        "quoted_wording": "sha256:9d7173cf7e19a2185de95350e9396329a63117511a2c16b15f22a818d8c1ac58"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "A risk difference of 5.11 percentage points or greater per year of earlier hormone initiation, at n=3000, would contradict the null hypothesis under standard significance and power conventions (two-sided α=0.05, power=0.80).",
+      "falsifier_threshold": {
+        "value": 5.11,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Risk difference regression via binomial GLM or OLS with cluster-robust standard errors",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race/ethnicity is a structural determinant of healthcare access, occupational opportunity, and socioeconomic circumstances that affect both hormone initiation timing and occupational roles.",
+          "justification": "Healthcare access varies by race/ethnicity through insurance coverage, provider availability, and discrimination; occupational segregation is stratified by race/ethnicity. Both pathways confound the exposure-outcome relationship.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:79590ca38c808b483369e51527ceca6aca100f2472a404c51b46d36b4411c743"
+          },
+          "mechanism": "Socioeconomic status (SES) determines both access to preventive reproductive healthcare—where hormone prescriptions are initiated—and the range of occupational opportunities available.",
+          "justification": "Higher household income is associated with earlier and easier access to contraceptive services; it also predicts occupational trajectories away from light manual labor. SES is a common cause of both exposure timing and occupational outcomes.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.7",
+            "quoted_wording": "sha256:16d7eea5541bf8da230e2fb4e326b08f86bc108ca54590dbe34a047428ed7bea"
+          },
+          "mechanism": "Marital or partnership status shapes reproductive intentions and family planning decisions, which directly influence the timing and type of contraceptive use. Marital status also influences occupational decisions and work-life balance patterns.",
+          "justification": "Unmarried or early-partnered individuals may initiate hormones at different ages based on reproductive goals; partnership status influences occupational commitment and availability for manual work.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q5.5",
+            "quoted_wording": "sha256:de9dcac5ebc6d726296a67ec78524bb13c5da9982763c0234ce9ca8653cc6c0a"
+          },
+          "mechanism": "Current smoking status is a marker of broader health behaviors, socioeconomic status, and lifestyle factors. These same factors are associated with occupational type, physical capacity, and healthcare-seeking behavior including contraceptive access.",
+          "justification": "Smoking prevalence is stratified by SES and occupational category; health behaviors cluster. Individuals with lower SES who smoke may have had different access to hormones at earlier ages and different occupational opportunities.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q15.7",
+            "quoted_wording": "sha256:ed5b18e3585428555a7a752d8719073435ee873307bc6fa8ce6a726ccceb866f"
+          },
+          "mechanism": "Alcohol consumption patterns reflect health behaviors, social integration, SES, and occupational culture. These factors influence both access to preventive services (hormones) and engagement in manual occupational work.",
+          "justification": "Alcohol use is associated with SES, occupational type, and health status—all of which confound the relationship between hormone initiation age and occupational activity.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q4.4",
+            "quoted_wording": "sha256:cc80b448e0ca3c718aa3a77b88ba8ef15c9407549207a458b33edeb6355b9e62"
+          },
+          "mechanism": "Current job type describes the occupation that generates the outcome measure. The outcome is the time per workday spent walking and carrying light materials—a characteristic inherent to the job itself.",
+          "justification": "Including job type creates post-treatment bias or confuses a component of the outcome with a confounder. The job is what produces the occupational light-duty work time being measured; it is not an independent cause of that outcome.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Combined estrogen-progestin hormones can influence weight gain over time. Weight in turn affects physical capacity and tolerance for manual labor.",
+          "justification": "If early hormone use results in weight changes, which then affect occupational capacity or choice, weight is on the causal pathway. Adjusting for weight would block the effect of interest.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q7.4",
+            "quoted_wording": "sha256:57b4c7a3bb52e7ceb482afd32a9b1b361d747696a8d88ae55a64a2664351c6e4"
+          },
+          "mechanism": "Pregnancy and reproductive history are causally downstream of contraceptive choices and use. Pregnancy and parenthood then directly affect occupational engagement through physical demands of pregnancy/recovery and childcare responsibilities.",
+          "justification": "The decision to use hormones shapes reproductive outcomes over the life course. Those outcomes (number of pregnancies, timing of births) are then determinants of current occupational activity. Adjustment would eliminate a mechanism through which early hormone use might affect occupational outcomes.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Current age at assessment (respondent's age at time of data collection)",
+          "search_phrases": [
+            "age current age years",
+            "birth date age participant respondent demographics",
+            "How old are you today"
+          ],
+          "why_rejected": "Multiple searches returned no_match or low_confidence results. No instrument item directly measures respondent's current age at the time of assessment.",
+          "exposes_the_estimate_to": "Age-at-initiation effects are confounded with life-stage effects; without current age, cannot separate the exposure parameter from the life-stage confounder. This remains a critical gap preventing full specification of the confounding structure."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "One-year difference in age at hormone initiation",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.5,
+          "value": 5.11,
+          "unit": "percentage points",
+          "at_n": 3000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.5; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "Protocol developed de novo.",
+        "why_this_cohort": "Multi-module questionnaire cohort with data spanning reproductive health (module 2), occupational activity and health behaviors (module 3), and demographics and socioeconomic factors (module 1)."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "9c14879a0bed7e89",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 0,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q9.91\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q2.6\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age current age years\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"education educational attainment\"}) -> no_match",
+          "search_variables({\"limit\": 10, \"phrase\": \"occupation job type occupation\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"income household financial\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"pregnancy pregnancies pregnant children births\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"health health status chronic disease\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"weight BMI body mass index obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarettes tobacco smoke\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"alcohol drink drinking\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"physical activity exercise moderate vigorous\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q5.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q15.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q4.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q7.4\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age how old years old\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"birth date age participant respondent demographics\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"How old are you today\"}) -> low_confidence",
+          "estimate_n({\"keys\": [\"m2:Q9.91\", \"m3:Q2.6\", \"m1:Q3.10\", \"m1:Q5.4\", \"m1:Q3.7\", \"m3:Q5.5\", \"m3:Q15.7\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.5}) -> ok",
+          "check_access({\"keys\": [\"m2:Q9.91\", \"m3:Q2.6\", \"m1:Q3.10\", \"m1:Q5.4\", \"m1:Q3.7\", \"m3:Q5.5\", \"m3:Q15.7\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:24058ea54024726b502fec609c7e382c2cb450d51a1a519020622b7770372cb2",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:24058ea54024726b502fec609c7e382c2cb450d51a1a519020622b7770372cb2",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.974569,
+        "margin": 0.245093,
+        "margin_12": 0.083461,
+        "abstained": false,
+        "nearest_key": "m2:Q9.91",
+        "hit": {
+          "key": "m2:Q9.91",
+          "construct_key": "m2:Q9.91",
+          "dict_construct_key": "m2:Q9.91",
+          "module": "2",
+          "target_id": 394,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q9.91"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:9d7173cf7e19a2185de95350e9396329a63117511a2c16b15f22a818d8c1ac58",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:9d7173cf7e19a2185de95350e9396329a63117511a2c16b15f22a818d8c1ac58",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.951105,
+        "margin": 0.22162899999999996,
+        "margin_12": 0.191199,
+        "abstained": false,
+        "nearest_key": "m3:Q2.6",
+        "hit": {
+          "key": "m3:Q2.6",
+          "construct_key": "m3:Q2.6",
+          "dict_construct_key": "m3:Q2.6",
+          "module": "3",
+          "target_id": 1035,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m3:Q2.6"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q9.91",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:24058ea54024726b502fec609c7e382c2cb450d51a1a519020622b7770372cb2",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:24058ea54024726b502fec609c7e382c2cb450d51a1a519020622b7770372cb2",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.974569,
+          "margin": 0.245093,
+          "margin_12": 0.083461,
+          "abstained": false,
+          "nearest_key": "m2:Q9.91",
+          "hit": {
+            "key": "m2:Q9.91",
+            "construct_key": "m2:Q9.91",
+            "dict_construct_key": "m2:Q9.91",
+            "module": "2",
+            "target_id": 394,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q9.91"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m3:Q2.6",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:9d7173cf7e19a2185de95350e9396329a63117511a2c16b15f22a818d8c1ac58",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:9d7173cf7e19a2185de95350e9396329a63117511a2c16b15f22a818d8c1ac58",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.951105,
+          "margin": 0.22162899999999996,
+          "margin_12": 0.191199,
+          "abstained": false,
+          "nearest_key": "m3:Q2.6",
+          "hit": {
+            "key": "m3:Q2.6",
+            "construct_key": "m3:Q2.6",
+            "dict_construct_key": "m3:Q2.6",
+            "module": "3",
+            "target_id": 1035,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m3:Q2.6"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q5.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q15.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q4.4",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q7.4",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q9.91",
+    "outcome": "m3:Q2.6",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:Q9.91",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m3:Q2.6",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q15.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q4.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q7.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q9.91",
+        "target": "m3:Q2.6",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q9.91",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m3:Q2.6",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q9.91",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m3:Q2.6",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.7",
+        "target": "m2:Q9.91",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.7",
+        "target": "m3:Q2.6",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q9.91",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m3:Q2.6",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m2:Q9.91",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m3:Q2.6",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q2.6",
+        "target": "m1:Q4.4",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.91",
+        "target": "m1:Q2.10",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m3:Q2.6",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.91",
+        "target": "m2:Q7.4",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q7.4",
+        "target": "m3:Q2.6",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.10",
+      "m1:Q5.4",
+      "m1:Q3.7",
+      "m3:Q5.5",
+      "m3:Q15.7"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m1:Q2.10 is asserted to mediate m2:Q9.91 -> m3:Q2.6, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m1:Q2.10",
+      "severity": "blocking",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q7.4 is asserted to mediate m2:Q9.91 -> m3:Q2.6, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q7.4",
+      "severity": "blocking",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

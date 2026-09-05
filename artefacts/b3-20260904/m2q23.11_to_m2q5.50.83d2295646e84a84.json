@@ -1,0 +1,794 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q23.11_to_m2q5.50",
+    "record_hash": "83d2295646e84a84",
+    "pair_id": "m2:Q23.11 -> m2:Q5.50",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q23.11_to_m2q5.50",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does higher daily insulin dose associate with earlier age at liver cirrhosis diagnosis in individuals taking insulin regularly?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q23.11",
+        "quoted_wording": "sha256:43072a3dd07d98299cdf6c2bc4e17f02034cb51f1ae8c629b850cc7e709ab092"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.50",
+        "quoted_wording": "sha256:6867280f8390b0597e7ca1865a77c314f79f159bce463e0d4650285c3283408e"
+      },
+      "expected_direction": {
+        "direction": "decrease",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "A regression coefficient from linear regression indicating that a 10-unit per day increase in daily insulin dose is associated with a meaningful change (at least 2–3 years earlier age at diagnosis, or smaller if clinically plausible; exact threshold to be determined) in age at liver cirrhosis diagnosis, after adjustment for confounders.",
+      "falsifier_threshold": null,
+      "model_spec": {
+        "form": "Ordinary least squares linear regression with continuous outcome (age at cirrhosis diagnosis, in years) and continuous exposure (insulin dose, units per day), adjusted for the covariate set",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area (per COMPASS design convention). Standard errors cluster-robust at the community area level."
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.4",
+            "quoted_wording": "sha256:06f26b3aeabb79ed39bb2db875106fa6274622a3256efef6a48f1c1f55525305"
+          },
+          "mechanism": "Type 1 diabetes is autoimmune-mediated, typically requiring insulin from diagnosis. Type 1 status is a determinant of insulin requirements and determines current disease severity. Type 1 diabetes affects metabolic status and long-term health, which relates to cirrhosis risk.",
+          "justification": "Confounds the exposure-outcome relationship through disease severity and metabolic status.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.5",
+            "quoted_wording": "sha256:d937c9a5e0752b7d4dca9e10a5da07320f475c90f87509f9651ee7784ee965cc"
+          },
+          "mechanism": "Age at Type 1 diabetes diagnosis reflects disease duration and long-term metabolic exposure, a marker of disease severity.",
+          "justification": "Confounds the exposure-outcome relationship through disease severity and metabolic status.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:55600e24b14333ff4c2cea0d744d84df721ba906ace8329551ba8072ef427427"
+          },
+          "mechanism": "Type 2 diabetes prevalence is higher than Type 1. Insulin use in Type 2 indicates poor glycemic control and advanced disease. Type 2 is associated with metabolic syndrome and fat redistribution, which affect both insulin requirement and liver health including fatty liver disease.",
+          "justification": "Confounds through metabolic syndrome and disease severity markers.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.7",
+            "quoted_wording": "sha256:feb48f11c86453b98ad0851786a09c58f9d1e8e132724ccd7d6ea779c5a96e39"
+          },
+          "mechanism": "Age at Type 2 diabetes diagnosis reflects disease duration and metabolic dysfunction time-course, a marker of disease severity.",
+          "justification": "Confounds through metabolic syndrome and disease severity markers.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.8",
+            "quoted_wording": "sha256:75280df2ed2c4c3e0d15aa33e12b34dc78154bcfe0cb34cc8a4eef4e64c7ece4"
+          },
+          "mechanism": "Gestational diabetes is a marker of underlying metabolic dysfunction and insulin resistance. It predicts later Type 2 diabetes. Persons with gestational diabetes have altered metabolic status relevant to both insulin dosing and fatty liver disease.",
+          "justification": "Proxies for metabolic dysfunction affecting both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.43",
+            "quoted_wording": "sha256:9933e522f2d47ade5ac83961618bf35b7b41479b62a4e27c194bbfc9ad392c23"
+          },
+          "mechanism": "Hepatitis B is a direct cause of cirrhosis. Age at hepatitis B diagnosis is a marker of hepatitis serostatus and infection history. Hepatitis B acquisition may correlate with health access or risk behaviors that also affect diabetes management and medication adherence.",
+          "justification": "Confounds if hepatitis acquisition is related to health behaviors or access that affect insulin management; directly causes outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.44",
+            "quoted_wording": "sha256:5cd67afb874bd0cd0aad3e9cdb75428e3db234f074ae018ed909992e4505a6c0"
+          },
+          "mechanism": "Hepatitis C is a direct cause of cirrhosis. Age at hepatitis C diagnosis marks serostatus. Like hepatitis B, acquisition may correlate with health behaviors.",
+          "justification": "Confounds if hepatitis acquisition is related to health behaviors or access that affect insulin management; directly causes outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q15.7",
+            "quoted_wording": "sha256:ed5b18e3585428555a7a752d8719073435ee873307bc6fa8ce6a726ccceb866f"
+          },
+          "mechanism": "Alcohol is a major direct cause of cirrhosis. Heavy alcohol use may correlate with poor health behaviors and poor diabetes management, creating potential confounding.",
+          "justification": "Confounds if health-behavior patterns affect both insulin adherence and drinking patterns.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race and ethnicity affect diabetes incidence, health care access, health behaviors, and liver disease risk through social determinants, genetic variation, and behavioral patterns.",
+          "justification": "Confounds through multiple pathways affecting both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex affects insulin dosing (weight-adjusted), diabetes prevalence, alcohol metabolism, and liver disease susceptibility.",
+          "justification": "Biological and social determinant of both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q23.14",
+            "quoted_wording": "sha256:3ab471fa287dd2c642ffa855b987d09bee149d8c32f050592780fe097c97032a"
+          },
+          "mechanism": "Years on insulin regularly. Longer duration predicts higher current insulin dose through tolerance and disease progression, and older age at future diagnoses.",
+          "justification": "This variable is closely related to the measurement and mechanism of the exposure. Persons who have taken insulin for many years likely take higher doses. Excluding it avoids over-adjustment to the exposure mechanism.",
+          "role": "descendant_of_exposure",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Weight is associated with metabolic status and insulin requirement (dosing is weight-dependent). Heavier individuals have higher baseline insulin needs and may have metabolic syndrome affecting liver health.",
+          "justification": "Could confound if weight affects both insulin dose and liver disease risk. However, this is current weight (not weight at disease onset), and the temporal relationship to outcome (age at cirrhosis diagnosis) is unclear. Weight may be a mediator (metabolic status → insulin dose) rather than a confounder.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "10-unit per day increase in daily insulin dose",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 12.21
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 7.05
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 3.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 2.23
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 1.22
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.05,
+          "value": 12.21,
+          "unit": "percentage points",
+          "at_n": 100,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.05; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS study insulin and cirrhosis marker relationship.",
+        "why_this_cohort": "Prospective cohort design with harmonized insulin dosing and cirrhosis diagnosis age data across modules 1–3, enabling cross-sectional adjustment analysis."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "49b4f9d8b5cbd206",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 2,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q23.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.50\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age diabetes diagnosed\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"hepatitis B C infection\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"alcohol use drinking\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"body mass index BMI weight obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"liver disease hepatic cirrhosis\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.43\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.44\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.28\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q15.7\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age years old\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"Type 1 Diabetes insulin dependent\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"Type 2 Diabetes non-insulin\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q23.14\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"gestational diabetes pregnancy\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarette tobacco\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q9.8\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q23.11\", \"m2:Q5.50\", \"m2:Q5.4\", \"m2:Q5.5\", \"m2:Q5.6\", \"m2:Q5.7\", \"m2:Q9.8\", \"m2:Q5.43\", \"m2:Q5.44\", \"m3:Q15.7\", \"m1:Q3.10\", \"m1:Q3.3\", \"m2:Q23.14\") -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.05}) -> ok",
+          "check_access({\"keys\": [\"m2:Q23.11\", \"m2:Q5.50\", \"m2:Q5.4\", \"m2:Q5.5\", \"m2:Q5.6\", \"m2:Q5.7\", \"m2:Q9.8\", \"m2:Q5.43\", \"m2:Q5.44\", \"m3:Q15.7\", \"m1:Q3.10\", \"m1:Q3.3\", \"m2:Q23.14\") -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:43072a3dd07d98299cdf6c2bc4e17f02034cb51f1ae8c629b850cc7e709ab092",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:43072a3dd07d98299cdf6c2bc4e17f02034cb51f1ae8c629b850cc7e709ab092",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.988087,
+        "margin": 0.25861100000000004,
+        "margin_12": 0.10552,
+        "abstained": false,
+        "nearest_key": "m2:Q23.11",
+        "hit": {
+          "key": "m2:Q23.11",
+          "construct_key": "m2:Q23.11",
+          "dict_construct_key": "m2:Q23.11",
+          "module": "2",
+          "target_id": 909,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q23.11"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:6867280f8390b0597e7ca1865a77c314f79f159bce463e0d4650285c3283408e",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:6867280f8390b0597e7ca1865a77c314f79f159bce463e0d4650285c3283408e",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.986718,
+        "margin": 0.25724199999999997,
+        "margin_12": 0.09455,
+        "abstained": false,
+        "nearest_key": "m2:Q5.50",
+        "hit": {
+          "key": "m2:Q5.50",
+          "construct_key": "m2:Q5.50",
+          "dict_construct_key": "m2:Q5.50",
+          "module": "2",
+          "target_id": 247,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.50"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q23.11",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:43072a3dd07d98299cdf6c2bc4e17f02034cb51f1ae8c629b850cc7e709ab092",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:43072a3dd07d98299cdf6c2bc4e17f02034cb51f1ae8c629b850cc7e709ab092",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.988087,
+          "margin": 0.25861100000000004,
+          "margin_12": 0.10552,
+          "abstained": false,
+          "nearest_key": "m2:Q23.11",
+          "hit": {
+            "key": "m2:Q23.11",
+            "construct_key": "m2:Q23.11",
+            "dict_construct_key": "m2:Q23.11",
+            "module": "2",
+            "target_id": 909,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q23.11"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.50",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:6867280f8390b0597e7ca1865a77c314f79f159bce463e0d4650285c3283408e",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:6867280f8390b0597e7ca1865a77c314f79f159bce463e0d4650285c3283408e",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.986718,
+          "margin": 0.25724199999999997,
+          "margin_12": 0.09455,
+          "abstained": false,
+          "nearest_key": "m2:Q5.50",
+          "hit": {
+            "key": "m2:Q5.50",
+            "construct_key": "m2:Q5.50",
+            "dict_construct_key": "m2:Q5.50",
+            "module": "2",
+            "target_id": 247,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.50"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.43",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.44",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q15.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q23.14",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q23.11",
+    "outcome": "m2:Q5.50",
+    "expected_direction": "decrease",
+    "nodes": [
+      {
+        "key": "m2:Q23.11",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.50",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q9.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.43",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.44",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q15.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q23.14",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_exposure",
+        "decision": "excluded"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q23.11",
+        "target": "m2:Q5.50",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q23.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.5",
+        "target": "m2:Q23.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.5",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q23.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.7",
+        "target": "m2:Q23.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.7",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.8",
+        "target": "m2:Q23.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.8",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.43",
+        "target": "m2:Q23.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.43",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.44",
+        "target": "m2:Q23.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.44",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m2:Q23.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q23.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q23.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q23.11",
+        "target": "m2:Q23.14",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m2:Q5.4",
+      "m2:Q5.5",
+      "m2:Q5.6",
+      "m2:Q5.7",
+      "m2:Q9.8",
+      "m2:Q5.43",
+      "m2:Q5.44",
+      "m3:Q15.7",
+      "m1:Q3.10",
+      "m1:Q3.3"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q23.14 carries role 'descendant_of_exposure', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q23.14",
+      "severity": "major",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m1:Q2.10 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m1:Q2.10",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

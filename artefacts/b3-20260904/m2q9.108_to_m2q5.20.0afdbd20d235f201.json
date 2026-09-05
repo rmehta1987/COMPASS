@@ -1,0 +1,639 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q9.108_to_m2q5.20",
+    "record_hash": "0afdbd20d235f201",
+    "pair_id": "m2:Q9.108 -> m2:Q5.20",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q9.108_to_m2q5.20",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does surgical removal of one or both ovaries associate with the age at which arthritis is first diagnosed?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q9.108",
+        "quoted_wording": "sha256:4e5c3f3c1366eda11237b4a1b8b23836b6b0a6041c47f9adebe1c2797c9d9009"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.20",
+        "quoted_wording": "sha256:cab2a4842a03d48ce8b63052a7db8b628e3ed6033b26ff3ac11bcded10178dd7"
+      },
+      "expected_direction": {
+        "direction": "increase",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "Oophorectomy is associated with a difference in the prevalence of arthritis diagnosed before age 50, such that the magnitude of the risk difference is large enough to be detectable at the study's sample size.",
+      "falsifier_threshold": {
+        "value": 9.0,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Logistic regression with oophorectomy (binary) as the primary predictor of dichotomized arthritis onset age (before age 50 vs. age 50+), adjusted for six covariates.",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors (Huber-White sandwich estimator) with clustering at the community area level."
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_3",
+            "quoted_wording": "sha256:ad7c805a862e7b7a8108d049792b0ac9c0565ecf18fb6bd6180854a61aed5e2c"
+          },
+          "mechanism": "Age is a fundamental confounder. Older women have higher baseline arthritis risk due to cumulative exposure and aging of the immune system. Oophorectomy rates were higher in older birth cohorts due to historical gynecological practices, creating confounding by birth year.",
+          "justification": "Age must be controlled to isolate the association between oophorectomy and arthritis age at onset.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race/ethnicity affects both arthritis incidence and access to gynecological procedures. Some racial groups have higher prevalence of rheumatoid arthritis.",
+          "justification": "Failing to adjust for race/ethnicity could yield biased estimates if oophorectomy rates differ by race or if race affects arthritis diagnosis patterns.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Obesity is a major risk factor for osteoarthritis and increases systemic inflammation, potentially increasing rheumatoid arthritis risk. Weight may also relate to clinical decisions to undergo oophorectomy.",
+          "justification": "Weight is an independent predictor of arthritis and may confound if oophorectomy decisions are related to general health status or BMI.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q5.5",
+            "quoted_wording": "sha256:de9dcac5ebc6d726296a67ec78524bb13c5da9982763c0234ce9ca8653cc6c0a"
+          },
+          "mechanism": "Smoking is a well-established risk factor for rheumatoid arthritis, particularly seropositive disease. Smoking is also associated with healthcare utilization and preventive health behaviors that might influence oophorectomy decisions.",
+          "justification": "Smoking status is an independent risk factor for the outcome and may relate to the exposure through overall health-seeking behavior.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education serves as a proxy for socioeconomic status, which affects access to gynecological surgery and to diagnosis/treatment of arthritis. Higher education may be associated with earlier healthcare-seeking and diagnosis.",
+          "justification": "SES confounds both the exposure (access to elective gynecological procedures) and the outcome (access to arthritis diagnosis and healthcare).",
+          "role": "proxy",
+          "proxy_for": "socioeconomic status",
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.104",
+            "quoted_wording": "sha256:e770648a9d0b1b81410fba79beaa830081a58ae6bcab245a1745d353222efe71"
+          },
+          "mechanism": "Hysterectomy is often performed concurrently with or related to oophorectomy. Hysterectomy may independently affect immune function or arthritis risk through mechanisms separate from estrogen loss. Hysterectomy status is a marker of gynecological intervention patterns.",
+          "justification": "Hysterectomy status could confound if it is independently associated with both oophorectomy likelihood and arthritis risk.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.46",
+            "quoted_wording": "sha256:f575372c75ef1974346cb87d655ec922eb401bd91357d58114e1e5ecca83b73f"
+          },
+          "mechanism": "Hormone replacement therapy (HRT) use is causally downstream of oophorectomy. Women who undergo oophorectomy frequently receive HRT to offset the loss of endogenous estrogen. The protective effect of estrogen on arthritis risk is hypothesized to operate through HRT use when administered post-operatively.",
+          "justification": "HRT use is a mediator of the total causal effect of oophorectomy on arthritis risk. Including it would estimate the direct effect rather than the total effect. The total effect is appropriate for the causal question of interest.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Menopause status",
+          "search_phrases": [
+            "menopause status postmenopausal"
+          ],
+          "why_rejected": "Searched using terms 'menopause status postmenopausal' but results were above-threshold for medication questions rather than menopause status classification.",
+          "exposes_the_estimate_to": "Bias due to uncontrolled menopause status, which is closely tied to the exposure mechanism through oophorectomy-induced menopause."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "Yes (ever undergone oophorectomy) versus No (never undergone oophorectomy)",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 22.41
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 12.94
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 7.09
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.09
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.24
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.2,
+          "value": 7.09,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.2; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "Established literature on estrogen's immunomodulatory role in rheumatoid arthritis and associations between oophorectomy and menopause-related disease risk.",
+        "why_this_cohort": "COMPASS is a large multiethnic women's health study with detailed reproductive history and arthritis diagnosis data, enabling investigation of oophorectomy-arthritis associations while accounting for community-level clustering in Chicago."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "ddf77c68bd9cd6fe",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 0,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q9.108\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.20\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age birth date year born\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"menopause status postmenopausal\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"hormone replacement therapy HRT estrogen\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"weight BMI body mass index obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking tobacco cigarette current\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"education income socioeconomic status\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"physical activity exercise sports\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"how old age years now current\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"ovaries ovarian surgery removal hysterectomy\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"family history arthritis joint rheumatoid\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q9.110\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.109\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.105\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q1.1\"}) -> not_found",
+          "search_variables({\"limit\": 15, \"phrase\": \"birth date of birth when were you born\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"what is your age participant age today\"}) -> low_confidence",
+          "registry_coverage({}) -> ok",
+          "browse_variables({\"module\": \"1\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q2.15_3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "browse_variables({\"module\": \"2\"}) -> ok",
+          "browse_variables({\"module\": \"2\", \"section\": \"9\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q9.46\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.104\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking status ever current former smoker\"}) -> low_confidence",
+          "browse_variables({\"module\": \"3\"}) -> ok",
+          "browse_variables({\"module\": \"3\", \"section\": \"5\"}) -> ok",
+          "resolve_variable({\"key\": \"m3:Q5.5\"}) -> unique",
+          "list_derivations({}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"diagnosed arthritis doctor told have\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_5\"}) -> unique",
+          "estimate_detectability({\"baseline_prevalence\": 0.2}) -> ok",
+          "estimate_n({\"keys\": [\"m2:Q9.108\", \"m2:Q5.20\", \"m1:Q2.15_3\", \"m1:Q3.10\", \"m1:Q2.10\", \"m3:Q5.5\", \"m1:Q3.11\", \"m2:Q9.104\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q9.108\", \"m2:Q5.20\", \"m1:Q2.15_3\", \"m1:Q3.10\", \"m1:Q2.10\", \"m3:Q5.5\", \"m1:Q3.11\", \"m2:Q9.104\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:4e5c3f3c1366eda11237b4a1b8b23836b6b0a6041c47f9adebe1c2797c9d9009",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:4e5c3f3c1366eda11237b4a1b8b23836b6b0a6041c47f9adebe1c2797c9d9009",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.980369,
+        "margin": 0.25089300000000003,
+        "margin_12": 0.113847,
+        "abstained": false,
+        "nearest_key": "m2:Q9.108",
+        "hit": {
+          "key": "m2:Q9.108",
+          "construct_key": "m2:Q9.108",
+          "dict_construct_key": "m2:Q9.108",
+          "module": "2",
+          "target_id": 411,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q9.108"
+          ],
+          "stratum": "reproductive_hormonal",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:cab2a4842a03d48ce8b63052a7db8b628e3ed6033b26ff3ac11bcded10178dd7",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:cab2a4842a03d48ce8b63052a7db8b628e3ed6033b26ff3ac11bcded10178dd7",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.985543,
+        "margin": 0.25606699999999993,
+        "margin_12": 0.089205,
+        "abstained": false,
+        "nearest_key": "m2:Q5.20",
+        "hit": {
+          "key": "m2:Q5.20",
+          "construct_key": "m2:Q5.20",
+          "dict_construct_key": "m2:Q5.20",
+          "module": "2",
+          "target_id": 217,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.20"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q9.108",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:4e5c3f3c1366eda11237b4a1b8b23836b6b0a6041c47f9adebe1c2797c9d9009",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:4e5c3f3c1366eda11237b4a1b8b23836b6b0a6041c47f9adebe1c2797c9d9009",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.980369,
+          "margin": 0.25089300000000003,
+          "margin_12": 0.113847,
+          "abstained": false,
+          "nearest_key": "m2:Q9.108",
+          "hit": {
+            "key": "m2:Q9.108",
+            "construct_key": "m2:Q9.108",
+            "dict_construct_key": "m2:Q9.108",
+            "module": "2",
+            "target_id": 411,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q9.108"
+            ],
+            "stratum": "reproductive_hormonal",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.20",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:cab2a4842a03d48ce8b63052a7db8b628e3ed6033b26ff3ac11bcded10178dd7",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:cab2a4842a03d48ce8b63052a7db8b628e3ed6033b26ff3ac11bcded10178dd7",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.985543,
+          "margin": 0.25606699999999993,
+          "margin_12": 0.089205,
+          "abstained": false,
+          "nearest_key": "m2:Q5.20",
+          "hit": {
+            "key": "m2:Q5.20",
+            "construct_key": "m2:Q5.20",
+            "dict_construct_key": "m2:Q5.20",
+            "module": "2",
+            "target_id": 217,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.20"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q5.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.104",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.46",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q9.108",
+    "outcome": "m2:Q5.20",
+    "expected_direction": "increase",
+    "nodes": [
+      {
+        "key": "m2:Q9.108",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.20",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "proxy",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q9.104",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q9.46",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q9.108",
+        "target": "m2:Q5.20",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q9.108",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q5.20",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q9.108",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.20",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q9.108",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q5.20",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q9.108",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q5.20",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q9.108",
+        "relation": "proxies"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q5.20",
+        "relation": "proxies"
+      },
+      {
+        "source": "m2:Q9.104",
+        "target": "m2:Q9.108",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.104",
+        "target": "m2:Q5.20",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.108",
+        "target": "m2:Q9.46",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.46",
+        "target": "m2:Q5.20",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q2.15_3",
+      "m1:Q3.10",
+      "m1:Q2.10",
+      "m3:Q5.5",
+      "m1:Q3.11",
+      "m2:Q9.104"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q9.46 is asserted to mediate m2:Q9.108 -> m2:Q5.20, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q9.46",
+      "severity": "blocking",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

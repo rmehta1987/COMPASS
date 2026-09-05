@@ -1,0 +1,743 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.50_to_m2q20.9",
+    "record_hash": "4aef2c22e933ca34",
+    "pair_id": "m2:Q19.50 -> m2:Q20.9",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.50_to_m2q20.9",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does duration of regular naproxen (NSAID) use affect how frequently individuals take antihypertensive medications during periods when taking them regularly?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.50",
+        "quoted_wording": "sha256:6c35145c01fb29b84dabefef0f9c61ad4aa593177f7846288bc85a7e3ce62961"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q20.9",
+        "quoted_wording": "sha256:a782138a9573b08346fd9bbdf908a38ba8cf3b01e79d0cabfd96acd3739540a5"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "A risk difference in percentage points comparing groups of higher versus lower naproxen use duration on antihypertensive medication frequency.",
+      "falsifier_threshold": {
+        "value": 8.86,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear regression of antihypertensive medication frequency (days per week) on naproxen use duration (years), with adjustment for nine covariates",
+        "unit_of_analysis": "participant",
+        "clustering": "No clustering: exposure does not vary by place"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.4",
+            "quoted_wording": "sha256:6d466dcc5981bd3ba56449e7e907aaaff7c3dc666df8fdb33233a8c1c258156c"
+          },
+          "mechanism": "Gender affects both prevalence of chronic pain conditions (arthritis, musculoskeletal pain) driving NSAID use and cardiovascular disease risk/hypertension prevalence driving antihypertensive medication use and adherence patterns.",
+          "justification": "Gender influences disease prevalence and medication patterns through multiple causal pathways.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Ethnicity is a proxy for structural exposures (healthcare access disparities, neighborhood disinvestment, socioeconomic factors) affecting both pain condition prevalence and cardiovascular disease burden.",
+          "justification": "Ethnicity captures structural determinants affecting disease prevalence and medication access.",
+          "role": "proxy",
+          "proxy_for": "structural exposures including healthcare access disparities, neighborhood disinvestment, and socioeconomic factors",
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race is a proxy for structural determinants affecting prevalence of both chronic pain conditions and cardiovascular disease, and affecting healthcare access for medication use.",
+          "justification": "Race captures structural inequities affecting disease prevalence and medication access.",
+          "role": "proxy",
+          "proxy_for": "structural determinants including healthcare access and disease prevalence disparities",
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education affects health literacy, healthcare-seeking behavior, and access to both over-the-counter NSAIDs and prescription antihypertensives. Also associated with pain condition prevalence and cardiovascular risk.",
+          "justification": "Education influences health behaviors, healthcare access, and disease prevalence through multiple causal pathways.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:13d3548965635d4117cbd0b28b41f20541d0d0827da994eef2ca27064ff58d60"
+          },
+          "mechanism": "Income affects medication access, healthcare utilization, and underlying disease burden (cardiovascular disease, chronic pain conditions) that drive both NSAID and antihypertensive medication use.",
+          "justification": "Income is a key determinant of healthcare access and underlying disease burden.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.15#1_5",
+            "quoted_wording": "sha256:a603bbc099d69e6c3cfedc0a68e1f198a8aebaf370f7b33083ad3525d3aa04ce"
+          },
+          "mechanism": "Arthritis is a direct cause of regular NSAID use. May also indicate systemic inflammatory disease affecting cardiovascular health.",
+          "justification": "Arthritis is a primary indication for NSAID use and directly causes the exposure.",
+          "role": "cause_of_exposure_only",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.15#1_17",
+            "quoted_wording": "sha256:d6f3e11e1f5f64bc2df551c3c149c6a50fb41a6512b14a3ca0714f8dd25919b0"
+          },
+          "mechanism": "Coronary disease is a marker of cardiovascular disease burden affecting both hypertension prevalence and medication adherence patterns.",
+          "justification": "Coronary artery disease indicates cardiovascular disease burden affecting antihypertensive medication needs and adherence.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:883085f9e05c1ff52e186d0ca76208723c1d81024663315e7f20b7cc5c94c2d4"
+          },
+          "mechanism": "Type 2 Diabetes is a major risk factor for hypertension and associated with cardiovascular disease burden; affects medication needs and adherence.",
+          "justification": "Type 2 diabetes is a strong risk factor for hypertension and increases antihypertensive medication requirements.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q5.5",
+            "quoted_wording": "sha256:de9dcac5ebc6d726296a67ec78524bb13c5da9982763c0234ce9ca8653cc6c0a"
+          },
+          "mechanism": "Smoking is a cardiovascular risk factor affecting hypertension and medication patterns, and may affect pain conditions.",
+          "justification": "Smoking is an established risk factor for hypertension and affects medication patterns.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.10",
+            "quoted_wording": "sha256:ede582d2a1b0bf022541d3c9f9b46efad9e128ef64a20c625a7666a085d4f63a"
+          },
+          "mechanism": "This variable lies on the causal pathway from exposure to outcome. If NSAIDs elevate blood pressure, the pathway is: naproxen use → blood pressure elevation → hypertension diagnosis/prescription → medication adherence.",
+          "justification": "Blocking this mediator would prevent estimation of the indirect causal pathway through which NSAIDs affect medication adherence.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Index participant age",
+          "search_phrases": [
+            "respondent participant yourself age years born"
+          ],
+          "why_rejected": "Searched for respondent age but m1:1_Q6.3 measures household members' ages, not the index participant's age. No variable directly measuring respondent age was found in searches.",
+          "exposes_the_estimate_to": "Residual confounding by age, as older individuals have higher rates of arthritis and chronic pain (driving NSAID use) and cardiovascular disease (driving antihypertensive use)."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "Years of regular naproxen use on continuous scale; a substantive contrast (e.g., 10-year increase vs. no use) requires further specification",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.5,
+          "value": 8.86,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.5; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "Causal question and covariate selection informed by known pathways linking NSAID use to cardiovascular outcomes and hypertension.",
+        "why_this_cohort": "Study design examines relationship between naproxen use duration and antihypertensive medication adherence in participants reporting regular use of both classes of medication."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "daf740d9775eb305",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 1,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.50\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q20.9\"}) -> unique",
+          "search_variables({\"limit\": 5, \"phrase\": \"age years old birth\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"arthritis joint pain chronic conditions\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"BMI body mass index weight obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"smoking tobacco cigarettes current former\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"race ethnicity Hispanic Latino Asian African American white\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"hypertension blood pressure high\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"kidney disease renal function creatinine\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:1_Q6.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_5\"}) -> unique",
+          "search_variables({\"limit\": 5, \"phrase\": \"pain medication ibuprofen aspirin anti-inflammatory\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"cardiovascular heart disease coronary\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"diabetes mellitus blood glucose\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.32\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_17\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "search_variables({\"limit\": 5, \"phrase\": \"respondent participant yourself age years born\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"race Black White African American\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "get_design_convention({\"topic\": \"adjustment_set:area_exposure\"}) -> ok",
+          "get_design_convention({\"topic\": \"clustering:community_area\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"education high school college diploma degree\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"income household money earnings pay\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"current smoker smoking status cigarettes now\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q5.5\"}) -> unique",
+          "estimate_detectability({\"baseline_prevalence\": 0.5}) -> ok",
+          "estimate_n({\"keys\": [\"m2:Q19.50\", \"m2:Q20.9\", \"m1:Q3.4\", \"m1:Q3.8\", \"m1:Q3.10\", \"m1:Q3.11\", \"m1:Q5.4\", \"m2:Q5.15#1_5\", \"m2:Q5.15#1_17\", \"m2:Q5.6\", \"m3:Q5.5\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.50\", \"m2:Q20.9\", \"m1:Q3.4\", \"m1:Q3.8\", \"m1:Q3.10\", \"m1:Q3.11\", \"m1:Q5.4\", \"m2:Q5.15#1_5\", \"m2:Q5.15#1_17\", \"m2:Q5.6\", \"m3:Q5.5\", \"m2:Q5.10\"]}) -> ok",
+          "estimate_n({\"keys\": [\"m2:Q19.50\", \"m2:Q20.9\", \"m1:Q3.4\", \"m1:Q3.8\", \"m1:Q3.10\", \"m1:Q3.11\", \"m1:Q5.4\", \"m2:Q5.15#1_5\", \"m2:Q5.15#1_17\", \"m2:Q5.6\", \"m3:Q5.5\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.50\", \"m2:Q20.9\", \"m1:Q3.4\", \"m1:Q3.8\", \"m1:Q3.10\", \"m1:Q3.11\", \"m1:Q5.4\", \"m2:Q5.15#1_5\", \"m2:Q5.15#1_17\", \"m2:Q5.6\", \"m3:Q5.5\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:6c35145c01fb29b84dabefef0f9c61ad4aa593177f7846288bc85a7e3ce62961",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:6c35145c01fb29b84dabefef0f9c61ad4aa593177f7846288bc85a7e3ce62961",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.976023,
+        "margin": 0.24654699999999996,
+        "margin_12": 0.132614,
+        "abstained": false,
+        "nearest_key": "m2:Q19.50",
+        "hit": {
+          "key": "m2:Q19.50",
+          "construct_key": "m2:Q19.50",
+          "dict_construct_key": "m2:Q19.50",
+          "module": "2",
+          "target_id": 798,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.50"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:a782138a9573b08346fd9bbdf908a38ba8cf3b01e79d0cabfd96acd3739540a5",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:a782138a9573b08346fd9bbdf908a38ba8cf3b01e79d0cabfd96acd3739540a5",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.983922,
+        "margin": 0.25444599999999995,
+        "margin_12": 0.210811,
+        "abstained": false,
+        "nearest_key": "m2:Q20.9",
+        "hit": {
+          "key": "m2:Q20.9",
+          "construct_key": "m2:Q20.9",
+          "dict_construct_key": "m2:Q20.9",
+          "module": "2",
+          "target_id": 844,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q20.9"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.50",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:6c35145c01fb29b84dabefef0f9c61ad4aa593177f7846288bc85a7e3ce62961",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:6c35145c01fb29b84dabefef0f9c61ad4aa593177f7846288bc85a7e3ce62961",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.976023,
+          "margin": 0.24654699999999996,
+          "margin_12": 0.132614,
+          "abstained": false,
+          "nearest_key": "m2:Q19.50",
+          "hit": {
+            "key": "m2:Q19.50",
+            "construct_key": "m2:Q19.50",
+            "dict_construct_key": "m2:Q19.50",
+            "module": "2",
+            "target_id": 798,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.50"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q20.9",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:a782138a9573b08346fd9bbdf908a38ba8cf3b01e79d0cabfd96acd3739540a5",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:a782138a9573b08346fd9bbdf908a38ba8cf3b01e79d0cabfd96acd3739540a5",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.983922,
+          "margin": 0.25444599999999995,
+          "margin_12": 0.210811,
+          "abstained": false,
+          "nearest_key": "m2:Q20.9",
+          "hit": {
+            "key": "m2:Q20.9",
+            "construct_key": "m2:Q20.9",
+            "dict_construct_key": "m2:Q20.9",
+            "module": "2",
+            "target_id": 844,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q20.9"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.15#1_5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.15#1_17",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q5.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.10",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.50",
+    "outcome": "m2:Q20.9",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:Q19.50",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q20.9",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "proxy",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "proxy",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.15#1_5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "cause_of_exposure_only",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.15#1_17",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.50",
+        "target": "m2:Q20.9",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.4",
+        "target": "m2:Q19.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.4",
+        "target": "m2:Q20.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q19.50",
+        "relation": "proxies"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q20.9",
+        "relation": "proxies"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q19.50",
+        "relation": "proxies"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q20.9",
+        "relation": "proxies"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q19.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q20.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q19.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q20.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.15#1_5",
+        "target": "m2:Q19.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.15#1_17",
+        "target": "m2:Q19.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.15#1_17",
+        "target": "m2:Q20.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q19.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q20.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q19.50",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q20.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.50",
+        "target": "m2:Q5.10",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.10",
+        "target": "m2:Q20.9",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.4",
+      "m1:Q3.8",
+      "m1:Q3.10",
+      "m1:Q3.11",
+      "m1:Q5.4",
+      "m2:Q5.15#1_5",
+      "m2:Q5.15#1_17",
+      "m2:Q5.6",
+      "m3:Q5.5"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.10 is asserted to mediate m2:Q19.50 -> m2:Q20.9, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q5.10",
+      "severity": "blocking",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

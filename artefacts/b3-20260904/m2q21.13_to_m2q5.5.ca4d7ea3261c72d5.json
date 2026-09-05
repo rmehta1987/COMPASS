@@ -1,0 +1,649 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q21.13_to_m2q5.5",
+    "record_hash": "ca4d7ea3261c72d5",
+    "pair_id": "m2:Q21.13 -> m2:Q5.5",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q21.13_to_m2q5.5",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Is regular over-the-counter proton pump inhibitor (PPI) use associated with the age at which Type 1 Diabetes is first diagnosed?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q21.13",
+        "quoted_wording": "sha256:d56401474fad3c878d529a0012572e26bd2897dc6534754510ddf436ef98bb86"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.5",
+        "quoted_wording": "sha256:d937c9a5e0752b7d4dca9e10a5da07320f475c90f87509f9651ee7784ee965cc"
+      },
+      "expected_direction": {
+        "direction": "non_monotonic",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "PPI use is associated with a difference in mean age at T1D diagnosis of at least 2.5 to 5 years",
+      "falsifier_threshold": null,
+      "model_spec": {
+        "form": "Ordinary least squares (OLS) linear regression of age at T1D diagnosis on PPI use (categorical or continuous predictor), adjusted for sex, race, ethnicity, and autoimmune disorder status.",
+        "unit_of_analysis": "participant",
+        "clustering": "cluster-robust standard errors at the community area level (Chicago geographic structure)"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex differences in T1D incidence and age at diagnosis are established; sex may also predict patterns of over-the-counter medication use.",
+          "justification": "Sex is an independent cause of both outcome (age at T1D diagnosis varies by sex) and exposure (PPI use patterns differ by sex).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Hispanic/Latino ethnicity is associated with T1D incidence and prevalence in Chicago (COMPASS setting); health-seeking behavior and medication use may vary by ethnicity.",
+          "justification": "Ethnicity independently predicts both outcome and exposure.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race is associated with T1D incidence, age at diagnosis, and healthcare access; racial differences in diagnostic pathways and medication use exist.",
+          "justification": "Race independently predicts both outcome and exposure.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.21",
+            "quoted_wording": "sha256:3a097c0aa537d50e16158ddae33a50919dc52803eb1138fc498527c0d87a2c02"
+          },
+          "mechanism": "Autoimmune disorders confound via two pathways: (a) T1D is autoimmune, and autoimmunity predicts earlier diagnosis; (b) autoimmunity causes gastrointestinal manifestations (reflux, inflammatory bowel disease) leading to PPI use.",
+          "justification": "Autoimmune status is a cause of or strong predictor of both outcome (T1D risk and age at diagnosis) and exposure (through GI complications necessitating PPI use).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.37",
+            "quoted_wording": "sha256:ea4e177aa01219b26ec395f58208901c904e8ed76b756c3a0f758f44148466d1"
+          },
+          "mechanism": "Esophageal acid reflux is a direct clinical indication for PPI use. The causal path is: (autoimmunity or other underlying condition) → acid reflux → PPI use. Reflux sits between confounders and the exposure.",
+          "justification": "Acid reflux is a mediator or descendant of the exposure. Adjusting for it would block the confounder pathway (autoimmunity → reflux → PPI use) and bias toward the null.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.47",
+            "quoted_wording": "sha256:ad42ffe781e271bf42415f1cd0f282524f22dfd1ceca545b12326f31dc35eba8"
+          },
+          "mechanism": "IBD causes gastrointestinal symptoms (reflux, abdominal discomfort) that trigger PPI use.",
+          "justification": "IBD is a mediator on the causal path from underlying autoimmunity to PPI use.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.48",
+            "quoted_wording": "sha256:2de58dde19252747d6f90f1aa8dabec60464058ce4e526b6bc01c4ed9c707780"
+          },
+          "mechanism": "IBS commonly co-occurs with acid reflux and is a frequent reason for PPI treatment.",
+          "justification": "IBS is a mediator or descendant of the exposure.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Current age or survey date (to anchor timing of PPI use relative to diagnosis)",
+          "search_phrases": [
+            "current age birth date years old"
+          ],
+          "why_rejected": "Instrument contains only age-at-diagnosis variables, not participant age at survey",
+          "exposes_the_estimate_to": "Ambiguity about temporal precedence: unable to confirm whether PPI use preceded T1D diagnosis for any respondent"
+        },
+        {
+          "construct_sought": "Family history of Type 1 Diabetes (potential confounder for genetic risk)",
+          "search_phrases": [
+            "family history diabetes parent relative"
+          ],
+          "why_rejected": "Results did not resolve above threshold",
+          "exposes_the_estimate_to": "Confounding by genetic risk for T1D"
+        },
+        {
+          "construct_sought": "Indication for PPI use (GERD, ulcer, prevention)",
+          "search_phrases": [
+            "gastrointestinal GERD acid reflux heartburn",
+            "stomach ulcer gastric peptic ulcer disease"
+          ],
+          "why_rejected": "No variable found specifying reason for PPI use",
+          "exposes_the_estimate_to": "Inability to distinguish whether PPI use is a marker of underlying gastrointestinal disease (confounder) or incidental use"
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "More recent or regular PPI use versus no use or remote use",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 4.99
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 2.88
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 1.58
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 0.91
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 0.5
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.008,
+          "value": 0.91,
+          "unit": "percentage points",
+          "at_n": 3000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.008; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS cohort, Chicago-based prospective health survey",
+        "why_this_cohort": "Cross-sectional analysis of association between OTC PPI use and age at Type 1 Diabetes diagnosis in established cohort with diabetes diagnosis variables and medication history"
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "9d8e36f35a91b512",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 2,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q21.13\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.5\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"gastrointestinal GERD acid reflux heartburn\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"autoimmune condition\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"age\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age birth date years old\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"gender sex male female\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"family history diabetes parent relative\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity Hispanic Latino Black White Asian\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarette tobacco\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"stomach ulcer gastric peptic ulcer disease\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"inflammatory bowel Crohn celiac\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"medication prescription drug\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.37\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.21\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.47\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.48\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q21.13\", \"m2:Q5.5\", \"m1:Q3.3\", \"m1:Q3.8\", \"m1:Q3.10\", \"m2:Q5.21\", \"m2:Q5.37\", \"m2:Q5.47\", \"m2:Q5.48\"]}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.4\"}) -> unique",
+          "estimate_detectability({\"baseline_prevalence\": 0.008}) -> ok",
+          "check_access({\"keys\": [\"m2:Q21.13\", \"m2:Q5.5\", \"m1:Q3.3\", \"m1:Q3.8\", \"m1:Q3.10\", \"m2:Q5.21\", \"m2:Q5.37\", \"m2:Q5.47\", \"m2:Q5.48\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:d56401474fad3c878d529a0012572e26bd2897dc6534754510ddf436ef98bb86",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:d56401474fad3c878d529a0012572e26bd2897dc6534754510ddf436ef98bb86",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.976072,
+        "margin": 0.24659600000000004,
+        "margin_12": 0.014727,
+        "abstained": false,
+        "nearest_key": "m2:Q21.13",
+        "hit": {
+          "key": "m2:Q21.13",
+          "construct_key": "m2:Q21.13",
+          "dict_construct_key": "m2:Q21.13",
+          "module": "2",
+          "target_id": 862,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q21.13"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:d937c9a5e0752b7d4dca9e10a5da07320f475c90f87509f9651ee7784ee965cc",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:d937c9a5e0752b7d4dca9e10a5da07320f475c90f87509f9651ee7784ee965cc",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.984469,
+        "margin": 0.254993,
+        "margin_12": 0.102806,
+        "abstained": false,
+        "nearest_key": "m2:Q5.5",
+        "hit": {
+          "key": "m2:Q5.5",
+          "construct_key": "m2:Q5.5",
+          "dict_construct_key": "m2:Q5.5",
+          "module": "2",
+          "target_id": 154,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.5"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q21.13",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:d56401474fad3c878d529a0012572e26bd2897dc6534754510ddf436ef98bb86",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:d56401474fad3c878d529a0012572e26bd2897dc6534754510ddf436ef98bb86",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.976072,
+          "margin": 0.24659600000000004,
+          "margin_12": 0.014727,
+          "abstained": false,
+          "nearest_key": "m2:Q21.13",
+          "hit": {
+            "key": "m2:Q21.13",
+            "construct_key": "m2:Q21.13",
+            "dict_construct_key": "m2:Q21.13",
+            "module": "2",
+            "target_id": 862,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q21.13"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.5",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:d937c9a5e0752b7d4dca9e10a5da07320f475c90f87509f9651ee7784ee965cc",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:d937c9a5e0752b7d4dca9e10a5da07320f475c90f87509f9651ee7784ee965cc",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.984469,
+          "margin": 0.254993,
+          "margin_12": 0.102806,
+          "abstained": false,
+          "nearest_key": "m2:Q5.5",
+          "hit": {
+            "key": "m2:Q5.5",
+            "construct_key": "m2:Q5.5",
+            "dict_construct_key": "m2:Q5.5",
+            "module": "2",
+            "target_id": 154,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.5"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.21",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.37",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.47",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.48",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q21.13",
+    "outcome": "m2:Q5.5",
+    "expected_direction": "non_monotonic",
+    "nodes": [
+      {
+        "key": "m2:Q21.13",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.5",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.21",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.37",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.47",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.48",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q21.13",
+        "target": "m2:Q5.5",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q21.13",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q21.13",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q5.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q21.13",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.21",
+        "target": "m2:Q21.13",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.21",
+        "target": "m2:Q5.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q21.13",
+        "target": "m2:Q5.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.37",
+        "target": "m2:Q5.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q21.13",
+        "target": "m2:Q5.47",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.47",
+        "target": "m2:Q5.5",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q21.13",
+        "target": "m2:Q5.48",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.48",
+        "target": "m2:Q5.5",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q3.8",
+      "m1:Q3.10",
+      "m2:Q5.21"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.37 is asserted to mediate m2:Q21.13 -> m2:Q5.5, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q5.37",
+      "severity": "blocking",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.47 is asserted to mediate m2:Q21.13 -> m2:Q5.5, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q5.47",
+      "severity": "blocking",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.48 is asserted to mediate m2:Q21.13 -> m2:Q5.5, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q5.48",
+      "severity": "blocking",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

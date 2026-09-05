@@ -1,0 +1,604 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q9.105_to_m2q5.19",
+    "record_hash": "5331cfbc0369378d",
+    "pair_id": "m2:Q9.105 -> m2:Q5.19",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q9.105_to_m2q5.19",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does hysterectomy increase the risk of arrhythmia diagnosis, and if so, does the timing of hysterectomy matter?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q9.105",
+        "quoted_wording": "sha256:d8fa2cbb5d4c385d89326144804bf3d09b914322d998c3dcab05c76ef1538160"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.19",
+        "quoted_wording": "sha256:ba3f2573cf180c03f92a7f5a8a9f653760bafe9747a47f6022d86d07c0f37f4b"
+      },
+      "expected_direction": {
+        "direction": "increase",
+        "magnitude": "approximately 3-fold to 5-fold increase in arrhythmia risk per 15-year younger age at hysterectomy",
+        "magnitude_source": "hormonal or physiological mechanisms of hysterectomy effects on cardiac rhythm"
+      },
+      "falsifier": "The null hypothesis is that age at hysterectomy is not associated with arrhythmia (either no relationship in the regression coefficient, or an odds ratio of 1.0 in logistic regression). The alternative hypothesis is a directional relationship: earlier hysterectomy is associated with higher arrhythmia risk or earlier diagnosis.",
+      "falsifier_threshold": {
+        "value": 10.0,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Regression of age at arrhythmia diagnosis (m2:Q5.19) on age at hysterectomy (m2:Q9.105), adjusted for hypertension, diabetes, race, and weight. If outcome is continuous: ordinary least squares regression with robust standard errors. If outcome is binary: logistic regression with odds ratio reported.",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors at the community area level"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.8",
+            "quoted_wording": "sha256:54859c0b47368445f04b396a67b96ed6934dcd16cef08c3db16e3357147c596b"
+          },
+          "mechanism": "Hypertension is an independent cardiovascular risk factor that predicts arrhythmia incidence and diagnosis.",
+          "justification": "Hypertension is a confounder because it is associated with both the probability of hysterectomy and the probability of arrhythmia diagnosis independent of hysterectomy.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:55600e24b14333ff4c2cea0d744d84df721ba906ace8329551ba8072ef427427"
+          },
+          "mechanism": "Type 2 diabetes is a major cardiovascular and metabolic risk factor, independently and substantially associated with increased arrhythmia risk.",
+          "justification": "Diabetes confounds the exposure-outcome relationship because it independently increases arrhythmia risk and may be associated with selection into or timing of hysterectomy.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race/ethnicity is a demographic marker associated with both cardiovascular disease risk and hysterectomy rates.",
+          "justification": "Race/ethnicity confounds because it is associated with the exposure distribution and predicts the outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Weight/BMI is a known cardiovascular risk factor that is independently associated with arrhythmia and may be associated with indications for hysterectomy.",
+          "justification": "Weight confounds the relationship because it predicts arrhythmia risk and may be associated with the exposure.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.61",
+            "quoted_wording": "sha256:b82f826fbe176b50bfb23894466b23ecfe4403cfea676d696c31e8a43e808747"
+          },
+          "mechanism": "Stroke is a known thromboembolic complication of arrhythmia, particularly atrial fibrillation, and represents a causal consequence of arrhythmia via blood stasis and clot formation.",
+          "justification": "Stroke is a descendant of the outcome (arrhythmia). Including stroke in the model would condition on a causal consequence of the outcome, potentially creating collider bias and biasing the exposure-outcome estimate.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.25",
+            "quoted_wording": "sha256:70dbdfb2e8d8921c85fbc215cb02393396b90f0db57c2f4b729a5f3e60791125"
+          },
+          "mechanism": "Blood clots/DVT can result from arrhythmia-related thromboembolism and are therefore a potential consequence of the outcome; alternatively, blood clots could be a complication of hysterectomy surgery itself.",
+          "justification": "Blood clots are a descendant of the outcome and/or the exposure. Including them would create collider bias or mediator-blocking, obscuring the direct relationship between hysterectomy and arrhythmia.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.46",
+            "quoted_wording": "sha256:f575372c75ef1974346cb87d655ec922eb401bd91357d58114e1e5ecca83b73f"
+          },
+          "mechanism": "Hormone therapy use is downstream of menopausal status and reproductive health conditions and could be causally related to both hysterectomy (women who undergo hysterectomy may initiate or continue HT for menopausal symptoms) and arrhythmia (HT is a known cardiovascular risk factor).",
+          "justification": "The temporal and causal relationship between hormone therapy, hysterectomy, and arrhythmia cannot be fully resolved without additional information on timing and indication. Depending on whether HT is a mediator or confounder, it should either be excluded or adjusted.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [
+        {
+          "construct_sought": "Current Age or Age at Assessment",
+          "search_phrases": [
+            "age current age",
+            "participant age years old born date of birth"
+          ],
+          "why_rejected": "A participant's age at the time of study assessment was not located in the instrument. Searches returned low confidence results with no usable match.",
+          "exposes_the_estimate_to": "Time-based confounding: older women at assessment are more likely to have had hysterectomy earlier and are also at higher baseline risk for arrhythmia; unmeasured confounding from assessment time could bias results."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "per one year difference in age at hysterectomy",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 9.56
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 5.52
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 3.02
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 1.75
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 0.96
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.03,
+          "value": 3.02,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.03; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "Epidemiologic literature on arrhythmia prevalence in women of hysterectomy-age and hysterectomy rates and cardiovascular outcomes",
+        "why_this_cohort": "Women with a hysterectomy history to examine potential causal effects of hysterectomy timing on arrhythmia diagnosis risk"
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "c0bcdaed8137e271",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 0,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q9.105\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.19\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age current age\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"cardiovascular heart disease history\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarette tobacco\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"menopause menopausal status\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"blood pressure hypertension\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"diabetes\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"weight BMI body mass index\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"hormone therapy estrogen progesterone\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"participant age years old born date of birth\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking status current cigarettes per day\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"stroke thromboembolism clot blood clot\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"reason indication for hysterectomy surgery\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.61\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.25\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.46\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q9.105\", \"m2:Q5.19\", \"m2:Q5.8\", \"m2:Q5.6\", \"m1:Q3.10\", \"m1:Q2.10\", \"m2:Q9.46\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.03}) -> ok",
+          "check_access({\"keys\": [\"m2:Q9.105\", \"m2:Q5.19\", \"m2:Q5.8\", \"m2:Q5.6\", \"m1:Q3.10\", \"m1:Q2.10\", \"m2:Q9.46\", \"m2:Q5.61\", \"m2:Q5.25\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:d8fa2cbb5d4c385d89326144804bf3d09b914322d998c3dcab05c76ef1538160",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:d8fa2cbb5d4c385d89326144804bf3d09b914322d998c3dcab05c76ef1538160",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.990626,
+        "margin": 0.26115,
+        "margin_12": 0.181092,
+        "abstained": false,
+        "nearest_key": "m2:Q9.105",
+        "hit": {
+          "key": "m2:Q9.105",
+          "construct_key": "m2:Q9.105",
+          "dict_construct_key": "m2:Q9.105",
+          "module": "2",
+          "target_id": 408,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q9.105"
+          ],
+          "stratum": "reproductive_hormonal",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:ba3f2573cf180c03f92a7f5a8a9f653760bafe9747a47f6022d86d07c0f37f4b",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:ba3f2573cf180c03f92a7f5a8a9f653760bafe9747a47f6022d86d07c0f37f4b",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.986172,
+        "margin": 0.25669600000000004,
+        "margin_12": 0.107194,
+        "abstained": false,
+        "nearest_key": "m2:Q5.19",
+        "hit": {
+          "key": "m2:Q5.19",
+          "construct_key": "m2:Q5.19",
+          "dict_construct_key": "m2:Q5.19",
+          "module": "2",
+          "target_id": 216,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.19"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q9.105",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:d8fa2cbb5d4c385d89326144804bf3d09b914322d998c3dcab05c76ef1538160",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:d8fa2cbb5d4c385d89326144804bf3d09b914322d998c3dcab05c76ef1538160",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.990626,
+          "margin": 0.26115,
+          "margin_12": 0.181092,
+          "abstained": false,
+          "nearest_key": "m2:Q9.105",
+          "hit": {
+            "key": "m2:Q9.105",
+            "construct_key": "m2:Q9.105",
+            "dict_construct_key": "m2:Q9.105",
+            "module": "2",
+            "target_id": 408,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q9.105"
+            ],
+            "stratum": "reproductive_hormonal",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.19",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:ba3f2573cf180c03f92a7f5a8a9f653760bafe9747a47f6022d86d07c0f37f4b",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:ba3f2573cf180c03f92a7f5a8a9f653760bafe9747a47f6022d86d07c0f37f4b",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.986172,
+          "margin": 0.25669600000000004,
+          "margin_12": 0.107194,
+          "abstained": false,
+          "nearest_key": "m2:Q5.19",
+          "hit": {
+            "key": "m2:Q5.19",
+            "construct_key": "m2:Q5.19",
+            "dict_construct_key": "m2:Q5.19",
+            "module": "2",
+            "target_id": 216,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.19"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.61",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.25",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.46",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q9.105",
+    "outcome": "m2:Q5.19",
+    "expected_direction": "increase",
+    "nodes": [
+      {
+        "key": "m2:Q9.105",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.19",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.61",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.25",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q9.46",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q9.105",
+        "target": "m2:Q5.19",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q9.105",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q5.19",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q9.105",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q5.19",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q9.105",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.19",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q9.105",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q5.19",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.19",
+        "target": "m2:Q5.61",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.19",
+        "target": "m2:Q5.25",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m2:Q5.8",
+      "m2:Q5.6",
+      "m1:Q3.10",
+      "m1:Q2.10"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q9.46 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q9.46",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

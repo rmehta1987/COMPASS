@@ -1,0 +1,682 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.61_to_m2q5.53",
+    "record_hash": "3550726640e96aa7",
+    "pair_id": "m2:Q19.61 -> m2:Q5.53",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.61_to_m2q5.53",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does the duration of regular Celebrex (celecoxib) use affect the age at which a person is first diagnosed with migraine?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.61",
+        "quoted_wording": "sha256:4de2ea8c15ae4390e7ba43c1131b08486fff82f3534a1b568f740306c89fb3d6"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.53",
+        "quoted_wording": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "After adjusting for sex, arthritis history, race/ethnicity, Hispanic/Latino ethnicity, anxiety/panic/PTSD/phobia history, and work stress, the study fails to falsify the null if there is no statistically significant association between duration of regular Celebrex use and age at first migraine diagnosis, or if the magnitude of association is below a biologically plausible threshold.",
+      "falsifier_threshold": null,
+      "model_spec": {
+        "form": "Linear regression, outcome is continuous (age in years)",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors at the community area level"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex is a cause of migraine outcome (migraine prevalence substantially higher in females) and is associated with patterns of NSAID use and healthcare-seeking behavior.",
+          "justification": "Sex confounds the exposure-outcome relationship through both biological (migraine prevalence) and behavioral (medication use) pathways.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.20",
+            "quoted_wording": "sha256:cab2a4842a03d48ce8b63052a7db8b628e3ed6033b26ff3ac11bcded10178dd7"
+          },
+          "mechanism": "Arthritis is a primary clinical indication for Celebrex use; arthritis itself is an inflammatory condition that may be associated with migraine pathophysiology or diagnostic patterns.",
+          "justification": "Arthritis likely causes or strongly influences Celebrex exposure. Inflammatory conditions may cluster phenotypically with migraine. Without controlling for arthritis, the Celebrex-migraine association would reflect partly the arthritis-migraine association.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race/ethnicity reflects patterns in healthcare access, quality, diagnostic intensity, and medication availability, affecting both the likelihood of Celebrex use being documented and the likelihood of migraine diagnosis.",
+          "justification": "In multiethnic cohort studies, racial/ethnic disparities in healthcare affect detection and documentation of both medications and diagnoses. COMPASS is a multiethnic study, making this adjustment necessary to separate true exposure-outcome effects from healthcare access confounding.",
+          "role": "precision",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Ethnicity (distinct from race) may indicate distinct patterns of healthcare seeking, communication, and medication utilization.",
+          "justification": "Ethnicity can modify healthcare pathways independent of race classification. In a multiethnic study, separate documentation of Hispanic/Latino identity captures additional heterogeneity in healthcare engagement.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.18",
+            "quoted_wording": "sha256:9b99356b9e919aeea0d6bf9fcc84627f9f8cb7128bf188cd97c33abc5ded3191"
+          },
+          "mechanism": "Anxiety disorders are comorbid with migraines; anxiety increases pain sensitivity and the propensity to seek pain relief (including NSAID use). Anxiety is also associated with healthcare-seeking behavior and symptom reporting.",
+          "justification": "Anxiety is a cause of both increased NSAID use (to manage anxiety-related tension and pain) and increased migraine diagnosis (anxiety and migraine co-occur; anxiety increases symptom reporting).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q4.6",
+            "quoted_wording": "sha256:d3ba7fa6df60f4eb26633da3e41466a52153847dac6998899abf50bbce995edb"
+          },
+          "mechanism": "Work stress triggers pain conditions (muscle tension, headaches) and migraines. Stress increases propensity to use pain-relief medications including NSAIDs.",
+          "justification": "Stress is a common causal factor for both NSAID use (in response to tension and pain) and migraine diagnosis (stress is a migraine trigger).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q19.28",
+            "quoted_wording": "sha256:d8459274d2310d358ff7ce00966922cac3bb26c070b4118d925c7662faa14f8d"
+          },
+          "mechanism": "Ibuprofen is a competing NSAID medication on the same causal pathway as Celebrex (both are pain relief medications).",
+          "justification": "Arthritis (m2:Q5.20) already captures the primary indication for NSAID use. Including multiple NSAIDs would add multicollinearity without closing additional confounding pathways. The exposure of interest is Celebrex specifically, not general NSAID class.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q19.50",
+            "quoted_wording": "sha256:6c35145c01fb29b84dabefef0f9c61ad4aa593177f7846288bc85a7e3ce62961"
+          },
+          "mechanism": "Naproxen is another competing NSAID on the same causal pathway.",
+          "justification": "Same as ibuprofen—redundant with arthritis indication and would create multicollinearity.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.30",
+            "quoted_wording": "sha256:1b3efc7594d0cc4d06035229a893f6e98f899e0e4a4c97c79830a2e86d15b990"
+          },
+          "mechanism": "Depression is related to anxiety and is comorbid with migraines.",
+          "justification": "Depression and anxiety are related conditions with overlapping associations to migraine and NSAID use. Including both creates multicollinearity. Anxiety (m2:Q5.18) is selected as the primary mental health confounder; depression adjustment is redundant given anxiety control.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.58",
+            "quoted_wording": "sha256:3900ff495e9a7c30027b31c5e392031014bf5325a26d4ae05749c1901f0e2bef"
+          },
+          "mechanism": "Rheumatoid arthritis is a subtype of arthritis.",
+          "justification": "Rheumatoid arthritis overlaps substantially with general arthritis diagnosis (m2:Q5.20). Including both creates redundancy and multicollinearity. General arthritis is selected as the primary arthritis confounder.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Participant baseline age or birth year",
+          "search_phrases": [
+            "age current year born",
+            "How old are you age at interview",
+            "born year what is your date birth",
+            "respondent participant baseline visit current age dob date of birth month",
+            "m1 Q1 Q2 Q3 introduction screening enrollment"
+          ],
+          "why_rejected": "Extensive searches for participant's own current age or date of birth yielded only parental, sibling, and child ages. No module-1 demographic age variable could be located.",
+          "exposes_the_estimate_to": "Inability to establish temporal ordering between exposure and outcome; incomplete confounding adjustment since age is a major confounder for migraine prevalence; invalid causal inference if reverse causality is present."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "duration of regular use measured in years",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 26.73
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 15.43
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.45
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.88
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.67
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.35,
+          "value": 26.73,
+          "unit": "percentage points",
+          "at_n": 100,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.35; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS is an established multiethnic cohort study conducted across Chicago community areas, with modules covering demographics, health conditions, and medication histories.",
+        "why_this_cohort": "COMPASS provides the necessary variables for exposure (Celebrex duration), outcome (migraine diagnosis age), and key confounders (sex, arthritis, race/ethnicity, anxiety, work stress). Multiethnic composition enables investigation of medication use and migraine diagnosis patterns across diverse populations."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "a88530b9cf338a13",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 3,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.61\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.53\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age current year born\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"arthritis joint pain inflammation\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"How old are you age at interview\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity background Hispanic Asian Black White\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"pain medication ibuprofen aspirin naproxen NSAID\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"born year what is your date birth\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"stress anxiety depression mental health\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"headache head pain neck tension\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"Q1 Q2 Q3 demographic birth age enrolled when did you\"}) -> low_confidence",
+          "list_derivations({}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.18\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.30\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q4.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.20\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.58\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"respondent participant baseline visit current age dob date of birth month\"}) -> low_confidence",
+          "search_variables({\"limit\": 20, \"phrase\": \"m1 Q1 Q2 Q3 introduction screening enrollment\"}) -> low_confidence",
+          "search_variables({\"limit\": 20, \"phrase\": \"first told diagnosed condition age years select\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"tobacco smoke cigarette status currently never former\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q19.28\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q19.50\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q19.61\", \"m2:Q5.53\", \"m1:Q3.3\", \"m2:Q5.20\", \"m1:Q3.10\", \"m1:Q3.8\", \"m2:Q5.18\", \"m1:Q4.6\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.35}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.61\", \"m2:Q5.53\", \"m1:Q3.3\", \"m2:Q5.20\", \"m1:Q3.10\", \"m1:Q3.8\", \"m2:Q5.18\", \"m1:Q4.6\", \"m2:Q19.28\", \"m2:Q19.50\", \"m2:Q5.30\", \"m2:Q5.58\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:4de2ea8c15ae4390e7ba43c1131b08486fff82f3534a1b568f740306c89fb3d6",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:4de2ea8c15ae4390e7ba43c1131b08486fff82f3534a1b568f740306c89fb3d6",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.980805,
+        "margin": 0.251329,
+        "margin_12": 0.156729,
+        "abstained": false,
+        "nearest_key": "m2:Q19.61",
+        "hit": {
+          "key": "m2:Q19.61",
+          "construct_key": "m2:Q19.61",
+          "dict_construct_key": "m2:Q19.61",
+          "module": "2",
+          "target_id": 809,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.61"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.985235,
+        "margin": 0.25575899999999996,
+        "margin_12": 0.113644,
+        "abstained": false,
+        "nearest_key": "m2:Q5.53",
+        "hit": {
+          "key": "m2:Q5.53",
+          "construct_key": "m2:Q5.53",
+          "dict_construct_key": "m2:Q5.53",
+          "module": "2",
+          "target_id": 250,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.53"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.61",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:4de2ea8c15ae4390e7ba43c1131b08486fff82f3534a1b568f740306c89fb3d6",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:4de2ea8c15ae4390e7ba43c1131b08486fff82f3534a1b568f740306c89fb3d6",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.980805,
+          "margin": 0.251329,
+          "margin_12": 0.156729,
+          "abstained": false,
+          "nearest_key": "m2:Q19.61",
+          "hit": {
+            "key": "m2:Q19.61",
+            "construct_key": "m2:Q19.61",
+            "dict_construct_key": "m2:Q19.61",
+            "module": "2",
+            "target_id": 809,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.61"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.53",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.985235,
+          "margin": 0.25575899999999996,
+          "margin_12": 0.113644,
+          "abstained": false,
+          "nearest_key": "m2:Q5.53",
+          "hit": {
+            "key": "m2:Q5.53",
+            "construct_key": "m2:Q5.53",
+            "dict_construct_key": "m2:Q5.53",
+            "module": "2",
+            "target_id": 250,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.53"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.20",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.18",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q4.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q19.28",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q19.50",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.30",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.58",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.61",
+    "outcome": "m2:Q5.53",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:Q19.61",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.53",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.20",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "precision",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.18",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q4.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q19.28",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q19.50",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.30",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.58",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.61",
+        "target": "m2:Q5.53",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q19.61",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.20",
+        "target": "m2:Q19.61",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.20",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q19.61",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.18",
+        "target": "m2:Q19.61",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.18",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q4.6",
+        "target": "m2:Q19.61",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q4.6",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m2:Q5.20",
+      "m1:Q3.10",
+      "m1:Q3.8",
+      "m2:Q5.18",
+      "m1:Q4.6"
+    ]
+  },
+  "critiques": [],
+  "revision": 0,
+  "generation": null
+}

@@ -42,6 +42,10 @@ deploy/model/
 *.bin
 !.claude/**/*.json
 !curated/**/*.json
+# a run's committable artefacts: redacted hypothesis records, the ledger and
+# its summary (pipeline/run.py). parked/ under a run stays ignored above.
+!artefacts/**/*.json
+!artefacts/**/*.jsonl
 # the small, wording-free half of the deploy bundle travels in git so a clone
 # can self-verify (deploy/smoke_test.py step 0)
 !deploy/manifest.json

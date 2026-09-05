@@ -1,0 +1,868 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.37_to_m2q20.12",
+    "record_hash": "61e7bd495776b810",
+    "pair_id": "m2:Q19.37 -> m2:Q20.12",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.37_to_m2q20.12",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does the frequency of regular acetaminophen use predict the duration of antihypertensive medication treatment?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.37",
+        "quoted_wording": "sha256:3ce9e4f24f9162e25272a153b6b46ea747135370a028dac6b3f929e598f35334"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q20.12",
+        "quoted_wording": "sha256:285c5edb84a3b57b8a3ee6ac1178a73317ed9fb7c3c77dc0828e652b79a24f66"
+      },
+      "expected_direction": {
+        "direction": "increase",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "There is a linear association between acetaminophen use frequency and duration of antihypertensive medication use, independent of confounding by the adjusted covariates. For dichotomized analysis at sample medians, the risk difference in the proportion experiencing long-term antihypertensive medication use between high-frequency and low-frequency acetaminophen users is at least 5.11 percentage points.",
+      "falsifier_threshold": {
+        "value": 5.11,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear regression of antihypertensive medication years on acetaminophen frequency, adjusted for 12 confounders, contingent on hypertension causal stratification; or logistic regression with risk difference estimation if dichotomized.",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors at community area level; design effect correction pending intracluster correlation estimates"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race predicts both pain medication access and hypertension prevalence in the U.S. health system.",
+          "justification": "Racial and ethnic groups differ in rates of pain conditions, pain treatment-seeking, and hypertension diagnosis and management.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Hispanic ethnicity affects both medication access patterns and hypertension epidemiology.",
+          "justification": "Hispanic populations have distinct medication use patterns and hypertension prevalence profiles.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:79590ca38c808b483369e51527ceca6aca100f2472a404c51b46d36b4411c743"
+          },
+          "mechanism": "Socioeconomic status determines access to both pain management options and hypertension care.",
+          "justification": "Lower-income participants have fewer medication choices, may use over-the-counter acetaminophen more, and may have inconsistent access to antihypertensive medications.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education affects health literacy, medication adherence, and healthcare engagement.",
+          "justification": "Educational attainment predicts both self-management of chronic conditions and patterns of analgesic use.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Weight and obesity affect both pain symptomatology and hypertension severity.",
+          "justification": "Obesity is associated with chronic inflammatory pain conditions requiring acetaminophen and with hypertension; higher obesity predicts longer antihypertensive medication duration.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.4",
+            "quoted_wording": "sha256:06f26b3aeabb79ed39bb2db875106fa6274622a3256efef6a48f1c1f55525305"
+          },
+          "mechanism": "Type 1 Diabetes increases comorbidity load and healthcare utilization.",
+          "justification": "Type 1 Diabetes patients have higher hypertension prevalence and longer treatment duration; may also differ in pain medication patterns.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:55600e24b14333ff4c2cea0d744d84df721ba906ace8329551ba8072ef427427"
+          },
+          "mechanism": "Type 2 Diabetes is a major hypertension risk factor and comorbidity driver.",
+          "justification": "Type 2 Diabetes is one of the strongest predictors of hypertension severity and prolonged medication need. Diabetic patients may also have neuropathic pain requiring analgesics.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.32",
+            "quoted_wording": "sha256:27d4ee29ea7b33f51e9adf9423afcb48482787d3e94cc8a6d1459635ba34c64a"
+          },
+          "mechanism": "Coronary heart disease indicates advanced cardiovascular disease and drives hypertension severity.",
+          "justification": "Heart disease patients have more severe hypertension and require longer medication management; they may also use pain medications at higher rates.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.29",
+            "quoted_wording": "sha256:8f7a250aae8614d933f3f746e3bda5faa34a21b8ce5e39d693311dbca6b57abc"
+          },
+          "mechanism": "Chronic kidney disease both causes and complicates hypertension.",
+          "justification": "Chronic kidney disease patients require intensive, prolonged antihypertensive therapy; chronic kidney disease also alters medication metabolism.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.20",
+            "quoted_wording": "sha256:cab2a4842a03d48ce8b63052a7db8b628e3ed6033b26ff3ac11bcded10178dd7"
+          },
+          "mechanism": "Arthritis drives chronic pain and thus acetaminophen use; comorbid pain-related conditions affect hypertension comorbidity patterns.",
+          "justification": "Arthritis increases analgesic use including acetaminophen and may be associated with inflammatory conditions that worsen hypertension.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q5.5",
+            "quoted_wording": "sha256:de9dcac5ebc6d726296a67ec78524bb13c5da9982763c0234ce9ca8653cc6c0a"
+          },
+          "mechanism": "Smoking is a major hypertension risk factor and predictor of medication need.",
+          "justification": "Current smoking strongly predicts hypertension severity and treatment duration; may also predict pain-related conditions.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q15.7",
+            "quoted_wording": "sha256:ed5b18e3585428555a7a752d8719073435ee873307bc6fa8ce6a726ccceb866f"
+          },
+          "mechanism": "Alcohol use affects blood pressure and hypertension management.",
+          "justification": "Alcohol consumption influences hypertension severity, medication response, and potentially pain symptomatology.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.11",
+            "quoted_wording": "sha256:78f1b457e03efe3e110fcde99b6c94dcc7b83e3de0d6d9f1a4c6c56cb711ff57"
+          },
+          "mechanism": "Current antihypertensive medication use is a direct descendant and mechanical consequence of the historical duration of medication use measured by the outcome.",
+          "justification": "Including current medication status creates post-treatment bias; someone on antihypertensive medications for many years is almost certain to currently use them, making this variable mechanistically dependent on the outcome.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.8",
+            "quoted_wording": "sha256:54859c0b47368445f04b396a67b96ed6934dcd16cef08c3db16e3357147c596b"
+          },
+          "mechanism": "Hypertension diagnosis is the clinical condition triggering antihypertensive medication prescription, placing it in the causal pathway to the outcome. Acetaminophen use might causally affect blood pressure through chronic inflammation or direct pharmacologic effects, making hypertension a potential mediator. Alternatively, if acetaminophen does not causally affect hypertension development, the diagnosis is purely a confounder.",
+          "justification": "The causal direction between acetaminophen use and hypertension development is unknown from the literature and the data. This variable is either a confounder (if association is due to common causes) or a mediator (if acetaminophen affects blood pressure).",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "Continuous scale (days per month) or dichotomized at sample median",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.5,
+          "value": 5.11,
+          "unit": "percentage points",
+          "at_n": 3000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.5; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS is a community-based prospective cohort study with multimodule survey data on pain medication use, cardiovascular risk factors, and chronic disease history.",
+        "why_this_cohort": "COMPASS provides comprehensive survey data spanning acetaminophen use frequency (module 2), antihypertensive medication treatment duration (module 2), and a full suite of confounders across modules 1, 2, and 3 required for causal adjustment."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "e1900aed248e77e1",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 0,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.37\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q20.12\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years old\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"body mass index BMI weight height obese obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking tobacco cigarette\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"alcohol drink drinking\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age now baseline enrolled\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity African American Hispanic White\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"income household earnings money financial\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"diabetes heart disease cardiovascular kidney liver chronic condition\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"pain medication ibuprofen naproxen aspirin NSAID analgesic\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.9#1_1\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.32\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.29\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q5.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q15.7\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"hypertension high blood pressure diagnosed told\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"arthritis joint pain inflammation rheumatoid\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.20\"}) -> unique",
+          "list_derivations({}) -> ok",
+          "estimate_n({\"keys\": [\"m2:Q19.37\", \"m2:Q20.12\", \"m1:Q3.10\", \"m1:Q3.8\", \"m1:Q5.4\", \"m1:Q3.11\", \"m1:Q2.10\", \"m2:Q5.4\", \"m2:Q5.6\", \"m2:Q5.32\", \"m2:Q5.29\", \"m2:Q5.20\", \"m3:Q5.5) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.5}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.37\", \"m2:Q20.12\", \"m1:Q3.10\", \"m1:Q3.8\", \"m1:Q5.4\", \"m1:Q3.11\", \"m1:Q2.10\", \"m2:Q5.4\", \"m2:Q5.6\", \"m2:Q5.32\", \"m2:Q5.29\", \"m2:Q5.20\", \"m3:Q5.5) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:3ce9e4f24f9162e25272a153b6b46ea747135370a028dac6b3f929e598f35334",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:3ce9e4f24f9162e25272a153b6b46ea747135370a028dac6b3f929e598f35334",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.98343,
+        "margin": 0.253954,
+        "margin_12": 0.18659,
+        "abstained": false,
+        "nearest_key": "m2:Q19.37",
+        "hit": {
+          "key": "m2:Q19.37",
+          "construct_key": "m2:Q19.37",
+          "dict_construct_key": "m2:Q19.37",
+          "module": "2",
+          "target_id": 785,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.37"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:285c5edb84a3b57b8a3ee6ac1178a73317ed9fb7c3c77dc0828e652b79a24f66",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:285c5edb84a3b57b8a3ee6ac1178a73317ed9fb7c3c77dc0828e652b79a24f66",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.983367,
+        "margin": 0.253891,
+        "margin_12": 0.143721,
+        "abstained": false,
+        "nearest_key": "m2:Q20.12",
+        "hit": {
+          "key": "m2:Q20.12",
+          "construct_key": "m2:Q20.12",
+          "dict_construct_key": "m2:Q20.12",
+          "module": "2",
+          "target_id": 847,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q20.12"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.37",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:3ce9e4f24f9162e25272a153b6b46ea747135370a028dac6b3f929e598f35334",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:3ce9e4f24f9162e25272a153b6b46ea747135370a028dac6b3f929e598f35334",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.98343,
+          "margin": 0.253954,
+          "margin_12": 0.18659,
+          "abstained": false,
+          "nearest_key": "m2:Q19.37",
+          "hit": {
+            "key": "m2:Q19.37",
+            "construct_key": "m2:Q19.37",
+            "dict_construct_key": "m2:Q19.37",
+            "module": "2",
+            "target_id": 785,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.37"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q20.12",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:285c5edb84a3b57b8a3ee6ac1178a73317ed9fb7c3c77dc0828e652b79a24f66",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:285c5edb84a3b57b8a3ee6ac1178a73317ed9fb7c3c77dc0828e652b79a24f66",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.983367,
+          "margin": 0.253891,
+          "margin_12": 0.143721,
+          "abstained": false,
+          "nearest_key": "m2:Q20.12",
+          "hit": {
+            "key": "m2:Q20.12",
+            "construct_key": "m2:Q20.12",
+            "dict_construct_key": "m2:Q20.12",
+            "module": "2",
+            "target_id": 847,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q20.12"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.32",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.29",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.20",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q5.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q15.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.11",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.8",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.37",
+    "outcome": "m2:Q20.12",
+    "expected_direction": "increase",
+    "nodes": [
+      {
+        "key": "m2:Q19.37",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q20.12",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.32",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.29",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.20",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q15.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.37",
+        "target": "m2:Q20.12",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q20.12",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q20.12",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q20.12",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q20.12",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q20.12",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q20.12",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q20.12",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.32",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.32",
+        "target": "m2:Q20.12",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.29",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.29",
+        "target": "m2:Q20.12",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.20",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.20",
+        "target": "m2:Q20.12",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q20.12",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m2:Q19.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m2:Q20.12",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q20.12",
+        "target": "m2:Q5.11",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.10",
+      "m1:Q3.8",
+      "m1:Q5.4",
+      "m1:Q3.11",
+      "m1:Q2.10",
+      "m2:Q5.4",
+      "m2:Q5.6",
+      "m2:Q5.32",
+      "m2:Q5.29",
+      "m2:Q5.20",
+      "m3:Q5.5",
+      "m3:Q15.7"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.8 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q5.8",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

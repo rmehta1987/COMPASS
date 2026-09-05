@@ -1,0 +1,609 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q9.97_to_m2q5.59",
+    "record_hash": "dca1dbb0fb494b69",
+    "pair_id": "m2:Q9.97 -> m2:Q5.59",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q9.97_to_m2q5.59",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does earlier initiation of prescription hormone use increase risk of shingles or predict an earlier age at first shingles diagnosis?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q9.97",
+        "quoted_wording": "sha256:510000d63574342e7d44576c8118a2ec6ce352ac943c7bfd9dac4bf5088e6933"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.59",
+        "quoted_wording": "sha256:db2a9264e06e61f5b804c4dd5cdbda3be05e9b8f04ba217b2dbd39e2a23dbc32"
+      },
+      "expected_direction": {
+        "direction": "decrease",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "We will detect a meaningful causal association if the age at first prescription hormone use predicts age at shingles diagnosis with a magnitude indicating that initiating hormones 1 year earlier is associated with shingles diagnosis occurring at least 0.5 years (6 months) earlier (i.e., regression coefficient β₁ ≤ -0.5), after adjustment for the confounders listed above. Alternatively and more conservatively: rejection of the null hypothesis H₀: β₁ = 0 at two-sided α = 0.05.",
+      "falsifier_threshold": null,
+      "model_spec": {
+        "form": "Linear regression with continuous outcome: Age at Shingles Diagnosis = β₀ + β₁(Age at First Hormone Use) + β₂(Sex) + β₃(Race) + β₄(HIV History) + β₅(Diabetes History) + β₆(Recent Illness) + ε",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors at Chicago community area level"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q1.8",
+            "quoted_wording": "sha256:dd506fb26782a15e8b85ef427d7c49a15e1f410cad8f95d65022706f7d14555f"
+          },
+          "mechanism": "Hormone prescriptions are more common in individuals assigned female at birth (for menopause symptom relief, contraception, and other indications). Shingles incidence and immune response patterns may differ by sex.",
+          "justification": "Sex is a determinant of both hormone prescribing patterns and shingles epidemiology.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race and ethnicity influence prescribing patterns through healthcare access disparities and affect shingles incidence through documented health disparities and immune response variation.",
+          "justification": "Known disparities in both hormone prescribing and shingles epidemiology by race/ethnicity.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.45",
+            "quoted_wording": "sha256:4fd4b5e8c6da5523798a1aaca864daa72a9067b7b0f63445ca0f3ed7ae8874b4"
+          },
+          "mechanism": "HIV causes severe immunosuppression, a major risk factor for shingles reactivation. HIV history also influences overall medication prescribing and healthcare engagement patterns.",
+          "justification": "HIV is one of the strongest risk factors for shingles due to CD4-mediated immune dysfunction. People with HIV may have different medication exposure patterns.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.7",
+            "quoted_wording": "sha256:feb48f11c86453b98ad0851786a09c58f9d1e8e132724ccd7d6ea779c5a96e39"
+          },
+          "mechanism": "Type 2 Diabetes is associated with immune dysfunction, chronic inflammation, and elevated shingles risk. Diabetes predicts higher medication use and different prescribing patterns. Hormonal factors may relate to insulin resistance development.",
+          "justification": "Type 2 Diabetes is an established independent risk factor for shingles. It is a marker of systemic health burden affecting both medication exposure and immune function.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q4.1",
+            "quoted_wording": "sha256:d98074b2bd279bfa6f182d2c4c1959d48bace261f3281424dea972b10dbdc1ee"
+          },
+          "mechanism": "Recent serious illness or medical condition indicates acute health burden and potentially compromised immune function, increasing shingles risk. This health burden also influences medication use and prescribing patterns.",
+          "justification": "Recent serious illness is a marker of immunosuppression and overall health status, predicting both medication exposure and shingles risk.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.1",
+            "quoted_wording": "sha256:8652b8f9c63255a9344653cdd6a973a798c5d70f1d147e2303e91a926d12c27a"
+          },
+          "mechanism": "This is a fixed developmental characteristic occurring in puberty, decades before adult hormone prescriptions are initiated. It does not cause the exposure (adult prescription hormone use) and does not independently cause shingles.",
+          "justification": "While menarche age may correlate with later reproductive hormonal patterns, it is not a causal confounder of the hormone-shingles relationship. It is temporally prior to both events but does not confound the pathway between them.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:55600e24b14333ff4c2cea0d744d84df721ba906ace8329551ba8072ef427427"
+          },
+          "mechanism": "This represents cross-sectional status at survey time, downstream of the historical diagnosis event. It is collinear with m2:Q5.7 (diagnosis age) and represents current treatment status rather than historical risk factor status.",
+          "justification": "Redundant with m2:Q5.7; including both introduces collinearity. Current status may represent mediating factors (e.g., current treatment) rather than historical confounder status.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Baseline or current age of respondent at time of study enrollment",
+          "search_phrases": [
+            "current age baseline age years old",
+            "age today present time enrolled",
+            "how old are you right now currently",
+            "birth date date of birth DOB born",
+            "year born your birth year age respondent"
+          ],
+          "why_rejected": "search_variables returned low_confidence for multiple age-related phrases; no direct measure of respondent's current age or age at enrollment was located in the instrument.",
+          "exposes_the_estimate_to": "Reverse-time bias: older respondents at baseline have had more time for both events to occur, creating a selection pattern on age."
+        },
+        {
+          "construct_sought": "Varicella-zoster virus (chickenpox) serostatus or history of chickenpox infection",
+          "search_phrases": [
+            "chickenpox varicella history"
+          ],
+          "why_rejected": "search_variables returned no_match; no measure of prior VZV exposure or chickenpox history was identified in the instrument.",
+          "exposes_the_estimate_to": "Limited generalizability interpretations, though unlikely to confound if exposure and outcome are both independent of prior VZV status in this age range."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "One-year decrease in age at first hormone initiation",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 22.41
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 12.94
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 7.09
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.09
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.24
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.2,
+          "value": 22.41,
+          "unit": "percentage points",
+          "at_n": 100,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.2; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "Variables selected based on established epidemiological knowledge of shingles risk factors and hormone prescribing patterns.",
+        "why_this_cohort": "COMPASS study; analysis examines whether earlier prescription hormone initiation predicts earlier shingles diagnosis. Cross-module analysis requiring both module 1 (demographics) and module 2 (health conditions) data."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "838f0ae4b0ae706b",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 3,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q9.97\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.59\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age baseline age years old\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender female male\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity racial ethnic background\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"chickenpox varicella history\"}) -> no_match",
+          "search_variables({\"limit\": 10, \"phrase\": \"age today present time enrolled enrolled\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"immune immunosuppression immunocompromised HIV AIDS\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"disease condition illness health medical\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"hormonally related biological sex assigned birth\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.45\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q4.1\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"birth date date of birth DOB born\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"cancer diabetes mellitus hypertension chronic\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"menopause hormonal female menstrual period\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.1\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q1.8\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"interview survey response participant respondent self\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"how old are you right now currently\"}) -> low_confidence",
+          "registry_coverage({}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"year born your birth year age respondent\"}) -> low_confidence",
+          "estimate_n({\"keys\": [\"m2:Q9.97\", \"m2:Q5.59\", \"m2:Q1.8\", \"m1:Q3.10\", \"m2:Q5.45\", \"m2:Q5.7\", \"m2:Q4.1\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.2}) -> ok",
+          "check_access({\"keys\": [\"m2:Q9.97\", \"m2:Q5.59\", \"m2:Q1.8\", \"m1:Q3.10\", \"m2:Q5.45\", \"m2:Q5.7\", \"m2:Q4.1\", \"m2:Q9.1\", \"m2:Q5.6\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:510000d63574342e7d44576c8118a2ec6ce352ac943c7bfd9dac4bf5088e6933",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:510000d63574342e7d44576c8118a2ec6ce352ac943c7bfd9dac4bf5088e6933",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.976359,
+        "margin": 0.24688299999999996,
+        "margin_12": 0.147546,
+        "abstained": false,
+        "nearest_key": "m2:Q9.97",
+        "hit": {
+          "key": "m2:Q9.97",
+          "construct_key": "m2:Q9.97",
+          "dict_construct_key": "m2:Q9.97",
+          "module": "2",
+          "target_id": 400,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q9.97"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:db2a9264e06e61f5b804c4dd5cdbda3be05e9b8f04ba217b2dbd39e2a23dbc32",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:db2a9264e06e61f5b804c4dd5cdbda3be05e9b8f04ba217b2dbd39e2a23dbc32",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.990116,
+        "margin": 0.26064,
+        "margin_12": 0.057996,
+        "abstained": false,
+        "nearest_key": "m2:Q5.59",
+        "hit": {
+          "key": "m2:Q5.59",
+          "construct_key": "m2:Q5.59",
+          "dict_construct_key": "m2:Q5.59",
+          "module": "2",
+          "target_id": 256,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.59"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q9.97",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:510000d63574342e7d44576c8118a2ec6ce352ac943c7bfd9dac4bf5088e6933",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:510000d63574342e7d44576c8118a2ec6ce352ac943c7bfd9dac4bf5088e6933",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.976359,
+          "margin": 0.24688299999999996,
+          "margin_12": 0.147546,
+          "abstained": false,
+          "nearest_key": "m2:Q9.97",
+          "hit": {
+            "key": "m2:Q9.97",
+            "construct_key": "m2:Q9.97",
+            "dict_construct_key": "m2:Q9.97",
+            "module": "2",
+            "target_id": 400,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q9.97"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.59",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:db2a9264e06e61f5b804c4dd5cdbda3be05e9b8f04ba217b2dbd39e2a23dbc32",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:db2a9264e06e61f5b804c4dd5cdbda3be05e9b8f04ba217b2dbd39e2a23dbc32",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.990116,
+          "margin": 0.26064,
+          "margin_12": 0.057996,
+          "abstained": false,
+          "nearest_key": "m2:Q5.59",
+          "hit": {
+            "key": "m2:Q5.59",
+            "construct_key": "m2:Q5.59",
+            "dict_construct_key": "m2:Q5.59",
+            "module": "2",
+            "target_id": 256,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.59"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q1.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.45",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q4.1",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.1",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q9.97",
+    "outcome": "m2:Q5.59",
+    "expected_direction": "decrease",
+    "nodes": [
+      {
+        "key": "m2:Q9.97",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.59",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q1.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.45",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q4.1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q9.1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q9.97",
+        "target": "m2:Q5.59",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q9.97",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q9.97",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.45",
+        "target": "m2:Q9.97",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.45",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.7",
+        "target": "m2:Q9.97",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.7",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q4.1",
+        "target": "m2:Q9.97",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q4.1",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.59",
+        "target": "m2:Q5.6",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m2:Q1.8",
+      "m1:Q3.10",
+      "m2:Q5.45",
+      "m2:Q5.7",
+      "m2:Q4.1"
+    ]
+  },
+  "critiques": [],
+  "revision": 0,
+  "generation": null
+}

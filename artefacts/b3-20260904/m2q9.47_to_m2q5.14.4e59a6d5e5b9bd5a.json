@@ -1,0 +1,874 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q9.47_to_m2q5.14",
+    "record_hash": "4e59a6d5e5b9bd5a",
+    "pair_id": "m2:Q9.47 -> m2:Q5.14",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q9.47_to_m2q5.14",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does use of estrogen-only (unopposed estrogen) prescription hormones for relief of menopausal symptoms causally increase the risk of being diagnosed with high blood cholesterol?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q9.47",
+        "quoted_wording": "sha256:02dd46375cfc1d55703c518d1a3a4ba6c1bd3a6a9fb477f9c2beee1a8cf1448c"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.14",
+        "quoted_wording": "sha256:171afc1cbb62e6989b13eedc190aaf4c275af6fe48453e6283a8a6fa17f3711e"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "The study seeks to detect whether estrogen-only hormone use is associated with a clinically meaningful difference in the risk of being diagnosed with high blood cholesterol.",
+      "falsifier_threshold": {
+        "value": 5.11,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Logistic regression with binary outcome (ever told of high cholesterol vs. never)",
+        "unit_of_analysis": "participant",
+        "clustering": "cluster-robust standard errors at the community area level"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex classification determines biological eligibility for menopausal hormone therapy and sex-specific cholesterol metabolism patterns.",
+          "justification": "Essential demographic variable. Only individuals classified female at birth typically receive menopausal estrogen hormones. Sex affects cholesterol levels through both endogenous and exogenous estrogen effects.",
+          "role": "cause_of_exposure_only",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Race/ethnicity is associated with differential healthcare access and hormone prescription patterns; also associated with genetic and socioeconomic factors affecting cholesterol levels and screening practices.",
+          "justification": "Ethnicity predicts both exposure (access to reproductive endocrinology care, cultural attitudes toward menopausal hormone use) and outcome (cholesterol screening frequency, cardiovascular risk profiles, health-seeking behavior).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race is associated with both healthcare-seeking patterns/provider prescribing patterns and metabolic health outcomes including cholesterol.",
+          "justification": "Race predicts access to specialized reproductive care, patterns of hormone therapy use, and cholesterol-related health outcomes through multiple pathways (genetic variation in lipid metabolism, socioeconomic factors, differential screening).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Body weight (combined with height to form BMI) confounds the exposure-outcome relationship.",
+          "justification": "Obesity is associated with symptom severity in perimenopause (and thus with hormone use initiation); obesity also directly affects cholesterol levels. Estrogen metabolism is altered by adiposity, and adipose tissue produces endogenous estrogen. Will be combined with height variables to calculate BMI.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.9#1_1",
+            "quoted_wording": "sha256:e30a159d94d34e7a3b602c00d1f86c21376380e38318aad6cf08cc81403a6845"
+          },
+          "mechanism": "Height component of BMI calculation.",
+          "justification": "BMI (weight ÷ height²) confounds the relationship between hormone use and cholesterol; will be derived by combining height (feet and inches components) with weight.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.9#2_1",
+            "quoted_wording": "sha256:a7d5fba746146099a1a8ba12cdcb399da4a95112122198637f9acfa119cb5ed2"
+          },
+          "mechanism": "Height component of BMI calculation.",
+          "justification": "BMI (weight ÷ height²) confounds the relationship; combined with feet component and weight to form BMI.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q5.3",
+            "quoted_wording": "sha256:3482b2afcf1f7edfe24aea6d63f797620fa160a888531cbbefe30a795f4ae67d"
+          },
+          "mechanism": "Smoking history confounds the relationship between hormone use and cholesterol diagnosis.",
+          "justification": "Smokers have elevated cardiovascular risk and abnormal lipid profiles; smoking is also associated with different patterns of healthcare engagement and symptom attribution that may affect both hormone use and cholesterol screening/diagnosis.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q15.7",
+            "quoted_wording": "sha256:ec4fdf58d3e2253c2c77a03507408d4bd73dad0ab475da70b422c3a76b48073d"
+          },
+          "mechanism": "Alcohol use affects lipid metabolism and cholesterol levels.",
+          "justification": "Alcohol consumption directly affects triglycerides and HDL cholesterol; may also be associated with other lifestyle factors affecting both hormone use decisions and health-seeking behavior.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.7",
+            "quoted_wording": "sha256:2a99aa2ee8d501144ff2d193eec3c3465ad7d13a1e4569efb916c8eeaa5e31b5"
+          },
+          "mechanism": "Proxy for both age (core demographic confounder) and menopausal status.",
+          "justification": "Age is a fundamental confounder predicting both menopausal hormone use (most users are ages 40-60) and cholesterol levels (increases with age). Age at most recent menstrual period approximates current age for perimenopausal/menopausal women and identifies menopausal status (eligibility criterion for menopausal hormone therapy). Direct current age variable could not be resolved from the instrument; this question serves as a proxy for participant age and menopause status.",
+          "role": "proxy",
+          "proxy_for": "Current participant age and menopausal status",
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.4",
+            "quoted_wording": "sha256:0dc03e0aff41272217dd560ef65d0f5e95dbef85e9a956bfc84997bdad4ea035"
+          },
+          "mechanism": "Type 1 diabetes is a descendant of exposure and mediator of the exposure-outcome relationship.",
+          "justification": "Estrogen affects glucose metabolism; type 1 diabetes diagnosis by a healthcare provider is a marker of medical surveillance and healthcare engagement, which affects the likelihood of cholesterol screening and diagnosis. Adjusting for diabetes would block the pathway from estrogen use → metabolic changes → cholesterol diagnosis awareness.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:883085f9e05c1ff52e186d0ca76208723c1d81024663315e7f20b7cc5c94c2d4"
+          },
+          "mechanism": "Type 2 diabetes is a descendant of exposure and mediator of the exposure-outcome relationship.",
+          "justification": "Estrogen use may affect glucose tolerance and diabetes risk; diabetes diagnosis is a marker of healthcare engagement and surveillance, which increases the likelihood of cholesterol screening and diagnosis being documented. Excluding this prevents blocking the pathway.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.8",
+            "quoted_wording": "sha256:5522bc79a69cdb0f9bcf39abca278fe5e82c1e226c81b522a7fd9afdd097716f"
+          },
+          "mechanism": "Hypertension is a mediator of the exposure-outcome relationship and marker of healthcare engagement.",
+          "justification": "Estrogen affects blood pressure regulation; unopposed estrogen may increase hypertension risk. Hypertension diagnosis, once made, increases medical surveillance and increases the likelihood of cholesterol screening and diagnosis being documented. Adjusting for hypertension would block the indirect pathway from hormone use → hypertension → increased healthcare engagement → cholesterol diagnosis.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q20.1",
+            "quoted_wording": "sha256:70555cc39820a4fd7059eb550cd8db5034ce716361dbf65b1c2e55232fd01a64"
+          },
+          "mechanism": "Statin use is a direct treatment consequence of being diagnosed with high cholesterol.",
+          "justification": "Statin use is a direct treatment consequence of being diagnosed with high cholesterol. This is clearly a descendant of the outcome and should not be adjusted for, as it would condition away part of the outcome.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Overall physical activity level",
+          "search_phrases": [
+            "exercise physical activity"
+          ],
+          "why_rejected": "Individual exercise activity items found (m3:Q2.32 variants) but no composite physical activity score or overall activity level measure in the instrument.",
+          "exposes_the_estimate_to": "Confounding by unmeasured physical activity, as physical activity affects both estrogen use decisions (via menopausal symptom severity and health behaviors) and cholesterol levels."
+        },
+        {
+          "construct_sought": "Family history of high cholesterol",
+          "search_phrases": [
+            "family history parents cholesterol relative"
+          ],
+          "why_rejected": "Searches for family/parental cholesterol history returned no results; construct not found in instrument.",
+          "exposes_the_estimate_to": "Confounding by genetic factors affecting cholesterol levels and family-related health-seeking behaviors that influence hormone therapy and cholesterol screening."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "Binary; any reported use of estrogen-only prescription hormones versus never used such hormones for relief of menopausal symptoms, irregular periods, postmenopausal bleeding, or prevention of disease such as bone loss",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 26.73
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 15.43
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.45
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.88
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.67
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.35,
+          "value": 4.88,
+          "unit": "percentage points",
+          "at_n": 3000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.35; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS: Community And Personalized Self-Management Study, a longitudinal cohort of women's health.",
+        "why_this_cohort": "The COMPASS study measures both estrogen-only hormone use (m2:Q9.47) and cholesterol diagnosis (m2:Q5.14) with relevant covariates spanning demographics (m1), reproductive and metabolic history (m2), and health behaviors (m3), enabling analysis across these three modules."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "d5b35f4f24be5a1a",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 0,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q9.47\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.14\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years old\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"weight BMI body mass\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarettes tobacco\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"menopausal status menopause\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"ethnicity race Hispanic Black White\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"alcohol drinks beverages\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"exercise physical activity\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"diabetes blood sugar\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age what is your age\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"hypertension blood pressure high\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"currently smoke smoker current smoking\"}) -> ok",
+          "list_derivations({}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"What is your age years\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"how tall height inches\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"statin cholesterol medication drug\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"currently taking cigarettes regular smoking status\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.9#1_1\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.9#2_1\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q5.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q15.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q20.1\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years old born date birth\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"respondent year birth 1950 1960\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"menopausal period menstrual cycles peri\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"family history parents cholesterol relative\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q9.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.1\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"study participant demographic enrollment screening\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex assigned at birth gender female male\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"module 1 demographics baseline\"}) -> no_match",
+          "estimate_detectability({\"baseline_prevalence\": 0.35}) -> ok",
+          "estimate_n({\"keys\": [\"m2:Q9.47\", \"m2:Q5.14\", \"m1:Q3.3\", \"m1:Q3.8\", \"m1:Q3.10\", \"m1:Q2.10\", \"m1:Q2.9#1_1\", \"m1:Q2.9#2_1\", \"m3:Q5.3\", \"m3:Q15.7\", \"m2:Q9.7\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q9.47\", \"m2:Q5.14\", \"m1:Q3.3\", \"m1:Q3.8\", \"m1:Q3.10\", \"m1:Q2.10\", \"m1:Q2.9#1_1\", \"m1:Q2.9#2_1\", \"m3:Q5.3\", \"m3:Q15.7\", \"m2:Q9.7\", \"m2:Q5.4\", \"m2:Q) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:02dd46375cfc1d55703c518d1a3a4ba6c1bd3a6a9fb477f9c2beee1a8cf1448c",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:02dd46375cfc1d55703c518d1a3a4ba6c1bd3a6a9fb477f9c2beee1a8cf1448c",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.961572,
+        "margin": 0.23209599999999997,
+        "margin_12": 0.090822,
+        "abstained": false,
+        "nearest_key": "m2:Q9.47",
+        "hit": {
+          "key": "m2:Q9.47",
+          "construct_key": "m2:Q9.47",
+          "dict_construct_key": "m2:Q9.47",
+          "module": "2",
+          "target_id": 350,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q9.47"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:f0b0976512c4170b51cf92eb8fad551bfbbe1c4e806a0ef7132e5c1151b2e74b",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:f0b0976512c4170b51cf92eb8fad551bfbbe1c4e806a0ef7132e5c1151b2e74b",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.978642,
+        "margin": 0.249166,
+        "margin_12": 0.12309,
+        "abstained": false,
+        "nearest_key": "m2:Q5.14",
+        "hit": {
+          "key": "m2:Q5.14",
+          "construct_key": "m2:Q5.14",
+          "dict_construct_key": "m2:Q5.14",
+          "module": "2",
+          "target_id": 163,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.14"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q9.47",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:02dd46375cfc1d55703c518d1a3a4ba6c1bd3a6a9fb477f9c2beee1a8cf1448c",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:02dd46375cfc1d55703c518d1a3a4ba6c1bd3a6a9fb477f9c2beee1a8cf1448c",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.961572,
+          "margin": 0.23209599999999997,
+          "margin_12": 0.090822,
+          "abstained": false,
+          "nearest_key": "m2:Q9.47",
+          "hit": {
+            "key": "m2:Q9.47",
+            "construct_key": "m2:Q9.47",
+            "dict_construct_key": "m2:Q9.47",
+            "module": "2",
+            "target_id": 350,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q9.47"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.14",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:f0b0976512c4170b51cf92eb8fad551bfbbe1c4e806a0ef7132e5c1151b2e74b",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:f0b0976512c4170b51cf92eb8fad551bfbbe1c4e806a0ef7132e5c1151b2e74b",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.978642,
+          "margin": 0.249166,
+          "margin_12": 0.12309,
+          "abstained": false,
+          "nearest_key": "m2:Q5.14",
+          "hit": {
+            "key": "m2:Q5.14",
+            "construct_key": "m2:Q5.14",
+            "dict_construct_key": "m2:Q5.14",
+            "module": "2",
+            "target_id": 163,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.14"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.9#1_1",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.9#2_1",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q5.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q15.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.4",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.8",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q20.1",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q9.47",
+    "outcome": "m2:Q5.14",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:Q9.47",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.14",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "cause_of_exposure_only",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.9#1_1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.9#2_1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q5.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q15.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q9.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "proxy",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q20.1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q9.47",
+        "target": "m2:Q5.14",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q9.47",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q9.47",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q5.14",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q9.47",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.14",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q9.47",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q5.14",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.9#1_1",
+        "target": "m2:Q9.47",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.9#1_1",
+        "target": "m2:Q5.14",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.9#2_1",
+        "target": "m2:Q9.47",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.9#2_1",
+        "target": "m2:Q5.14",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.3",
+        "target": "m2:Q9.47",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.3",
+        "target": "m2:Q5.14",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m2:Q9.47",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m2:Q5.14",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.7",
+        "target": "m2:Q9.47",
+        "relation": "proxies"
+      },
+      {
+        "source": "m2:Q9.7",
+        "target": "m2:Q5.14",
+        "relation": "proxies"
+      },
+      {
+        "source": "m2:Q9.47",
+        "target": "m2:Q5.4",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q5.14",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.47",
+        "target": "m2:Q5.6",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q5.14",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.47",
+        "target": "m2:Q5.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q5.14",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.14",
+        "target": "m2:Q20.1",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q3.8",
+      "m1:Q3.10",
+      "m1:Q2.10",
+      "m1:Q2.9#1_1",
+      "m1:Q2.9#2_1",
+      "m3:Q5.3",
+      "m3:Q15.7",
+      "m2:Q9.7"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.4 is asserted to mediate m2:Q9.47 -> m2:Q5.14, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q5.4",
+      "severity": "blocking",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.6 is asserted to mediate m2:Q9.47 -> m2:Q5.14, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q5.6",
+      "severity": "blocking",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.8 is asserted to mediate m2:Q9.47 -> m2:Q5.14, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q5.8",
+      "severity": "blocking",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

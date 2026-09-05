@@ -1,0 +1,807 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.75_to_m2q5.19",
+    "record_hash": "606170204e554de1",
+    "pair_id": "m2:Q19.75 -> m2:Q5.19",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.75_to_m2q5.19",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does regular prescription opioid use increase the risk of arrhythmia diagnosis?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.75",
+        "quoted_wording": "sha256:2c34d63f298dd2d4379a9a2b8de976ff11ed6f9c992dd118a0a2f8738d6efc40"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.19",
+        "quoted_wording": "sha256:ba3f2573cf180c03f92a7f5a8a9f653760bafe9747a47f6022d86d07c0f37f4b"
+      },
+      "expected_direction": {
+        "direction": "increase",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "The association between regular opioid use and arrhythmia diagnosis is not clinically or statistically meaningful if the absolute risk difference is less than 5.11 percentage points",
+      "falsifier_threshold": {
+        "value": 5.11,
+        "unit": "percentage points",
+        "comparator": "<"
+      },
+      "model_spec": {
+        "form": "Logistic regression predicting arrhythmia diagnosis (yes/no), or linear regression of age at diagnosis among those diagnosed, with opioid use as primary exposure and seven adjusted covariates",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors at the community area level; design effect unknown"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q1.8",
+            "quoted_wording": "sha256:dd506fb26782a15e8b85ef427d7c49a15e1f410cad8f95d65022706f7d14555f"
+          },
+          "mechanism": "Sex classification affects both patterns of opioid prescribing and utilization, and independently predicts cardiovascular disease risk and arrhythmia prevalence.",
+          "justification": "Males and females have documented differences in opioid prescription rates and cardiovascular risk profiles; sex is a confounder of the exposure-outcome relationship.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.8",
+            "quoted_wording": "sha256:5522bc79a69cdb0f9bcf39abca278fe5e82c1e226c81b522a7fd9afdd097716f"
+          },
+          "mechanism": "Hypertension is a major cardiovascular risk factor strongly associated with arrhythmia development. Hypertension status also reflects general health burden and medication burden, which may correlate with opioid use patterns.",
+          "justification": "Hypertension confounds the opioid-arrhythmia association by independently increasing arrhythmia risk; controlling for it isolates the opioid effect from baseline cardiovascular disease burden.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.4",
+            "quoted_wording": "sha256:0dc03e0aff41272217dd560ef65d0f5e95dbef85e9a956bfc84997bdad4ea035"
+          },
+          "mechanism": "Type 1 diabetes is a metabolic disorder associated with increased cardiovascular disease risk and arrhythmia; it may also correlate with pain conditions or healthcare-seeking behavior affecting opioid exposure.",
+          "justification": "Diabetes is a major cardiovascular risk factor; adjusting for it removes confounding by metabolic disease status.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:883085f9e05c1ff52e186d0ca76208723c1d81024663315e7f20b7cc5c94c2d4"
+          },
+          "mechanism": "Type 2 diabetes is strongly associated with cardiovascular disease and arrhythmia risk; also often co-occurs with chronic pain conditions that lead to opioid use.",
+          "justification": "Controls for confounding by metabolic disease and chronic disease burden.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.20",
+            "quoted_wording": "sha256:cab2a4842a03d48ce8b63052a7db8b628e3ed6033b26ff3ac11bcded10178dd7"
+          },
+          "mechanism": "Arthritis is a chronic pain condition that is a primary driver of regular opioid use. While arthritis does not directly cause arrhythmia, age at arthritis diagnosis reflects pain burden and healthcare engagement, which correlates with opioid exposure.",
+          "justification": "Arthritis is strongly predictive of opioid exposure; controlling for it reduces residual confounding and improves precision of the opioid-arrhythmia estimate.",
+          "role": "precision",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.18",
+            "quoted_wording": "sha256:9b99356b9e919aeea0d6bf9fcc84627f9f8cb7128bf188cd97c33abc5ded3191"
+          },
+          "mechanism": "Anxiety disorders are associated with chronic pain and thus opioid use; independently, anxiety disorders are associated with increased arrhythmia risk through both physiological (sympathetic activation) and behavioral pathways.",
+          "justification": "Anxiety disorder confounds the exposure-outcome relationship via two pathways: anxiety → pain → opioids AND anxiety → arrhythmia risk independently.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.30",
+            "quoted_wording": "sha256:1b3efc7594d0cc4d06035229a893f6e98f899e0e4a4c97c79830a2e86d15b990"
+          },
+          "mechanism": "Depression is associated with chronic pain severity and opioid use; also independently associated with cardiovascular disease and arrhythmia risk.",
+          "justification": "Depression confounds by affecting both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.41",
+            "quoted_wording": "sha256:d3785560fd2f6612ad2b2338c67443c7f77e7c5e0e91d81669536963b98f7aa4"
+          },
+          "mechanism": "Acute myocardial infarction can result from uncontrolled arrhythmia or present concurrently with arrhythmia.",
+          "justification": "Excluded to avoid adjusting for descendants of the outcome.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.32",
+            "quoted_wording": "sha256:27d4ee29ea7b33f51e9adf9423afcb48482787d3e94cc8a6d1459635ba34c64a"
+          },
+          "mechanism": "Coronary artery disease can cause arrhythmia through ischemia; represents part of the same acute coronary syndrome/cardiovascular disease process as arrhythmia.",
+          "justification": "Excluded to avoid adjusting for descendants of the outcome.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.31",
+            "quoted_wording": "sha256:14978c57a59b3b59b5203ab70468ad7d561d2f80cc7459dafba2a0b9dfe6ee51"
+          },
+          "mechanism": "Chronic arrhythmia can lead to or contribute to congestive heart failure development; congestive heart failure and arrhythmia represent related cardiac dysfunction.",
+          "justification": "Excluded to avoid adjusting for descendants of the outcome.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.42",
+            "quoted_wording": "sha256:c907cdc050458359f8763d8241f72993b217795055f0adf6e5489a718754f223"
+          },
+          "mechanism": "Valvular disease is part of the same cardiovascular disease process as arrhythmia and can result from it.",
+          "justification": "Excluded to avoid adjusting for descendants of the outcome.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.60",
+            "quoted_wording": "sha256:1c79cf22c5e0d001c0dcfc604a6b91ed634a23f43a2d0ec4df3ce0ae84f7110f"
+          },
+          "mechanism": "Opioids suppress respiration and worsen sleep apnea through the mediator pathway: opioids → worse apnea → arrhythmia. Sleep apnea itself causes arrhythmia through oxygen desaturation.",
+          "justification": "Excluded to preserve the indirect pathway through respiratory depression if it exists; including it would control away a potential mechanism of opioid-induced arrhythmia.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Race/ethnicity",
+          "search_phrases": [
+            "age sex gender race ethnicity demographic"
+          ],
+          "why_rejected": "Identified in m1:Q3.10, located in module 1, not module 2. Cross-module linkage would degrade analytic sample size to unknown; cross-module co-completion counts are not available.",
+          "exposes_the_estimate_to": "Residual confounding by race/ethnicity, which is associated with both opioid prescribing patterns and cardiovascular disease risk."
+        },
+        {
+          "construct_sought": "Smoking status",
+          "search_phrases": [
+            "smoking tobacco cigarette smoker"
+          ],
+          "why_rejected": "Identified in m3:Q5.5, located in module 3, not module 2. Cross-module linkage would degrade analytic sample size to unknown.",
+          "exposes_the_estimate_to": "Residual confounding by smoking, a major cardiovascular disease and opioid-use-related risk factor."
+        },
+        {
+          "construct_sought": "Alcohol consumption",
+          "search_phrases": [
+            "alcohol drinking alcohol use"
+          ],
+          "why_rejected": "Identified in m3:Q15.7, located in module 3, not module 2. Cross-module linkage would degrade analytic sample size to unknown.",
+          "exposes_the_estimate_to": "Residual confounding by alcohol use, an established cardiovascular disease risk factor."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m2"
+        ],
+        "exposure_contrast": "reasons cited for regular opioid use (any reason endorsed) versus no regular opioid use",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 7.84
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 4.53
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 2.48
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 1.43
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 0.78
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.02,
+          "value": 1.43,
+          "unit": "percentage points",
+          "at_n": 3000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.02; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "Opioid-induced arrhythmia is hypothesized through known mechanisms of opioid effects on cardiac electrophysiology, promotion of sleep apnea with consequent hypoxia, and drug interactions. The seven confounders and precision variables selected reflect established cardiovascular risk factors, chronic pain comorbidities, and factors affecting opioid prescribing.",
+        "why_this_cohort": "COMPASS module 2 contains both exposure (reasons for regular opioid use) and outcome (age at arrhythmia diagnosis) in the same module, enabling complete-case analysis without cross-module linkage loss. Module 2 is a population-based sample suitable for studying prevalence of opioid use and arrhythmia in the general adult population."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "e13db04f33b59f3f",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 4,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.75\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.19\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"age sex gender race ethnicity demographic\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"cardiovascular disease heart attack heart disease\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"chronic pain condition arthritis fibromyalgia\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"smoking tobacco cigarette smoker\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"diabetes blood sugar glucose\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"anxiety depression mental health stress\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"alcohol drinking alcohol use\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q1.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.18\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.30\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.20\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.41\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.32\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.31\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.42\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.24\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"birth date age years current baseline\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"back pain low back spine\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"heroin drug cocaine methamphetamine substance\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q19.85\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q19.86_1\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"weight BMI obesity body mass index overweight\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"sleep apnea sleep disorder insomnia\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.60\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.11\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"hypertension high blood pressure diagnosed\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.9\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q19.75\", \"m2:Q5.19\", \"m2:Q1.8\", \"m2:Q5.8\", \"m2:Q5.4\", \"m2:Q5.6\", \"m2:Q5.20\", \"m2:Q5.18\", \"m2:Q5.30\"]}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"arrhythmia heart rhythm abnormal ever diagnosed\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_4\"}) -> unique",
+          "estimate_detectability({\"baseline_prevalence\": 0.02}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.75\", \"m2:Q5.19\", \"m2:Q1.8\", \"m2:Q5.8\", \"m2:Q5.4\", \"m2:Q5.6\", \"m2:Q5.20\", \"m2:Q5.18\", \"m2:Q5.30\", \"m2:Q5.41\", \"m2:Q5.32\", \"m2:Q5.31\", \"m2:Q5.42) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "per_item_non_missing_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:2c34d63f298dd2d4379a9a2b8de976ff11ed6f9c992dd118a0a2f8738d6efc40",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:2c34d63f298dd2d4379a9a2b8de976ff11ed6f9c992dd118a0a2f8738d6efc40",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.986673,
+        "margin": 0.257197,
+        "margin_12": 0.0,
+        "abstained": false,
+        "nearest_key": "m2:Q19.75",
+        "hit": {
+          "key": "m2:Q19.75",
+          "construct_key": "m2:Q19.75",
+          "dict_construct_key": "m2:Q19.75",
+          "module": "2",
+          "target_id": 823,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.75"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:ba3f2573cf180c03f92a7f5a8a9f653760bafe9747a47f6022d86d07c0f37f4b",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:ba3f2573cf180c03f92a7f5a8a9f653760bafe9747a47f6022d86d07c0f37f4b",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.986172,
+        "margin": 0.25669600000000004,
+        "margin_12": 0.107194,
+        "abstained": false,
+        "nearest_key": "m2:Q5.19",
+        "hit": {
+          "key": "m2:Q5.19",
+          "construct_key": "m2:Q5.19",
+          "dict_construct_key": "m2:Q5.19",
+          "module": "2",
+          "target_id": 216,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.19"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.75",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:2c34d63f298dd2d4379a9a2b8de976ff11ed6f9c992dd118a0a2f8738d6efc40",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:2c34d63f298dd2d4379a9a2b8de976ff11ed6f9c992dd118a0a2f8738d6efc40",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.986673,
+          "margin": 0.257197,
+          "margin_12": 0.0,
+          "abstained": false,
+          "nearest_key": "m2:Q19.75",
+          "hit": {
+            "key": "m2:Q19.75",
+            "construct_key": "m2:Q19.75",
+            "dict_construct_key": "m2:Q19.75",
+            "module": "2",
+            "target_id": 823,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.75"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.19",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:ba3f2573cf180c03f92a7f5a8a9f653760bafe9747a47f6022d86d07c0f37f4b",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:ba3f2573cf180c03f92a7f5a8a9f653760bafe9747a47f6022d86d07c0f37f4b",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.986172,
+          "margin": 0.25669600000000004,
+          "margin_12": 0.107194,
+          "abstained": false,
+          "nearest_key": "m2:Q5.19",
+          "hit": {
+            "key": "m2:Q5.19",
+            "construct_key": "m2:Q5.19",
+            "dict_construct_key": "m2:Q5.19",
+            "module": "2",
+            "target_id": 216,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.19"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q1.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.20",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.18",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.30",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.41",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.32",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.31",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.42",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.60",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.75",
+    "outcome": "m2:Q5.19",
+    "expected_direction": "increase",
+    "nodes": [
+      {
+        "key": "m2:Q19.75",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.19",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q1.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.20",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "precision",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.18",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.30",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.41",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.32",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.31",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.42",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.60",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.75",
+        "target": "m2:Q5.19",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q19.75",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q5.19",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q19.75",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q5.19",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q19.75",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q5.19",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q19.75",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q5.19",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.20",
+        "target": "m2:Q5.19",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.18",
+        "target": "m2:Q19.75",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.18",
+        "target": "m2:Q5.19",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.30",
+        "target": "m2:Q19.75",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.30",
+        "target": "m2:Q5.19",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.19",
+        "target": "m2:Q5.41",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.19",
+        "target": "m2:Q5.32",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.19",
+        "target": "m2:Q5.31",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.19",
+        "target": "m2:Q5.42",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.75",
+        "target": "m2:Q5.60",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.60",
+        "target": "m2:Q5.19",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m2:Q1.8",
+      "m2:Q5.8",
+      "m2:Q5.4",
+      "m2:Q5.6",
+      "m2:Q5.20",
+      "m2:Q5.18",
+      "m2:Q5.30"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.60 is asserted to mediate m2:Q19.75 -> m2:Q5.19, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q5.60",
+      "severity": "blocking",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

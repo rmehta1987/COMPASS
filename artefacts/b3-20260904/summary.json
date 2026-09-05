@@ -1,0 +1,14 @@
+{
+  "run_id": "b3-20260904",
+  "total_generated_this_run": 48,
+  "by_outcome": {
+    "discarded": 13,
+    "emitted": 28,
+    "backend_error": 7
+  },
+  "strata": [
+    "chronic_condition",
+    "medication",
+    "reproductive_hormonal"
+  ]
+}

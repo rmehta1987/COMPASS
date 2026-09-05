@@ -1,0 +1,628 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.38_to_m2q5.24",
+    "record_hash": "5befe74cc57898c4",
+    "pair_id": "m2:Q19.38 -> m2:Q5.24",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.38_to_m2q5.24",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does higher acetaminophen use increase the likelihood of bipolar disorder diagnosis, or lead to earlier age at bipolar disorder diagnosis?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.38",
+        "quoted_wording": "sha256:8dea5c3fb0aaaeb2302369f9e1f5d649d708fe399f35a8eaa6cfef91ebf0f9af"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.24",
+        "quoted_wording": "sha256:cf363bbf919b73b4dfde6e7a64f82b8cd7a03ee3fcf4e86bc68d18228a3efa45"
+      },
+      "expected_direction": {
+        "direction": "increase",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "The association between acetaminophen use and bipolar disorder diagnosis, adjusted for confounding by sex, race, ethnicity, chronic pain, and prior psychiatric illness, should be detectable at a magnitude of at least a risk difference of 8.86 percentage points in diagnosis prevalence between high and low use groups (evaluated at n=1000). Alternatively, if the outcome is specified as continuous age at diagnosis, the falsifier is stated in prose: a clinically meaningful difference in age at bipolar disorder diagnosis between high and low acetaminophen use groups, accounting for the community-area clustering design effect which increases the true smallest detectable effect beyond the values shown.",
+      "falsifier_threshold": {
+        "value": 8.86,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear or logistic regression of bipolar disorder diagnosis age (or diagnosis status) on acetaminophen pill count (continuous or categorized), adjusted for sex, race, ethnicity, chronic pain, and prior psychiatric illness",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors at community area level"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex relates to chronic pain prevalence, symptom presentation and diagnostic thresholds in bipolar disorder, and healthcare-seeking patterns.",
+          "justification": "Sex is a demographic confounder that could produce spurious association through differential pain-driven medication use and differential psychiatric symptom recognition.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race relates to healthcare access, pain medication prescribing patterns, and psychiatric diagnosis rates due to structural inequities and diagnostic practice variations.",
+          "justification": "Race-based disparities in healthcare access and psychiatric diagnosis could confound the association between reported medication use and diagnosis recognition.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Hispanic/Latino ethnicity relates to healthcare system engagement and psychiatric diagnosis patterns independent of pain and medication use.",
+          "justification": "Ethnic disparities in healthcare access and diagnostic practices could create confounding.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q19.85",
+            "quoted_wording": "sha256:0bae0955b5020c35263bc3d183ab8e57593e361613b3dbeeab021acf02e2f47d"
+          },
+          "mechanism": "Chronic pain directly causes acetaminophen use AND independently drives increased healthcare contact; greater healthcare engagement increases opportunity for psychiatric diagnosis detection.",
+          "justification": "This is a direct confounder—underlying pain independently increases both exposure (acetaminophen use for pain management) and healthcare contact that leads to bipolar diagnosis recognition.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.30",
+            "quoted_wording": "sha256:1b3efc7594d0cc4d06035229a893f6e98f899e0e4a4c97c79830a2e86d15b990"
+          },
+          "mechanism": "Prior depression diagnosis is a marker of underlying psychiatric vulnerability and mood disorder predisposition that predisposes to somatic and stress-related symptoms driving pain medication use and health-seeking behavior.",
+          "justification": "Prior psychiatric illness creates spurious association between acetaminophen (proxy for stress-related symptoms and healthcare engagement) and bipolar diagnosis through underlying psychopathology.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.18",
+            "quoted_wording": "sha256:9b99356b9e919aeea0d6bf9fcc84627f9f8cb7128bf188cd97c33abc5ded3191"
+          },
+          "mechanism": "Prior anxiety diagnosis indicates psychiatric vulnerability; anxiety disorders are associated with pain complaints and somatic symptoms that drive OTC pain medication use.",
+          "justification": "Like depression, prior anxiety indicates underlying mental illness predisposing to both pain-related medication use and psychiatric diagnosis engagement.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q4.1",
+            "quoted_wording": "sha256:d98074b2bd279bfa6f182d2c4c1959d48bace261f3281424dea972b10dbdc1ee"
+          },
+          "mechanism": "Measures current and recent healthcare needs unrelated to historical bipolar diagnosis or exposure period.",
+          "justification": "Temporal relationship is too ambiguous—the question window (past 12 months) does not align with outcome (historical diagnosis age) or exposure (time of regular use, unspecified). Not causally related to either.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q4.6",
+            "quoted_wording": "sha256:d3ba7fa6df60f4eb26633da3e41466a52153847dac6998899abf50bbce995edb"
+          },
+          "mechanism": "Work stress could cause pain and somatic symptoms leading to acetaminophen use and mental health symptoms related to bipolar diagnosis, but could also be a consequence of psychiatric illness.",
+          "justification": "Module 1 data timing versus Module 2 exposure is unknown; bipolar diagnosis occurred at unknown past age. Cannot determine whether work stress is a prior confounder predisposing to both exposure and outcome, or a mediator and consequence of mental illness, without temporal anchoring.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "Highest versus lowest category of daily acetaminophen pill count during regular use",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 9.56
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 5.52
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 3.02
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 1.75
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 0.96
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.03,
+          "value": 3.02,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.03; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS is a community-based study in Chicago",
+        "why_this_cohort": "COMPASS study provides available instrument data with Module 1 and Module 2 co-completion for analysis"
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "0b965695fe534b14",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 2,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.38\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.24\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"age demographic sex gender\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"pain chronic conditions headache\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"healthcare access medical care doctor visit\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"bipolar depression anxiety mental health psychiatric\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"family history parents mother father psychiatric mental\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"stress anxiety depression symptoms emotional\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q19.85\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q4.1\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.30\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.18\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q4.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q3.3\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"race ethnicity Black White Hispanic Asian\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"current age years old born when\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q19.38\", \"m2:Q5.24\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q3.8\", \"m2:Q19.85\", \"m2:Q5.30\", \"m2:Q5.18\", \"m1:Q4.6\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.03}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.38\", \"m2:Q5.24\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q3.8\", \"m2:Q19.85\", \"m2:Q5.30\", \"m2:Q5.18\", \"m1:Q4.6\", \"m2:Q4.1\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:8dea5c3fb0aaaeb2302369f9e1f5d649d708fe399f35a8eaa6cfef91ebf0f9af",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:8dea5c3fb0aaaeb2302369f9e1f5d649d708fe399f35a8eaa6cfef91ebf0f9af",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.983928,
+        "margin": 0.254452,
+        "margin_12": 0.201581,
+        "abstained": false,
+        "nearest_key": "m2:Q19.38",
+        "hit": {
+          "key": "m2:Q19.38",
+          "construct_key": "m2:Q19.38",
+          "dict_construct_key": "m2:Q19.38",
+          "module": "2",
+          "target_id": 786,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.38"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:cf363bbf919b73b4dfde6e7a64f82b8cd7a03ee3fcf4e86bc68d18228a3efa45",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:cf363bbf919b73b4dfde6e7a64f82b8cd7a03ee3fcf4e86bc68d18228a3efa45",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.989109,
+        "margin": 0.259633,
+        "margin_12": 0.100715,
+        "abstained": false,
+        "nearest_key": "m2:Q5.24",
+        "hit": {
+          "key": "m2:Q5.24",
+          "construct_key": "m2:Q5.24",
+          "dict_construct_key": "m2:Q5.24",
+          "module": "2",
+          "target_id": 221,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.24"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.38",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:8dea5c3fb0aaaeb2302369f9e1f5d649d708fe399f35a8eaa6cfef91ebf0f9af",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:8dea5c3fb0aaaeb2302369f9e1f5d649d708fe399f35a8eaa6cfef91ebf0f9af",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.983928,
+          "margin": 0.254452,
+          "margin_12": 0.201581,
+          "abstained": false,
+          "nearest_key": "m2:Q19.38",
+          "hit": {
+            "key": "m2:Q19.38",
+            "construct_key": "m2:Q19.38",
+            "dict_construct_key": "m2:Q19.38",
+            "module": "2",
+            "target_id": 786,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.38"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.24",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:cf363bbf919b73b4dfde6e7a64f82b8cd7a03ee3fcf4e86bc68d18228a3efa45",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:cf363bbf919b73b4dfde6e7a64f82b8cd7a03ee3fcf4e86bc68d18228a3efa45",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.989109,
+          "margin": 0.259633,
+          "margin_12": 0.100715,
+          "abstained": false,
+          "nearest_key": "m2:Q5.24",
+          "hit": {
+            "key": "m2:Q5.24",
+            "construct_key": "m2:Q5.24",
+            "dict_construct_key": "m2:Q5.24",
+            "module": "2",
+            "target_id": 221,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.24"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q19.85",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.30",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.18",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q4.1",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q4.6",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.38",
+    "outcome": "m2:Q5.24",
+    "expected_direction": "increase",
+    "nodes": [
+      {
+        "key": "m2:Q19.38",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.24",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q19.85",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.30",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.18",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q4.1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m1:Q4.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.38",
+        "target": "m2:Q5.24",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q19.38",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.24",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q19.38",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.24",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q19.38",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q5.24",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.85",
+        "target": "m2:Q19.38",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.85",
+        "target": "m2:Q5.24",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.30",
+        "target": "m2:Q19.38",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.30",
+        "target": "m2:Q5.24",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.18",
+        "target": "m2:Q19.38",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.18",
+        "target": "m2:Q5.24",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q3.10",
+      "m1:Q3.8",
+      "m2:Q19.85",
+      "m2:Q5.30",
+      "m2:Q5.18"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m1:Q4.6 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m1:Q4.6",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

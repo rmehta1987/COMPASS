@@ -1,0 +1,624 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q9.2_to_m3q855",
+    "record_hash": "198e55ddf644e36d",
+    "pair_id": "m2:Q9.2 -> m3:Q855",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q9.2_to_m3q855",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Is delayed time to menstrual regularity after menarche associated with increased depressive symptoms?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q9.2",
+        "quoted_wording": "sha256:c0dabdc73be1f0682984f1b9570bde80138c9fd50f80e20985ce62560f8334ca"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m3:Q855",
+        "quoted_wording": "sha256:aeb17a99adad141299f27444d5e59a6855ea75e338e340abc0f71179f13197f6"
+      },
+      "expected_direction": {
+        "direction": "increase",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "We would reject the hypothesis of no association if the study detects a risk difference of 8.86 percentage points or greater in the prevalence of depressive symptom endorsement (Q855) between the highest and lowest categories of time to menstrual regularity (Q9.2), after adjustment for the confounders listed above, at two-sided alpha=0.05, 80% power.",
+      "falsifier_threshold": {
+        "value": 8.86,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Logistic or proportional odds regression with depressive symptom endorsement (Q855) as the dependent variable and time-to-regularity category (Q9.2) as the primary predictor, adjusted for age at menarche, race, household income, current weight, and work stress",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors stratified by community area; design effect unknown due to unavailable intraclass correlation and participants-per-community-area counts"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.1",
+            "quoted_wording": "sha256:8652b8f9c63255a9344653cdd6a973a798c5d70f1d147e2303e91a926d12c27a"
+          },
+          "mechanism": "Age at menarche is a marker of pubertal timing and affects hormonal profiles, social experiences during development, and mood regulation capacity.",
+          "justification": "Affects exposure (time to regularity is measured from menarche age) and outcome (pubertal timing independently predicts depression risk).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race/ethnicity is associated with differences in menstrual patterns through biological variation, nutrition, healthcare access, and environmental factors, and with depression prevalence through structural inequities, discrimination exposure, and differential stress.",
+          "justification": "Independently affects menstrual development and depression risk in COMPASS population.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:79590ca38c808b483369e51527ceca6aca100f2472a404c51b46d36b4411c743"
+          },
+          "mechanism": "Socioeconomic status measured by household income affects nutrition quality and healthcare access, which influence menstrual development and hormonal patterns, and independently affects stress exposure, material hardship, and depression risk.",
+          "justification": "Income predicts both menstrual health trajectory and mental health outcomes.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Body weight affects endocrine function and inflammatory state through leptin signaling and adipose-tissue hormones, affecting menstrual regularity and mood through metabolic and inflammatory pathways independent of menstrual function.",
+          "justification": "Biologically linked to both menstrual development and depression.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q4.6",
+            "quoted_wording": "sha256:d3ba7fa6df60f4eb26633da3e41466a52153847dac6998899abf50bbce995edb"
+          },
+          "mechanism": "Occupational stress affects the hypothalamic-pituitary-adrenal (HPA) axis, which regulates both reproductive hormones and mood, delaying menstrual regularity and increasing depression risk through overlapping neuroendocrine pathways.",
+          "justification": "Affects both exposure trajectory and outcome prevalence.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q3.22",
+            "quoted_wording": "sha256:76cad4d3878353ebc6a270b13a65be7123c5f46ce1afa852777a590b5dd68518"
+          },
+          "mechanism": "Sleep disturbance is a symptom of depression and a potential consequence of the depressive episode measured in Q855, not an independent upstream cause.",
+          "justification": "Likely a descendant of the outcome rather than a confounder. Adjusting for it would be adjusting for a component or consequence of depression itself, violating causal inference principles.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q856",
+            "quoted_wording": "sha256:a828c284c3b425c3f2070d9f6b7dc818eac5b17716e2285f26a7bf7212bab9f0"
+          },
+          "mechanism": "Anxiety symptoms measured in m3 co-occur with depression and may be part of the same mood disturbance syndrome or a descendant of unmeasured common causes.",
+          "justification": "Anxiety measured at the same time as depression may be part of the same underlying affective disturbance syndrome. Inclusion would conflate the outcome construct.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Family history of depression or psychiatric disorder",
+          "search_phrases": [
+            "family history depression mental illness psychiatric"
+          ],
+          "why_rejected": "Search terms (family, history, depression, mental, psychiatric) yielded only low-confidence candidates with poor wording overlap. The instrument does not appear to contain a direct family psychiatric history question.",
+          "exposes_the_estimate_to": "Confounding if family psychiatric history independently predicts both menstrual development and depression risk"
+        },
+        {
+          "construct_sought": "Trauma or childhood adverse events",
+          "search_phrases": [
+            "abuse physical emotional sexual trauma assault"
+          ],
+          "why_rejected": "Search terms returned near-zero hits, indicating the instrument does not measure trauma history.",
+          "exposes_the_estimate_to": "Unmeasured trauma could confound the menstrual regularity–depression association if adversity delays both menstrual regularity and increases depression"
+        },
+        {
+          "construct_sought": "Pubertal development stage",
+          "search_phrases": [
+            "puberty pubertal development breast development"
+          ],
+          "why_rejected": "Search terms returned only breast cancer items, not developmental stage measures.",
+          "exposes_the_estimate_to": "Confounding if pubertal stage independently predicts both menstrual regularity and depression risk"
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "Highest category (longest elapsed time to regularity) versus lowest category (earliest time to regularity)",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 24.26
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 14.01
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 7.67
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.43
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.43
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.25,
+          "value": 7.67,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.25; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS is a longitudinal cohort of Chicago adolescents with multi-year follow-up from high school enrollment through early adulthood",
+        "why_this_cohort": "COMPASS provides prospective menstrual history data (exposure: time to regularity after menarche) and depressive symptom items (outcome: Q855) necessary to evaluate pubertal timing as a risk factor for adolescent depression"
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "2ce042a6e1dce00a",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 4,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q9.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q855\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"age in years adolescent years old age at interview\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"family history depression mental illness psychiatric\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"race ethnicity racial ethnic background\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"socioeconomic status SES income education poverty\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"weight BMI body mass index obesity overweight\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"stress stressful life events stress level\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"menarche first menstrual period onset age\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"sleep trouble sleeping insomnia tired fatigue\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"anxiety anxious worried nervous panic\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"abuse physical emotional sexual trauma assault\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"puberty pubertal development breast development\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"intrusive thoughts poor concentration negative thinking\"}) -> low_confidence",
+          "list_derivations({}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q9.1\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q3.22\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q856\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"current age today birth date date of birth\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"height inches centimeters tall cm\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"participant years old participant's age respondent age assessment visit\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"race ethnicity discrimination racial discrimination\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q4.6\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q9.2\", \"m3:Q855\", \"m2:Q9.1\", \"m1:Q3.10\", \"m1:Q5.4\", \"m1:Q2.10\", \"m1:Q4.6\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.25}) -> ok",
+          "check_access({\"keys\": [\"m2:Q9.2\", \"m3:Q855\", \"m2:Q9.1\", \"m1:Q3.10\", \"m1:Q5.4\", \"m1:Q2.10\", \"m1:Q4.6\", \"m3:Q3.22\", \"m3:Q856\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:1619a1be94a6a042f216f801a7835bbcd6bd51efc253264abde1b6cba3fda82f",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:1619a1be94a6a042f216f801a7835bbcd6bd51efc253264abde1b6cba3fda82f",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.973796,
+        "margin": 0.24431999999999998,
+        "margin_12": 0.155704,
+        "abstained": false,
+        "nearest_key": "m2:Q9.2",
+        "hit": {
+          "key": "m2:Q9.2",
+          "construct_key": "m2:Q9.2",
+          "dict_construct_key": "m2:Q9.2",
+          "module": "2",
+          "target_id": 294,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q9.2"
+          ],
+          "stratum": "reproductive_hormonal",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:aeb17a99adad141299f27444d5e59a6855ea75e338e340abc0f71179f13197f6",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:aeb17a99adad141299f27444d5e59a6855ea75e338e340abc0f71179f13197f6",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.960882,
+        "margin": 0.231406,
+        "margin_12": 0.159645,
+        "abstained": false,
+        "nearest_key": "m3:Q855",
+        "hit": {
+          "key": "m3:Q855",
+          "construct_key": "m3:Q855",
+          "dict_construct_key": "m3:Q855",
+          "module": "3",
+          "target_id": 1351,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m3:Q855"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q9.2",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:1619a1be94a6a042f216f801a7835bbcd6bd51efc253264abde1b6cba3fda82f",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:1619a1be94a6a042f216f801a7835bbcd6bd51efc253264abde1b6cba3fda82f",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.973796,
+          "margin": 0.24431999999999998,
+          "margin_12": 0.155704,
+          "abstained": false,
+          "nearest_key": "m2:Q9.2",
+          "hit": {
+            "key": "m2:Q9.2",
+            "construct_key": "m2:Q9.2",
+            "dict_construct_key": "m2:Q9.2",
+            "module": "2",
+            "target_id": 294,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q9.2"
+            ],
+            "stratum": "reproductive_hormonal",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m3:Q855",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:aeb17a99adad141299f27444d5e59a6855ea75e338e340abc0f71179f13197f6",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:aeb17a99adad141299f27444d5e59a6855ea75e338e340abc0f71179f13197f6",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.960882,
+          "margin": 0.231406,
+          "margin_12": 0.159645,
+          "abstained": false,
+          "nearest_key": "m3:Q855",
+          "hit": {
+            "key": "m3:Q855",
+            "construct_key": "m3:Q855",
+            "dict_construct_key": "m3:Q855",
+            "module": "3",
+            "target_id": 1351,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m3:Q855"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q9.1",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q4.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q3.22",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q856",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q9.2",
+    "outcome": "m3:Q855",
+    "expected_direction": "increase",
+    "nodes": [
+      {
+        "key": "m2:Q9.2",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m3:Q855",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q9.1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q4.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q3.22",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m3:Q856",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q9.2",
+        "target": "m3:Q855",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m2:Q9.1",
+        "target": "m2:Q9.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.1",
+        "target": "m3:Q855",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q9.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m3:Q855",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q9.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m3:Q855",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q9.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m3:Q855",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q4.6",
+        "target": "m2:Q9.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q4.6",
+        "target": "m3:Q855",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q855",
+        "target": "m3:Q3.22",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q855",
+        "target": "m3:Q856",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m2:Q9.1",
+      "m1:Q3.10",
+      "m1:Q5.4",
+      "m1:Q2.10",
+      "m1:Q4.6"
+    ]
+  },
+  "critiques": [],
+  "revision": 0,
+  "generation": null
+}

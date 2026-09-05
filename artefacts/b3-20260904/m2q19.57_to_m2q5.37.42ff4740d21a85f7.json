@@ -1,0 +1,637 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.57_to_m2q5.37",
+    "record_hash": "42ff4740d21a85f7",
+    "pair_id": "m2:Q19.57 -> m2:Q5.37",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.57_to_m2q5.37",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does regular use of Celebrex (celecoxib) cause or predict earlier age at onset of esophageal acid reflux?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.57",
+        "quoted_wording": "sha256:56cb4b2f5edb222411c780c9fca2b3d77118104f16f1ec4a3fcc2393069ea434"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.37",
+        "quoted_wording": "sha256:ea4e177aa01219b26ec395f58208901c904e8ed76b756c3a0f758f44148466d1"
+      },
+      "expected_direction": {
+        "direction": "decrease",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "The study falsifies the null hypothesis of no effect if the risk difference in reflux diagnosis prevalence between regular Celebrex users and non-users is at least 5.11 percentage points at a sample size near 3000 participants.",
+      "falsifier_threshold": {
+        "value": 5.11,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear regression of age at reflux diagnosis on Celebrex exposure status, adjusted for covariates; or logistic regression of reflux prevalence (ever diagnosed yes/no) on Celebrex exposure status, adjusted for covariates.",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors at the community area level (COMPASS cohort design)."
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex is a confounder. GERD prevalence, severity, and symptom experience differ between males and females. NSAID use patterns and indications also vary by sex, with differences in musculoskeletal pain prevalence and arthritis diagnoses between sexes.",
+          "justification": "Common cause of both exposure (NSAID use) and outcome (reflux diagnosis).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q5.5",
+            "quoted_wording": "sha256:de9dcac5ebc6d726296a67ec78524bb13c5da9982763c0234ce9ca8653cc6c0a"
+          },
+          "mechanism": "Smoking relaxes the lower esophageal sphincter, delays gastric emptying, and damages the esophageal mucosa, all increasing reflux risk. Smoking is also associated with chronic musculoskeletal pain and arthritis, conditions that lead to regular NSAID use for pain management.",
+          "justification": "Common cause of both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Higher body weight increases intra-abdominal pressure and reduces lower esophageal sphincter tone, directly increasing reflux risk. Weight is also associated with arthritis and other musculoskeletal conditions that are key indications for Celebrex use.",
+          "justification": "Common cause of both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.9#1_1",
+            "quoted_wording": "sha256:e30a159d94d34e7a3b602c00d1f86c21376380e38318aad6cf08cc81403a6845"
+          },
+          "mechanism": "Height is a component of BMI. Body mass index is an established independent risk factor for GERD.",
+          "justification": "Precision variable; proxy for BMI-based confounder control.",
+          "role": "proxy",
+          "proxy_for": "body mass index",
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.15#1_43",
+            "quoted_wording": "sha256:6a7fb39cb83783cbd71e63aa7541f80383df047570713b581da82f7588023941"
+          },
+          "mechanism": "Rheumatoid arthritis is a primary clinical indication for Celebrex use. Patients with RA require NSAID therapy for pain and inflammation management. RA does not directly cause reflux biologically, but RA patients may have different lifestyle, weight distribution, and medication profiles that influence reflux risk.",
+          "justification": "Cause of the exposure; adjusting for it isolates the NSAID effect in a comparable group.",
+          "role": "cause_of_exposure_only",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q21.5",
+            "quoted_wording": "sha256:1f37f7feab32cf2f1807ed6be294b21e149fe2aa59afc88658951fa54e0d366f"
+          },
+          "mechanism": "Proton pump inhibitors are medications used to treat reflux disease. PPI use is a direct therapeutic response to reflux diagnosis, making it a consequence or mediator in the causal pathway. Including it would block the pathway from Celebrex use to reflux and artificially attenuate the estimated effect.",
+          "justification": "Descendant of outcome or mediator in the causal pathway.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q15.7",
+            "quoted_wording": "sha256:ec4fdf58d3e2253c2c77a03507408d4bd73dad0ab475da70b422c3a76b48073d"
+          },
+          "mechanism": "Alcohol consumption directly reduces lower esophageal sphincter tone and irritates the esophageal mucosa, increasing reflux risk. However, alcohol use is not causally related to Celebrex use—patients do not take Celebrex because of alcohol consumption. Alcohol is not a common cause of both exposure and outcome.",
+          "justification": "Causes outcome but not exposure; not a confounder.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q19.28",
+            "quoted_wording": "sha256:d8459274d2310d358ff7ce00966922cac3bb26c070b4118d925c7662faa14f8d"
+          },
+          "mechanism": "Ibuprofen is a conventional NSAID used for similar musculoskeletal pain indications as Celebrex. Ibuprofen use could represent either: (a) an underlying chronic pain condition or arthritis that predisposes to NSAID use generally (confounder), or (b) alternative or concurrent NSAID therapy that is part of the causal pathway or parallel exposure. The role cannot be clearly determined without additional information about whether these NSAIDs are used for overlapping conditions or distinct conditions.",
+          "justification": "Could act as confounder (marker of pain/arthritis) or mediator (alternative NSAID therapy).",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [
+        {
+          "construct_sought": "Participant age at baseline",
+          "search_phrases": [
+            "current age participant today baseline enrollment",
+            "how old are you age years yourself respondent",
+            "date birth born year month day"
+          ],
+          "why_rejected": "search_variables with these phrases returned low_confidence results; no variable could be identified in the questionnaire system for current participant age or date of birth at enrollment.",
+          "exposes_the_estimate_to": "Confounding bias from unmeasured age, a critical predictor of both NSAID use (age-related arthritis and pain indications) and reflux risk (age-related gastroesophageal changes)."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "Regular Celebrex use (4 or more times per month for 6 or more months) versus no regular use.",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 20.01
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 11.55
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 6.33
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 3.65
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.0
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.15,
+          "value": 3.65,
+          "unit": "percentage points",
+          "at_n": 3000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.15; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "NSAIDs inhibit prostaglandin synthesis, essential for gastric mucosal protection. This mechanism and the association between NSAID use and gastrointestinal complications are well-established in pharmacological and epidemiological literature.",
+        "why_this_cohort": "COMPASS (Chicago Multiethnic Prevention And Surveillance Study) is a community-based cohort with detailed, multi-module questionnaire data on medication use (including Celebrex), health diagnoses (including reflux), and demographic and behavioral covariates. The cohort structure allows for cross-sectional analysis of reflux prevalence by Celebrex exposure, with retrospective age at diagnosis available."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "d2bbf497019d23d0",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 4,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.57\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.37\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years old birth\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarettes tobacco\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"alcohol drinking beverages\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"BMI body mass index weight obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity ancestry\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"arthritis rheumatoid joint pain chronic\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"medication medications drugs NSAID anti-inflammatory\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"reflux GERD heartburn stomach acid proton pump\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q15.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q5.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_43\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q21.5\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"currently smokes cigarette smoking status present\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"height weight pounds kilograms\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"ibuprofen aspirin naproxen pain relief\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m3:Q5.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.9#1_1\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q19.28\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_22\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age participant today baseline enrollment\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"how old are you age years yourself respondent\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"date birth born year month day\"}) -> low_confidence",
+          "estimate_n({\"keys\": [\"m2:Q19.57\", \"m2:Q5.37\", \"m1:Q3.3\", \"m3:Q5.5\", \"m1:Q2.10\", \"m1:Q2.9#1_1\", \"m2:Q5.15#1_43\", \"m2:Q19.28\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.15}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.57\", \"m2:Q5.37\", \"m1:Q3.3\", \"m3:Q5.5\", \"m1:Q2.10\", \"m1:Q2.9#1_1\", \"m2:Q5.15#1_43\", \"m2:Q19.28\", \"m2:Q21.5\", \"m3:Q15.7\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:56cb4b2f5edb222411c780c9fca2b3d77118104f16f1ec4a3fcc2393069ea434",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:56cb4b2f5edb222411c780c9fca2b3d77118104f16f1ec4a3fcc2393069ea434",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.967278,
+        "margin": 0.23780199999999996,
+        "margin_12": 0.281888,
+        "abstained": false,
+        "nearest_key": "m2:Q19.57",
+        "hit": {
+          "key": "m2:Q19.57",
+          "construct_key": "m2:Q19.57",
+          "dict_construct_key": "m2:Q19.57",
+          "module": "2",
+          "target_id": 805,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.57"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:ea4e177aa01219b26ec395f58208901c904e8ed76b756c3a0f758f44148466d1",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:ea4e177aa01219b26ec395f58208901c904e8ed76b756c3a0f758f44148466d1",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.985609,
+        "margin": 0.25613299999999994,
+        "margin_12": 0.102589,
+        "abstained": false,
+        "nearest_key": "m2:Q5.37",
+        "hit": {
+          "key": "m2:Q5.37",
+          "construct_key": "m2:Q5.37",
+          "dict_construct_key": "m2:Q5.37",
+          "module": "2",
+          "target_id": 234,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.37"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.57",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:56cb4b2f5edb222411c780c9fca2b3d77118104f16f1ec4a3fcc2393069ea434",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:56cb4b2f5edb222411c780c9fca2b3d77118104f16f1ec4a3fcc2393069ea434",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.967278,
+          "margin": 0.23780199999999996,
+          "margin_12": 0.281888,
+          "abstained": false,
+          "nearest_key": "m2:Q19.57",
+          "hit": {
+            "key": "m2:Q19.57",
+            "construct_key": "m2:Q19.57",
+            "dict_construct_key": "m2:Q19.57",
+            "module": "2",
+            "target_id": 805,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.57"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.37",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:ea4e177aa01219b26ec395f58208901c904e8ed76b756c3a0f758f44148466d1",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:ea4e177aa01219b26ec395f58208901c904e8ed76b756c3a0f758f44148466d1",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.985609,
+          "margin": 0.25613299999999994,
+          "margin_12": 0.102589,
+          "abstained": false,
+          "nearest_key": "m2:Q5.37",
+          "hit": {
+            "key": "m2:Q5.37",
+            "construct_key": "m2:Q5.37",
+            "dict_construct_key": "m2:Q5.37",
+            "module": "2",
+            "target_id": 234,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.37"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q5.5",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.9#1_1",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.15#1_43",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q21.5",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q15.7",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q19.28",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.57",
+    "outcome": "m2:Q5.37",
+    "expected_direction": "decrease",
+    "nodes": [
+      {
+        "key": "m2:Q19.57",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.37",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.9#1_1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "proxy",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.15#1_43",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "cause_of_exposure_only",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q21.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m3:Q15.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q19.28",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.57",
+        "target": "m2:Q5.37",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q19.57",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q19.57",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.5",
+        "target": "m2:Q5.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q19.57",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q5.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.9#1_1",
+        "target": "m2:Q19.57",
+        "relation": "proxies"
+      },
+      {
+        "source": "m1:Q2.9#1_1",
+        "target": "m2:Q5.37",
+        "relation": "proxies"
+      },
+      {
+        "source": "m2:Q5.15#1_43",
+        "target": "m2:Q19.57",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.37",
+        "target": "m2:Q21.5",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m3:Q5.5",
+      "m1:Q2.10",
+      "m1:Q2.9#1_1",
+      "m2:Q5.15#1_43"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q19.28 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q19.28",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

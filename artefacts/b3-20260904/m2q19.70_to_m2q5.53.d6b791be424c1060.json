@@ -1,0 +1,636 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.70_to_m2q5.53",
+    "record_hash": "d6b791be424c1060",
+    "pair_id": "m2:Q19.70 -> m2:Q5.53",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.70_to_m2q5.53",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Is the frequency of regular prescription opioid use associated with the age at which individuals are first diagnosed with migraine?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.70",
+        "quoted_wording": "sha256:b553b6ef27cde6b5f599eecab2f753e7a9bff12d1c3729831514f9148c527e68"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.53",
+        "quoted_wording": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35"
+      },
+      "expected_direction": {
+        "direction": "non_monotonic",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "Among participants, higher opioid use frequency (operationalized as highest versus lowest quartile of days per month) is associated with a difference of at least 10 percentage points in the risk of migraine diagnosis (comparing those with opioid exposure in the highest quartile to the lowest quartile).",
+      "falsifier_threshold": {
+        "value": 10.0,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear regression (if outcome is continuous age at diagnosis) or logistic regression (if dichotomized as migraine diagnosed before vs. after a threshold age, or ever vs. never diagnosed among the eligible sample); regression coefficient or odds ratio estimated for opioid use frequency (continuous days per month or categorical contrast high vs. low), adjusted for all variables in the adjusted covariate list.",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors at the community area level. The number of participants per community area and the intracluster correlation for these variables are unknown; therefore the design effect cannot be computed and clustering effects are unaccounted for."
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex at birth affects both opioid prescribing patterns (sex differences in pain management) and migraine prevalence and diagnosis timing (migraine is more common in females and may be diagnosed differently across sexes).",
+          "justification": "Demographic confounder; independently associated with healthcare access patterns and provider behavior.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race/ethnicity influences opioid prescribing rates (documented disparities in pain treatment) and migraine diagnosis rates (disparities in healthcare access and diagnostic labeling).",
+          "justification": "Demographic confounder reflecting both prescribing bias and differential diagnostic recognition.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education correlates with health literacy, healthcare-seeking behavior, provider relationships, and ability to access and navigate pain management. It also associates with understanding and reporting of symptoms.",
+          "justification": "Socioeconomic proxy and marker of healthcare engagement; independently affects both opioid access and migraine diagnosis.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:79590ca38c808b483369e51527ceca6aca100f2472a404c51b46d36b4411c743"
+          },
+          "mechanism": "Income determines access to healthcare, choice of providers, ability to seek specialty care for pain or migraine, and quality of care received.",
+          "justification": "Socioeconomic confounder; directly affects both opioid access and migraine diagnosis pathways.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q2.2",
+            "quoted_wording": "sha256:e83a2c35edfd30f2ea3f17c0b6baf7cdf5f2a7d34ed56f0fa0780a6749a21bba"
+          },
+          "mechanism": "Insurance status determines access to prescription medications (including opioids), specialist referrals, and diagnostic services. It shapes provider behavior in prescribing and diagnosis.",
+          "justification": "Healthcare access confounder; insurance influences both treatment availability and diagnostic recognition.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q19.85",
+            "quoted_wording": "sha256:9f220ae5bf1a06aec78fca284826844b246c62a5266437e8861dc11d1a3aaf07"
+          },
+          "mechanism": "This measures current/recent pain experience, which is a consequence of both chronic opioid use (indicating ongoing pain management) and migraine diagnosis (which is painful). It is not an independent cause of either the historical exposure (opioid use frequency during a defined past period) or the historical outcome (age at diagnosis).",
+          "justification": "Current pain status is a descendant of the underlying disease/treatment trajectory. Including it would induce collider bias by conditioning on an outcome of the exposure-outcome system.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.52",
+            "quoted_wording": "sha256:c9b6aaa957073613f497cc293861ebc84d5306d342d07952ced5529665b68688"
+          },
+          "mechanism": "Age at depression diagnosis could represent a pre-existing condition that independently causes both opioid use (via pain syndromes comorbid with depression) and affects migraine diagnosis timing (psychiatric comorbidity changes healthcare engagement). Alternatively, opioid use could cause depression as a side effect or consequence of addiction, making depression a mediator rather than confounder. Or depression could be a correlated outcome of similar healthcare dynamics.",
+          "justification": "The temporal relationship between depression onset and opioid use is unknown; cannot determine whether depression is a cause of both (confounder), a consequence of exposure (mediator), or a separate manifestation of shared underlying factors.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.18",
+            "quoted_wording": "sha256:9b99356b9e919aeea0d6bf9fcc84627f9f8cb7128bf188cd97c33abc5ded3191"
+          },
+          "mechanism": "Like depression, age at anxiety diagnosis could indicate pre-existing psychological conditions that cause both opioid use and affect healthcare-seeking for migraine, OR it could represent anxiety induced by chronic opioid use or pain, OR it could reflect shared underlying psychopathology.",
+          "justification": "Temporal precedence is unknown; cannot assign causal role without determining whether anxiety predates or follows opioid use initiation.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "highest versus lowest quartile of days per month",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 22.41
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 12.94
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 7.09
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.09
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.24
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.2,
+          "value": 7.09,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.2; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS study design conventions for covariate adjustment and analysis of prospective cohort data",
+        "why_this_cohort": "COMPASS provides detailed prospective data on opioid use frequency and migraine diagnosis timing with standardized instruments in a large urban cohort."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "800eddbabdd9d98f",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 4,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.70\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.53\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years old\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity Hispanic Black White\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"chronic pain arthritis fibromyalgia back pain\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"depression anxiety mental health mood\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"insurance health coverage healthcare access\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"education school college degree income financial\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarette tobacco current smoker\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"alcohol drink drinking consumption\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.52\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.18\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.20\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q2.2\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"opioid prescription medication currently taking drugs\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"physical activity exercise fitness movement\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"family history mother father parent sibling relative\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"migraine headache pain\"}) -> low_confidence",
+          "list_derivations({}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q19.85\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q19.70\", \"m2:Q5.53\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q3.11\", \"m1:Q5.4\", \"m2:Q2.2\", \"m2:Q5.52\", \"m2:Q5.18\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.2}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.70\", \"m2:Q5.53\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q3.11\", \"m1:Q5.4\", \"m2:Q2.2\", \"m2:Q5.52\", \"m2:Q5.18\", \"m2:Q19.85\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:b553b6ef27cde6b5f599eecab2f753e7a9bff12d1c3729831514f9148c527e68",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:b553b6ef27cde6b5f599eecab2f753e7a9bff12d1c3729831514f9148c527e68",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.981915,
+        "margin": 0.25243899999999997,
+        "margin_12": 0.162452,
+        "abstained": false,
+        "nearest_key": "m2:Q19.70",
+        "hit": {
+          "key": "m2:Q19.70",
+          "construct_key": "m2:Q19.70",
+          "dict_construct_key": "m2:Q19.70",
+          "module": "2",
+          "target_id": 818,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.70"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.985235,
+        "margin": 0.25575899999999996,
+        "margin_12": 0.113644,
+        "abstained": false,
+        "nearest_key": "m2:Q5.53",
+        "hit": {
+          "key": "m2:Q5.53",
+          "construct_key": "m2:Q5.53",
+          "dict_construct_key": "m2:Q5.53",
+          "module": "2",
+          "target_id": 250,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.53"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.70",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:b553b6ef27cde6b5f599eecab2f753e7a9bff12d1c3729831514f9148c527e68",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:b553b6ef27cde6b5f599eecab2f753e7a9bff12d1c3729831514f9148c527e68",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.981915,
+          "margin": 0.25243899999999997,
+          "margin_12": 0.162452,
+          "abstained": false,
+          "nearest_key": "m2:Q19.70",
+          "hit": {
+            "key": "m2:Q19.70",
+            "construct_key": "m2:Q19.70",
+            "dict_construct_key": "m2:Q19.70",
+            "module": "2",
+            "target_id": 818,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.70"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.53",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.985235,
+          "margin": 0.25575899999999996,
+          "margin_12": 0.113644,
+          "abstained": false,
+          "nearest_key": "m2:Q5.53",
+          "hit": {
+            "key": "m2:Q5.53",
+            "construct_key": "m2:Q5.53",
+            "dict_construct_key": "m2:Q5.53",
+            "module": "2",
+            "target_id": 250,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.53"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q2.2",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q19.85",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.52",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.18",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.70",
+    "outcome": "m2:Q5.53",
+    "expected_direction": "non_monotonic",
+    "nodes": [
+      {
+        "key": "m2:Q19.70",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.53",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q2.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q19.85",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.52",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      },
+      {
+        "key": "m2:Q5.18",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.70",
+        "target": "m2:Q5.53",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q19.70",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q19.70",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q19.70",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q19.70",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q2.2",
+        "target": "m2:Q19.70",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q2.2",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.53",
+        "target": "m2:Q19.85",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q3.10",
+      "m1:Q3.11",
+      "m1:Q5.4",
+      "m2:Q2.2"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.52 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q5.52",
+      "severity": "major",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.18 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q5.18",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

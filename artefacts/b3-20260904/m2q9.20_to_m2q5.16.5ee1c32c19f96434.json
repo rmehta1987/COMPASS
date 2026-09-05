@@ -1,0 +1,677 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q9.20_to_m2q5.16",
+    "record_hash": "5ee1c32c19f96434",
+    "pair_id": "m2:Q9.20 -> m2:Q5.16",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q9.20_to_m2q5.16",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does longer duration of gonadotropin (injectable hormone) use associate with earlier age of Alzheimer's disease diagnosis?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q9.20",
+        "quoted_wording": "sha256:ae66a4c332fe585e3c78f67e85e87402798c9c84d67a3f7fe5b756fb72be2090"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.16",
+        "quoted_wording": "sha256:f3f74e6a207744acf6b14cc480d45b72d9db9b7f3923a84753803feb20d2ff60"
+      },
+      "expected_direction": {
+        "direction": "non_monotonic",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "The study will falsify the null hypothesis if the regression coefficient associating duration of gonadotropin use with age at Alzheimer's diagnosis achieves statistical significance (α = 0.05, two-tailed) and the magnitude is consistent with a clinically plausible effect—defined as a coefficient corresponding to, for example, a difference of [specify X] years of age-at-diagnosis per [specify X unit] of exposure duration. The specific magnitude threshold should be set based on biological/clinical priors before unblinded analysis.",
+      "falsifier_threshold": null,
+      "model_spec": {
+        "form": "Linear regression of age at Alzheimer's diagnosis (continuous outcome, years) on duration of gonadotropin use (continuous exposure, months or cycles), adjusted for seven covariates (sex at birth, education level, marital status, race, type 2 diabetes diagnosis, coronary heart disease diagnosis, prescription female hormone use for menopausal symptoms).",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area–level clustering with cluster-robust standard errors per COMPASS design convention."
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Gonadotropins are used in assisted reproductive technology, which is differentially accessed and utilized by sex and reproductive capacity. Sex also affects Alzheimer's risk through hormonal, vascular, and social pathways, and may affect diagnosis recognition and documentation.",
+          "justification": "Confounder—sex determines eligibility for fertility treatment exposure and independently associates with Alzheimer's prevalence, detection, and age-at-diagnosis.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education is associated with cognitive reserve (protective against symptomatic presentation of cognitive impairment), healthcare literacy, fertility treatment access, and Alzheimer's diagnosis timing through both clinical detection and self-reporting thresholds.",
+          "justification": "Confounder and precision covariate—affects both exposure (healthcare access, family planning infrastructure engagement) and outcome (symptom recognition, healthcare-seeking behavior, diagnosis documentation).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.7",
+            "quoted_wording": "sha256:16d7eea5541bf8da230e2fb4e326b08f86bc108ca54590dbe34a047428ed7bea"
+          },
+          "mechanism": "Marital status influences fertility treatment seeking (more culturally and financially accessible for coupled individuals) and shapes social support networks that affect Alzheimer's diagnosis timing, healthcare engagement, and symptom reporting.",
+          "justification": "Confounder—associated with exposure (fertility treatment seeking) and outcome (social support for care-seeking, healthcare access, diagnosis documentation).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race/ethnicity is associated with healthcare access, fertility treatment service availability and utilization patterns, and with Alzheimer's risk through biological, social, and structural determinants. Detection, diagnosis timing, and prevalence vary meaningfully by race.",
+          "justification": "Confounder and precision covariate—demographic characteristic affecting exposure through structural/access factors and outcome through disease prevalence, risk, and diagnosis rates.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:883085f9e05c1ff52e186d0ca76208723c1d81024663315e7f20b7cc5c94c2d4"
+          },
+          "mechanism": "Type 2 Diabetes is an established independent risk factor for cognitive decline and Alzheimer's disease. Diabetes is also associated with reproductive endocrinology (polycystic ovary syndrome, obesity) which affects fertility and fertility treatment seeking.",
+          "justification": "Confounder—independent predictor of cognitive decline affecting the outcome; associated with exposure through metabolic and endocrine pathways.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.15#1_17",
+            "quoted_wording": "sha256:d6f3e11e1f5f64bc2df551c3c149c6a50fb41a6512b14a3ca0714f8dd25919b0"
+          },
+          "mechanism": "Coronary heart disease and cardiovascular disease generally are independently associated with cognitive decline, vascular dementia, and Alzheimer's risk. Cardiovascular status reflects overall disease burden and vascular health, which affect both Alzheimer's risk and general health-related fertility treatment candidacy.",
+          "justification": "Confounder and precision covariate—established risk factor for cognitive decline; marker of vascular health and overall disease status.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.46",
+            "quoted_wording": "sha256:e498ecb9320d5dddbeef463e3a48a60f2cfc1e58c3b9cd014b6b1d429b0a2b6e"
+          },
+          "mechanism": "Hormone replacement therapy (HRT) for menopause is a separate exogenous hormone exposure that independently affects Alzheimer's risk. Confounding by indication—women who use both gonadotropins and HRT have different health profiles and treatment histories than those using neither.",
+          "justification": "Confounder—represents competing or correlated hormone exposure affecting the outcome independent of gonadotropin use; necessary to isolate the exposure-outcome association of interest.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q17.3",
+            "quoted_wording": "sha256:ddd142cd185d12f0aa3636369f5b08fc6d4ab6383df933325016d1621ea32c14"
+          },
+          "mechanism": "The number of children is a direct downstream consequence of successful fertility treatment with gonadotropins. Gonadotropins are administered to increase ovulation and gamete production in order to achieve pregnancy and live birth.",
+          "justification": "Descendant of exposure / mediator—including it in the model would induce post-treatment bias, removing the portion of any causal effect that operates through reproductive success.",
+          "role": "descendant_of_exposure",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Age at study entry or current age (baseline age, interview age)",
+          "search_phrases": [
+            "age years old",
+            "participant respondent age in years baseline interview",
+            "current age how old are you now"
+          ],
+          "why_rejected": "No clear high-confidence variable matched above threshold. Age-at-event measures for specific diagnoses were identified (m2:Q5.7 for Type 2 Diabetes age, m2:Q5.32 for coronary heart disease age) but age-at-interview or baseline age was not located.",
+          "exposes_the_estimate_to": "Confounding by age: age affects both fertility treatment seeking (exposure opportunity window) and Alzheimer's diagnosis timing (outcome), and adjustment for age-at-baseline would better separate age-related causal pathways."
+        },
+        {
+          "construct_sought": "Smoking status (ever, current, never smoked)",
+          "search_phrases": [
+            "smoking cigarette tobacco",
+            "smoking cigarettes ever smoked current"
+          ],
+          "why_rejected": "Smoking variables located in Module 3 (m3:Q5.3, m3:Q5.5) but module co-completion counts between Module 2 (exposure, outcome) and Module 3 are unknown. Excluded to preserve sample size estimability at the cost of precision.",
+          "exposes_the_estimate_to": "Confounding by smoking: smoking is an established independent risk factor for cognitive decline and would be a confounder if associated with gonadotropin exposure through demographic or behavioral pathways."
+        },
+        {
+          "construct_sought": "Body mass index or weight",
+          "search_phrases": [
+            "weight BMI body mass index obesity"
+          ],
+          "why_rejected": "m1:Q2.10 (current weight in pounds) was located but without corresponding height variable cannot derive BMI. No standalone BMI variable found above confidence threshold.",
+          "exposes_the_estimate_to": "Confounding by weight/obesity: body composition affects both fertility treatment candidacy and outcomes (exposure) and cognitive aging (outcome); obesity and metabolic syndrome are associated with Alzheimer's risk."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "per month or cycle of gonadotropin use",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 15.2
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 8.78
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 4.81
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 2.78
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 1.52
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.08,
+          "value": 15.2,
+          "unit": "percentage points",
+          "at_n": 100,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.08; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS study design convention for community area–level clustering and multi-module analysis.",
+        "why_this_cohort": "Analysis examines association between exogenous gonadotropin exposure (used in assisted reproductive technology) and age at Alzheimer's disease diagnosis within COMPASS cohort. Respondents without Alzheimer's diagnosis are excluded from analytic cohort (no imputation of censoring)."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "93b519bfc8492cea",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 3,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q9.20\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.16\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years old\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"education years school\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"highest degree attained diploma college\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"infertility unable conceive fertility diagnosis\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age how old are you now\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"heart disease cardiovascular hypertension\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"diabetes blood sugar\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"hormone replacement therapy HRT menopause\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"marital status married spouse partner\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"children how many children pregnant\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.32\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q17.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.46\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"participant respondent age in years baseline interview\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"weight BMI body mass index obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarette tobacco\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"ever told coronary heart attack\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarettes ever smoked current\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_17\"}) -> unique",
+          "estimate_detectability({\"baseline_prevalence\": 0.08}) -> ok",
+          "estimate_n({\"keys\": [\"m2:Q9.20\", \"m2:Q5.16\", \"m1:Q3.3\", \"m1:Q3.11\", \"m1:Q3.7\", \"m1:Q3.10\", \"m2:Q5.6\", \"m2:Q5.15#1_17\", \"m2:Q9.46\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q9.20\", \"m2:Q5.16\", \"m1:Q3.3\", \"m1:Q3.11\", \"m1:Q3.7\", \"m1:Q3.10\", \"m2:Q5.6\", \"m2:Q5.15#1_17\", \"m2:Q9.46\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:ae66a4c332fe585e3c78f67e85e87402798c9c84d67a3f7fe5b756fb72be2090",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:ae66a4c332fe585e3c78f67e85e87402798c9c84d67a3f7fe5b756fb72be2090",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.966785,
+        "margin": 0.237309,
+        "margin_12": 0.10134,
+        "abstained": false,
+        "nearest_key": "m2:Q9.20",
+        "hit": {
+          "key": "m2:Q9.20",
+          "construct_key": "m2:Q9.20",
+          "dict_construct_key": "m2:Q9.20",
+          "module": "2",
+          "target_id": 323,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q9.20"
+          ],
+          "stratum": "reproductive_hormonal",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:f3f74e6a207744acf6b14cc480d45b72d9db9b7f3923a84753803feb20d2ff60",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:f3f74e6a207744acf6b14cc480d45b72d9db9b7f3923a84753803feb20d2ff60",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.985721,
+        "margin": 0.25624499999999995,
+        "margin_12": 0.082034,
+        "abstained": false,
+        "nearest_key": "m2:Q5.16",
+        "hit": {
+          "key": "m2:Q5.16",
+          "construct_key": "m2:Q5.16",
+          "dict_construct_key": "m2:Q5.16",
+          "module": "2",
+          "target_id": 213,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.16"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q9.20",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:ae66a4c332fe585e3c78f67e85e87402798c9c84d67a3f7fe5b756fb72be2090",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:ae66a4c332fe585e3c78f67e85e87402798c9c84d67a3f7fe5b756fb72be2090",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.966785,
+          "margin": 0.237309,
+          "margin_12": 0.10134,
+          "abstained": false,
+          "nearest_key": "m2:Q9.20",
+          "hit": {
+            "key": "m2:Q9.20",
+            "construct_key": "m2:Q9.20",
+            "dict_construct_key": "m2:Q9.20",
+            "module": "2",
+            "target_id": 323,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q9.20"
+            ],
+            "stratum": "reproductive_hormonal",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.16",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:f3f74e6a207744acf6b14cc480d45b72d9db9b7f3923a84753803feb20d2ff60",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:f3f74e6a207744acf6b14cc480d45b72d9db9b7f3923a84753803feb20d2ff60",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.985721,
+          "margin": 0.25624499999999995,
+          "margin_12": 0.082034,
+          "abstained": false,
+          "nearest_key": "m2:Q5.16",
+          "hit": {
+            "key": "m2:Q5.16",
+            "construct_key": "m2:Q5.16",
+            "dict_construct_key": "m2:Q5.16",
+            "module": "2",
+            "target_id": 213,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.16"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.15#1_17",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.46",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q17.3",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q9.20",
+    "outcome": "m2:Q5.16",
+    "expected_direction": "non_monotonic",
+    "nodes": [
+      {
+        "key": "m2:Q9.20",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.16",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.15#1_17",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q9.46",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q17.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_exposure",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q9.20",
+        "target": "m2:Q5.16",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q9.20",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.16",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q9.20",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q5.16",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.7",
+        "target": "m2:Q9.20",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.7",
+        "target": "m2:Q5.16",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q9.20",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.16",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q9.20",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q5.16",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.15#1_17",
+        "target": "m2:Q9.20",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.15#1_17",
+        "target": "m2:Q5.16",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.46",
+        "target": "m2:Q9.20",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.46",
+        "target": "m2:Q5.16",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.20",
+        "target": "m2:Q17.3",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q3.11",
+      "m1:Q3.7",
+      "m1:Q3.10",
+      "m2:Q5.6",
+      "m2:Q5.15#1_17",
+      "m2:Q9.46"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q17.3 carries role 'descendant_of_exposure', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q17.3",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

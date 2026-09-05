@@ -1,0 +1,696 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.68_to_m2q5.25",
+    "record_hash": "f8f59fd09d6506a8",
+    "pair_id": "m2:Q19.68 -> m2:Q5.25",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.68_to_m2q5.25",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does regular opioid use cause earlier age of deep vein thrombosis (DVT) diagnosis?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.68",
+        "quoted_wording": "sha256:5a51524441ae93031785ad5aaea9898bc6da42011689310d3384dd7252367218"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.25",
+        "quoted_wording": "sha256:70dbdfb2e8d8921c85fbc215cb02393396b90f0db57c2f4b729a5f3e60791125"
+      },
+      "expected_direction": {
+        "direction": "increase",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "The study will falsify the null hypothesis of no association if the difference in DVT prevalence between opioid users and non-users exceeds 5.11 percentage points at n=3,000.",
+      "falsifier_threshold": {
+        "value": 5.11,
+        "unit": "percentage points",
+        "comparator": ">"
+      },
+      "model_spec": {
+        "form": "Logistic regression with opioid use as primary predictor and eight adjusted covariates",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area with cluster-robust standard errors"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex influences both patterns of opioid use (sex-based differences exist in pain reporting, pain perception, and opioid prescribing practices) and DVT risk (women have higher thrombotic risk due to hormonal factors and other mechanisms).",
+          "justification": "Sex causes both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_3",
+            "quoted_wording": "sha256:ad7c805a862e7b7a8108d049792b0ac9c0565ecf18fb6bd6180854a61aed5e2c"
+          },
+          "mechanism": "Participant age at interview confounds both opioid use (lifetime prevalence increases with age) and DVT occurrence (age is a major risk factor for DVT).",
+          "justification": "Age causes both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q12.2",
+            "quoted_wording": "sha256:652d7de20a50cfcf349d6c0a1f8687cebbe5909e98b575cc23f3ecc97971fa68"
+          },
+          "mechanism": "Cancer causes chronic pain, driving opioid use. Cancer itself markedly increases thrombotic risk through multiple pathways (hypercoagulability, immobility, treatment effects).",
+          "justification": "Cancer causes both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.21",
+            "quoted_wording": "sha256:3a097c0aa537d50e16158ddae33a50919dc52803eb1138fc498527c0d87a2c02"
+          },
+          "mechanism": "Autoimmune diseases cause chronic pain (leading to opioid use) and increase thrombotic risk through systemic inflammation and vascular injury.",
+          "justification": "Autoimmune disorders cause both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.29",
+            "quoted_wording": "sha256:8f7a250aae8614d933f3f746e3bda5faa34a21b8ce5e39d693311dbca6b57abc"
+          },
+          "mechanism": "CKD is associated with chronic pain and uremia (opioid use) and markedly increases DVT risk through uremic toxins, inflammation, and endothelial dysfunction.",
+          "justification": "CKD causes both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.8",
+            "quoted_wording": "sha256:54859c0b47368445f04b396a67b96ed6934dcd16cef08c3db16e3357147c596b"
+          },
+          "mechanism": "Hypertension indicates underlying cardiovascular disease burden, which increases DVT risk through endothelial dysfunction and hemodynamic alterations; may be associated with pain conditions.",
+          "justification": "Hypertension causes both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.32",
+            "quoted_wording": "sha256:27d4ee29ea7b33f51e9adf9423afcb48482787d3e94cc8a6d1459635ba34c64a"
+          },
+          "mechanism": "CAD indicates high cardiovascular and thrombotic risk; cardiovascular disease burden increases DVT risk through vascular dysfunction and may be associated with pain conditions requiring opioid management.",
+          "justification": "CAD causes both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.35",
+            "quoted_wording": "sha256:dd582b3f64f79726ecdb52b579ef3148130b92e06e829b6cbbe2e951171c1d93"
+          },
+          "mechanism": "Hormonal contraceptives increase DVT risk but are not caused by opioid use; adjustment improves precision by reducing outcome variance.",
+          "justification": "Hormonal contraceptives improve precision without confounding.",
+          "role": "precision",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q5.5",
+            "quoted_wording": "sha256:de9dcac5ebc6d726296a67ec78524bb13c5da9982763c0234ce9ca8653cc6c0a"
+          },
+          "mechanism": "While smoking independently increases DVT risk, it is not caused by opioid use and does not confound the causal relationship between opioid use and DVT diagnosis.",
+          "justification": "Smoking is not a cause of either exposure or outcome in the causal model.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q7.2",
+            "quoted_wording": "sha256:6cb91071f67ce0bc71c91d8bbe3ff7c6661a80de57d71024c391603cd51e3ceb"
+          },
+          "mechanism": "Pregnancy and postpartum state increase DVT risk acutely but are not caused by opioid use. Pregnancy does not confound the opioid-DVT association.",
+          "justification": "Pregnancy is an independent risk factor for outcome, not influenced by exposure.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "Regular opioid use (4 times a month or more for 6 months or longer) versus non-use",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 12.21
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 7.05
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 3.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 2.23
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 1.22
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.05,
+          "value": 2.23,
+          "unit": "percentage points",
+          "at_n": 3000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.05; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS study protocol",
+        "why_this_cohort": "Module 2 contains opioid use and DVT diagnosis questions for COMPASS cohort"
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "85b0baec422312da",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 2,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.68\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.25\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"age years old current\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"body mass index weight BMI obesity overweight\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"cancer malignancy tumor\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"smoking cigarette tobacco smoker\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"blood clot thrombosis clotting disorder hypercoagulable\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"surgery surgical procedure hospital immobility mobility\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"birth control oral contraceptive hormone estrogen\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"heart disease cardiovascular hypertension blood pressure\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"kidney disease renal chronic\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"pregnancy pregnant postpartum lactation breastfeeding\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"alcohol drink alcoholic consumption\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age how old are you now today\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"date of birth born when birthday\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.15_3\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.21\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.29\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.32\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q12.1\"}) -> not_found",
+          "resolve_variable({\"key\": \"m2:Q7.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.35\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q5.5\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"have you ever been diagnosed told cancer any type\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q12.2\"}) -> unique",
+          "estimate_detectability({\"baseline_prevalence\": 0.05}) -> ok",
+          "estimate_n({\"keys\": [\"m2:Q19.68\", \"m2:Q5.25\", \"m1:Q3.3\", \"m1:Q2.15_3\", \"m2:Q12.2\", \"m2:Q5.21\", \"m2:Q5.29\", \"m2:Q5.8\", \"m2:Q5.32\", \"m2:Q9.35\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.68\", \"m2:Q5.25\", \"m1:Q3.3\", \"m1:Q2.15_3\", \"m2:Q12.2\", \"m2:Q5.21\", \"m2:Q5.29\", \"m2:Q5.8\", \"m2:Q5.32\", \"m2:Q9.35\", \"m3:Q5.5\", \"m2:Q7.2\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:5a51524441ae93031785ad5aaea9898bc6da42011689310d3384dd7252367218",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:5a51524441ae93031785ad5aaea9898bc6da42011689310d3384dd7252367218",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.951123,
+        "margin": 0.22164700000000004,
+        "margin_12": 0.17113,
+        "abstained": false,
+        "nearest_key": "m2:Q19.68",
+        "hit": {
+          "key": "m2:Q19.68",
+          "construct_key": "m2:Q19.68",
+          "dict_construct_key": "m2:Q19.68",
+          "module": "2",
+          "target_id": 816,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.68"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:70dbdfb2e8d8921c85fbc215cb02393396b90f0db57c2f4b729a5f3e60791125",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:70dbdfb2e8d8921c85fbc215cb02393396b90f0db57c2f4b729a5f3e60791125",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.988825,
+        "margin": 0.25934899999999994,
+        "margin_12": 0.112533,
+        "abstained": false,
+        "nearest_key": "m2:Q5.25",
+        "hit": {
+          "key": "m2:Q5.25",
+          "construct_key": "m2:Q5.25",
+          "dict_construct_key": "m2:Q5.25",
+          "module": "2",
+          "target_id": 222,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.25"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.68",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:5a51524441ae93031785ad5aaea9898bc6da42011689310d3384dd7252367218",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:5a51524441ae93031785ad5aaea9898bc6da42011689310d3384dd7252367218",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.951123,
+          "margin": 0.22164700000000004,
+          "margin_12": 0.17113,
+          "abstained": false,
+          "nearest_key": "m2:Q19.68",
+          "hit": {
+            "key": "m2:Q19.68",
+            "construct_key": "m2:Q19.68",
+            "dict_construct_key": "m2:Q19.68",
+            "module": "2",
+            "target_id": 816,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.68"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.25",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:70dbdfb2e8d8921c85fbc215cb02393396b90f0db57c2f4b729a5f3e60791125",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:70dbdfb2e8d8921c85fbc215cb02393396b90f0db57c2f4b729a5f3e60791125",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.988825,
+          "margin": 0.25934899999999994,
+          "margin_12": 0.112533,
+          "abstained": false,
+          "nearest_key": "m2:Q5.25",
+          "hit": {
+            "key": "m2:Q5.25",
+            "construct_key": "m2:Q5.25",
+            "dict_construct_key": "m2:Q5.25",
+            "module": "2",
+            "target_id": 222,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.25"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q12.2",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.21",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.29",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.32",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.35",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q5.5",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q7.2",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.68",
+    "outcome": "m2:Q5.25",
+    "expected_direction": "increase",
+    "nodes": [
+      {
+        "key": "m2:Q19.68",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.25",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q12.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.21",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.29",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.32",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q9.35",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "precision",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q5.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q7.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.68",
+        "target": "m2:Q5.25",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q19.68",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.25",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q19.68",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q5.25",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q12.2",
+        "target": "m2:Q19.68",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q12.2",
+        "target": "m2:Q5.25",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.21",
+        "target": "m2:Q19.68",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.21",
+        "target": "m2:Q5.25",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.29",
+        "target": "m2:Q19.68",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.29",
+        "target": "m2:Q5.25",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q19.68",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q5.25",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.32",
+        "target": "m2:Q19.68",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.32",
+        "target": "m2:Q5.25",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.35",
+        "target": "m2:Q5.25",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q2.15_3",
+      "m2:Q12.2",
+      "m2:Q5.21",
+      "m2:Q5.29",
+      "m2:Q5.8",
+      "m2:Q5.32",
+      "m2:Q9.35"
+    ]
+  },
+  "critiques": [],
+  "revision": 0,
+  "generation": null
+}

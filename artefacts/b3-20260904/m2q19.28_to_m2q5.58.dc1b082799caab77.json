@@ -1,0 +1,685 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.28_to_m2q5.58",
+    "record_hash": "dc1b082799caab77",
+    "pair_id": "m2:Q19.28 -> m2:Q5.58",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.28_to_m2q5.58",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does regular, long-term ibuprofen use modify the age at which rheumatoid arthritis is first diagnosed?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.28",
+        "quoted_wording": "sha256:d8459274d2310d358ff7ce00966922cac3bb26c070b4118d925c7662faa14f8d"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.58",
+        "quoted_wording": "sha256:3900ff495e9a7c30027b31c5e392031014bf5325a26d4ae05749c1901f0e2bef"
+      },
+      "expected_direction": {
+        "direction": "non_monotonic",
+        "magnitude": "±0.2 years per year of NSAID use (±2 years for 10-year difference in cumulative exposure)",
+        "magnitude_source": "Clinical judgment regarding meaningful shifts in diagnosis age"
+      },
+      "falsifier": "The exposure (years of regular ibuprofen use) and outcome (age at RA diagnosis) are both continuous variables. A risk difference framework does not directly apply. The falsifier is stated in terms of regression magnitude rather than risk difference percentage points. A clinically meaningful effect would be an association where each additional 5 years of regular ibuprofen use is associated with at least a 1-year shift in RA diagnosis age (in either direction). This corresponds to a regression coefficient of ±0.2 years per year of NSAID use, or ±2 years for a 10-year difference in cumulative NSAID exposure.",
+      "falsifier_threshold": null,
+      "model_spec": {
+        "form": "Linear regression with continuous outcome. Age at RA diagnosis = β₀ + β₁(years of NSAID use) + β₂(sex) + β₃(smoking) + β₄(education) + β₅(income) + β₆(insurance) + β₇(alcohol) + ε",
+        "unit_of_analysis": "participant",
+        "clustering": "No clustering adjustment applied for exposure (person-level). However, outcome (age at RA diagnosis) may be clustered by community area due to differential healthcare access, RA awareness, and rheumatology availability. Cluster-robust standard errors at community area level would be appropriate if outcome clustering is substantive."
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Women have approximately 3-fold higher RA prevalence than men. Sex affects healthcare-seeking behavior and access to care. Sex may also affect patterns of pain management and NSAID use.",
+          "justification": "Confounder—causes variation in both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q5.3",
+            "quoted_wording": "sha256:3482b2afcf1f7edfe24aea6d63f797620fa160a888531cbbefe30a795f4ae67d"
+          },
+          "mechanism": "Smoking is an established independent risk factor for RA. Smokers may use NSAIDs more frequently for smoking-related musculoskeletal pain. Smoking causes both increased RA risk and increased NSAID use.",
+          "justification": "Confounder—causes variation in both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education is associated with healthcare literacy, access to healthcare, and health-seeking behavior. Higher education correlates with earlier diagnosis of chronic conditions. Education may also be associated with health behaviors affecting NSAID use.",
+          "justification": "Confounder—associated with both exposure (health behaviors) and outcome (healthcare access and diagnosis timing).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:79590ca38c808b483369e51527ceca6aca100f2472a404c51b46d36b4411c743"
+          },
+          "mechanism": "Income affects access to healthcare, including rheumatology care and RA diagnosis. Income affects ability to purchase over-the-counter NSAIDs. Income is a marker of socioeconomic position affecting both healthcare-seeking and NSAID use.",
+          "justification": "Confounder—causes variation in both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q2.2",
+            "quoted_wording": "sha256:e83a2c35edfd30f2ea3f17c0b6baf7cdf5f2a7d34ed56f0fa0780a6749a21bba"
+          },
+          "mechanism": "Insurance status determines access to healthcare and specialist care (rheumatology). Insurance affects likelihood of RA diagnosis. Insurance reflects healthcare-seeking behavior and use patterns.",
+          "justification": "Confounder—determines both likelihood of diagnosis and healthcare-seeking behavior that includes NSAID use.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q15.7",
+            "quoted_wording": "sha256:ed5b18e3585428555a7a752d8719073435ee873307bc6fa8ce6a726ccceb866f"
+          },
+          "mechanism": "Alcohol use may interact with NSAID use in affecting gastrointestinal health and symptom burden. Alcohol use is associated with lifestyle factors and health behaviors. Alcohol may be related to healthcare-seeking patterns.",
+          "justification": "Confounder—may confound the relationship between NSAIDs and RA diagnosis timing.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Pre-diagnosis weight could be a confounder (obesity increases RA risk and NSAID use). However, current weight may be altered by RA disease and reduced activity, making it a potential descendant of the outcome.",
+          "justification": "Excluded because the causal direction is ambiguous—weight could reflect pre-existing obesity (confounder) or post-diagnosis changes (mediator/descendant). Controlling for current weight could introduce bias if it reflects disease consequences. To avoid collider bias, excluded from adjustment.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.9#1_1",
+            "quoted_wording": "sha256:e30a159d94d34e7a3b602c00d1f86c21376380e38318aad6cf08cc81403a6845"
+          },
+          "mechanism": "Height reflects developmental and genetic factors but has no known direct causal relationship to either ibuprofen use or RA diagnosis age.",
+          "justification": "Not a cause of either exposure or outcome; included to document deliberate exclusion.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.20",
+            "quoted_wording": "sha256:cab2a4842a03d48ce8b63052a7db8b628e3ed6033b26ff3ac11bcded10178dd7"
+          },
+          "mechanism": "Prior arthritis diagnosis could represent independent joint disease that increases both NSAID use and subsequent RA diagnosis (confounding). Alternatively, it could represent earlier clinical recognition of what becomes recognized as RA (mediator or descendant). The relationship is ambiguous.",
+          "justification": "Causal relationship to RA is indeterminate. Could confound or could mediate. Given ambiguity, this variable is treated as undetermined rather than excluded or adjusted.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [
+        {
+          "construct_sought": "Baseline age or current age at survey",
+          "search_phrases": [
+            "current age survey enrollment visit",
+            "baseline age current age today",
+            "birth year date born when were you born"
+          ],
+          "why_rejected": "Searches for 'current age survey enrollment visit', 'baseline age current age today', and 'birth year date born when were you born' all returned low_confidence results. No specific variable in the instrument measures participant age at time of survey/interview or calculated age from birth year.",
+          "exposes_the_estimate_to": "Without adjustment for current age, the association could be confounded by age-related variation in RA diagnosis patterns, disease duration, or cohort effects in RA awareness. Age at survey mechanically constrains outcome values (older participants can report earlier diagnoses; younger participants cannot)."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "Years of regular ibuprofen use as a continuous measure, comparing individuals with greater cumulative duration of regular NSAID use to those with less",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 24.26
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 14.01
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 7.67
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.43
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.43
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.25,
+          "value": 24.26,
+          "unit": "percentage points",
+          "at_n": 100,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.25; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS cohort, designed as a multisite, community-based study in Chicago",
+        "why_this_cohort": "COMPASS participants provide data on regular ibuprofen use (m2:Q19.28), age at rheumatoid arthritis diagnosis (m2:Q5.58), and confounders (sex, smoking, education, income, insurance, alcohol) across multiple survey modules"
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "d55deff0b0d4cf25",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 3,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.28\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.58\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years old\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarette tobacco\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"joint pain arthritis pain\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"baseline age current age today\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity ethnic background\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"BMI body mass index weight height\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"alcohol drinking beverage\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"education school college degree\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"income money financial poverty\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"insurance health coverage medical\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"other pain medications prescription drugs\"}) -> low_confidence",
+          "list_derivations({}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q2.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q15.7\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age survey enrollment visit\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"current smoking status smoker former never\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"back pain chronic pain conditions\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"cigarette ever smoked pipe blunt cigar\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"general arthritis osteoarthritis told condition\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"told diagnosed condition disease arthritis diabetes asthma\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"cigarette regular basis daily weekly\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"have you ever smoked cigarette how many years\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"ever told rheumatoid arthritis doctor healthcare worker\"}) -> ok",
+          "resolve_variable({\"key\": \"m3:Q5.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.20\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_43\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.9#1_1\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q19.28\", \"m2:Q5.58\", \"m1:Q3.3\", \"m3:Q5.3\", \"m1:Q3.11\", \"m1:Q5.4\", \"m2:Q2.2\", \"m3:Q15.7\", \"m1:Q2.10\", \"m2:Q5.20\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.28\", \"m2:Q5.58\", \"m1:Q3.3\", \"m3:Q5.3\", \"m1:Q3.11\", \"m1:Q5.4\", \"m2:Q2.2\", \"m3:Q15.7\", \"m1:Q2.10\", \"m2:Q5.20\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.25}) -> ok",
+          "get_design_convention({\"topic\": \"clustering:community_area\"}) -> ok",
+          "get_design_convention({\"topic\": \"small_cells\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"birth year date born when were you born\"}) -> low_confidence"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:d8459274d2310d358ff7ce00966922cac3bb26c070b4118d925c7662faa14f8d",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:d8459274d2310d358ff7ce00966922cac3bb26c070b4118d925c7662faa14f8d",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.975438,
+        "margin": 0.24596200000000001,
+        "margin_12": 0.113972,
+        "abstained": false,
+        "nearest_key": "m2:Q19.28",
+        "hit": {
+          "key": "m2:Q19.28",
+          "construct_key": "m2:Q19.28",
+          "dict_construct_key": "m2:Q19.28",
+          "module": "2",
+          "target_id": 776,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.28"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:3900ff495e9a7c30027b31c5e392031014bf5325a26d4ae05749c1901f0e2bef",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:3900ff495e9a7c30027b31c5e392031014bf5325a26d4ae05749c1901f0e2bef",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.989426,
+        "margin": 0.25995,
+        "margin_12": 0.072725,
+        "abstained": false,
+        "nearest_key": "m2:Q5.58",
+        "hit": {
+          "key": "m2:Q5.58",
+          "construct_key": "m2:Q5.58",
+          "dict_construct_key": "m2:Q5.58",
+          "module": "2",
+          "target_id": 255,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.58"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.28",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:d8459274d2310d358ff7ce00966922cac3bb26c070b4118d925c7662faa14f8d",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:d8459274d2310d358ff7ce00966922cac3bb26c070b4118d925c7662faa14f8d",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.975438,
+          "margin": 0.24596200000000001,
+          "margin_12": 0.113972,
+          "abstained": false,
+          "nearest_key": "m2:Q19.28",
+          "hit": {
+            "key": "m2:Q19.28",
+            "construct_key": "m2:Q19.28",
+            "dict_construct_key": "m2:Q19.28",
+            "module": "2",
+            "target_id": 776,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.28"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.58",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:3900ff495e9a7c30027b31c5e392031014bf5325a26d4ae05749c1901f0e2bef",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:3900ff495e9a7c30027b31c5e392031014bf5325a26d4ae05749c1901f0e2bef",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.989426,
+          "margin": 0.25995,
+          "margin_12": 0.072725,
+          "abstained": false,
+          "nearest_key": "m2:Q5.58",
+          "hit": {
+            "key": "m2:Q5.58",
+            "construct_key": "m2:Q5.58",
+            "dict_construct_key": "m2:Q5.58",
+            "module": "2",
+            "target_id": 255,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.58"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q5.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q2.2",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q15.7",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.9#1_1",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.20",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.28",
+    "outcome": "m2:Q5.58",
+    "expected_direction": "non_monotonic",
+    "nodes": [
+      {
+        "key": "m2:Q19.28",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.58",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q5.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q2.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q15.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m1:Q2.9#1_1",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.20",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.28",
+        "target": "m2:Q5.58",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q19.28",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.58",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.3",
+        "target": "m2:Q19.28",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q5.3",
+        "target": "m2:Q5.58",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q19.28",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q5.58",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q19.28",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q5.58",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q2.2",
+        "target": "m2:Q19.28",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q2.2",
+        "target": "m2:Q5.58",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m2:Q19.28",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q15.7",
+        "target": "m2:Q5.58",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.58",
+        "target": "m1:Q2.10",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m3:Q5.3",
+      "m1:Q3.11",
+      "m1:Q5.4",
+      "m2:Q2.2",
+      "m3:Q15.7"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.20 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q5.20",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

@@ -1,0 +1,630 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q8.3_to_m2q5.53",
+    "record_hash": "0b405b31a7f809e1",
+    "pair_id": "m2:Q8.3 -> m2:Q5.53",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q8.3_to_m2q5.53",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does the outcome of a woman's first pregnancy affect the age at which she is first diagnosed with migraine?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:1_Q8.3",
+        "quoted_wording": "sha256:86e7b1a404f1397a341bf901f5dc8156dd85c1836b6ec839329da794fefaa6bc"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.53",
+        "quoted_wording": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "Adverse first pregnancy outcome is associated with a mean difference of at least 3 years in age at migraine diagnosis compared to live birth.",
+      "falsifier_threshold": null,
+      "model_spec": {
+        "form": "Linear regression of age at migraine diagnosis on pregnancy outcome, adjusted for the three confounders and with standard errors clustered by geographic community area.",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:1_Q8.2",
+            "quoted_wording": "sha256:7aa32c085b36a832cb7d79c3a3b28957e1061c26d80d122f51316f5f4bc93d4c"
+          },
+          "mechanism": "Maternal age at first pregnancy causally influences pregnancy outcomes (older maternal age increases risk of miscarriage, stillbirth, and other complications). Maternal age is also correlated with current age and life stage, both of which independently affect the timing of any health diagnosis.",
+          "justification": "Confounding—age at first pregnancy is a proxy for overall maternal age and reproductive life stage, each of which independently relates to the opportunity and likelihood of migraine diagnosis at various ages.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race/ethnicity relates to both pregnancy outcomes (through differences in maternal health status, healthcare access, and clinical decision-making) and migraine diagnosis (through differences in migraine prevalence, symptom attribution, and access to specialist care).",
+          "justification": "Confounding—racial and ethnic groups differ systematically in both adverse pregnancy outcome rates and in migraine recognition and diagnosis.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:79590ca38c808b483369e51527ceca6aca100f2472a404c51b46d36b4411c743"
+          },
+          "mechanism": "Household income reflects socioeconomic status, which causally influences both pregnancy complications (through access to prenatal care, nutrition, stress levels) and the timing of migraine diagnosis (through access to primary and specialist healthcare, ability to pursue medical evaluation).",
+          "justification": "Confounding—SES is a fundamental cause affecting both exposure and outcome through multiple pathways.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.15#1_38",
+            "quoted_wording": "sha256:1467942cbe1963a5c566346e27265166a6386f2458f9c85783a94759dbb045ba"
+          },
+          "mechanism": "This variable is a binary indicator of whether the participant has ever been diagnosed with migraine.",
+          "justification": "Descendant of outcome—this is a collapsed or dichotomous version of the outcome variable itself (age at migraine diagnosis). Including it as a covariate would condition on the outcome, biasing estimates.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.30",
+            "quoted_wording": "sha256:1b3efc7594d0cc4d06035229a893f6e98f899e0e4a4c97c79830a2e86d15b990"
+          },
+          "mechanism": "Depression could be a confounder if it predates pregnancy (depression predisposes to both adverse pregnancy outcomes and increased migraine risk). Alternatively, depression could be a mediator if pregnancy complications trigger depression, which then affects migraine risk. Or depression could develop after both exposure and outcome and be unrelated.",
+          "justification": "Without temporal sequence data showing whether depression onset preceded, coincided with, or followed the pregnancy and migraine diagnosis, the causal role cannot be determined.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.18",
+            "quoted_wording": "sha256:9b99356b9e919aeea0d6bf9fcc84627f9f8cb7128bf188cd97c33abc5ded3191"
+          },
+          "mechanism": "Anxiety disorders could confound the relationship (if pre-pregnancy), mediate it (if caused by pregnancy complications), or be unrelated, depending on timing.",
+          "justification": "Temporal sequencing unknown—the causal position of anxiety relative to pregnancy outcome and migraine diagnosis cannot be established from these questions alone.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.36",
+            "quoted_wording": "sha256:477be3f46751accc9ccc672d67be3ba99a33a4d33362d3e3bd1d97da1293aeca"
+          },
+          "mechanism": "Oral contraceptive pills deliver exogenous estrogen, which independently affects migraine risk and prevalence. However, the timing of OCP use relative to the pregnancy and migraine diagnosis is not specified: OCP use could predate pregnancy (confounding), occur between pregnancy outcome and migraine diagnosis (potentially mediating or independently causative), or postdate migraine diagnosis (irrelevant).",
+          "justification": "Without knowing when OCP use occurred in the participant's timeline, the causal role cannot be determined.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "Adverse pregnancy outcome versus live birth",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 20.01
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 11.55
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 6.33
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 3.65
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.0
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.15,
+          "value": 20.01,
+          "unit": "percentage points",
+          "at_n": 100,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.15; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS (Community, Environment and Work) cohort",
+        "why_this_cohort": "Exposure (pregnancy outcome) and outcome (age at migraine diagnosis) both measured within COMPASS modules m1 (baseline demographics) and m2 (reproductive history and health)"
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "86b1db4c8a8ee46a",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 0,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q5.53\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q8.3\"}) -> construct",
+          "list_derivations({}) -> ok",
+          "resolve_variable({\"key\": \"m2:1_Q8.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:2_Q8.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:3_Q8.3\"}) -> unique",
+          "get_derivation({\"derivation_id\": \"met_hours_week\"}) -> ok",
+          "get_derivation({\"derivation_id\": \"social_cohesion_scale\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"pregnancy complications miscarriage abortion\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"migraine age diagnosis first onset\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"family history migraine genetic predisposition\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"hormonal contraceptive oral birth control estrogen\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years current age birthday born\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"weight BMI body mass index obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"depression anxiety mental health stress psychological\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarettes tobacco current use\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"education race ethnicity socioeconomic income\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:1_Q8.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.36\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_38\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"hormone replacement therapy HRT menopause estrogen use\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q5.30\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.18\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:1_Q8.3\", \"m2:Q5.53\", \"m2:1_Q8.2\", \"m1:Q3.10\", \"m1:Q5.4\", \"m2:Q5.15#1_38\", \"m2:Q5.30\", \"m2:Q5.18\", \"m2:Q9.36\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.15}) -> ok",
+          "check_access({\"keys\": [\"m2:1_Q8.3\", \"m2:Q5.53\", \"m2:1_Q8.2\", \"m1:Q3.10\", \"m1:Q5.4\", \"m2:Q5.15#1_38\", \"m2:Q5.30\", \"m2:Q5.18\", \"m2:Q9.36\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:86e7b1a404f1397a341bf901f5dc8156dd85c1836b6ec839329da794fefaa6bc",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:86e7b1a404f1397a341bf901f5dc8156dd85c1836b6ec839329da794fefaa6bc",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.976294,
+        "margin": 0.24681799999999998,
+        "margin_12": 0.352193,
+        "abstained": false,
+        "nearest_key": "m2:1_Q8.3",
+        "hit": {
+          "key": "m2:1_Q8.3",
+          "construct_key": "m2:Q8.3",
+          "dict_construct_key": "m2:Q8.3",
+          "module": "2",
+          "target_id": 286,
+          "fold_size": 20,
+          "n_siblings": 0,
+          "members": [
+            "m2:1_Q8.3",
+            "m2:2_Q8.3",
+            "m2:3_Q8.3",
+            "m2:4_Q8.3",
+            "m2:5_Q8.3",
+            "m2:6_Q8.3",
+            "m2:7_Q8.3",
+            "m2:8_Q8.3",
+            "m2:9_Q8.3",
+            "m2:10_Q8.3",
+            "m2:11_Q8.3",
+            "m2:12_Q8.3",
+            "m2:13_Q8.3",
+            "m2:14_Q8.3",
+            "m2:15_Q8.3",
+            "m2:16_Q8.3",
+            "m2:17_Q8.3",
+            "m2:18_Q8.3",
+            "m2:19_Q8.3",
+            "m2:20_Q8.3"
+          ],
+          "stratum": "reproductive_hormonal",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.985235,
+        "margin": 0.25575899999999996,
+        "margin_12": 0.113644,
+        "abstained": false,
+        "nearest_key": "m2:Q5.53",
+        "hit": {
+          "key": "m2:Q5.53",
+          "construct_key": "m2:Q5.53",
+          "dict_construct_key": "m2:Q5.53",
+          "module": "2",
+          "target_id": 250,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.53"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:1_Q8.3",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:86e7b1a404f1397a341bf901f5dc8156dd85c1836b6ec839329da794fefaa6bc",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:86e7b1a404f1397a341bf901f5dc8156dd85c1836b6ec839329da794fefaa6bc",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.976294,
+          "margin": 0.24681799999999998,
+          "margin_12": 0.352193,
+          "abstained": false,
+          "nearest_key": "m2:1_Q8.3",
+          "hit": {
+            "key": "m2:1_Q8.3",
+            "construct_key": "m2:Q8.3",
+            "dict_construct_key": "m2:Q8.3",
+            "module": "2",
+            "target_id": 286,
+            "fold_size": 20,
+            "n_siblings": 0,
+            "members": [
+              "m2:1_Q8.3",
+              "m2:2_Q8.3",
+              "m2:3_Q8.3",
+              "m2:4_Q8.3",
+              "m2:5_Q8.3",
+              "m2:6_Q8.3",
+              "m2:7_Q8.3",
+              "m2:8_Q8.3",
+              "m2:9_Q8.3",
+              "m2:10_Q8.3",
+              "m2:11_Q8.3",
+              "m2:12_Q8.3",
+              "m2:13_Q8.3",
+              "m2:14_Q8.3",
+              "m2:15_Q8.3",
+              "m2:16_Q8.3",
+              "m2:17_Q8.3",
+              "m2:18_Q8.3",
+              "m2:19_Q8.3",
+              "m2:20_Q8.3"
+            ],
+            "stratum": "reproductive_hormonal",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.53",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:6aee6ec5a86d1e1808a5d2e1270363d473b6cb7a90a7aae5c35785422f9c7a35",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.985235,
+          "margin": 0.25575899999999996,
+          "margin_12": 0.113644,
+          "abstained": false,
+          "nearest_key": "m2:Q5.53",
+          "hit": {
+            "key": "m2:Q5.53",
+            "construct_key": "m2:Q5.53",
+            "dict_construct_key": "m2:Q5.53",
+            "module": "2",
+            "target_id": 250,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.53"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:1_Q8.2",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.15#1_38",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.30",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.18",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.36",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:1_Q8.3",
+    "outcome": "m2:Q5.53",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:1_Q8.3",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.53",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:1_Q8.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.15#1_38",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.30",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      },
+      {
+        "key": "m2:Q5.18",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      },
+      {
+        "key": "m2:Q9.36",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:1_Q8.3",
+        "target": "m2:Q5.53",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m2:1_Q8.2",
+        "target": "m2:1_Q8.3",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:1_Q8.2",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:1_Q8.3",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:1_Q8.3",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q5.53",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.53",
+        "target": "m2:Q5.15#1_38",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m2:1_Q8.2",
+      "m1:Q3.10",
+      "m1:Q5.4"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.30 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q5.30",
+      "severity": "major",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.18 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q5.18",
+      "severity": "major",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q9.36 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q9.36",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

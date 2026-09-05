@@ -1,0 +1,812 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q7.4_to_m2q20.11",
+    "record_hash": "b4ae3aa67ba09078",
+    "pair_id": "m2:Q7.4 -> m2:Q20.11",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q7.4_to_m2q20.11",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does pregnancy history (cumulative number of pregnancies) predict the intensity of antihypertensive medication (pills per day) among women taking antihypertensives regularly?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q7.4",
+        "quoted_wording": "sha256:57b4c7a3bb52e7ceb482afd32a9b1b361d747696a8d88ae55a64a2664351c6e4"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q20.11",
+        "quoted_wording": "sha256:1b2fbb1c4ec2716c7b0610a209684384d87427175e263aa8dcc171bf9f019eeb"
+      },
+      "expected_direction": {
+        "direction": "increase",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "A positive association between pregnancy history and antihypertensive medication intensity of ≥8.86 percentage points (comparing highest versus lowest pregnancy counts) at n=1,000 would be detectable and inconsistent with the null hypothesis of no effect. This threshold assumes two-sided α=0.05, power=0.80, independent observations, and dichotomization of the outcome at its median.",
+      "falsifier_threshold": {
+        "value": 8.86,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear regression of pills per day (continuous outcome) on number of pregnancies (continuous exposure), adjusted for six confounders: Hispanic/Latino ethnicity, race, household income, Type 1 Diabetes status, Type 2 Diabetes status, and chronic kidney disease age-at-diagnosis",
+        "unit_of_analysis": "participant",
+        "clustering": "By community area, with cluster-robust standard errors"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Race and ethnicity affect both the distribution of pregnancy history across populations and hypertension prevalence, treatment patterns, and medication intensity.",
+          "justification": "COMPASS is designed to capture a multiethnic cohort, and differential hypertension care patterns across ethnic groups are well-documented.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race confounds the exposure-outcome relationship through differential parity distributions and differential hypertension prevalence and care patterns across racial groups.",
+          "justification": "Standard demographic confounder in hypertension research.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:13d3548965635d4117cbd0b28b41f20541d0d0827da994eef2ca27064ff58d60"
+          },
+          "mechanism": "Household income affects family planning decisions (pregnancy count) and healthcare access and medication adherence.",
+          "justification": "SES is a well-established confounder of both reproductive and cardiovascular outcomes.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:55600e24b14333ff4c2cea0d744d84df721ba906ace8329551ba8072ef427427"
+          },
+          "mechanism": "Type 2 Diabetes increases hypertension risk and complications, requiring more intensive antihypertensive therapy. Diabetes is not caused by pregnancy count.",
+          "justification": "Diabetes is a strong risk factor for hypertension severity and medication needs independent of pregnancy history.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.4",
+            "quoted_wording": "sha256:06f26b3aeabb79ed39bb2db875106fa6274622a3256efef6a48f1c1f55525305"
+          },
+          "mechanism": "Type 1 Diabetes increases cardiovascular and hypertensive complications requiring more medication.",
+          "justification": "Strong independent cause of hypertension medication intensity.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.29",
+            "quoted_wording": "sha256:8f7a250aae8614d933f3f746e3bda5faa34a21b8ce5e39d693311dbca6b57abc"
+          },
+          "mechanism": "Chronic kidney disease causes hypertension and reduces medication options, requiring more intensive therapy regardless of pregnancy history.",
+          "justification": "CKD is a direct cause of hypertension and medication burden.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.8",
+            "quoted_wording": "sha256:54859c0b47368445f04b396a67b96ed6934dcd16cef08c3db16e3357147c596b"
+          },
+          "mechanism": "The causal pathway is: pregnancy history → hypertension risk (through gestational hypertension, long-term BP elevation, weight gain) → hypertension diagnosis → antihypertensive medication need → medication intensity.",
+          "justification": "Hypertension diagnosis is a mediator of the exposure-outcome relationship. Conditioning on it would estimate the direct effect of pregnancy holding constant hypertension status, which is not the estimand of interest. We seek the total effect.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.8",
+            "quoted_wording": "sha256:75280df2ed2c4c3e0d15aa33e12b34dc78154bcfe0cb34cc8a4eef4e64c7ece4"
+          },
+          "mechanism": "Gestational diabetes occurs as a direct consequence of being pregnant.",
+          "justification": "This is a descendant of the exposure (number of pregnancies). It is not a confounder and should not be adjusted for.",
+          "role": "descendant_of_exposure",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Pregnancy causes weight gain; obesity causes hypertension and increases cardiovascular risk; obesity increases antihypertensive medication burden.",
+          "justification": "Current weight is a mediator in the pathway from pregnancy to hypertension and medication intensity. If pregnancy increases future weight and weight increases medication intensity, weight is in the causal pathway and should be excluded to preserve the total effect.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.41",
+            "quoted_wording": "sha256:d3785560fd2f6612ad2b2338c67443c7f77e7c5e0e91d81669536963b98f7aa4"
+          },
+          "mechanism": "Prior myocardial infarction is a consequence of hypertension and represents target organ damage. Patients with prior MI are prescribed intensive antihypertensive regimens.",
+          "justification": "This is a descendant of the outcome (consequence of hypertension severity).",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.61",
+            "quoted_wording": "sha256:b82f826fbe176b50bfb23894466b23ecfe4403cfea676d696c31e8a43e808747"
+          },
+          "mechanism": "Prior stroke is a complication of hypertension and indicates hypertension-related organ damage, requiring intensive therapy.",
+          "justification": "Descendant outcome marker.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Participant age or birth date",
+          "search_phrases": [
+            "current age",
+            "age in years",
+            "participant age",
+            "years old",
+            "born",
+            "birthdate"
+          ],
+          "why_rejected": "Not available as a variable in the COMPASS instrument.",
+          "exposes_the_estimate_to": "Age is the single most important confounder of the pregnancy-medication relationship. Older women have accumulated more pregnancies over their lifetime AND older age is the primary driver of hypertension severity and medication intensity. Without age adjustment, the analysis cannot remove this major source of confounding."
+        },
+        {
+          "construct_sought": "Current smoking status",
+          "search_phrases": [
+            "smoking cigarette tobacco use current"
+          ],
+          "why_rejected": "Available in m3:Q5.5 ('Do you smoke cigarettes now?') but Module 3 adds an unknown co-completion constraint with m1 and m2. Excluded from the present protocol to maintain a defined covariate set within m1-m2.",
+          "exposes_the_estimate_to": "Smoking is a confounder of the outcome (causes hypertension and cardiovascular disease) and potentially the exposure (pregnancy timing may be related to smoking patterns)."
+        },
+        {
+          "construct_sought": "Systolic and diastolic blood pressure readings",
+          "search_phrases": [
+            "systolic diastolic blood pressure reading measurement"
+          ],
+          "why_rejected": "Only self-reported hypertension diagnosis is available; no measured BP readings are included in the instrument.",
+          "exposes_the_estimate_to": "Without measured BP values, hypertension severity cannot be characterized directly; medication intensity serves as a distal proxy."
+        },
+        {
+          "construct_sought": "Menopause status or age at menopause",
+          "search_phrases": [
+            "menopause hormonal therapy hormone"
+          ],
+          "why_rejected": "Not found as a standalone variable in the COMPASS instrument.",
+          "exposes_the_estimate_to": "Menopause status is a marker of reproductive aging and a potential mediator of age effects, but unavailable."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "Highest versus lowest reported number of pregnancies",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.5,
+          "value": 8.86,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.5; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS is a prospective cohort study examining environmental and genetic determinants of cardiovascular and respiratory health in urban communities, with multiethnic enrollment and detailed collection of reproductive history and medication use.",
+        "why_this_cohort": "COMPASS provides a diverse multiethnic urban cohort with complete data on pregnancy history (m2:Q7.4) and antihypertensive medication intensity (m2:Q20.11), along with comprehensive covariate data spanning sociodemographics, comorbidities, and reproductive factors, enabling causal analysis of pregnancy history in relation to hypertension medication burden."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "bf2ea41809104c33",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 4,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q7.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q20.11\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years old birth date\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity Hispanic Black White\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"body mass index BMI weight height obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"diabetes mellitus diabetic blood sugar glucose\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"kidney disease renal function creatinine\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"hypertension blood pressure diagnosis\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"income education employment occupation\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarette tobacco use current\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"cardiovascular heart disease stroke\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"menopause hormonal therapy hormone\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.9\"}) -> construct",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.29\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.11\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"current age participant age at survey interview\"}) -> low_confidence",
+          "list_derivations({}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"born date of birth birthdate year\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"systolic diastolic blood pressure reading measurement\"}) -> low_confidence",
+          "get_item_group({\"key\": \"group:m1:Q2.9#1\"}) -> error",
+          "get_item_group({\"group_id\": \"group:m1:Q2.9#1\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"years old age in years participant respondent\"}) -> low_confidence",
+          "estimate_n({\"keys\": [\"m2:Q7.4\", \"m2:Q20.11\", \"m1:Q3.8\", \"m1:Q3.10\", \"m1:Q2.10\", \"m1:Q5.4\", \"m2:Q5.8\", \"m2:Q5.6\", \"m2:Q5.4\", \"m2:Q5.29\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q7.4\", \"m2:Q20.11\", \"m1:Q3.8\", \"m1:Q3.10\", \"m1:Q2.10\", \"m1:Q5.4\", \"m2:Q5.8\", \"m2:Q5.6\", \"m2:Q5.4\", \"m2:Q5.29\"]}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"current smoking status do you smoke now\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"stroke heart attack cardiovascular event\"}) -> low_confidence",
+          "estimate_detectability({\"baseline_prevalence\": 0.5}) -> ok",
+          "resolve_variable({\"key\": \"m3:Q5.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.41\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.61\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q7.4\", \"m2:Q20.11\", \"m1:Q3.8\", \"m1:Q3.10\", \"m1:Q5.4\", \"m2:Q5.6\", \"m2:Q5.4\", \"m2:Q5.29\", \"m2:Q5.8\", \"m2:Q9.8\", \"m1:Q2.10\", \"m2:Q5.41\", \"m2:Q5.61\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q7.4\", \"m2:Q20.11\", \"m1:Q3.8\", \"m1:Q3.10\", \"m1:Q5.4\", \"m2:Q5.6\", \"m2:Q5.4\", \"m2:Q5.29\", \"m2:Q5.8\", \"m2:Q9.8\", \"m1:Q2.10\", \"m2:Q5.41\", \"m2:Q5.61\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:69062dda32cc2d3250cf9ec26e13a1bbbac6bf3378e4f181a410a1356a981c79",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:69062dda32cc2d3250cf9ec26e13a1bbbac6bf3378e4f181a410a1356a981c79",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.979421,
+        "margin": 0.24994499999999997,
+        "margin_12": 0.160122,
+        "abstained": false,
+        "nearest_key": "m2:Q7.4",
+        "hit": {
+          "key": "m2:Q7.4",
+          "construct_key": "m2:Q7.4",
+          "dict_construct_key": "m2:Q7.4",
+          "module": "2",
+          "target_id": 284,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q7.4"
+          ],
+          "stratum": "reproductive_hormonal",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:1b2fbb1c4ec2716c7b0610a209684384d87427175e263aa8dcc171bf9f019eeb",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:1b2fbb1c4ec2716c7b0610a209684384d87427175e263aa8dcc171bf9f019eeb",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.988054,
+        "margin": 0.258578,
+        "margin_12": 0.258375,
+        "abstained": false,
+        "nearest_key": "m2:Q20.11",
+        "hit": {
+          "key": "m2:Q20.11",
+          "construct_key": "m2:Q20.11",
+          "dict_construct_key": "m2:Q20.11",
+          "module": "2",
+          "target_id": 846,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q20.11"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q7.4",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:69062dda32cc2d3250cf9ec26e13a1bbbac6bf3378e4f181a410a1356a981c79",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:69062dda32cc2d3250cf9ec26e13a1bbbac6bf3378e4f181a410a1356a981c79",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.979421,
+          "margin": 0.24994499999999997,
+          "margin_12": 0.160122,
+          "abstained": false,
+          "nearest_key": "m2:Q7.4",
+          "hit": {
+            "key": "m2:Q7.4",
+            "construct_key": "m2:Q7.4",
+            "dict_construct_key": "m2:Q7.4",
+            "module": "2",
+            "target_id": 284,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q7.4"
+            ],
+            "stratum": "reproductive_hormonal",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q20.11",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:1b2fbb1c4ec2716c7b0610a209684384d87427175e263aa8dcc171bf9f019eeb",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:1b2fbb1c4ec2716c7b0610a209684384d87427175e263aa8dcc171bf9f019eeb",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.988054,
+          "margin": 0.258578,
+          "margin_12": 0.258375,
+          "abstained": false,
+          "nearest_key": "m2:Q20.11",
+          "hit": {
+            "key": "m2:Q20.11",
+            "construct_key": "m2:Q20.11",
+            "dict_construct_key": "m2:Q20.11",
+            "module": "2",
+            "target_id": 846,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q20.11"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.29",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.8",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.8",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.41",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.61",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q7.4",
+    "outcome": "m2:Q20.11",
+    "expected_direction": "increase",
+    "nodes": [
+      {
+        "key": "m2:Q7.4",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q20.11",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.29",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q9.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_exposure",
+        "decision": "excluded"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.41",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.61",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q7.4",
+        "target": "m2:Q20.11",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q7.4",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q20.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q7.4",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q20.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q7.4",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q20.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q7.4",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q20.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q7.4",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.4",
+        "target": "m2:Q20.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.29",
+        "target": "m2:Q7.4",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.29",
+        "target": "m2:Q20.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q7.4",
+        "target": "m2:Q5.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q20.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q7.4",
+        "target": "m2:Q9.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q7.4",
+        "target": "m1:Q2.10",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q20.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q20.11",
+        "target": "m2:Q5.41",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q20.11",
+        "target": "m2:Q5.61",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.8",
+      "m1:Q3.10",
+      "m1:Q5.4",
+      "m2:Q5.6",
+      "m2:Q5.4",
+      "m2:Q5.29"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.8 is asserted to mediate m2:Q7.4 -> m2:Q20.11, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q5.8",
+      "severity": "blocking",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q9.8 carries role 'descendant_of_exposure', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q9.8",
+      "severity": "major",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m1:Q2.10 is asserted to mediate m2:Q7.4 -> m2:Q20.11, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m1:Q2.10",
+      "severity": "blocking",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

@@ -1,0 +1,546 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.87_to_m2q5.63",
+    "record_hash": "730904a2daade8af",
+    "pair_id": "m2:Q19.87 -> m2:Q5.63",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.87_to_m2q5.63",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Among individuals with a history of ulcerative colitis, is there an association between the degree to which pain interferes with normal work activities and the age at which they were first told they had ulcerative colitis?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.87",
+        "quoted_wording": "sha256:d1842214f5f69addbb0e91d11ae78f287e5d83c71061b079e33bc3122e93f57a"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.63",
+        "quoted_wording": "sha256:8e17a3f89fa2767915a3ab7a9d5681e812e1af3bbc8d84c97c3b86723f89897a"
+      },
+      "expected_direction": {
+        "direction": "decrease",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "A difference of ≥10 percentage points between pain interference groups in the proportion diagnosed before age 18 (dichotomized outcome: pediatric/adolescent onset versus adult onset), detected at the 0.05 significance level with 0.80 power.",
+      "falsifier_threshold": {
+        "value": 10.0,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear regression of age at UC diagnosis (continuous outcome) on pain interference category (exposure), adjusted for sex at birth, race/ethnicity, and education.",
+        "unit_of_analysis": "participant",
+        "clustering": "Cluster-robust standard errors at community area level to account for correlation within COMPASS community areas."
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex is associated with both UC epidemiology (documented sex-specific incidence and prevalence rates) and pain perception and reporting through biological and psychosocial sex differences.",
+          "justification": "Sex is determined before both outcome (UC diagnosis age, a historical event) and exposure (current pain interference). Sex is not caused by either variable. It independently affects UC diagnosis risk and the likelihood of reporting pain interference.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race and ethnicity are associated with UC incidence and prevalence rates (epidemiologic variation), healthcare access, diagnosis timing, and pain perception and reporting patterns across racial and ethnic groups.",
+          "justification": "Race/ethnicity is determined at birth and is not caused by exposure or outcome. It independently predicts UC incidence (affecting who gets diagnosed and when) and pain experience (affecting current pain reporting).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education is a socioeconomic status marker that influences healthcare access, health literacy, and timeliness of medical diagnosis; it is also associated with occupational type and physical job demands affecting pain exposure and reporting.",
+          "justification": "Education is established before both outcome (UC diagnosis, which occurred years ago) and current exposure (work-related pain). It is not caused by either variable. Lower education associates with delayed healthcare access and potentially later UC diagnosis age; it also associates with more physically demanding occupations increasing pain exposure.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q19.85",
+            "quoted_wording": "sha256:9f220ae5bf1a06aec78fca284826844b246c62a5266437e8861dc11d1a3aaf07"
+          },
+          "mechanism": "This measures prevalence of pain on most days (yes/no) rather than interference with function, representing a related but distinct construct from pain interference with work.",
+          "justification": "This item is neither a cause of pain interference with work nor a cause of age at UC diagnosis. It is a correlated symptom measure but not a confounder between exposure and outcome.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.15#1_49",
+            "quoted_wording": "sha256:456fcfbb75f72ee4e86915bfdbadfe882bdf9e09bb77b0d656a2a0e53deb243b"
+          },
+          "mechanism": "This diagnostic checklist item confirms whether a participant was told they have UC but does not cause age at initial diagnosis or current pain interference.",
+          "justification": "While this variable confirms the presence of UC history, it is not a cause of age at initial diagnosis, nor is it a cause of current pain interference. It is correlated with the outcome domain but not a confounding path between exposure and outcome.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [
+        {
+          "construct_sought": "Current participant age or date of birth in module 2",
+          "search_phrases": [
+            "what is your age current date birth"
+          ],
+          "why_rejected": "Search returned low_confidence; no age or date-of-birth variable located in module 2 or linked to it.",
+          "exposes_the_estimate_to": "Confounding by time elapsed since diagnosis. Younger age at diagnosis implies longer disease duration, a potential confounder of current pain burden."
+        },
+        {
+          "construct_sought": "UC disease activity, symptom burden, or current disease status",
+          "search_phrases": [
+            "ulcerative colitis UC diagnosis disease severity",
+            "currently symptoms active flare bowel"
+          ],
+          "why_rejected": "Searches returned low_confidence; no disease activity measure, symptom burden scale, or current disease status variable identified.",
+          "exposes_the_estimate_to": "Confounding if disease severity at diagnosis predicts both early detection timing and current pain burden through accumulated inflammatory burden."
+        },
+        {
+          "construct_sought": "UC medication use or treatment intensity",
+          "search_phrases": [
+            "currently now present currently taking medication treatment",
+            "take medicine colitis ulcerative treatment currently using"
+          ],
+          "why_rejected": "Searches returned low_confidence; no medication use or treatment intensity variable identified.",
+          "exposes_the_estimate_to": "Confounding if treatment intensity is a proxy for disease severity and associates with both diagnosis age and current pain reporting."
+        },
+        {
+          "construct_sought": "Occupational burden, physical job demands, or ergonomic factors",
+          "search_phrases": [
+            "work employment employment status job"
+          ],
+          "why_rejected": "Search returned low_confidence; no occupational burden, job physical demands, or ergonomic factors identified.",
+          "exposes_the_estimate_to": "Confounding if occupational physical demands associate with pain reporting and demographic factors predicting diagnosis age."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "highest versus lowest category of pain interference with work",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 26.73
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 15.43
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.45
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.88
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.67
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.35,
+          "value": 8.45,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.35; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "The exposure-outcome pair is motivated by the logic that younger age at UC diagnosis implies longer disease duration, potentially associated with accumulated chronic pain and thus greater current pain interference. Under this causal model, a negative association is plausible (earlier diagnosis → more years with disease → greater pain burden). Alternative causal pathways (disease severity at diagnosis predicting both early detection and current pain) could yield positive or null associations.",
+        "why_this_cohort": "COMPASS cohort design: participants sampled within Chicago community areas. Analysis employs cluster-robust standard errors to account for potential intracluster correlation within community areas. Both exposure and outcome variables are available in COMPASS modules 1 and 2."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "f634142429c62312",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 3,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.87\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.63\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"age demographics years old\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"ulcerative colitis UC diagnosis disease severity\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"work employment employment status job\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"pain ache discomfort symptom\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"race ethnicity African American Hispanic White Black\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"income money education school socioeconomic\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"currently now present currently taking medication treatment\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.15#1_49\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"currently symptoms active flare bowel\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"how many days past week month health status\"}) -> ok",
+          "search_variables({\"limit\": 15, \"phrase\": \"take medicine colitis ulcerative treatment currently using\"}) -> low_confidence",
+          "search_variables({\"limit\": 15, \"phrase\": \"what is your age current date birth\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q19.85\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q19.86_1\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q19.87\", \"m2:Q5.63\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q3.11\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.87\", \"m2:Q5.63\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q3.11\", \"m2:Q19.85\", \"m2:Q5.15#1_49\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.35}) -> ok",
+          "estimate_n({\"keys\": [\"m2:Q19.87\", \"m2:Q5.63\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q3.11\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.87\", \"m2:Q5.63\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q3.11\", \"m2:Q19.85\", \"m2:Q5.15#1_49\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:d1842214f5f69addbb0e91d11ae78f287e5d83c71061b079e33bc3122e93f57a",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:d1842214f5f69addbb0e91d11ae78f287e5d83c71061b079e33bc3122e93f57a",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.966314,
+        "margin": 0.236838,
+        "margin_12": 0.2452,
+        "abstained": false,
+        "nearest_key": "m2:Q19.87",
+        "hit": {
+          "key": "m2:Q19.87",
+          "construct_key": "m2:Q19.87",
+          "dict_construct_key": "m2:Q19.87",
+          "module": "2",
+          "target_id": 835,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.87"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:8e17a3f89fa2767915a3ab7a9d5681e812e1af3bbc8d84c97c3b86723f89897a",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:8e17a3f89fa2767915a3ab7a9d5681e812e1af3bbc8d84c97c3b86723f89897a",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.989961,
+        "margin": 0.26048499999999997,
+        "margin_12": 0.086231,
+        "abstained": false,
+        "nearest_key": "m2:Q5.63",
+        "hit": {
+          "key": "m2:Q5.63",
+          "construct_key": "m2:Q5.63",
+          "dict_construct_key": "m2:Q5.63",
+          "module": "2",
+          "target_id": 261,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.63"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.87",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:d1842214f5f69addbb0e91d11ae78f287e5d83c71061b079e33bc3122e93f57a",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:d1842214f5f69addbb0e91d11ae78f287e5d83c71061b079e33bc3122e93f57a",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.966314,
+          "margin": 0.236838,
+          "margin_12": 0.2452,
+          "abstained": false,
+          "nearest_key": "m2:Q19.87",
+          "hit": {
+            "key": "m2:Q19.87",
+            "construct_key": "m2:Q19.87",
+            "dict_construct_key": "m2:Q19.87",
+            "module": "2",
+            "target_id": 835,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.87"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.63",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:8e17a3f89fa2767915a3ab7a9d5681e812e1af3bbc8d84c97c3b86723f89897a",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:8e17a3f89fa2767915a3ab7a9d5681e812e1af3bbc8d84c97c3b86723f89897a",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.989961,
+          "margin": 0.26048499999999997,
+          "margin_12": 0.086231,
+          "abstained": false,
+          "nearest_key": "m2:Q5.63",
+          "hit": {
+            "key": "m2:Q5.63",
+            "construct_key": "m2:Q5.63",
+            "dict_construct_key": "m2:Q5.63",
+            "module": "2",
+            "target_id": 261,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.63"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q19.85",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.15#1_49",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.87",
+    "outcome": "m2:Q5.63",
+    "expected_direction": "decrease",
+    "nodes": [
+      {
+        "key": "m2:Q19.87",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.63",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q19.85",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.15#1_49",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.87",
+        "target": "m2:Q5.63",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q19.87",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.63",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q19.87",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.63",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q19.87",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q5.63",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q3.10",
+      "m1:Q3.11"
+    ]
+  },
+  "critiques": [],
+  "revision": 0,
+  "generation": null
+}

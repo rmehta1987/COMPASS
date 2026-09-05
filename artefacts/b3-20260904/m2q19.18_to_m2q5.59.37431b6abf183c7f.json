@@ -1,0 +1,731 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q19.18_to_m2q5.59",
+    "record_hash": "37431b6abf183c7f",
+    "pair_id": "m2:Q19.18 -> m2:Q5.59",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q19.18_to_m2q5.59",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does a history of regular aspirin use associate with the age at which individuals are first diagnosed with shingles (herpes zoster)?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q19.18",
+        "quoted_wording": "sha256:a9a64a74d1cab5da782c0acf8a8a15cb8ad0d08a36da5af327f7d6b2f91bc8f7"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.59",
+        "quoted_wording": "sha256:db2a9264e06e61f5b804c4dd5cdbda3be05e9b8f04ba217b2dbd39e2a23dbc32"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "A statistically significant association between regular aspirin use history and age at shingles diagnosis in the hypothesized direction (aspirin use history associated with older age at diagnosis), detectable at the smallest detectable effect threshold for the analytic sample size.",
+      "falsifier_threshold": {
+        "value": 8.86,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Linear regression with age at shingles diagnosis (continuous, in years) as the outcome. The exposure is binary (regular aspirin use history: yes/no). All nine adjusted covariates are included. Standard errors estimated using cluster-robust covariance estimation.",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex confounds because patterns of aspirin use differ by sex (cardiovascular disease prevalence), and shingles incidence and age of diagnosis vary by sex.",
+          "justification": "Operates as a confounder.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race/ethnicity affects prevalence of cardiovascular disease and other chronic conditions driving aspirin use, and also affects immunocompromise risk and potentially shingles epidemiology.",
+          "justification": "Operates as a confounder.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_3",
+            "quoted_wording": "sha256:ad7c805a862e7b7a8108d049792b0ac9c0565ecf18fb6bd6180854a61aed5e2c"
+          },
+          "mechanism": "Birth year determines current age and birth cohort. Older individuals take more aspirin and have had more opportunity for shingles diagnosis. Birth cohort effects influence both exposure likelihood and outcome timing.",
+          "justification": "Birth cohort is the primary confounder; without age adjustment, the entire association is confounded by age.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.6",
+            "quoted_wording": "sha256:883085f9e05c1ff52e186d0ca76208723c1d81024663315e7f20b7cc5c94c2d4"
+          },
+          "mechanism": "Type 2 Diabetes increases cardiovascular risk (driving aspirin use) and impairs cell-mediated immunity (increasing shingles risk).",
+          "justification": "Confounds the exposure-outcome association.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.8",
+            "quoted_wording": "sha256:5522bc79a69cdb0f9bcf39abca278fe5e82c1e226c81b522a7fd9afdd097716f"
+          },
+          "mechanism": "Hypertension is a leading indication for aspirin use and may be associated with vascular changes affecting immune function.",
+          "justification": "Confounds exposure-outcome association.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.45",
+            "quoted_wording": "sha256:4fd4b5e8c6da5523798a1aaca864daa72a9067b7b0f63445ca0f3ed7ae8874b4"
+          },
+          "mechanism": "HIV/AIDS is a strong risk factor for varicella-zoster virus reactivation and shingles. HIV status may also correlate with medication use patterns.",
+          "justification": "Strong confounder of the outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.29",
+            "quoted_wording": "sha256:8f7a250aae8614d933f3f746e3bda5faa34a21b8ce5e39d693311dbca6b57abc"
+          },
+          "mechanism": "Chronic kidney disease is associated with cardiovascular risk (driving aspirin indication) and with immune dysfunction (affecting shingles risk).",
+          "justification": "Confounds both pathways through cardiovascular and immune dysfunction mechanisms.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.32",
+            "quoted_wording": "sha256:27d4ee29ea7b33f51e9adf9423afcb48482787d3e94cc8a6d1459635ba34c64a"
+          },
+          "mechanism": "Coronary artery disease is a primary clinical indication for regular aspirin use and indicates higher cardiovascular risk burden.",
+          "justification": "Direct confounding of exposure; coronary disease may also influence immune status.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.35",
+            "quoted_wording": "sha256:0388f9e220566f60386f1fa01e1a8bc4b5cef4742f3f8072dc88783baa8d9c74"
+          },
+          "mechanism": "COPD involves systemic inflammation and immune dysfunction affecting shingles risk; may also influence medication use patterns.",
+          "justification": "Associated with both exposure and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.37",
+            "quoted_wording": "sha256:ea4e177aa01219b26ec395f58208901c904e8ed76b756c3a0f758f44148466d1"
+          },
+          "mechanism": "Regular aspirin use is a risk factor for gastrointestinal complications including esophageal acid reflux. This is a potential consequence of aspirin use, not a cause.",
+          "justification": "Excludes to avoid post-treatment bias and collider bias.",
+          "role": "mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [],
+      "sought_covariates": [],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "any history of regular aspirin use versus no history",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 24.26
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 14.01
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 7.67
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.43
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.43
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.25,
+          "value": 7.67,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.25; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "enumerated_screen",
+        "screened_from": 18540,
+        "prior_work": "COMPASS is a Chicago-based longitudinal cohort study with comprehensive measurement of health histories and behaviors across multiple modules.",
+        "why_this_cohort": "COMPASS provides complete measurement of aspirin use, age at shingles diagnosis, cardiovascular risk factors (hypertension, coronary disease, diabetes), immunocompromise risk (HIV/AIDS, chronic kidney disease, COPD), and demographic factors, with participants nested within Chicago community areas enabling cluster-robust inference."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "7530b81ddec3efcd",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 1,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q19.18\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.59\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age participant current years old\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity racial ethnic background\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"diabetes chronic disease condition\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"HIV AIDS immune immunocompromise infection\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"cancer malignancy tumor oncology\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"chickenpox varicella zoster vaccine\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"medication corticosteroid immunosuppressant drug treatment\"}) -> low_confidence",
+          "browse_variables({\"module\": \"2\"}) -> ok",
+          "browse_variables({\"module\": \"2\", \"section\": \"5\"}) -> ok",
+          "browse_variables({\"module\": \"2\", \"section\": \"19\"}) -> ok",
+          "browse_variables({\"module\": \"1\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.6\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.45\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.29\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.32\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.35\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.15_3\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q19.18\", \"m2:Q5.59\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q2.15_3\", \"m2:Q5.6\", \"m2:Q5.8\", \"m2:Q5.45\", \"m2:Q5.29\", \"m2:Q5.32\", \"m2:Q5.35\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.25}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.18\", \"m2:Q5.59\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q2.15_3\", \"m2:Q5.6\", \"m2:Q5.8\", \"m2:Q5.45\", \"m2:Q5.29\", \"m2:Q5.32\", \"m2:Q5.35\"]}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"stomach ulcer GI bleeding acid reflux gastritis\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"allergy allergic reaction food intolerance\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.37\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q19.18\", \"m2:Q5.59\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q2.15_3\", \"m2:Q5.6\", \"m2:Q5.8\", \"m2:Q5.45\", \"m2:Q5.29\", \"m2:Q5.32\", \"m2:Q5.35\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q19.18\", \"m2:Q5.59\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q2.15_3\", \"m2:Q5.6\", \"m2:Q5.8\", \"m2:Q5.45\", \"m2:Q5.29\", \"m2:Q5.32\", \"m2:Q5.35\", \"m2:Q5.37\"]}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:a9a64a74d1cab5da782c0acf8a8a15cb8ad0d08a36da5af327f7d6b2f91bc8f7",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:a9a64a74d1cab5da782c0acf8a8a15cb8ad0d08a36da5af327f7d6b2f91bc8f7",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.972718,
+        "margin": 0.24324199999999996,
+        "margin_12": 0.099124,
+        "abstained": false,
+        "nearest_key": "m2:Q19.18",
+        "hit": {
+          "key": "m2:Q19.18",
+          "construct_key": "m2:Q19.18",
+          "dict_construct_key": "m2:Q19.18",
+          "module": "2",
+          "target_id": 766,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q19.18"
+          ],
+          "stratum": "medication",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:db2a9264e06e61f5b804c4dd5cdbda3be05e9b8f04ba217b2dbd39e2a23dbc32",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:db2a9264e06e61f5b804c4dd5cdbda3be05e9b8f04ba217b2dbd39e2a23dbc32",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.990116,
+        "margin": 0.26064,
+        "margin_12": 0.057996,
+        "abstained": false,
+        "nearest_key": "m2:Q5.59",
+        "hit": {
+          "key": "m2:Q5.59",
+          "construct_key": "m2:Q5.59",
+          "dict_construct_key": "m2:Q5.59",
+          "module": "2",
+          "target_id": 256,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.59"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q19.18",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:a9a64a74d1cab5da782c0acf8a8a15cb8ad0d08a36da5af327f7d6b2f91bc8f7",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:a9a64a74d1cab5da782c0acf8a8a15cb8ad0d08a36da5af327f7d6b2f91bc8f7",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.972718,
+          "margin": 0.24324199999999996,
+          "margin_12": 0.099124,
+          "abstained": false,
+          "nearest_key": "m2:Q19.18",
+          "hit": {
+            "key": "m2:Q19.18",
+            "construct_key": "m2:Q19.18",
+            "dict_construct_key": "m2:Q19.18",
+            "module": "2",
+            "target_id": 766,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q19.18"
+            ],
+            "stratum": "medication",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.59",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:db2a9264e06e61f5b804c4dd5cdbda3be05e9b8f04ba217b2dbd39e2a23dbc32",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:db2a9264e06e61f5b804c4dd5cdbda3be05e9b8f04ba217b2dbd39e2a23dbc32",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.990116,
+          "margin": 0.26064,
+          "margin_12": 0.057996,
+          "abstained": false,
+          "nearest_key": "m2:Q5.59",
+          "hit": {
+            "key": "m2:Q5.59",
+            "construct_key": "m2:Q5.59",
+            "dict_construct_key": "m2:Q5.59",
+            "module": "2",
+            "target_id": 256,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.59"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.6",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.45",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.29",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.32",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.35",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.37",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q19.18",
+    "outcome": "m2:Q5.59",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:Q19.18",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.59",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.6",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.45",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.29",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.32",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.35",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.37",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "mediator",
+        "decision": "excluded"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q19.18",
+        "target": "m2:Q5.59",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q19.18",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q19.18",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q19.18",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q19.18",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.6",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q19.18",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.45",
+        "target": "m2:Q19.18",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.45",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.29",
+        "target": "m2:Q19.18",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.29",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.32",
+        "target": "m2:Q19.18",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.32",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.35",
+        "target": "m2:Q19.18",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.35",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q19.18",
+        "target": "m2:Q5.37",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.37",
+        "target": "m2:Q5.59",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.3",
+      "m1:Q3.10",
+      "m1:Q2.15_3",
+      "m2:Q5.6",
+      "m2:Q5.8",
+      "m2:Q5.45",
+      "m2:Q5.29",
+      "m2:Q5.32",
+      "m2:Q5.35"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q5.37 is asserted to mediate m2:Q19.18 -> m2:Q5.59, but the design is cross-sectional (unit 'participant'): one questionnaire cannot order exposure before mediator before outcome",
+      "grounding_key": "m2:Q5.37",
+      "severity": "blocking",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}
