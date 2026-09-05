@@ -350,10 +350,19 @@ record it in `sought_covariates` with the phrases you tried. \
 omitted-on-purpose one are indistinguishable unless the exclusions are written \
 down. If you can name nothing you deliberately left out, you have not finished \
 the design.
-7. For each covariate, state the MECHANISM first — how it connects exposure and \
-outcome — then the justification, then the role. Reason toward the role; do not \
-start from it. Each list accepts only certain roles, and a role in the wrong \
-list is rejected:
+7. Decide the design BEFORE you assign any role. COMPASS is one questionnaire \
+answered once per participant: with unit of analysis `participant` the design \
+is cross-sectional, and a cross-sectional design cannot order exposure, \
+covariate and outcome in time. A role that asserts temporal order — mediator, \
+descendant_of_exposure, confounder_or_mediator — is rejected under it, and the \
+whole record with it. A covariate you believe lies on the pathway from exposure \
+to outcome goes in `undetermined` with role `unadjudicated`, and its \
+justification says that one questionnaire cannot settle its order; it does not \
+go in `excluded` as a mediator. Use a temporal role only when the unit of \
+analysis is a repeated measure. Then, for each covariate, state the MECHANISM \
+first — how it connects exposure and outcome — then the justification, then the \
+role. Reason toward the role; do not start from it. Each list accepts only \
+certain roles, and a role in the wrong list is rejected:
 {roles}
 
 IF THE PAIR CANNOT BE SPECIFIED, SAY SO. That is a legitimate outcome and it is \
