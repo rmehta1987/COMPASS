@@ -224,3 +224,19 @@ def test_a_failure_that_is_not_the_backends_still_stops_the_run(frame, tmp_path)
               constructs=C, version=version, screened_from=counts["enumerated"],
               run_dir=tmp_path / "bug", k=1, allow_unestimable=True, retry_pause=0.0,
               log=lambda s: None)
+
+
+def test_recorded_pairs_are_every_row_the_backend_did_not_fail_on(frame, tmp_path):
+    """A second run may fill an outage's gaps; it may never resample a settled pair."""
+    C, version, counts, worked, other = frame
+    run_dir = tmp_path / "cut-short"
+    flaky = _Flaky(lambda: _backend(version, counts["enumerated"]), fails=10**6)
+    R.run([worked, other], backend=flaky, resolver=_resolver(resolve_second=False),
+          constructs=C, version=version, screened_from=counts["enumerated"],
+          run_dir=run_dir, k=1, allow_unestimable=True, retry_pause=0.0,
+          log=lambda s: None)
+    rows = ledger.Ledger(run_dir).rows()
+    assert [r.outcome for r in rows] == ["backend_error", "discarded"]
+    # the intake discard is settled; the backend failure is not
+    assert R.recorded_pairs(run_dir) == {other.pair_id}
+    assert worked.pair_id not in R.recorded_pairs(run_dir)

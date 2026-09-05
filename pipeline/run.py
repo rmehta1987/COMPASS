@@ -38,7 +38,7 @@ from generate.live_specifier import run_identity
 from pipeline import auto_intake, hypothesis, resolved_pair, validators
 from pipeline.gate import gate
 from pipeline.generation_env import GenerationEnv
-from pipeline.ledger import Ledger, RunSummary
+from pipeline.ledger import LEDGER_NAME, Ledger, RunSummary, read_rows
 from pipeline.retrieve import load_retriever, load_template
 from pipeline.strata import Strata
 
@@ -111,6 +111,27 @@ def subset(cands: list[Candidate], limit: int | None, seed: int) -> list[Candida
         return list(cands)
     idx = sorted(random.Random(seed).sample(range(len(cands)), limit))
     return [cands[i] for i in idx]
+
+
+def recorded_pairs(run_dir: Path) -> set[str]:
+    """Pair ids a previous run settled: every row that is not a backend error.
+
+    A run cut short by a backend outage leaves pairs the model never saw. The
+    outage is the ledger's to record, not to hide, so those pairs are not
+    re-run in place; they are run again under a new run id, and this is how
+    the new run knows which pairs the old one already settled. A settled
+    pair is any row the backend did not fail on: emitted, discarded, refused
+    or no_valid_record all count, so a second run cannot resample a pair to
+    a better outcome.
+
+    Args:
+        run_dir: The earlier run's directory.
+
+    Returns:
+        Its settled pair ids.
+    """
+    return {r.pair_id for r in read_rows(run_dir / LEDGER_NAME)
+            if r.outcome != "backend_error"}
 
 
 def default_resolver(retriever: Any, strata: Strata) -> Resolver:
@@ -314,6 +335,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--allow-unestimable", action="store_true")
     ap.add_argument("--frame-only", action="store_true",
                     help="print the frame's size and exit")
+    ap.add_argument("--skip-recorded", type=Path, default=None,
+                    help="an earlier run's directory; its settled pairs are skipped")
+    ap.add_argument("--retry-pause", type=float, default=30.0,
+                    help="seconds before a pair's single retry after a backend error")
     a = ap.parse_args(argv)
     from agent.cli_backend import ClaudeCliBackend
 
@@ -322,8 +347,15 @@ def main(argv: list[str] | None = None) -> int:
     strata = Strata.from_retriever(retriever)
     live, counts = narrow_frame(C, strata, retriever.targets)
     chosen = subset(live, a.limit, a.seed)
+    skipped = 0
+    if a.skip_recorded is not None:
+        settled = recorded_pairs(a.skip_recorded)
+        before = len(chosen)
+        chosen = [c for c in chosen if c.pair_id not in settled]
+        skipped = before - len(chosen)
+    note = f", {skipped} settled by {a.skip_recorded.name} skipped" if skipped else ""
     print(f"frame: enumerated {counts['enumerated']}, live {len(live)}, "
-          f"running {len(chosen)} (seed {a.seed})")
+          f"running {len(chosen)} (seed {a.seed}{note})")
     if a.frame_only:
         return 0
     # ClaudeCliBackend is what generate/live_specifier.py runs the Specifier
@@ -333,7 +365,7 @@ def main(argv: list[str] | None = None) -> int:
     summary = run(chosen, backend=backend, resolver=default_resolver(retriever, strata),
                   constructs=C, version=version, screened_from=counts["enumerated"],
                   run_dir=ARTEFACTS / a.run_id, k=a.k, workers=a.workers,
-                  allow_unestimable=a.allow_unestimable)
+                  allow_unestimable=a.allow_unestimable, retry_pause=a.retry_pause)
     print(f"run {a.run_id}: total_generated_this_run {summary.total_generated_this_run} "
           f"{summary.by_outcome}")
     return 0
