@@ -673,5 +673,11 @@
     }
   ],
   "revision": 0,
-  "generation": null
+  "generation": {
+    "key_present": false,
+    "key_fetchable": false,
+    "tree_sha": "703a1779c8bad8c1e6a829a24bf2bdc15361f3c9",
+    "tree_clean": true,
+    "branch": "ralph-loop"
+  }
 }
