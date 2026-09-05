@@ -41,6 +41,9 @@ from pipeline.run import (
 from pipeline.strata import Strata
 
 EXTERNALLY_POSED = "externally_posed"
+#: Written beside the artefacts: which inventory posed the pairs, and whether
+#: it was synthetic. The harness refuses a run without it and prints it first.
+PROVENANCE_NAME = "inventory_provenance.json"
 
 
 def read_pairs(path: Path) -> list[tuple[str, str]]:
@@ -113,15 +116,60 @@ def candidates_for(pairs: list[tuple[str, str]],
     return out
 
 
+def write_provenance(run_dir: Path, inventory: str, synthetic: bool,
+                     pairs: int) -> Path:
+    """Record which inventory posed the pairs, beside the artefacts.
+
+    Args:
+        run_dir: The run's directory; created if needed.
+        inventory: Where the pairs came from, e.g. `scoring-key <sha>` or
+            `tests/fake_inventory.py`.
+        synthetic: True when the inventory was invented, so nothing scored
+            against it is a measurement.
+        pairs: How many pairs were posed.
+
+    Returns:
+        The file written.
+    """
+    run_dir.mkdir(parents=True, exist_ok=True)
+    out = run_dir / PROVENANCE_NAME
+    out.write_text(json.dumps({"inventory": inventory, "synthetic": synthetic,
+                               "pairs": pairs, "selection_mode": EXTERNALLY_POSED},
+                              indent=2) + "\n")
+    return out
+
+
+def read_provenance(run_dir: Path) -> dict[str, Any]:
+    """Read what `write_provenance` wrote.
+
+    Args:
+        run_dir: The run's directory.
+
+    Returns:
+        The provenance dict.
+
+    Raises:
+        FileNotFoundError: When the run carries none; a posed run without it
+            cannot say what it was posed from.
+    """
+    path = run_dir / PROVENANCE_NAME
+    if not path.exists():
+        raise FileNotFoundError(f"{path}: no inventory provenance; not a posed run")
+    return dict(json.loads(path.read_text()))
+
+
 def pose(pairs: list[tuple[str, str]], *, backend: Any, constructs: dict[str, Construct],
-         version: str, run_dir: Path, retriever: Any, strata: Strata | None = None,
-         k: int = 5, workers: int = 1, allow_unestimable: bool = False,
-         retry_pause: float = 30.0, log: Any = print) -> RunSummary:
+         version: str, run_dir: Path, retriever: Any, inventory: str, synthetic: bool,
+         strata: Strata | None = None, k: int = 5, workers: int = 1,
+         allow_unestimable: bool = False, retry_pause: float = 30.0,
+         log: Any = print) -> RunSummary:
     """Run posed pairs through the pipeline.
 
     Args:
         pairs: `(exposure_key, outcome_key)` rows.
         backend: The reasoning backend.
+        inventory: Where the pairs came from; written beside the artefacts.
+        synthetic: Whether that inventory was invented; written beside them.
         constructs: The built dictionary's constructs.
         version: The dictionary version hash.
         run_dir: Where artefacts and the ledger go.
@@ -138,6 +186,7 @@ def pose(pairs: list[tuple[str, str]], *, backend: Any, constructs: dict[str, Co
     """
     strata = strata or Strata.from_retriever(retriever)
     cands = candidates_for(pairs, constructs)
+    write_provenance(run_dir, inventory, synthetic, len(pairs))
     return run(cands, backend=backend, resolver=default_resolver(retriever, strata),
                constructs=constructs, version=version, screened_from=0,
                selection_mode=EXTERNALLY_POSED, run_dir=run_dir, k=k, workers=workers,
@@ -161,6 +210,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--workers", type=int, default=5)
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--allow-unestimable", action="store_true")
+    ap.add_argument("--inventory", required=True,
+                    help="where the pairs came from, e.g. 'scoring-key <sha>'")
+    ap.add_argument("--synthetic", action="store_true",
+                    help="the inventory was invented; nothing scored is a measurement")
     ap.add_argument("--dry-run", action="store_true",
                     help="resolve the pairs to constructs and exit")
     a = ap.parse_args(argv)
@@ -169,7 +222,8 @@ def main(argv: list[str] | None = None) -> int:
     pairs = read_pairs(a.pairs)
     C, version = load_constructs()
     cands = candidates_for(pairs, C)
-    print(f"posed: {len(pairs)} pairs, {len({c.pair_id for c in cands})} distinct")
+    print(f"posed: {len(pairs)} pairs, {len({c.pair_id for c in cands})} distinct; "
+          f"inventory {a.inventory!r}{' (SYNTHETIC)' if a.synthetic else ''}")
     if a.dry_run:
         for c in cands:
             print(f"  {c.pair_id}")
@@ -177,7 +231,8 @@ def main(argv: list[str] | None = None) -> int:
     retriever = load_retriever()
     backend: Any = ClaudeCliBackend(model=a.model, mode="benchmark")
     summary = pose(pairs, backend=backend, constructs=C, version=version,
-                   run_dir=ARTEFACTS / a.run_id, retriever=retriever, k=a.k,
+                   run_dir=ARTEFACTS / a.run_id, retriever=retriever,
+                   inventory=a.inventory, synthetic=a.synthetic, k=a.k,
                    workers=a.workers, allow_unestimable=a.allow_unestimable)
     print(f"run {a.run_id}: total_generated_this_run {summary.total_generated_this_run} "
           f"{summary.by_outcome}")

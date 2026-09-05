@@ -7,8 +7,10 @@ from pathlib import Path
 
 import pytest
 
+from benchmark.paper_inventory import posed_pairs
 from generate.funnel import load_constructs
 from pipeline import ledger, pose
+from tests.fake_inventory import FAKE_INVENTORY, SYNTHETIC
 from tests.test_run import _backend, _resolver
 
 TAU = 0.729476
@@ -61,8 +63,12 @@ def test_posed_records_carry_screened_from_zero_and_externally_posed(
     summary = pose.pose([("m3:Q16.1_2", "m2:Q5.8")], backend=_backend(version, 0),
                         constructs=C, version=version, run_dir=run_dir,
                         retriever=_Retriever(), strata=object(), k=1,
+                        inventory="tests/fake_inventory.py", synthetic=True,
                         allow_unestimable=True, retry_pause=0.0, log=lambda s: None)
     assert summary.total_generated_this_run == 1
+    prov = pose.read_provenance(run_dir)
+    assert prov == {"inventory": "tests/fake_inventory.py", "synthetic": True,
+                    "pairs": 1, "selection_mode": "externally_posed"}
     (row,) = ledger.Ledger(run_dir).rows()
     assert row.pair_id == "m3:Q16.1 -> m2:Q5.8" and row.artefact
     art = json.loads((run_dir / row.artefact).read_text())
@@ -81,15 +87,34 @@ def test_without_the_flag_a_posed_pair_is_gate_blocked_like_any_other(
     summary = pose.pose([("m3:Q16.1_2", "m2:Q5.8")], backend=_backend(version, 0),
                         constructs=C, version=version, run_dir=tmp_path / "g",
                         retriever=_Retriever(), strata=object(), k=1,
+                        inventory="tests/fake_inventory.py", synthetic=True,
                         allow_unestimable=False, retry_pause=0.0, log=lambda s: None)
     assert summary.by_outcome == {"gate_blocked": 1}
+    with pytest.raises(FileNotFoundError, match="no inventory provenance"):
+        pose.read_provenance(tmp_path / "nowhere")
 
 
 def test_dry_run_lists_the_pairs_without_loading_the_retriever(
         constructs, tmp_path, capsys):
     f = tmp_path / "p.jsonl"
     f.write_text('{"exposure_key": "m3:Q16.1_2", "outcome_key": "m2:Q5.8"}\n')
-    assert pose.main(["dry", "--pairs", str(f), "--dry-run"]) == 0
+    assert pose.main(["dry", "--pairs", str(f), "--dry-run", "--inventory", "x",
+                      "--synthetic"]) == 0
     out = capsys.readouterr().out
     assert "posed: 1 pairs, 1 distinct" in out and "m3:Q16.1 -> m2:Q5.8" in out
+    assert "(SYNTHETIC)" in out
     assert not (Path(pose.ARTEFACTS) / "dry").exists()
+
+
+def test_the_synthetic_inventory_poses_three_pairs_with_real_keys(constructs, tmp_path):
+    """The fake inventory says it is fake, and everything but the key is exercised."""
+    assert SYNTHETIC and all("SYNTHETIC" in p.notes for p in FAKE_INVENTORY)
+    rows = posed_pairs(FAKE_INVENTORY)
+    assert [r["pmid"] for r in rows] == ["36065817", "37252073", "36702470"]
+    f = tmp_path / "posed.jsonl"
+    f.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    C, _ = constructs
+    cands = pose.candidates_for(pose.read_pairs(f), C)
+    assert [c.pair_id for c in cands] == ["m2:Q9.105 -> m2:Q5.19",
+                                          "m2:Q9.69 -> m2:Q5.8",
+                                          "m2:Q9.105 -> m2:Q5.8"]
