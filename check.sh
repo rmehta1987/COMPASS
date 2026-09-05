@@ -46,11 +46,24 @@ tail -1 "$OUT"
 [ "$RC" -eq 0 ] || { tail -15 "$OUT"; fail 2 "pytest exit $RC"; }
 
 # 3/4. lint and type ceilings, read from the test module, compared on "Found N"
-count() { grep -E "^Found [0-9]+ error" | awk '{print $2}'; }
+# The tool's own summary line, colour stripped first: FORCE_COLOR=3 in the
+# environment made mypy print "\e[1m\e[31mFound 59 errors" on 2026-09-04, the
+# anchored grep saw nothing, and the ceiling passed on a count of 0. A clean
+# run prints its success line and counts 0; no summary line at all (a crash,
+# a missing binary) prints NA, which fails the step instead of passing it.
+count() {
+  local out; out=$(sed -E 's/\x1b\[[0-9;]*[A-Za-z]//g; s/\x1b\(B//g')
+  local n; n=$(printf '%s\n' "$out" | grep -E "^Found [0-9]+ error" | awk '{print $2}')
+  if [ -n "$n" ]; then echo "$n"
+  elif printf '%s\n' "$out" | grep -qE "^(Success: no issues found|All checks passed!)"; then echo 0
+  else echo NA; fi
+}
 RUFF_CEIL=$($PY -c "from tests.test_code_standards import RUFF_CEILING; print(RUFF_CEILING)")
 MYPY_CEIL=$($PY -c "from tests.test_code_standards import MYPY_CEILING; print(MYPY_CEILING)")
-RUFF_N=$(./.venv/bin/ruff check . 2>&1 | count); RUFF_N=${RUFF_N:-0}
-MYPY_N=$(./.venv/bin/mypy 2>&1 | count);        MYPY_N=${MYPY_N:-0}
+RUFF_N=$(./.venv/bin/ruff check . 2>&1 | count)
+MYPY_N=$(./.venv/bin/mypy 2>&1 | count)
+[ "$RUFF_N" != NA ] || fail 3 "ruff printed no summary line"
+[ "$MYPY_N" != NA ] || fail 4 "mypy printed no summary line"
 echo "ruff $RUFF_N <= $RUFF_CEIL ; mypy $MYPY_N <= $MYPY_CEIL"
 [ "$RUFF_N" -le "$RUFF_CEIL" ] || fail 3 "ruff $RUFF_N > $RUFF_CEIL"
 [ "$MYPY_N" -le "$MYPY_CEIL" ] || fail 4 "mypy $MYPY_N > $MYPY_CEIL"
