@@ -174,6 +174,7 @@ def run(cands: list[Candidate], *, backend: Backend, resolver: Resolver,
         constructs: dict[str, Construct], version: str, screened_from: int,
         run_dir: Path, k: int = 5, workers: int = 1,
         allow_unestimable: bool = False, retry_pause: float = 30.0,
+        selection_mode: str = "enumerated_screen",
         log: Callable[[str], None] = print) -> RunSummary:
     """Take every candidate through the pipeline and write the run.
 
@@ -190,6 +191,8 @@ def run(cands: list[Candidate], *, backend: Backend, resolver: Resolver,
         workers: Samples in flight at once; see `agent.specifier.specify`.
         retry_pause: Seconds to wait before a pair's single retry after the
             backend raised; a second failure is a `backend_error` row.
+        selection_mode: How the pairs reached the model: `enumerated_screen`
+            for the funnel, `externally_posed` for `pipeline.pose`.
         allow_unestimable: The gate's bypass; every passed pair is marked.
         log: Progress sink.
 
@@ -224,7 +227,8 @@ def run(cands: list[Candidate], *, backend: Backend, resolver: Resolver,
             log(f"[{n}/{len(result.passed)}] {v.pair_id}: unresolved, discarded")
             continue
         pair = resolved_pair.from_pair_resolution(pr, constructs, v.estimability)
-        identity = run_identity(pair, version, screened_from, backend.name)
+        identity = run_identity(pair, version, screened_from, backend.name,
+                                selection_mode=selection_mode)
         try:
             res, retried = _specify_surviving_one_error(
                 backend, pair, k=k, workers=workers, parked_dir=run_dir / "parked",

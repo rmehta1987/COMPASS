@@ -1013,8 +1013,12 @@ def check_holdout_not_reachable() -> list[str]:
     # `scorability.py` joined on 2026-08-28: it derives exposure and outcome
     # terms from the bibliography's design lines, so a copy of it under curated/
     # would put a published pairing on a globbed tool path.
+    # `paper_inventory_key.py` joined on 2026-09-04: the per-paper variable
+    # inventory names every key a published analysis used, with the paper's
+    # own labels; `paper_inventory.py` beside it is schema only.
     for key in ("leak_facts.py", "prevalence_key.py", "unearned_assertions.py",
-                "cohort_papers.py", "input_leakage.py", "scorability.py"):
+                "cohort_papers.py", "input_leakage.py", "scorability.py",
+                "paper_inventory_key.py"):
         for d in ("curated", "env", "agent"):
             if (ROOT / d / key).exists():
                 bad.append(f"{d}/{key} exists — an answer key belongs under "
