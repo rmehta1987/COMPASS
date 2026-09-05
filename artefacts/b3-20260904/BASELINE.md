@@ -1,5 +1,7 @@
 # Baseline b3-20260904
 
+**Ceiling: at most 0 of 28 artefacts could match under this key and frame (1 matchable papers); observed 0. The observed rate IS the ceiling. What this run establishes is that the harness runs end to end, refuses unstamped artefacts and emits clean verdicts; it is not a measurement of hypothesis quality.**
+
 Question answered: does the pipeline land on associations the literature found, given only self-report variables and no estimability check.
 
 | number | value |
@@ -8,6 +10,7 @@ Question answered: does the pipeline land on associations the literature found, 
 | scored, the ledger's emitted count (M) | 28 |
 | match rate N/M | 0.000 |
 | ledger denominator, total_generated_this_run | 48 |
+| ceiling: max matched / max rate | 0 / 0.000 |
 
 ledger by outcome: {'discarded': 13, 'emitted': 28, 'backend_error': 7}
 strata: chronic_condition, medication, reproductive_hormonal
