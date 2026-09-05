@@ -583,6 +583,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     out = a.out or Path(a.paths[0]).resolve().parent / "BASELINE.md"
     out.write_text(render(b))
+    # the same numbers as JSON, so harness mode 2 can report discovery beside
+    # specification without parsing markdown
+    out.with_suffix(".json").write_text(b.model_dump_json(indent=2) + "\n")
     print(f"matched {b.matched} / scored {b.scored} ; denominator {b.denominator}")
     print(f"wrote {out}")
     return 0
