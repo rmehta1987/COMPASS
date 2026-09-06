@@ -1,0 +1,13 @@
+{
+  "dictionary_version_hash": "3dc8415eccfe",
+  "schema_version": "inventory/schema.py@292571ccc682",
+  "status_values": ["present", "modality", "absent"],
+  "modality_values": ["self_report", "measured", "ehr", "assay", "linked", "administrative"],
+  "row_counts": {"total": 261, "present": 118, "modality": 25, "absent": 118},
+  "tier_rule": "confident_anchor",
+  "tier_rule_definition": "A side (exposures/outcomes) is PRESENT if any row on it has status=present with a non-null key and confident=true; else MODALITY if any row has status=modality with a non-null analogue_key and confident=true; else unreachable. A=both PRESENT; B=one PRESENT one MODALITY; C=exactly one side reachable; D=neither. Bare-status reading (confident conjunct dropped) gives C=8 D=5, moving one paper from D to C; the key/analogue_key conjunct never discriminates on this inventory.",
+  "tier_counts": {"A": 1, "B": 2, "C": 7, "D": 6},
+  "fixture_sizes": {"refusal": 118, "flag": 25},
+  "components_available": {"design": false, "direction": "per_pair"},
+  "modal_covariate_set_size": 6
+}
