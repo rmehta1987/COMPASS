@@ -50,6 +50,15 @@ deploy/model/
 # can self-verify (deploy/smoke_test.py step 0)
 !deploy/manifest.json
 !deploy/target_vectors.safetensors
+# the tiered harness's inputs and fixture, added so plain `git add` works:
+# `git add -f` would defeat the __pycache__ rule and sweep in .pyc.
+# posed_pairs.json and handoff/for_harness.json come from the orphan branch
+# handoff-public and carry opaque case ids, terms and counts -- no pmid, no
+# tier, no key. tests/fake_tiered_inventory.json is five invented papers: real
+# instrument keys, no wording, no pmid.
+!posed_pairs.json
+!handoff/for_harness.json
+!tests/fake_tiered_inventory.json
 # out/ and run/ are ignored wholesale; the handful of tracked artifacts under
 # out/ were force-added (git add -f) after a wording scan. See README.md.
 out/

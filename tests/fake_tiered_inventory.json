@@ -1,0 +1,301 @@
+{
+  "synthetic": true,
+  "notes": "SYNTHETIC. Five invented papers in the tiered inventory's shape, for exercising benchmark/tiered_score.py before the real inventory is reachable. Nothing here was read from a paper: the instrument keys are real so resolution can run, every label, direction and covariate set is invented, and the paper ids are fA..fE, never pmids. Any run or report built on this must say so.",
+  "schema_version": "inventory/schema.py@292571ccc682",
+  "papers": [
+    {
+      "paper": "fA",
+      "intended_tier": "A",
+      "intended_tier_bare_status": "A",
+      "notes": "both anchors present and confident; one covariate not confident",
+      "exposures": [
+        {
+          "label": "synthetic exposure A",
+          "status": "present",
+          "key": "m2:Q9.105",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "synthetic outcome A",
+          "status": "present",
+          "key": "m2:Q5.19",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        }
+      ],
+      "covariates": [
+        {
+          "label": "income",
+          "status": "present",
+          "key": "m1:Q5.4",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        },
+        {
+          "label": "diabetes",
+          "status": "present",
+          "key": "m2:Q5.6",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        },
+        {
+          "label": "menarche",
+          "status": "present",
+          "key": "m2:Q9.1",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        },
+        {
+          "label": "last period",
+          "status": "present",
+          "key": "m2:Q9.7",
+          "analogue_key": null,
+          "modality": null,
+          "confident": false
+        }
+      ],
+      "pairs": [
+        {
+          "case_id": "f001",
+          "direction": "increase"
+        }
+      ]
+    },
+    {
+      "paper": "fB",
+      "intended_tier": "B",
+      "intended_tier_bare_status": "B",
+      "notes": "exposure present, outcome reachable only through its modality analogue",
+      "exposures": [
+        {
+          "label": "synthetic exposure B",
+          "status": "present",
+          "key": "m2:Q9.69",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "synthetic measured outcome B",
+          "status": "modality",
+          "key": null,
+          "analogue_key": "m2:Q5.8",
+          "modality": "measured",
+          "confident": true
+        }
+      ],
+      "covariates": [
+        {
+          "label": "income",
+          "status": "present",
+          "key": "m1:Q5.4",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        },
+        {
+          "label": "diabetes",
+          "status": "present",
+          "key": "m2:Q5.6",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        }
+      ],
+      "pairs": [
+        {
+          "case_id": "f002",
+          "direction": "increase"
+        },
+        {
+          "case_id": "f003",
+          "direction": "no_difference"
+        }
+      ]
+    },
+    {
+      "paper": "fC",
+      "intended_tier": "C",
+      "intended_tier_bare_status": "C",
+      "notes": "one side reachable; six pairs, so an unweighted rate would be this paper",
+      "exposures": [
+        {
+          "label": "synthetic exposure C",
+          "status": "present",
+          "key": "m2:Q9.105",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "synthetic linked outcome C",
+          "status": "absent",
+          "key": null,
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        }
+      ],
+      "covariates": [
+        {
+          "label": "income",
+          "status": "present",
+          "key": "m1:Q5.4",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        },
+        {
+          "label": "menarche",
+          "status": "present",
+          "key": "m2:Q9.1",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        },
+        {
+          "label": "diabetes",
+          "status": "present",
+          "key": "m2:Q5.6",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        }
+      ],
+      "pairs": [
+        {
+          "case_id": "f004",
+          "direction": "increase"
+        },
+        {
+          "case_id": "f005",
+          "direction": "increase"
+        },
+        {
+          "case_id": "f006",
+          "direction": "increase"
+        },
+        {
+          "case_id": "f007",
+          "direction": "decrease"
+        },
+        {
+          "case_id": "f008",
+          "direction": "no_difference"
+        },
+        {
+          "case_id": "f009",
+          "direction": "non_monotonic"
+        }
+      ]
+    },
+    {
+      "paper": "fD",
+      "intended_tier": "D",
+      "intended_tier_bare_status": "D",
+      "notes": "neither anchor in the instrument; refusal is the correct answer",
+      "exposures": [
+        {
+          "label": "synthetic linked exposure D",
+          "status": "absent",
+          "key": null,
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "synthetic registry outcome D",
+          "status": "absent",
+          "key": null,
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        }
+      ],
+      "covariates": [
+        {
+          "label": "income",
+          "status": "present",
+          "key": "m1:Q5.4",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        }
+      ],
+      "pairs": [
+        {
+          "case_id": "f010",
+          "direction": "decrease"
+        }
+      ]
+    },
+    {
+      "paper": "fE",
+      "intended_tier": "D",
+      "intended_tier_bare_status": "C",
+      "notes": "THE PREDICATE EXERCISER (2a): outcome is status=modality with a non-null analogue_key but confident=false, so confident_anchor makes it D and the bare-status reading makes it C. One real paper has this shape and it is the one the two readings disagree on.",
+      "exposures": [
+        {
+          "label": "synthetic linked exposure E",
+          "status": "absent",
+          "key": null,
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "synthetic unpinned outcome E",
+          "status": "modality",
+          "key": null,
+          "analogue_key": "m2:Q5.8",
+          "modality": "measured",
+          "confident": false
+        }
+      ],
+      "covariates": [
+        {
+          "label": "income",
+          "status": "present",
+          "key": "m1:Q5.4",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        },
+        {
+          "label": "diabetes",
+          "status": "present",
+          "key": "m2:Q5.6",
+          "analogue_key": null,
+          "modality": null,
+          "confident": true
+        }
+      ],
+      "pairs": [
+        {
+          "case_id": "f011",
+          "direction": "increase"
+        },
+        {
+          "case_id": "f012",
+          "direction": "decrease"
+        }
+      ]
+    }
+  ]
+}
