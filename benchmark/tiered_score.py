@@ -36,7 +36,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from enum import Enum
 from pathlib import Path
 from typing import Any, NamedTuple
@@ -728,6 +728,130 @@ def analogue_scores(cases: list[dict[str, Any]], paper_of: dict[str, dict[str, A
             analogue_verdict(case["outcome"], paper["outcomes"], construct_of),
             mismatch_flagged=None))
     return out
+
+
+
+# --- item 9: covariate recall, raw ----------------------------------------
+#
+# Covariates are compared VARIABLE KEY TO VARIABLE KEY, the convention
+# benchmark/specification_score.py already uses, because both sides are
+# variable keys: the record's adjustment set is what the model selected, and
+# the inventory's covariate rows are what the author resolved. The anchors are
+# compared at construct level instead because one side of that comparison
+# comes from retrieval, which returns constructs. The two are not inconsistent;
+# they compare what each source actually holds.
+#
+# The arithmetic is not shared with specification_score because that module's
+# types are the two-state inventory (in_instrument / resolution), which the
+# tiered inventory's schema replaces; sharing would mean converting rows into
+# a schema the key branch no longer uses.
+
+
+def _ratio(hits: int, total: int) -> float | None:
+    """Hits over total, or None when the denominator is zero.
+
+    Args:
+        hits: Numerator.
+        total: Denominator.
+
+    Returns:
+        The ratio, or None -- never 0.0, which would read as a measured zero.
+    """
+    return None if total == 0 else hits / total
+
+
+def scorable_covariates(paper: dict[str, Any]) -> frozenset[str]:
+    """The covariate keys the harness may score a record against.
+
+    Args:
+        paper: One inventory paper.
+
+    Returns:
+        Keys of rows that are present, keyed and confident.
+    """
+    return frozenset(
+        str(r["key"]) for r in paper.get("covariates", [])
+        if r.get("status") == "present" and r.get("key") is not None
+        and r.get("confident") is True)
+
+
+def covariate_exclusions(paper: dict[str, Any]) -> dict[str, int]:
+    """Why the harness left covariate rows out, counted by reason.
+
+    Reported beside recall: a denominator that quietly shrank is a different
+    number from the one a reader thinks they are looking at.
+
+    Args:
+        paper: One inventory paper.
+
+    Returns:
+        Reason to count, empty when every row is scorable.
+    """
+    out: dict[str, int] = {}
+    for row in paper.get("covariates", []):
+        if row.get("status") == "absent":
+            reason = "absent"
+        elif row.get("status") == "modality":
+            reason = "modality"
+        elif row.get("key") is None:
+            reason = "unkeyed"
+        elif row.get("confident") is not True:
+            reason = "not_confident"
+        else:
+            continue
+        out[reason] = out.get(reason, 0) + 1
+    return dict(sorted(out.items()))
+
+
+class CovariateScore(NamedTuple):
+    """One case's covariate recovery against its paper.
+
+    Attributes:
+        case_id: The opaque case id.
+        paper: The inventory paper's id.
+        adjusted: How many covariates the record adjusted for.
+        recoverable: How many of the paper's covariates the harness may score,
+            which is the denominator of `recall` and is not the paper's total.
+        hits: The overlap.
+        recall: Hits over recoverable; None when nothing is recoverable.
+        precision: Hits over adjusted; None when the record adjusted for
+            nothing.
+        excluded: Rows left out, by reason.
+        paper_covariates: Every covariate row the paper has, so the reader can
+            see what `recoverable` cost.
+    """
+
+    case_id: str
+    paper: str
+    adjusted: int
+    recoverable: int
+    hits: int
+    recall: float | None
+    precision: float | None
+    excluded: dict[str, int]
+    paper_covariates: int
+
+
+def covariate_score(case_id: str, paper: dict[str, Any],
+                    adjustment_set: Iterable[str]) -> CovariateScore:
+    """Score one record's adjustment set against one paper.
+
+    Args:
+        case_id: The opaque case id.
+        paper: The inventory paper.
+        adjustment_set: The record's adjustment set, variable keys.
+
+    Returns:
+        The row.
+    """
+    adjusted = frozenset(adjustment_set)
+    cov = scorable_covariates(paper)
+    hits = len(adjusted & cov)
+    return CovariateScore(
+        case_id=case_id, paper=str(paper.get("paper", "?")), adjusted=len(adjusted),
+        recoverable=len(cov), hits=hits, recall=_ratio(hits, len(cov)),
+        precision=_ratio(hits, len(adjusted)), excluded=covariate_exclusions(paper),
+        paper_covariates=len(paper.get("covariates", [])))
 
 
 def self_check() -> list[str]:

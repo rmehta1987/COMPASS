@@ -28,9 +28,11 @@ from benchmark.tiered_score import (
     analogue_scores,
     anchor_scores,
     built_dictionary_hash,
+    covariate_score,
     load_handoff,
     main,
     refusal_scores,
+    scorable_covariates,
     self_check,
     side_state,
     tier_of,
@@ -483,3 +485,53 @@ def test_the_matrix_keeps_the_row_the_blocked_half_belongs_to():
     assert row.name == "modality analogue resolution"
     assert row.cells[TIERS.index("B")] is Cell.HALF
     assert row.cells[TIERS.index("C")] is Cell.HALF
+
+
+# --- item 9: covariate recall, raw ----------------------------------------
+
+
+def test_recall_is_over_the_recoverable_rows_and_says_what_it_left_out():
+    fa = next(p for p in PAPERS if p["paper"] == "fA")
+    # fA has four covariate rows; the unpinned one is not scorable.
+    score = covariate_score("f001", fa, ["m1:Q5.4", "m2:Q5.6", "m2:Q9.201"])
+    assert score.recoverable == 3 and score.paper_covariates == 4
+    assert score.excluded == {"not_confident": 1}
+    assert score.hits == 2 and score.recall == pytest.approx(2 / 3)
+    assert score.precision == pytest.approx(2 / 3)
+
+
+def test_a_paper_with_nothing_recoverable_reports_none_not_zero():
+    # 0.0 reads as a measured zero; None says the question could not be asked.
+    empty = {"paper": "fZ", "covariates": []}
+    score = covariate_score("f999", empty, ["m1:Q5.4"])
+    assert score.recall is None and score.recoverable == 0
+    assert score.precision == 0.0
+
+
+def test_an_empty_adjustment_set_has_no_precision_but_a_real_recall():
+    fa = next(p for p in PAPERS if p["paper"] == "fA")
+    score = covariate_score("f001", fa, [])
+    assert score.precision is None
+    assert score.recall == 0.0 and score.recoverable == 3
+
+
+def test_covariates_are_compared_variable_key_to_variable_key():
+    # Both sides are variable keys, unlike the anchors, whose retrieval side is
+    # a construct. A record adjusting for a sibling of the paper's covariate is
+    # not a hit, and the harness must not quietly widen to the construct.
+    fa = next(p for p in PAPERS if p["paper"] == "fA")
+    assert "m1:Q5.4" in scorable_covariates(fa)
+    assert covariate_score("f001", fa, ["m1:Q5.4_2"]).hits == 0
+
+
+def test_an_absent_or_unkeyed_row_is_excluded_by_its_own_reason():
+    paper = {"paper": "fY", "covariates": [
+        {"status": "absent", "key": None, "analogue_key": None,
+         "modality": None, "confident": True},
+        {"status": "modality", "key": None, "analogue_key": "m1:Q5.4",
+         "modality": "measured", "confident": True},
+        {"status": "present", "key": "m2:Q5.6", "analogue_key": None,
+         "modality": None, "confident": False}]}
+    score = covariate_score("f999", paper, [])
+    assert score.excluded == {"absent": 1, "modality": 1, "not_confident": 1}
+    assert score.recoverable == 0 and score.paper_covariates == 3
