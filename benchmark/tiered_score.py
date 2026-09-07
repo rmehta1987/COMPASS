@@ -267,6 +267,122 @@ def load_handoff(path: Path | None = None,
                    raw=raw)
 
 
+
+# --- item 5: tier assignment ----------------------------------------------
+#
+# BUILT here, EXECUTED for real in the scoring clone. Tiers derive from the
+# inventory and inventory/case_map.json, and neither may ever be in this
+# clone, so every acceptance below is against tests/fake_tiered_inventory.json
+# and nothing here may be checked against the handoff's tier_counts.
+
+
+class SideState(Enum):
+    """How a paper's exposure or outcome side reaches the instrument.
+
+    Attributes:
+        PRESENT: The instrument holds the variable itself.
+        MODALITY: The instrument holds a different measurement of it, named by
+            the row's `analogue_key`.
+        UNREACHABLE: Neither, under the rule in force.
+    """
+
+    PRESENT = "present"
+    MODALITY = "modality"
+    UNREACHABLE = "unreachable"
+
+
+class UnclassifiablePaper(ValueError):
+    """A paper the stated tier predicate does not place.
+
+    Both sides reachable only through a modality analogue is such a shape: it
+    is not A (neither side is present), not B (B is one present and one
+    modality), and not C or D (both sides are reachable). The predicate is the
+    operator's, published in the handoff's `tier_rule_definition`; a harness
+    that binned this shape somewhere plausible would report a tier nobody
+    defined, so it raises instead.
+    """
+
+
+def side_state(rows: list[dict[str, Any]], *,
+               require_confident: bool = True) -> SideState:
+    """Classify one side of a paper.
+
+    The keyed conjunct never discriminates on the real inventory -- every
+    present row is keyed and every modality row carries an analogue -- so
+    `confident` does the work. It is kept because it is defensive: a row that
+    lost its key would otherwise read as reachable.
+
+    Args:
+        rows: The side's inventory rows, as data.
+        require_confident: The `confident_anchor` rule when True. False is the
+            bare-status reading, which exists only so a test can show the two
+            disagree; it is never the rule the harness scores under.
+
+    Returns:
+        The side's state.
+    """
+    def usable(row: dict[str, Any], status: str, key_field: str) -> bool:
+        return (row.get("status") == status
+                and row.get(key_field) is not None
+                and (row.get("confident") is True or not require_confident))
+
+    if any(usable(r, "present", "key") for r in rows):
+        return SideState.PRESENT
+    if any(usable(r, "modality", "analogue_key") for r in rows):
+        return SideState.MODALITY
+    return SideState.UNREACHABLE
+
+
+def tier_of(paper: dict[str, Any], *, require_confident: bool = True) -> str:
+    """Assign a paper's tier from its two sides.
+
+    Args:
+        paper: One inventory paper, with `exposures` and `outcomes`.
+        require_confident: See `side_state`.
+
+    Returns:
+        `A`, `B`, `C` or `D`.
+
+    Raises:
+        UnclassifiablePaper: On a shape the stated predicate does not place.
+    """
+    e = side_state(paper["exposures"], require_confident=require_confident)
+    o = side_state(paper["outcomes"], require_confident=require_confident)
+    states = {e, o}
+    if states == {SideState.PRESENT}:
+        return "A"
+    if states == {SideState.PRESENT, SideState.MODALITY}:
+        return "B"
+    reachable = sum(1 for s in (e, o) if s is not SideState.UNREACHABLE)
+    if reachable == 1:
+        return "C"
+    if reachable == 0:
+        return "D"
+    raise UnclassifiablePaper(
+        f"{paper.get('paper', '?')}: exposure {e.value}, outcome {o.value} is not "
+        f"placed by the tier rule (A both present; B one present one modality; "
+        f"C exactly one side reachable; D neither). Ask the operator rather than "
+        f"binning it.")
+
+
+def tiers_of(papers: list[dict[str, Any]],
+             *, require_confident: bool = True) -> dict[str, str]:
+    """Assign every paper's tier.
+
+    Args:
+        papers: The inventory's papers.
+        require_confident: See `side_state`.
+
+    Returns:
+        Paper id to tier, in input order.
+
+    Raises:
+        UnclassifiablePaper: Propagated from `tier_of`.
+    """
+    return {str(p["paper"]): tier_of(p, require_confident=require_confident)
+            for p in papers}
+
+
 def self_check() -> list[str]:
     """Check the report's declared shape against its own invariants.
 

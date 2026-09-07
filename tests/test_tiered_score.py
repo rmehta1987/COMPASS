@@ -21,10 +21,15 @@ from benchmark.tiered_score import (
     TIERS,
     Cell,
     HandoffMismatch,
+    SideState,
+    UnclassifiablePaper,
     built_dictionary_hash,
     load_handoff,
     main,
     self_check,
+    side_state,
+    tier_of,
+    tiers_of,
 )
 from env.tools import resolve_variable
 
@@ -215,3 +220,60 @@ def test_nothing_here_asserts_against_the_real_tier_counts():
         and "tier_counts" in (ast.get_source_segment(source, node) or "")
     ]
     assert offenders == []
+
+
+# --- item 5: tier assignment, against the fakes only ----------------------
+
+
+def test_the_predicate_places_all_five_fakes_as_intended():
+    assert tiers_of(PAPERS) == {p["paper"]: p["intended_tier"] for p in PAPERS}
+
+
+def test_the_default_reading_is_confident_anchor_on_every_entry_point():
+    # A first seeding flipped tier_of's own default and nothing went red:
+    # tiers_of forwards require_confident explicitly, so the tests that go
+    # through it masked the change. Each entry point is pinned on its own.
+    by_id = {p["paper"]: p for p in PAPERS}
+    assert tier_of(by_id["fE"]) == "D"
+    assert tiers_of(PAPERS)["fE"] == "D"
+    assert side_state(by_id["fE"]["outcomes"]) is SideState.UNREACHABLE
+
+
+def test_dropping_the_confident_conjunct_moves_exactly_the_exerciser():
+    # The assertion that the rule is confident_anchor and not bare status is
+    # only worth anything if the two readings differ somewhere: on the real
+    # inventory they differ on one paper, and fE is that shape.
+    strict = tiers_of(PAPERS)
+    bare = tiers_of(PAPERS, require_confident=False)
+    moved = {k: (strict[k], bare[k]) for k in strict if strict[k] != bare[k]}
+    assert moved == {"fE": ("D", "C")}
+    assert bare == {p["paper"]: p["intended_tier_bare_status"] for p in PAPERS}
+
+
+def test_each_side_is_classified_from_its_own_rows():
+    by_id = {p["paper"]: p for p in PAPERS}
+    assert side_state(by_id["fA"]["outcomes"]) is SideState.PRESENT
+    assert side_state(by_id["fB"]["outcomes"]) is SideState.MODALITY
+    assert side_state(by_id["fC"]["outcomes"]) is SideState.UNREACHABLE
+    assert side_state(by_id["fE"]["outcomes"]) is SideState.UNREACHABLE
+    bare = side_state(by_id["fE"]["outcomes"], require_confident=False)
+    assert bare is SideState.MODALITY
+
+
+def test_a_present_row_that_lost_its_key_is_not_reachable():
+    # The keyed conjunct never discriminates on the real inventory; it is kept
+    # because a row without a key names nothing a hypothesis could resolve to.
+    row = {"status": "present", "key": None, "analogue_key": None,
+           "modality": None, "confident": True}
+    assert side_state([row]) is SideState.UNREACHABLE
+
+
+def test_a_shape_the_rule_does_not_place_raises_rather_than_being_binned():
+    both_modality = {
+        "paper": "fX",
+        "exposures": [{"status": "modality", "key": None, "analogue_key": "m1:Q5.4",
+                       "modality": "measured", "confident": True}],
+        "outcomes": [{"status": "modality", "key": None, "analogue_key": "m2:Q5.8",
+                      "modality": "measured", "confident": True}]}
+    with pytest.raises(UnclassifiablePaper, match="not placed by the tier rule"):
+        tier_of(both_modality)
