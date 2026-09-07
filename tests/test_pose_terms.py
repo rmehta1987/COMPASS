@@ -7,8 +7,10 @@ from pathlib import Path
 
 import pytest
 
+from benchmark import tiered_score
 from generate.funnel import load_constructs
 from pipeline import ledger, pose, pose_terms
+from pipeline.pose import construct_index
 from tests.test_run import _backend, _resolver
 
 TAU = 0.729476
@@ -229,3 +231,54 @@ def test_the_case_index_carries_no_pmid_and_no_wording(constructs, tmp_path):
     assert set(row) == {"case_id", "state", "artefact", "note", "exposure", "outcome"}
     assert set(row["exposure"]) == {"term", "abstained", "best_cos",
                                     "nearest_key", "construct_key"}
+
+
+# --- item 14: a run assembles into a report -------------------------------
+
+
+def test_a_run_assembles_into_a_report_through_the_case_index(constructs, tmp_path):
+    """The driver's output is the scorer's input, end to end, on one case."""
+    C, version = constructs
+    # A paper written for this test, not the shared fixture: the scripted
+    # backend's record is the worked pair, so the paper's anchors are its two
+    # constructs. Tier A by the predicate, one pair, direction increase.
+    paper = {
+        "paper": "fW", "intended_tier": "A",
+        "exposures": [{"label": "synthetic exposure W", "status": "present",
+                       "key": "m3:Q16.1_2", "analogue_key": None,
+                       "modality": None, "confident": True}],
+        "outcomes": [{"label": "synthetic outcome W", "status": "present",
+                      "key": "m2:Q5.8", "analogue_key": None,
+                      "modality": None, "confident": True}],
+        "covariates": [{"label": "income", "status": "present", "key": "m1:Q5.4",
+                        "analogue_key": None, "modality": None, "confident": True}],
+        "pairs": [{"case_id": "w001", "direction": "increase"}]}
+
+    run_dir = tmp_path / "tiered"
+    r = _driver_retriever("air pollution", "fibroids", "m3:Q16.1", "m2:Q5.8")
+    outs = pose_terms.pose_cases(
+        [pose_terms.Case("w001", "air pollution", "fibroids")],
+        backend=_backend(version, 0), constructs=C, version=version,
+        run_dir=run_dir, retriever=r, inventory="tests: hand-written paper fW",
+        synthetic=True, strata=_Strata(), template=TEMPLATE,
+        resolver=_resolver(resolve_second=True), k=1, allow_unestimable=True,
+        retry_pause=0.0, log=lambda s: None)
+
+    idx = construct_index(C)
+    reports = tiered_score.assemble(run_dir, [paper],
+                                    lambda k: idx[k].construct_key if k in idx else None)
+    (report,) = reports
+    assert report.case_id == "w001" and report.tier == "A"
+    assert report.state == outs[0].state == "discarded"
+    assert report.anchor is not None and report.anchor.hits == 2
+    # The record was discarded by a blocking validator, so it is NOT scored:
+    # crediting the harness for output the pipeline rejected measures the
+    # wrong thing. It is counted in the run's attrition instead.
+    assert report.covariate is None
+
+    out = tiered_score.render_report(reports, handoff=tiered_score.load_handoff(),
+                                     inventory="tests: hand-written paper fW",
+                                     synthetic=True, run_id="t-e2e")
+    assert "SYNTHETIC" in out
+    assert out.index("TARGETS") < out.index("TIER A")
+    assert "fW / w001" in out and "no record emitted" in out

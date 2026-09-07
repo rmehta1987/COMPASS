@@ -18,6 +18,7 @@ from benchmark import tiered_score
 from benchmark.tiered_score import (
     MATRIX,
     RECORD_DIRECTIONS,
+    RESIDUAL_LIMITATION,
     SCOREABLE_CELLS,
     TIERS,
     Anchor,
@@ -43,6 +44,8 @@ from benchmark.tiered_score import (
     refusal_scores,
     render_case_studies,
     render_rates,
+    render_report,
+    render_targets,
     scorable_covariates,
     self_check,
     side_state,
@@ -789,3 +792,59 @@ def test_the_direction_row_carries_the_weighting_and_the_base_rate(construct_of)
     (row,) = [r for r in component_rates(reports) if "direction" in r.name]
     assert "weighted per paper" in row.note
     assert "base rate" in row.note and "largest paper" in row.note
+
+
+# --- item 14: the report, targets before numbers --------------------------
+
+
+def test_the_targets_are_recorded_with_the_handoffs_own_fixture_sizes():
+    out = render_targets(load_handoff())
+    assert "refusal 118" in out and "flag 25" in out
+    assert ">= 0.90" in out and "< 0.75" in out
+    # Said out loud so a reader does not invent one.
+    assert "NO target is set on" in out
+    assert "0.643" in out and "52%" in out
+
+
+def test_the_report_puts_provenance_and_targets_before_every_number(construct_of):
+    reports = [_report(construct_of, "fA", "f001", "A", ["m1:Q5.4"])]
+    out = render_report(reports, handoff=load_handoff(),
+                        inventory="tests/fake_tiered_inventory.json",
+                        synthetic=True, run_id="t-1")
+    assert out.index("LIMITATION") < out.index("TARGETS")
+    assert out.index("TARGETS") < out.index("TIER A")
+    # A band read off a number is not a target.
+    assert out.index(">= 0.90") < out.index("TIER A")
+
+
+def test_a_synthetic_inventory_is_announced_in_the_first_lines(construct_of):
+    out = render_report([], handoff=load_handoff(), inventory="fake",
+                        synthetic=True, run_id="t-1")
+    assert "SYNTHETIC" in out.splitlines()[1]
+    assert RESIDUAL_LIMITATION in out
+
+
+def test_every_tier_appears_even_when_it_holds_nothing(construct_of):
+    out = render_report([], handoff=load_handoff(), inventory="fake",
+                        synthetic=True, run_id="t-1")
+    for tier in TIERS:
+        assert f"TIER {tier}" in out
+    # 14a: a tier that lost all its cases is unmeasured, never zero.
+    assert out.count("UNMEASURED") == len(TIERS)
+    assert "%" not in out.split("TIER A")[1]
+
+
+def test_the_blocked_half_is_marked_in_the_report_not_omitted(construct_of):
+    reports = [_report(construct_of, "fB", "f002", "B", ["m1:Q5.4"]),
+               _report(construct_of, "fC", "f004", "C", ["m1:Q5.4"])]
+    out = render_report(reports, handoff=load_handoff(), inventory="fake",
+                        synthetic=True, run_id="t-1")
+    assert out.count("modality analogue") >= 2
+    assert "UNAVAILABLE" in out and "16-19" in out
+
+
+def test_design_agreement_is_declared_absent_rather_than_silently_missing():
+    out = render_report([], handoff=load_handoff(), inventory="fake",
+                        synthetic=True, run_id="t-1")
+    assert "design agreement is NOT a component" in out
+    assert "design: false" in out

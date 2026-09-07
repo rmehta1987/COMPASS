@@ -1382,6 +1382,200 @@ def render_rates(reports: list[CaseReport], tier: str) -> str:
     return "\n".join(lines)
 
 
+
+# --- item 14: the report, targets before numbers --------------------------
+#
+# The order matters as much as the contents. The targets were written down
+# before any of these numbers existed; printing them AFTER a result invites
+# the band to be read off the number rather than the number against the band.
+# So: provenance, the limitation nothing fixes, the targets, then the tiers.
+
+
+class Target(NamedTuple):
+    """A band recorded before the numbers, and what falling in it would mean.
+
+    Attributes:
+        component: What is being measured.
+        band: The band, as text.
+        meaning: What that band would mean -- written now, so it cannot be
+            written to fit the result.
+    """
+
+    component: str
+    band: str
+    meaning: str
+
+
+#: The bands the brief recorded. The fixture sizes are read from the handoff
+#: at render time rather than restated here.
+TARGETS: tuple[Target, ...] = (
+    Target("refusal on the ABSENT fixture", ">= 0.90",
+           "the instrument-scoping claim is evidenced"),
+    Target("refusal on the ABSENT fixture", "0.75 - 0.90",
+           "usable with the rate stated; absence detection is not reliable"),
+    Target("refusal on the ABSENT fixture", "< 0.75",
+           "the published 0.674 was not a fixture artefact, and the project's "
+           "framing needs revisiting"),
+    Target("analogue resolution on the flag fixture", ">= 0.90",
+           "the modality class is as predictable as the 24-of-24 result suggested"),
+    Target("analogue resolution on the flag fixture", "< 0.90",
+           "the mapping is wrong, not the field"),
+)
+
+#: Components with NO target, said out loud so a reader does not invent one.
+NO_TARGET: tuple[tuple[str, str], ...] = (
+    ("discovery anchor resolution", "R@1 on the deployed arm is 0.643"),
+    ("covariate recall, margin over modal", "a 0.90 margin would be extraordinary"),
+    ("direction agreement", "the per-pair base rate is 52% positive"),
+)
+
+#: The limitation posing the pairs cannot remove, printed in every report.
+RESIDUAL_LIMITATION = (
+    "Posing a paper's own pair to a model that may have read the paper is "
+    "model-internal recall, not file contamination: benchmark/contamination_check.py "
+    "scans files and cannot see it. This arm therefore scores anchor behaviour and "
+    "covariate recovery, never whether the model reproduced the paper's finding.")
+
+
+def render_targets(handoff: Handoff) -> str:
+    """Render the recorded bands, with the fixture sizes from the handoff.
+
+    Args:
+        handoff: The handoff header.
+
+    Returns:
+        The section.
+    """
+    sizes = handoff.fixture_sizes
+    lines = ["TARGETS, recorded before the numbers.",
+             f"  fixture sizes: refusal {sizes.get('refusal')}, "
+             f"flag {sizes.get('flag')} (from the handoff, not restated here)"]
+    for t in TARGETS:
+        lines.append(f"  {t.component:<42}{t.band:<12}{t.meaning}")
+    lines.append("  NO target is set on:")
+    for name, why in NO_TARGET:
+        lines.append(f"    {name:<40}{why}")
+    return "\n".join(lines)
+
+
+def record_facts(path: Path) -> tuple[frozenset[str], str | None]:
+    """Read the two things the components need out of one artefact.
+
+    Args:
+        path: The artefact file.
+
+    Returns:
+        `(adjustment set, expected direction)`; the direction is None when the
+        record does not state one.
+    """
+    from pipeline.hypothesis import HypothesisRecord
+
+    rec = HypothesisRecord.from_json(path.read_text())
+    direction = getattr(rec.structure, "expected_direction", None)
+    return (frozenset(rec.structure.adjustment_set),
+            None if direction is None else str(getattr(direction, "value", direction)))
+
+
+def assemble(run_dir: Path, papers: list[dict[str, Any]], construct_of: ConstructOf,
+             *, case_map: dict[str, str] | None = None) -> list[CaseReport]:
+    """Build one `CaseReport` per case of a run.
+
+    Args:
+        run_dir: The tiered run's root, holding the case index and one
+            directory per case.
+        papers: The inventory's papers.
+        construct_of: Key to construct.
+        case_map: Case id to paper id. None means derive it from the papers'
+            own pairs, which is what the synthetic inventory carries; in the
+            scoring clone the real join is `inventory/case_map.json` and is
+            passed in.
+
+    Returns:
+        One report per case the map places, in case index order.
+    """
+    from pipeline.pose_terms import read_case_index
+
+    by_id = {str(p["paper"]): p for p in papers}
+    mapping = (case_map if case_map is not None
+               else {c: paper for c, (paper, _) in directions_by_case(papers).items()})
+    modal = modal_covariates(papers)
+    directions = directions_by_case(papers)
+    out: list[CaseReport] = []
+    for case in read_case_index(run_dir):
+        case_id = str(case["case_id"])
+        paper = by_id.get(str(mapping.get(case_id, "")))
+        if paper is None:
+            continue
+        paper_of = {case_id: paper}
+        artefact = case.get("artefact")
+        adjustment: frozenset[str] | None = None
+        specified: str | None = None
+        # Only a record the pipeline stands behind is scored. A discarded one
+        # failed a blocking validator, and crediting the harness for output the
+        # pipeline itself rejected would measure the wrong thing; it is counted
+        # in the run's attrition instead.
+        if artefact and str(case.get("state", "")) == "emitted":
+            adjustment, specified = record_facts(run_dir / case_id / str(artefact))
+        cov = (None if adjustment is None
+               else covariate_score(case_id, paper, adjustment))
+        direction = None
+        if case_id in directions:
+            (direction,) = direction_scores({case_id: specified}, [paper])
+        out.append(CaseReport(
+            case_id=case_id, paper=str(paper["paper"]),
+            tier=tier_of(paper), state=str(case.get("state", "")),
+            anchor=anchor_scores([case], paper_of, construct_of)[0],
+            analogue=analogue_scores([case], paper_of, construct_of)[0],
+            refusal=refusal_scores([case], paper_of)[0],
+            covariate=cov,
+            margin=None if cov is None else margin_score(cov, paper, modal),
+            direction=direction))
+    return out
+
+
+def render_report(reports: list[CaseReport], *, handoff: Handoff, inventory: str,
+                  synthetic: bool, run_id: str) -> str:
+    """Assemble the whole report: provenance, limitation, targets, then tiers.
+
+    Args:
+        reports: Every case of the run.
+        handoff: The handoff header.
+        inventory: Where the pairs and the inventory came from.
+        synthetic: Whether that inventory was invented. Printed first and
+            loudly: a number scored against a synthetic inventory is a
+            rehearsal, not a measurement.
+        run_id: The run's id.
+
+    Returns:
+        The report.
+    """
+    by_tier: dict[str, list[CaseReport]] = {t: [] for t in TIERS}
+    for report in reports:
+        by_tier.setdefault(report.tier, []).append(report)
+    head = [
+        f"TIERED SPECIFICATION REPORT - run {run_id}",
+        f"  inventory      {inventory}"
+        + ("   *** SYNTHETIC: a rehearsal, not a measurement ***" if synthetic else ""),
+        f"  dictionary     {handoff.dictionary_version_hash}",
+        f"  schema         {handoff.schema_version}",
+        f"  tier rule      {handoff.tier_rule}",
+        f"  cases          {len(reports)}",
+        "",
+        "LIMITATION. " + RESIDUAL_LIMITATION,
+        "",
+        "design agreement is NOT a component here: the handoff reports "
+        "design: false, so it is not scored and not printed.",
+        "",
+        render_targets(handoff),
+        "",
+    ]
+    body = [render_case_studies(by_tier.get("A", []), "A"), "",
+            render_case_studies(by_tier.get("B", []), "B"), "",
+            render_rates(by_tier.get("C", []), "C"), "",
+            render_rates(by_tier.get("D", []), "D")]
+    return "\n".join([*head, *body])
+
+
 def self_check() -> list[str]:
     """Check the report's declared shape against its own invariants.
 
