@@ -1326,6 +1326,12 @@ def component_rates(reports: list[CaseReport]) -> list[Rate]:
         margin_note += (f"; record {record_hits} of {modal_n}, modal set "
                         f"{modal_hits} of {modal_n}, margin "
                         f"{(record_hits - modal_hits) / modal_n:+.3f}")
+    else:
+        # The margin row is built directly rather than through _rate, so it
+        # needs the n=0 sentence in its own hand: a row that only said "not a
+        # proportion" would read as a figure withheld, not as one unmeasured.
+        margin_note = ("UNMEASURED: no case in this tier produced a scoreable "
+                       "outcome; this is not a margin of zero. " + margin_note)
 
     return [
         _rate("anchor resolution", sum(a.hits for a in anchors),

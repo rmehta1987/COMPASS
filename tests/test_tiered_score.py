@@ -934,3 +934,12 @@ def test_a_run_without_an_inventory_is_refused_rather_than_half_scored(capsys):
     with pytest.raises(SystemExit):
         main(["--run", "artefacts/nowhere"])
     assert "go together" in capsys.readouterr().err
+
+
+def test_the_margin_row_says_unmeasured_when_nothing_was_recoverable(construct_of):
+    # It is built directly rather than through _rate, so it needs the sentence
+    # in its own hand; without it the row reads as withheld, not unmeasured.
+    reports = [_report(construct_of, "fD", "f010", "D", None)]
+    (row,) = [r for r in component_rates(reports) if "margin" in r.name]
+    assert row.n == 0 and "UNMEASURED" in row.note
+    assert "not a margin of zero" in row.note
