@@ -17,6 +17,7 @@ import pytest
 from benchmark import tiered_score
 from benchmark.tiered_score import (
     MATRIX,
+    RECORD_DIRECTIONS,
     SCOREABLE_CELLS,
     TIERS,
     Anchor,
@@ -29,6 +30,9 @@ from benchmark.tiered_score import (
     anchor_scores,
     built_dictionary_hash,
     covariate_score,
+    direction_scores,
+    direction_summary,
+    directions_by_case,
     load_handoff,
     main,
     margin_score,
@@ -598,3 +602,60 @@ def test_the_modal_size_is_cross_checked_against_the_handoff_and_reported():
     msg = modal_size_disagreement(modal_covariates(PAPERS), load_handoff())
     assert msg is not None and "synthetic" in msg
     assert modal_size_disagreement(frozenset("abcdef"), load_handoff()) is None
+
+
+# --- item 11: direction agreement, weighted per paper ---------------------
+
+
+def _all_agree_but_fc() -> dict[str, str | None]:
+    # Every case matches its paper's direction except fC's six, which are all
+    # wrong: fC holds half the fixture's pairs, the shape 11a describes.
+    out: dict[str, str | None] = {}
+    for case_id, (paper, direction) in directions_by_case(PAPERS).items():
+        wrong = "decrease" if direction != "decrease" else "increase"
+        out[case_id] = wrong if paper == "fC" else direction
+    return out
+
+
+def test_one_dominant_paper_moves_the_unweighted_rate_and_not_the_weighted_one():
+    # 11a: fC holds 6 of the 12 fixture pairs. Unweighted, its six wrong cases
+    # halve the rate; weighted per paper, it is one of five papers.
+    rows = direction_scores(_all_agree_but_fc(), PAPERS)
+    s = direction_summary(rows)
+    assert s.scored == 12 and s.papers == 5
+    assert s.per_pair == pytest.approx(6 / 12)
+    assert s.per_paper == pytest.approx(4 / 5)
+    assert s.largest_paper_share == pytest.approx(0.5)
+
+
+def test_the_base_rate_is_reported_so_a_rate_can_be_read_against_it():
+    # A specifier that always guessed the majority direction would score this;
+    # without it, agreement has nothing to be better than.
+    rows = direction_scores({c: d for c, (_, d) in directions_by_case(PAPERS).items()},
+                            PAPERS)
+    s = direction_summary(rows)
+    assert s.per_pair == 1.0 and s.per_paper == 1.0
+    assert s.base_direction == "increase"
+    assert s.base_rate == pytest.approx(6 / 12)
+
+
+def test_a_case_with_no_record_is_carried_unscored_not_counted_as_a_miss():
+    specified = dict.fromkeys(directions_by_case(PAPERS))
+    rows = direction_scores(specified, PAPERS)
+    assert all(r.agree is None for r in rows)
+    s = direction_summary(rows)
+    assert s.scored == 0 and s.unscored == 12
+    assert s.per_pair is None and s.per_paper is None, "unmeasured, not zero"
+
+
+def test_a_direction_outside_the_record_vocabulary_is_not_a_disagreement():
+    papers = [{"paper": "fM", "pairs": [{"case_id": "x1", "direction": "mixed"}]}]
+    (row,) = direction_scores({"x1": "increase"}, papers)
+    assert row.agree is None
+    assert direction_summary([row]).unscored == 1
+
+
+def test_every_fixture_direction_is_one_a_record_can_hold():
+    # The fixture cannot exercise agreement with a vocabulary the record has
+    # no member for; only the deliberate "mixed" case above does that.
+    assert {d for _, d in directions_by_case(PAPERS).values()} <= set(RECORD_DIRECTIONS)

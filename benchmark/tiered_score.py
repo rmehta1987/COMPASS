@@ -43,6 +43,7 @@ from math import ceil
 from pathlib import Path
 from typing import Any, NamedTuple
 
+from agent.schema import Direction
 from benchmark.paper_inventory import MODAL_SHARE
 
 #: The report's tiers, in report order. Not derived from any data here: the
@@ -958,6 +959,148 @@ def margin_score(score: CovariateScore, paper: dict[str, Any],
     return MarginScore(case_id=score.case_id, paper=score.paper, recall=score.recall,
                        modal_recall=modal_recall, margin=margin,
                        modal_size=len(modal))
+
+
+
+# --- item 11: direction agreement, weighted per paper ---------------------
+#
+# The inventory records a direction per PAIR, and the pairs are not evenly
+# spread: one real paper holds 23 of the 95 triples and four hold 56%. An
+# unweighted rate over the pairs measures that paper. This reports the
+# per-paper weighted rate as the headline, the unweighted per-pair rate
+# beside it, the concentration that separates them, and the majority base
+# rate a specifier that always guessed one direction would score.
+
+
+#: The directions a RECORD can hold, from the schema's own enum. Narrower than
+#: benchmark.paper_inventory.DIRECTIONS, which also holds `mixed` for a paper
+#: whose pairs disagree: a record has no member for that, so a `mixed` row is
+#: carried unscored rather than counted as a disagreement.
+RECORD_DIRECTIONS: tuple[str, ...] = tuple(d.value for d in Direction)
+
+
+def directions_by_case(papers: list[dict[str, Any]]) -> dict[str, tuple[str, str]]:
+    """Map each case id to its paper and the direction the paper reported.
+
+    Args:
+        papers: The inventory's papers, each with a `pairs` list of
+            `case_id` and `direction`.
+
+    Returns:
+        Case id to `(paper id, direction)`.
+    """
+    out: dict[str, tuple[str, str]] = {}
+    for paper in papers:
+        for pair in paper.get("pairs", []):
+            out[str(pair["case_id"])] = (str(paper.get("paper", "?")),
+                                         str(pair["direction"]))
+    return out
+
+
+class DirectionScore(NamedTuple):
+    """One case's direction agreement.
+
+    Attributes:
+        case_id: The opaque case id.
+        paper: The inventory paper's id, which is the weighting unit.
+        reported: The paper's direction.
+        specified: The record's expected direction, None when no record was
+            emitted.
+        agree: Whether they match; None when the case produced no record, or
+            the paper's direction is not one the record vocabulary can hold.
+    """
+
+    case_id: str
+    paper: str
+    reported: str
+    specified: str | None
+    agree: bool | None
+
+
+def direction_scores(specified: dict[str, str | None], papers: list[dict[str, Any]],
+                     *, vocabulary: Iterable[str] = RECORD_DIRECTIONS,
+                     ) -> list[DirectionScore]:
+    """Score every case whose paper reported a direction.
+
+    Args:
+        specified: Case id to the record's expected direction, or None where
+            the case produced no record.
+        papers: The inventory's papers.
+        vocabulary: Directions a record can hold; anything else in the
+            inventory (`mixed`, say) is carried with `agree=None` rather than
+            scored as a disagreement.
+
+    Returns:
+        One row per case the inventory has a direction for, in inventory
+        order.
+    """
+    allowed = frozenset(vocabulary)
+    out: list[DirectionScore] = []
+    for case_id, (paper, reported) in directions_by_case(papers).items():
+        got = specified.get(case_id)
+        agree = None if got is None or reported not in allowed else got == reported
+        out.append(DirectionScore(case_id, paper, reported, got, agree))
+    return out
+
+
+class DirectionSummary(NamedTuple):
+    """Direction agreement, weighted and unweighted, with what separates them.
+
+    Attributes:
+        scored: Cases with a verdict.
+        papers: Papers those cases came from -- the weighted rate's
+            denominator.
+        per_pair: The unweighted rate over scored cases.
+        per_paper: The mean of each paper's own rate: the headline, because
+            the pairs are concentrated.
+        largest_paper_share: The share of scored cases the biggest paper
+            holds, which is why the two rates differ.
+        base_rate: What always guessing the inventory's majority direction
+            would score, over the scored cases.
+        base_direction: That majority direction.
+        unscored: Cases carried but not scored, because no record was emitted
+            or the direction is outside the record vocabulary.
+    """
+
+    scored: int
+    papers: int
+    per_pair: float | None
+    per_paper: float | None
+    largest_paper_share: float | None
+    base_rate: float | None
+    base_direction: str | None
+    unscored: int
+
+
+def direction_summary(rows: list[DirectionScore]) -> DirectionSummary:
+    """Summarise direction agreement without letting one paper carry it.
+
+    Args:
+        rows: The scored cases.
+
+    Returns:
+        The summary. Every rate is None rather than 0.0 when nothing was
+        scored, so an unmeasured direction never prints as a measured failure.
+    """
+    scored = [r for r in rows if r.agree is not None]
+    unscored = len(rows) - len(scored)
+    if not scored:
+        return DirectionSummary(0, 0, None, None, None, None, None, unscored)
+    by_paper: dict[str, list[DirectionScore]] = {}
+    for row in scored:
+        by_paper.setdefault(row.paper, []).append(row)
+    per_paper_rates = [sum(1 for r in rs if r.agree) / len(rs)
+                       for rs in by_paper.values()]
+    counts = Counter(r.reported for r in scored)
+    base_direction, base_n = counts.most_common(1)[0]
+    biggest = max(len(rs) for rs in by_paper.values())
+    return DirectionSummary(
+        scored=len(scored), papers=len(by_paper),
+        per_pair=_ratio(sum(1 for r in scored if r.agree), len(scored)),
+        per_paper=sum(per_paper_rates) / len(per_paper_rates),
+        largest_paper_share=biggest / len(scored),
+        base_rate=_ratio(base_n, len(scored)), base_direction=str(base_direction),
+        unscored=unscored)
 
 
 def self_check() -> list[str]:
