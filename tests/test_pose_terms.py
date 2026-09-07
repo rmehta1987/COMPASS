@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -168,7 +169,11 @@ def test_the_case_id_reaches_the_artefacts_only_as_their_directory(constructs, t
     case_dir = tmp_path / "tiered" / "c001"
     (row,) = ledger.Ledger(case_dir).rows()
     art = (case_dir / row.artefact).read_text()
-    assert "c001" not in art
+    # sha256 redaction digests are hex and can contain any short id as a
+    # substring by chance -- the real run's c056 artefact holds "c056" inside
+    # one. Blank the digests first, or this test fails on a coincidence and
+    # passes on nothing.
+    assert "c001" not in re.sub(r'"sha256:[0-9a-f]+"', '""', art)
     assert row.pair_id == "m3:Q16.1 -> m2:Q5.8"
 
 
@@ -350,3 +355,19 @@ def test_stamping_walks_the_case_directories_and_not_the_run_root(constructs,
     assert pose_terms.stamp_cases(run_dir, env) == 1
     prov = json.loads((run_dir / pose.PROVENANCE_NAME).read_text())
     assert prov["selection_mode"] == "externally_posed", "the root was left alone"
+
+
+def test_the_candidate_carries_the_case_id_only_in_its_tags(constructs):
+    # The artefact-text test above cannot see this: wording is sha256-redacted
+    # on the way into an artefact, so a case id injected into a construct's
+    # stem would vanish there while still reaching the model's prompt, which
+    # renders PAIR {pair_id} and the two stems. This is where that is caught.
+    C, _ = constructs
+    case = pose_terms.Case("c001", "air pollution", "fibroids")
+    side = pose_terms.SideResolution("t", False, 0.9, "m3:Q16.1_1", "m3:Q16.1")
+    other = pose_terms.SideResolution("t", False, 0.9, "m2:Q5.8_1", "m2:Q5.8")
+    cand = pose_terms.candidate_for(case, side, other, C)
+    assert cand is not None
+    assert cand.tags["case_id"] == "c001"
+    assert case.case_id not in cand.pair_id
+    assert case.case_id not in cand.exposure.stem_text + cand.outcome.stem_text

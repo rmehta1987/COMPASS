@@ -21,6 +21,16 @@ Three attempts on one item then PARKED, with all three named.
   which pins the default at `side_state`, `tier_of` and `tiers_of` separately.
   Re-seeded after landing the test: red.
 
+- item 3's case-id test, seeded after the live run: injecting the case id into
+  a construct's stem left the artefact test GREEN, because wording is
+  sha256-redacted on the way into an artefact -- the id vanished there while
+  still reaching the model's prompt, which renders PAIR {pair_id} and the two
+  stems. The artefact test was also fragile in the other direction: the run's
+  own c056 artefact contains "c056" inside a sha256 digest by chance. Both
+  closed: the artefact test blanks digests before searching, and a new test
+  pins that the candidate carries the case id only in `tags`, never in
+  `pair_id` or either stem. Re-seeded: red.
+
 ## Resolved premises — recorded so they are not re-litigated
 
 - BLOCKER 1 of the earlier TIER_STATE (for_harness.json unreachable) is
