@@ -367,6 +367,28 @@ def read_case_index(run_dir: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
+def stamp_cases(run_dir: Path, env: Any) -> int:
+    """Stamp every case directory's artefacts after the push.
+
+    `pipeline.run.stamp_run` globs `*.json` in ONE run directory and parses
+    each as a record. A tiered run's root holds `inventory_provenance.json`
+    and `attrition.json`, which are not records, and its artefacts live one
+    level down. Pointing stamp_run at the root would fail on the provenance
+    file; this walks the case directories instead.
+
+    Args:
+        run_dir: The run root.
+        env: The `GenerationEnv` measured after the push.
+
+    Returns:
+        How many artefacts were stamped.
+    """
+    from pipeline.run import stamp_run
+
+    return sum(stamp_run(case_dir, env)
+               for case_dir in sorted(run_dir.iterdir()) if case_dir.is_dir())
+
+
 def attrition(outcomes: list[CaseOutcome]) -> dict[str, int]:
     """Count cases by what became of them.
 

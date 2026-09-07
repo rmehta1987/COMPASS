@@ -328,3 +328,25 @@ def test_a_recorded_case_is_not_re_run_when_skip_recorded_is_set(constructs,
     (again,) = pose_terms.pose_cases(cases, backend=_Explode(),
                                      skip_recorded=True, **common)
     assert again.state == first.state and again.artefact == first.artefact
+
+
+def test_stamping_walks_the_case_directories_and_not_the_run_root(constructs,
+                                                                  tmp_path):
+    # pipeline.run.stamp_run parses every *.json in ONE directory as a record.
+    # A tiered run's root holds inventory_provenance.json, which is not one.
+    C, version = constructs
+    r = _driver_retriever("air pollution", "fibroids", "m3:Q16.1", "m2:Q5.8")
+    run_dir = tmp_path / "tiered"
+    pose_terms.pose_cases(
+        [pose_terms.Case("c001", "air pollution", "fibroids")],
+        backend=_backend(version, 0), constructs=C, version=version,
+        run_dir=run_dir, retriever=r, inventory="x", synthetic=True,
+        strata=_Strata(), template=TEMPLATE, resolver=_resolver(True), k=1,
+        allow_unestimable=True, retry_pause=0.0, log=lambda s: None)
+
+    from pipeline.generation_env import GenerationEnv
+    env = GenerationEnv(key_present=False, key_fetchable=False, tree_sha="0" * 40,
+                        tree_clean=True, branch="ralph-loop")
+    assert pose_terms.stamp_cases(run_dir, env) == 1
+    prov = json.loads((run_dir / pose.PROVENANCE_NAME).read_text())
+    assert prov["selection_mode"] == "externally_posed", "the root was left alone"
