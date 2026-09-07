@@ -17,16 +17,16 @@ import pytest
 from benchmark import tiered_score
 from benchmark.tiered_score import (
     MATRIX,
-    Anchor,
     SCOREABLE_CELLS,
     TIERS,
+    Anchor,
     Cell,
     HandoffMismatch,
     SideState,
     UnclassifiablePaper,
+    anchor_scores,
     built_dictionary_hash,
     load_handoff,
-    anchor_scores,
     main,
     self_check,
     side_state,
