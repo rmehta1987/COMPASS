@@ -25,6 +25,7 @@ from benchmark.tiered_score import (
     Refusal,
     SideState,
     UnclassifiablePaper,
+    analogue_scores,
     anchor_scores,
     built_dictionary_hash,
     load_handoff,
@@ -427,3 +428,58 @@ def test_a_reachable_case_contributes_nothing_to_the_refusal_denominator():
     case = _state(_case("f001", "m3:Q16.1", "m2:Q5.19"), "emitted")
     (score,) = refusal_scores([case], {"f001": fa})
     assert score.scoreable == 0 and score.refused == 0
+
+
+# --- item 8: modality analogue resolution, the half that exists -----------
+
+
+def test_a_modality_side_that_lands_on_the_analogue_scores_a_hit(construct_of):
+    fb = next(p for p in PAPERS if p["paper"] == "fB")
+    analogue = fb["outcomes"][0]["analogue_key"]
+    case = _case("f002", "m2:Q9.69", construct_of(analogue))
+    (score,) = analogue_scores([case], {"f002": fb}, construct_of)
+    assert score.outcome is Anchor.KEY
+    assert score.exposure is Anchor.NOT_SCOREABLE, "the present side is item 6's"
+    assert score.scoreable == 1 and score.hits == 1
+
+
+def test_a_modality_side_that_lands_elsewhere_is_not_a_hit(construct_of):
+    fb = next(p for p in PAPERS if p["paper"] == "fB")
+    case = _case("f002", "m2:Q9.69", construct_of("m1:Q5.4"))
+    (score,) = analogue_scores([case], {"f002": fb}, construct_of)
+    assert score.outcome is Anchor.ELSEWHERE and score.hits == 0
+
+
+def test_an_unpinned_modality_side_is_not_this_components_either(construct_of):
+    # fE's outcome carries an analogue but confident=false, so the tier rule
+    # calls it unreachable: it is item 7's refusal case, not an analogue to hit.
+    fe = next(p for p in PAPERS if p["paper"] == "fE")
+    case = _case("f011", None, construct_of("m2:Q5.8"))
+    (score,) = analogue_scores([case], {"f011": fe}, construct_of)
+    assert score.scoreable == 0
+
+
+def test_the_unbuilt_half_reports_unknown_and_never_false(construct_of):
+    # None, not False: False would read as "the pipeline failed to flag the
+    # substitution", which is a claim about the pipeline nobody has measured.
+    fb = next(p for p in PAPERS if p["paper"] == "fB")
+    case = _case("f002", "m2:Q9.69", construct_of("m2:Q5.8"))
+    (score,) = analogue_scores([case], {"f002": fb}, construct_of)
+    assert score.mismatch_flagged is None
+    assert tiered_score.MODALITY_MISMATCH_AVAILABLE is False
+    assert "16-19" in tiered_score.MODALITY_MISMATCH_BLOCKER
+
+
+def test_turning_the_blocked_half_on_without_wiring_it_raises(monkeypatch,
+                                                              construct_of):
+    monkeypatch.setattr(tiered_score, "MODALITY_MISMATCH_AVAILABLE", True)
+    with pytest.raises(NotImplementedError, match="16-19"):
+        analogue_scores([], {}, construct_of)
+    assert any("half available" in p for p in self_check())
+
+
+def test_the_matrix_keeps_the_row_the_blocked_half_belongs_to():
+    (row,) = [r for r in MATRIX if Cell.HALF in r.cells]
+    assert row.name == "modality analogue resolution"
+    assert row.cells[TIERS.index("B")] is Cell.HALF
+    assert row.cells[TIERS.index("C")] is Cell.HALF

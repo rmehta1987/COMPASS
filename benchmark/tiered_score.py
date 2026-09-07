@@ -622,6 +622,114 @@ def refusal_scores(cases: list[dict[str, Any]],
     return out
 
 
+
+# --- item 8: modality analogue resolution (half available) ----------------
+#
+# Two halves, and only one exists today:
+#   * did the run resolve the side to the analogue the inventory names? YES,
+#     scoreable now, below;
+#   * did the pipeline flag the substitution as a modality mismatch? NO. No
+#     record field carries it -- `modality_mismatch` appears nowhere in the
+#     tree -- and it needs pipeline items 16-19.
+# The second half is REPORTED AS UNAVAILABLE, never omitted: a row that
+# disappears reads as "not applicable" when it means "not yet built".
+
+#: Whether a record can say it substituted a different measurement. False
+#: until pipeline items 16-19 land; read by the renderer, never assumed.
+MODALITY_MISMATCH_AVAILABLE = False
+#: What the blocked half waits on, printed beside the row it cannot fill.
+MODALITY_MISMATCH_BLOCKER = (
+    "no record field carries modality_mismatch; needs pipeline items 16-19")
+
+
+def analogue_verdict(side: dict[str, Any], rows: list[dict[str, Any]],
+                     construct_of: ConstructOf) -> Anchor:
+    """Score one side against the analogue the inventory names.
+
+    Args:
+        side: The case index's block for this side.
+        rows: That side's inventory rows.
+        construct_of: Key to construct.
+
+    Returns:
+        The verdict, with `NOT_SCOREABLE` for a side that is not MODALITY --
+        a present side is item 6's and an unreachable one is item 7's.
+    """
+    if side_state(rows) is not SideState.MODALITY:
+        return Anchor.NOT_SCOREABLE
+    got = side.get("construct_key")
+    if got is None or side.get("abstained"):
+        return Anchor.ABSTAINED
+    targets = target_constructs(rows, construct_of, key_field="analogue_key",
+                               status="modality")
+    return Anchor.KEY if got in targets else Anchor.ELSEWHERE
+
+
+class AnalogueScore(NamedTuple):
+    """One case's analogue verdicts, and the half that is not built.
+
+    Attributes:
+        case_id: The opaque case id.
+        exposure: The exposure side's verdict.
+        outcome: The outcome side's verdict.
+        mismatch_flagged: Whether the pipeline flagged the substitution.
+            Always None while `MODALITY_MISMATCH_AVAILABLE` is False -- an
+            unbuilt half reports as unknown, never as False, which would read
+            as "the pipeline failed to flag it".
+    """
+
+    case_id: str
+    exposure: Anchor
+    outcome: Anchor
+    mismatch_flagged: bool | None = None
+
+    @property
+    def scoreable(self) -> int:
+        """Modality sides this case contributes."""
+        return sum(1 for v in (self.exposure, self.outcome)
+                   if v is not Anchor.NOT_SCOREABLE)
+
+    @property
+    def hits(self) -> int:
+        """Modality sides that landed on the inventory's analogue."""
+        return sum(1 for v in (self.exposure, self.outcome) if v is Anchor.KEY)
+
+
+def analogue_scores(cases: list[dict[str, Any]], paper_of: dict[str, dict[str, Any]],
+                    construct_of: ConstructOf) -> list[AnalogueScore]:
+    """Score analogue resolution for every case that has a paper.
+
+    Args:
+        cases: Case index rows.
+        paper_of: Case id to its inventory paper.
+        construct_of: Key to construct.
+
+    Returns:
+        One row per case present in `paper_of`, in case order. Every row's
+        `mismatch_flagged` is None while that half is unbuilt.
+
+    Raises:
+        NotImplementedError: If `MODALITY_MISMATCH_AVAILABLE` is flipped on
+            without this function learning where the flag lives. Better than
+            silently reporting None as a measurement.
+    """
+    if MODALITY_MISMATCH_AVAILABLE:
+        raise NotImplementedError(
+            "MODALITY_MISMATCH_AVAILABLE is on but nothing here reads the flag; "
+            "wire it to the record field pipeline items 16-19 add.")
+    out: list[AnalogueScore] = []
+    for case in cases:
+        paper = paper_of.get(str(case["case_id"]))
+        if paper is None:
+            continue
+        out.append(AnalogueScore(
+            str(case["case_id"]),
+            analogue_verdict(case["exposure"], paper["exposures"], construct_of),
+            analogue_verdict(case["outcome"], paper["outcomes"], construct_of),
+            mismatch_flagged=None))
+    return out
+
+
 def self_check() -> list[str]:
     """Check the report's declared shape against its own invariants.
 
@@ -648,6 +756,13 @@ def self_check() -> list[str]:
     if scoreable != SCOREABLE_CELLS:
         problems.append(f"matrix has {scoreable} scoreable cells, expected "
                         f"{SCOREABLE_CELLS}; a row was dropped or a cell moved")
+    half_rows = [row for row in MATRIX if Cell.HALF in row.cells]
+    if MODALITY_MISMATCH_AVAILABLE and half_rows:
+        problems.append("the matrix still marks modality analogue resolution half "
+                        "available while MODALITY_MISMATCH_AVAILABLE is on")
+    if not MODALITY_MISMATCH_AVAILABLE and not half_rows:
+        problems.append("the modality half is still unbuilt but no row is marked "
+                        "half available; an unbuilt half must be rendered, not dropped")
     try:
         handoff = load_handoff()
     except HandoffMismatch as e:

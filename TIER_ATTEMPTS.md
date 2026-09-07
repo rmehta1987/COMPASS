@@ -2,7 +2,14 @@
 Failures and the approach that produced them, so no approach is retried.
 Three attempts on one item then PARKED, with all three named.
 
-(no item has failed its gate yet)
+- item 8, attempt 1 (reset, not landed): the analogue component was correct and
+  every test passed, but `self_check` bound `half = [row for row in MATRIX ...]`
+  over a `half: bool` already used in the loop above it. mypy 59 -> 60, so
+  check.sh went RED at step 2 on tests/test_code_standards.py, not on anything
+  tiered. Reset --hard per the loop; reapplied as attempt 2 with the list bound
+  to `half_rows`. Approach unchanged, so this is a slip to avoid repeating, not
+  an approach to abandon: a new local name in a function that already has one
+  of that name is the whole of it.
 
 ## Seedings that did NOT go red — the useful kind of failure
 
