@@ -2,9 +2,9 @@
 build: 3dc8415eccfe
 schema: inventory/schema.py@292571ccc682   (pinned by the scorer, never imported)
 tier_rule: confident_anchor
-last green: 39ded44   (VERIFIED 2026-09-06, ./check.sh unpiped, exit 0, "GREEN";
-                       929 passed, ruff 226 <= 232, mypy 59 <= 59, R@1 0.643,
-                       canaries 7/7, smoke_test ALL PASS, step 11 0 problems)
+last green: e558660   (VERIFIED 2026-09-06, ./check.sh unpiped, exit 0, "GREEN";
+                       ruff 226 <= 232, mypy 59 <= 59, R@1 0.643, canaries 7/7,
+                       smoke_test ALL PASS, step 11 0 problems)
 
 BLOCKED: the modality_mismatch half of item 8 — needs pipeline items 16-19.
          Everything else is buildable.
@@ -33,15 +33,15 @@ note: the earlier TIER_STATE's blockers 1 and 2 are resolved/dissolved — the
 ## items  (phase 1 = build and prove on the fakes; phase 2 = generate)
 - [x] 1  add tiered_score.py to check.sh          4a6986d
 - [x] 2  fake inventory, 5 synthetic papers       cdcdfad
-- [ ] 3  posed-pair driver                        next (the largest item)
+- [x] 3  posed-pair driver                        0808eef
 - [x] 4  load for_harness.json, assert three hashes  0ccc446
 - [x] 5  tier assignment code                     39ded44
-- [ ] 6  anchor-resolution component
-- [ ] 7  refusal component
-- [ ] 8  modality analogue resolution (half — see 8a)
-- [ ] 9  covariate recall, raw
-- [ ] 10 covariate recall, margin over modal
-- [ ] 11 direction agreement, weighted per paper
+- [x] 6  anchor-resolution component  955ee3e
+- [x] 7  refusal component  40f15df
+- [x] 8  modality analogue resolution (half — see 8a)  588cee5
+- [x] 9  covariate recall, raw  2def6e7
+- [x] 10 covariate recall, margin over modal  d56aaed
+- [x] 11 direction agreement, weighted per paper  e558660
 - [ ] 12 tier A and B renderer — case studies
 - [ ] 13 tier C and D renderer — rates
 - [ ] 14 report assembly, targets before numbers

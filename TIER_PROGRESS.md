@@ -17,3 +17,18 @@ is against the fakes.
   the both-modality shape raises UnclassifiablePaper rather than being binned.
   Correct on all five fakes; the bare-status reading moves exactly fE.
   924 -> 929 tests.
+- item 3 · 0808eef · pipeline/pose_terms.py poses TERMS; one run directory per
+  opaque case id; read_cases raises on a leaked field; an abstaining anchor
+  spends no model call. 929 -> 944 tests.
+- item 6 · 955ee3e (+2c353a6 import sort) · anchor resolution at construct
+  level; the fixture gained a member key so the key/construct seeding is not
+  vacuous.
+- item 7 · 40f15df · refusal on an unreachable anchor, split into refused at
+  retrieval / by the specifier / approximated; only unreachable sides count.
+- item 8 · 588cee5 · analogue resolution scored; the modality_mismatch half
+  reports None and raises if switched on unwired. Attempt 1 reset on red.
+- item 9 · 2def6e7 · covariate recall over recoverable rows with exclusions.
+- item 10 · d56aaed · modal set computed at run time, margin reported; no
+  variable-key literal may appear in the module.
+- item 11 · e558660 · direction weighted per paper, with the per-pair rate,
+  the concentration and the majority base rate beside it.
