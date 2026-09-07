@@ -17,6 +17,7 @@ import pytest
 from benchmark import tiered_score
 from benchmark.tiered_score import (
     MATRIX,
+    NEAR_MISS_BAND,
     RECORD_DIRECTIONS,
     RESIDUAL_LIMITATION,
     SCOREABLE_CELLS,
@@ -30,6 +31,7 @@ from benchmark.tiered_score import (
     UnclassifiablePaper,
     analogue_scores,
     anchor_scores,
+    attrition_causes,
     built_dictionary_hash,
     component_rates,
     covariate_score,
@@ -42,6 +44,7 @@ from benchmark.tiered_score import (
     modal_covariates,
     modal_size_disagreement,
     refusal_scores,
+    render_attrition,
     render_case_studies,
     render_rates,
     render_report,
@@ -848,3 +851,53 @@ def test_design_agreement_is_declared_absent_rather_than_silently_missing():
                         synthetic=True, run_id="t-1")
     assert "design agreement is NOT a component" in out
     assert "design: false" in out
+
+
+# --- item 16: attrition, by cause -----------------------------------------
+
+
+def _index_row(case_id: str, state: str, e_cos: float, o_cos: float,
+               e_ck: str | None, o_ck: str | None) -> dict:
+    def side(cos: float, ck: str | None) -> dict:
+        return {"term": "t", "abstained": ck is None, "best_cos": cos,
+                "nearest_key": "m9:Q0", "construct_key": ck}
+    return {"case_id": case_id, "state": state, "artefact": None, "note": "",
+            "exposure": side(e_cos, e_ck), "outcome": side(o_cos, o_ck)}
+
+
+def test_attrition_splits_an_unresolved_anchor_by_which_side_went():
+    # An exposure the instrument does not hold and an outcome it does not hold
+    # are different findings about the instrument, not one "no record" bucket.
+    rows = [_index_row("c1", "unresolved_anchor", 0.4, 0.9, None, "m2:Q5.8"),
+            _index_row("c2", "unresolved_anchor", 0.9, 0.4, "m3:Q16.1", None),
+            _index_row("c3", "unresolved_anchor", 0.4, 0.4, None, None),
+            _index_row("c4", "emitted", 0.9, 0.9, "m3:Q16.1", "m2:Q5.8")]
+    causes = attrition_causes(rows)
+    assert causes == {"emitted": 1,
+                      "unresolved_anchor: both sides": 1,
+                      "unresolved_anchor: exposure only": 1,
+                      "unresolved_anchor: outcome only": 1}
+
+
+def test_a_near_miss_is_counted_against_a_stated_band():
+    tau = 0.729476
+    rows = [_index_row("c1", "unresolved_anchor", 0.728, 0.9, None, "m2:Q5.8"),
+            _index_row("c2", "unresolved_anchor", 0.31, 0.9, None, "m2:Q5.8")]
+    causes = attrition_causes(rows, min_cos=tau)
+    assert causes["  of which a near miss"] == 1
+    out = render_attrition(rows, min_cos=tau)
+    assert "0.729476" in out and str(NEAR_MISS_BAND) in out
+
+
+def test_attrition_states_its_denominator():
+    # An unstated denominator is not a number.
+    out = render_attrition([_index_row("c1", "emitted", 0.9, 0.9, "a", "b")])
+    assert "Denominator" in out and "1 rows" in out
+
+
+def test_the_report_carries_attrition_between_the_targets_and_the_tiers(
+        construct_of):
+    rows = [_index_row("c1", "unresolved_anchor", 0.4, 0.9, None, "m2:Q5.8")]
+    out = render_report([], handoff=load_handoff(), inventory="fake",
+                        synthetic=True, run_id="t-1", cases=rows)
+    assert out.index("TARGETS") < out.index("ATTRITION") < out.index("TIER A")

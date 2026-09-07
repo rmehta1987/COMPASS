@@ -1534,7 +1534,9 @@ def assemble(run_dir: Path, papers: list[dict[str, Any]], construct_of: Construc
 
 
 def render_report(reports: list[CaseReport], *, handoff: Handoff, inventory: str,
-                  synthetic: bool, run_id: str) -> str:
+                  synthetic: bool, run_id: str,
+                  cases: list[dict[str, Any]] | None = None,
+                  min_cos: float | None = None) -> str:
     """Assemble the whole report: provenance, limitation, targets, then tiers.
 
     Args:
@@ -1545,6 +1547,9 @@ def render_report(reports: list[CaseReport], *, handoff: Handoff, inventory: str
             loudly: a number scored against a synthetic inventory is a
             rehearsal, not a measurement.
         run_id: The run's id.
+        cases: The run's case index rows, for the attrition section. Omitted
+            only when there is no run behind the report.
+        min_cos: The abstention threshold, for the near-miss split.
 
     Returns:
         The report.
@@ -1569,11 +1574,93 @@ def render_report(reports: list[CaseReport], *, handoff: Handoff, inventory: str
         render_targets(handoff),
         "",
     ]
+    if cases is not None:
+        head.extend([render_attrition(cases, min_cos=min_cos,
+                                      posed=len(cases)), ""])
     body = [render_case_studies(by_tier.get("A", []), "A"), "",
             render_case_studies(by_tier.get("B", []), "B"), "",
             render_rates(by_tier.get("C", []), "C"), "",
             render_rates(by_tier.get("D", []), "D")]
     return "\n".join([*head, *body])
+
+
+
+# --- item 16: where the cases went ----------------------------------------
+#
+# A run that scores 10 cases out of 95 has said something about the other 85,
+# and the report has to say what. Attrition is grouped by CAUSE, not by count:
+# an anchor the instrument does not hold and a backend error are both "no
+# record" and mean opposite things.
+
+#: How close to the threshold a side has to fall to be called a near miss.
+#: Stated rather than tuned; the band is printed with the count so the reader
+#: can see what it cost.
+NEAR_MISS_BAND = 0.05
+
+
+def attrition_causes(cases: list[dict[str, Any]],
+                     *, min_cos: float | None = None) -> dict[str, int]:
+    """Count cases by what stopped them, in one pass.
+
+    Args:
+        cases: Case index rows.
+        min_cos: The abstention threshold in force, for the near-miss split;
+            the split is omitted when None.
+
+    Returns:
+        Cause to count. `unresolved_anchor` is split by which side abstained,
+        because an exposure the instrument does not hold and an outcome it
+        does not hold are different findings about the instrument.
+    """
+    out: dict[str, int] = {}
+    for case in cases:
+        state = str(case.get("state", "unknown"))
+        if state != "unresolved_anchor":
+            out[state] = out.get(state, 0) + 1
+            continue
+        e_out = bool(case["exposure"].get("construct_key") is None)
+        o_out = bool(case["outcome"].get("construct_key") is None)
+        side = ("both sides" if e_out and o_out
+                else "exposure only" if e_out else "outcome only")
+        key = f"unresolved_anchor: {side}"
+        out[key] = out.get(key, 0) + 1
+        if min_cos is not None:
+            for block, missing in ((case["exposure"], e_out),
+                                   (case["outcome"], o_out)):
+                if missing and min_cos - float(block["best_cos"]) <= NEAR_MISS_BAND:
+                    out["  of which a near miss"] = out.get(
+                        "  of which a near miss", 0) + 1
+    return dict(sorted(out.items()))
+
+
+def render_attrition(cases: list[dict[str, Any]], *, min_cos: float | None = None,
+                     posed: int | None = None) -> str:
+    """Render where a run's cases went.
+
+    Args:
+        cases: Case index rows.
+        min_cos: The abstention threshold, for the near-miss split.
+        posed: How many cases were posed, when that differs from the number of
+            index rows -- a run that died part way has fewer rows than cases.
+
+    Returns:
+        The section, with the denominator stated rather than implied.
+    """
+    causes = attrition_causes(cases, min_cos=min_cos)
+    total = len(cases)
+    lines = [f"ATTRITION. Denominator: the {total} rows of the run's "
+             f"{POSED_PAIRS_PATH.name} case index"
+             + (f", of {posed} cases posed" if posed is not None and posed != total
+                else "")
+             + ". Grouped by cause, because an anchor the instrument does not "
+               "hold and a backend error are both 'no record' and mean opposite "
+               "things."]
+    if min_cos is not None:
+        lines.append(f"  abstention threshold {min_cos:.6f}; a near miss is "
+                     f"within {NEAR_MISS_BAND} of it")
+    for cause, n in causes.items():
+        lines.append(f"  {cause:<40}{n}")
+    return "\n".join(lines)
 
 
 def self_check() -> list[str]:
