@@ -17,6 +17,7 @@ import pytest
 from benchmark import tiered_score
 from benchmark.tiered_score import (
     MATRIX,
+    Anchor,
     SCOREABLE_CELLS,
     TIERS,
     Cell,
@@ -25,6 +26,7 @@ from benchmark.tiered_score import (
     UnclassifiablePaper,
     built_dictionary_hash,
     load_handoff,
+    anchor_scores,
     main,
     self_check,
     side_state,
@@ -32,6 +34,8 @@ from benchmark.tiered_score import (
     tiers_of,
 )
 from env.tools import resolve_variable
+from generate.funnel import load_constructs
+from pipeline.pose import construct_index
 
 
 def test_the_declared_matrix_is_consistent():
@@ -277,3 +281,86 @@ def test_a_shape_the_rule_does_not_place_raises_rather_than_being_binned():
                       "modality": "measured", "confident": True}]}
     with pytest.raises(UnclassifiablePaper, match="not placed by the tier rule"):
         tier_of(both_modality)
+
+
+# --- item 6: anchor resolution --------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def construct_of():
+    # The inventory names variable keys and a run resolves to constructs, so
+    # the comparison needs the build's own key -> construct map.
+    try:
+        C, _ = load_constructs()
+    except FileNotFoundError:
+        pytest.skip("build/dictionary.json is withheld from the public tree")
+    idx = construct_index(C)
+    return lambda key: idx[key].construct_key if key in idx else None
+
+
+def _case(case_id: str, exposure: str | None, outcome: str | None) -> dict:
+    def side(ck: str | None) -> dict:
+        return {"term": "synthetic term", "abstained": ck is None,
+                "best_cos": 0.9 if ck else 0.1,
+                "nearest_key": ck or "m9:Q0", "construct_key": ck}
+    return {"case_id": case_id, "state": "emitted", "artefact": "a.json",
+            "note": "", "exposure": side(exposure), "outcome": side(outcome)}
+
+
+def test_a_side_that_lands_on_its_own_key_scores_a_hit(construct_of):
+    fa = next(p for p in PAPERS if p["paper"] == "fA")
+    e_key = fa["exposures"][0]["key"]
+    o_key = fa["outcomes"][0]["key"]
+    case = _case("f001", construct_of(e_key), construct_of(o_key))
+    (score,) = anchor_scores([case], {"f001": fa}, construct_of)
+    assert (score.exposure, score.outcome) == (Anchor.KEY, Anchor.KEY)
+    assert score.hits == 2 and score.scoreable == 2
+
+
+def test_a_side_that_lands_elsewhere_is_not_a_hit_and_is_not_an_abstention(
+        construct_of):
+    fa = next(p for p in PAPERS if p["paper"] == "fA")
+    case = _case("f001", construct_of("m1:Q5.4"), construct_of(fa["outcomes"][0]["key"]))
+    (score,) = anchor_scores([case], {"f001": fa}, construct_of)
+    assert score.exposure is Anchor.ELSEWHERE
+    assert score.hits == 1 and score.scoreable == 2
+
+
+def test_an_abstention_is_its_own_verdict(construct_of):
+    fa = next(p for p in PAPERS if p["paper"] == "fA")
+    case = _case("f001", None, construct_of(fa["outcomes"][0]["key"]))
+    (score,) = anchor_scores([case], {"f001": fa}, construct_of)
+    assert score.exposure is Anchor.ABSTAINED
+    assert score.hits == 1
+
+
+def test_a_modality_or_absent_side_is_not_scored_here(construct_of):
+    # The matrix gives anchor resolution one side in tier C and nothing in D:
+    # a side with no present key has no key to resolve to, and scoring it here
+    # would double-count what items 7 and 8 score.
+    fb = next(p for p in PAPERS if p["paper"] == "fB")
+    fd = next(p for p in PAPERS if p["paper"] == "fD")
+    (b,) = anchor_scores([_case("f002", construct_of("m2:Q9.69"), "m2:Q5.8")],
+                         {"f002": fb}, construct_of)
+    assert b.outcome is Anchor.NOT_SCOREABLE and b.scoreable == 1
+    (d,) = anchor_scores([_case("f010", None, None)], {"f010": fd}, construct_of)
+    assert (d.exposure, d.outcome) == (Anchor.NOT_SCOREABLE,) * 2
+    assert d.scoreable == 0
+
+
+def test_a_case_with_no_paper_is_dropped_rather_than_scored_against_nothing(
+        construct_of):
+    assert anchor_scores([_case("f999", "m2:Q5.8", "m2:Q5.8")], {}, construct_of) == []
+
+
+def test_a_variable_key_is_never_compared_with_a_construct_key(construct_of):
+    # The inventory's m2:Q9.105 sits in a construct with a different key on
+    # this build; comparing the two strings directly would score a correct
+    # resolution as a miss.
+    fa = next(p for p in PAPERS if p["paper"] == "fA")
+    key = fa["exposures"][0]["key"]
+    assert construct_of(key) is not None and construct_of(key) != key, (
+        "the fixture must hold a member key, or this test passes vacuously")
+    case = _case("f001", construct_of(key), construct_of(fa["outcomes"][0]["key"]))
+    (score,) = anchor_scores([case], {"f001": fa}, construct_of)
+    assert score.exposure is Anchor.KEY

@@ -7,12 +7,12 @@
       "paper": "fA",
       "intended_tier": "A",
       "intended_tier_bare_status": "A",
-      "notes": "both anchors present and confident; one covariate not confident",
+      "notes": "both anchors present and confident; one covariate not confident. The exposure key is a MEMBER key whose construct is m3:Q16.1, so a scorer that compared the inventory's key with a resolved construct key directly would score a correct resolution as a miss.",
       "exposures": [
         {
-          "label": "synthetic exposure A",
+          "label": "synthetic exposure A (a member key, not a construct key)",
           "status": "present",
-          "key": "m2:Q9.105",
+          "key": "m3:Q16.1_2",
           "analogue_key": null,
           "modality": null,
           "confident": true

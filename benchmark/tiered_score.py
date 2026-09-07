@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
 from typing import Any, NamedTuple
@@ -381,6 +382,130 @@ def tiers_of(papers: list[dict[str, Any]],
     """
     return {str(p["paper"]): tier_of(p, require_confident=require_confident)
             for p in papers}
+
+
+
+# --- item 6: anchor resolution --------------------------------------------
+#
+# The inventory names variable keys; the run resolves a term to a CONSTRUCT,
+# so the two are compared at construct level through a key -> construct map
+# the caller supplies. Comparing a variable key with a construct key would
+# score every case as a miss.
+
+
+class Anchor(Enum):
+    """What became of one side's anchor.
+
+    Attributes:
+        KEY: Resolved to the construct holding the inventory's own key.
+        ELSEWHERE: Resolved, but to another construct.
+        ABSTAINED: Nothing cleared the threshold, so no construct was chosen.
+        NOT_SCOREABLE: The side is not PRESENT in the inventory, so there is
+            no key to resolve to. Modality sides are item 8's and absent sides
+            are item 7's; scoring them here would double-count them.
+    """
+
+    KEY = "resolved_to_key"
+    ELSEWHERE = "resolved_elsewhere"
+    ABSTAINED = "abstained"
+    NOT_SCOREABLE = "not_scoreable"
+
+
+#: A key to the construct that holds it, or None when the build has neither.
+ConstructOf = Callable[[str], str | None]
+
+
+def target_constructs(rows: list[dict[str, Any]], construct_of: ConstructOf, *,
+                      key_field: str = "key",
+                      status: str = "present") -> frozenset[str]:
+    """The constructs a side's confident rows point at.
+
+    Args:
+        rows: The side's inventory rows.
+        construct_of: Key to construct.
+        key_field: `key` for a present row, `analogue_key` for a modality row.
+        status: The row status to read.
+
+    Returns:
+        The acceptable constructs, empty when the side has no such row.
+    """
+    keys = [r[key_field] for r in rows
+            if r.get("status") == status and r.get(key_field) is not None
+            and r.get("confident") is True]
+    return frozenset(c for c in (construct_of(k) for k in keys) if c is not None)
+
+
+def anchor_verdict(side: dict[str, Any], rows: list[dict[str, Any]],
+                   construct_of: ConstructOf) -> Anchor:
+    """Score one side's anchor resolution against the inventory.
+
+    Args:
+        side: The case index's `exposure` or `outcome` block, carrying
+            `construct_key` and `abstained`.
+        rows: That side's inventory rows.
+        construct_of: Key to construct.
+
+    Returns:
+        The verdict.
+    """
+    if side_state(rows) is not SideState.PRESENT:
+        return Anchor.NOT_SCOREABLE
+    got = side.get("construct_key")
+    if got is None or side.get("abstained"):
+        return Anchor.ABSTAINED
+    return (Anchor.KEY if got in target_constructs(rows, construct_of)
+            else Anchor.ELSEWHERE)
+
+
+class AnchorScore(NamedTuple):
+    """One case's anchor verdicts.
+
+    Attributes:
+        case_id: The opaque case id.
+        exposure: The exposure side's verdict.
+        outcome: The outcome side's verdict.
+    """
+
+    case_id: str
+    exposure: Anchor
+    outcome: Anchor
+
+    @property
+    def scoreable(self) -> int:
+        """How many of the two sides this component could score at all."""
+        return sum(1 for v in (self.exposure, self.outcome)
+                   if v is not Anchor.NOT_SCOREABLE)
+
+    @property
+    def hits(self) -> int:
+        """How many sides landed on the inventory's own key."""
+        return sum(1 for v in (self.exposure, self.outcome) if v is Anchor.KEY)
+
+
+def anchor_scores(cases: list[dict[str, Any]], paper_of: dict[str, dict[str, Any]],
+                  construct_of: ConstructOf) -> list[AnchorScore]:
+    """Score anchor resolution for every case that has a paper.
+
+    Args:
+        cases: Case index rows, from `pipeline.pose_terms.read_case_index`.
+        paper_of: Case id to its inventory paper. In the scoring clone this
+            join runs through `inventory/case_map.json`; here it is the fake
+            inventory's own pairs.
+        construct_of: Key to construct.
+
+    Returns:
+        One row per case present in `paper_of`, in case order.
+    """
+    out: list[AnchorScore] = []
+    for case in cases:
+        paper = paper_of.get(str(case["case_id"]))
+        if paper is None:
+            continue
+        out.append(AnchorScore(
+            str(case["case_id"]),
+            anchor_verdict(case["exposure"], paper["exposures"], construct_of),
+            anchor_verdict(case["outcome"], paper["outcomes"], construct_of)))
+    return out
 
 
 def self_check() -> list[str]:
