@@ -1596,6 +1596,10 @@ def render_report(reports: list[CaseReport], *, handoff: Handoff, inventory: str
 #: Stated rather than tuned; the band is printed with the count so the reader
 #: can see what it cost.
 NEAR_MISS_BAND = 0.05
+#: The near-miss row counts SIDES, while every other row counts cases. Named
+#: so, because a count whose unit differs from the rows around it is the
+#: easiest number in a report to misread.
+NEAR_MISS_ROW = "  near miss (abstaining SIDES, not cases)"
 
 
 def attrition_causes(cases: list[dict[str, Any]],
@@ -1628,8 +1632,7 @@ def attrition_causes(cases: list[dict[str, Any]],
             for block, missing in ((case["exposure"], e_out),
                                    (case["outcome"], o_out)):
                 if missing and min_cos - float(block["best_cos"]) <= NEAR_MISS_BAND:
-                    out["  of which a near miss"] = out.get(
-                        "  of which a near miss", 0) + 1
+                    out[NEAR_MISS_ROW] = out.get(NEAR_MISS_ROW, 0) + 1
     return dict(sorted(out.items()))
 
 
@@ -1648,8 +1651,8 @@ def render_attrition(cases: list[dict[str, Any]], *, min_cos: float | None = Non
     """
     causes = attrition_causes(cases, min_cos=min_cos)
     total = len(cases)
-    lines = [f"ATTRITION. Denominator: the {total} rows of the run's "
-             f"{POSED_PAIRS_PATH.name} case index"
+    lines = [f"ATTRITION. Denominator: the {total} rows of the run's case "
+             f"index, one per posed case"
              + (f", of {posed} cases posed" if posed is not None and posed != total
                 else "")
              + ". Grouped by cause, because an anchor the instrument does not "
@@ -1659,7 +1662,7 @@ def render_attrition(cases: list[dict[str, Any]], *, min_cos: float | None = Non
         lines.append(f"  abstention threshold {min_cos:.6f}; a near miss is "
                      f"within {NEAR_MISS_BAND} of it")
     for cause, n in causes.items():
-        lines.append(f"  {cause:<40}{n}")
+        lines.append(f"  {cause:<52}{n}")
     return "\n".join(lines)
 
 
@@ -1777,9 +1780,15 @@ def main(argv: list[str] | None = None) -> int:
                         help="inventory/case_map.json, the case id -> paper join. "
                              "Scoring clone only; it may never be in a generation "
                              "clone, so without it the papers' own pairs are used")
+    parser.add_argument("--attrition", type=Path,
+                        help="a tiered run directory: report where its cases went "
+                             "and write attrition.json beside them. Needs no "
+                             "inventory, so it runs in the generation clone")
     parser.add_argument("--min-cos", type=float,
                         help="the run's abstention threshold, for the near-miss split")
     args = parser.parse_args(argv)
+    if args.attrition:
+        return _attrition_main(args)
     if args.run or args.inventory:
         if not (args.run and args.inventory):
             parser.error("--run and --inventory go together")
@@ -1796,6 +1805,35 @@ def main(argv: list[str] | None = None) -> int:
         print(f"handoff pinned: dictionary {h.dictionary_version_hash}, "
               f"schema {h.schema_version}, tier_rule {h.tier_rule}")
     return 1 if problems else 0
+
+
+#: Written beside a run's artefacts by `--attrition`.
+ATTRITION_NAME = "attrition.json"
+
+
+def _attrition_main(args: argparse.Namespace) -> int:
+    """Report where a run's cases went, without needing an inventory.
+
+    Runs in the generation clone, where the inventory may not be: attrition is
+    a fact about the RUN, and the run knows it.
+
+    Args:
+        args: The parsed command line.
+
+    Returns:
+        A process exit status.
+    """
+    from pipeline.pose_terms import read_case_index
+
+    cases = read_case_index(args.attrition)
+    text = render_attrition(cases, min_cos=args.min_cos)
+    print(text)
+    out = {"run_id": args.attrition.name, "cases": len(cases),
+           "min_cos": args.min_cos, "near_miss_band": NEAR_MISS_BAND,
+           "causes": attrition_causes(cases, min_cos=args.min_cos)}
+    (args.attrition / ATTRITION_NAME).write_text(json.dumps(out, indent=2) + "\n")
+    print(f"\nwritten: {args.attrition / ATTRITION_NAME}")
+    return 0
 
 
 def _report_main(args: argparse.Namespace) -> int:

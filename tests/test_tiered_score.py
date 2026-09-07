@@ -885,7 +885,9 @@ def test_a_near_miss_is_counted_against_a_stated_band():
     rows = [_index_row("c1", "unresolved_anchor", 0.728, 0.9, None, "m2:Q5.8"),
             _index_row("c2", "unresolved_anchor", 0.31, 0.9, None, "m2:Q5.8")]
     causes = attrition_causes(rows, min_cos=tau)
-    assert causes["  of which a near miss"] == 1
+    assert causes[tiered_score.NEAR_MISS_ROW] == 1
+    # The near-miss row counts SIDES; every other row counts cases.
+    assert "SIDES" in tiered_score.NEAR_MISS_ROW
     out = render_attrition(rows, min_cos=tau)
     assert "0.729476" in out and str(NEAR_MISS_BAND) in out
 
