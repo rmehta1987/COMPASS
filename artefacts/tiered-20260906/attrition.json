@@ -1,0 +1,14 @@
+{
+  "run_id": "tiered-20260906",
+  "cases": 95,
+  "min_cos": 0.729476,
+  "near_miss_band": 0.05,
+  "causes": {
+    "  near miss (abstaining SIDES, not cases)": 18,
+    "emitted": 9,
+    "refused": 1,
+    "unresolved_anchor: both sides": 38,
+    "unresolved_anchor: exposure only": 37,
+    "unresolved_anchor: outcome only": 10
+  }
+}

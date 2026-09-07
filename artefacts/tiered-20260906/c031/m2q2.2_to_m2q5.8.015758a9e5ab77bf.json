@@ -1,0 +1,767 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q2.2_to_m2q5.8",
+    "record_hash": "015758a9e5ab77bf",
+    "pair_id": "m2:Q2.2 -> m2:Q5.8",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q2.2_to_m2q5.8",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does type and coverage of health insurance affect the probability of receiving a hypertension diagnosis?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q2.2",
+        "quoted_wording": "sha256:e83a2c35edfd30f2ea3f17c0b6baf7cdf5f2a7d34ed56f0fa0780a6749a21bba"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.8",
+        "quoted_wording": "sha256:5522bc79a69cdb0f9bcf39abca278fe5e82c1e226c81b522a7fd9afdd097716f"
+      },
+      "expected_direction": {
+        "direction": "no_difference",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "The study would falsify the hypothesis of no association if it detects a risk difference in hypertension diagnosis probability of 9.0 percentage points or greater (or greater in absolute magnitude) between insurance coverage groups.",
+      "falsifier_threshold": {
+        "value": 9.0,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Logistic regression with binary outcome (hypertension diagnosis: yes/no) regressed on insurance coverage category, adjusted for confounders listed above",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area-level; cluster-robust standard errors required by design convention; design effect not yet computed"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_3",
+            "quoted_wording": "sha256:ad7c805a862e7b7a8108d049792b0ac9c0565ecf18fb6bd6180854a61aed5e2c"
+          },
+          "mechanism": "Age is a strong independent predictor of hypertension diagnosis (prevalence increases with age) and is associated with insurance type availability and enrollment patterns (age-based eligibility and costs).",
+          "justification": "Age is independently associated with both hypertension prevalence and insurance eligibility patterns.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Biological sex is associated with hypertension risk (male sex has higher prevalence at younger ages) and may be associated with insurance patterns through occupational or family composition pathways.",
+          "justification": "Sex is independently associated with both hypertension risk and insurance patterns.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.4",
+            "quoted_wording": "sha256:f3dbc7a30fdb98096b1da4d67cd54ba49a56884dd3ad168d59ad41d703fb4884"
+          },
+          "mechanism": "Gender identity may be associated with socioeconomic factors and healthcare utilization patterns that affect both insurance type and healthcare access for hypertension screening.",
+          "justification": "Gender identity is associated with socioeconomic factors and healthcare utilization patterns affecting insurance and screening access.",
+          "role": "precision",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race/ethnicity is associated with hypertension prevalence (substantial health disparities documented) and with insurance coverage patterns (differential enrollment rates and coverage types by race).",
+          "justification": "Race/ethnicity is independently associated with both hypertension prevalence and insurance coverage patterns.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Hispanic/Latino ethnicity is independently associated with insurance coverage (differential access to employer-based coverage) and with hypertension diagnosis patterns.",
+          "justification": "Hispanic/Latino ethnicity is independently associated with both insurance coverage and hypertension diagnosis patterns.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education is a fundamental component of socioeconomic status, associated with both insurance type (higher education predicts better coverage) and hypertension risk (through health literacy, occupational exposure, and behavioral pathways).",
+          "justification": "Education is a fundamental SES indicator associated with both insurance type and hypertension risk.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:79590ca38c808b483369e51527ceca6aca100f2472a404c51b46d36b4411c743"
+          },
+          "mechanism": "Income is the primary determinant of insurance type and affordability; it is also a fundamental social determinant of hypertension risk through access to healthy food, safe neighborhoods, stress, and healthcare utilization.",
+          "justification": "Income is the primary determinant of insurance type and a fundamental social determinant of hypertension risk.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.10",
+            "quoted_wording": "sha256:b188718a8d8144f5fe4cf3c35a60b74088dcd97a8cf89ca2f1fec01a9af8139b"
+          },
+          "mechanism": "Weight is a proxy for overall health status and BMI, which is a direct risk factor for hypertension.",
+          "justification": "Weight/BMI is a direct risk factor for hypertension and a measure of health status.",
+          "role": "precision",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.11",
+            "quoted_wording": "sha256:78f1b457e03efe3e110fcde99b6c94dcc7b83e3de0d6d9f1a4c6c56cb711ff57"
+          },
+          "mechanism": "This is a downstream consequence of hypertension diagnosis and represents healthcare intervention after the outcome of interest.",
+          "justification": "Adjustment for treatment status would condition on a post-exposure outcome and introduce collider bias. Those diagnosed are more likely to be treated; excluding those not treated would distort the relationship between insurance and diagnosis.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.10",
+            "quoted_wording": "sha256:ede582d2a1b0bf022541d3c9f9b46efad9e128ef64a20c625a7666a085d4f63a"
+          },
+          "mechanism": "Prior prescription for hypertension medicine is a direct consequence of prior diagnosis and represents healthcare intervention after the outcome of interest.",
+          "justification": "Similar to Q5.11, prior prescription is a direct consequence of prior diagnosis. Adjustment would introduce bias.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.7",
+            "quoted_wording": "sha256:beaee32983289cb8e61e6ee351b54ebd24dc8e3f44fb6939a72f2ba1fd67bc1b"
+          },
+          "mechanism": "The number of household members living with the participant is not known to be causally related to either insurance type or hypertension diagnosis.",
+          "justification": "While household composition affects income and family-based insurance eligibility, the current count of coresidents does not directly determine insurance status or hypertension prevalence independent of other SES factors.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q4.12",
+            "quoted_wording": "sha256:93c587944cd9e6e9a8db394f91a42404fc0918b4e43d7c311a37bc807a525ca5"
+          },
+          "mechanism": "Being turned away from medical care due to financial or insurance reasons could represent a confounder (systemic barriers to healthcare access affect both insurance type and hypertension detection), a mediator (insurance type causes healthcare access barriers which prevent diagnosis), or a descendant of exposure (poor insurance type causes barriers to care).",
+          "justification": "In a cross-sectional design, the temporal order of 'financial/insurance barriers' relative to 'insurance type' cannot be established. The question asks about barriers in 'the past 12 months' but does not indicate whether those barriers preceded or followed the current insurance status.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "Insurance coverage categories, derived from responses to m2:Q2.2 (check-all-that-apply); specific contrast specification pending coded response patterns",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 25.68
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 14.82
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.12
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.69
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.57
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.3,
+          "value": 8.12,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.3; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "externally_posed",
+        "screened_from": 0,
+        "prior_work": "COMPASS (Community Area-level Longitudinal Prospective Study) is a community-based cohort study conducted in Chicago with stratified sampling by community area.",
+        "why_this_cohort": "COMPASS collects data on health outcomes and social determinants of health at the community area level in Chicago, providing variables needed to examine how insurance coverage (social determinant) relates to hypertension diagnosis."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "3b5810acdcf27824",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 0,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q2.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.8\"}) -> unique",
+          "list_derivations({}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years old\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"gender sex male female\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"what is your age current age now\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity Latino Hispanic Black White\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"income money earn household\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"education school level grade completed\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"blood pressure hypertension treatment medication\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"doctor visit healthcare access medical care\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"smoking cigarette tobacco current smoker\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"weight BMI body mass index obese obesity\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"exercise physical activity vigorous moderate\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q3.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q4.12\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q2.7\"}) -> unique",
+          "search_variables({\"limit\": 15, \"phrase\": \"how old you participant respondent age in years\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"birth born date year born when were you born\"}) -> low_confidence",
+          "browse_variables({\"module\": \"1\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q2.15_3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.7\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.7\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q2.2\", \"m2:Q5.8\", \"m1:Q2.15_3\", \"m1:Q3.3\", \"m1:Q3.4\", \"m1:Q3.10\", \"m1:Q3.8\", \"m1:Q3.11\", \"m1:Q5.4\", \"m1:Q2.10\", \"m2:Q4.12\", \"m2:Q5.11\", \"m2:Q5.10\") -> ok",
+          "check_access({\"keys\": [\"m2:Q2.2\", \"m2:Q5.8\", \"m1:Q2.15_3\", \"m1:Q3.3\", \"m1:Q3.4\", \"m1:Q3.10\", \"m1:Q3.8\", \"m1:Q3.11\", \"m1:Q5.4\", \"m1:Q2.10\", \"m2:Q4.12\", \"m2:Q5.11\", \"m2:Q5.10\") -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.3}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:1416a12c8ca72521db70c5b02bf6428e435886315eaffea3a578cd25e1a6b379",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:1416a12c8ca72521db70c5b02bf6428e435886315eaffea3a578cd25e1a6b379",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.933209,
+        "margin": 0.20373299999999994,
+        "margin_12": 0.224188,
+        "abstained": false,
+        "nearest_key": "m2:Q2.2",
+        "hit": {
+          "key": "m2:Q2.2",
+          "construct_key": "m2:Q2.2",
+          "dict_construct_key": "m2:Q2.2",
+          "module": "2",
+          "target_id": 72,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q2.2"
+          ],
+          "stratum": "insurance_access",
+          "unmeasured_stratum": true
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:54859c0b47368445f04b396a67b96ed6934dcd16cef08c3db16e3357147c596b",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:54859c0b47368445f04b396a67b96ed6934dcd16cef08c3db16e3357147c596b",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.981144,
+        "margin": 0.251668,
+        "margin_12": 0.110645,
+        "abstained": false,
+        "nearest_key": "m2:Q5.8",
+        "hit": {
+          "key": "m2:Q5.8",
+          "construct_key": "m2:Q5.8",
+          "dict_construct_key": "m2:Q5.8",
+          "module": "2",
+          "target_id": 157,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.8"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q2.2",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:1416a12c8ca72521db70c5b02bf6428e435886315eaffea3a578cd25e1a6b379",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:1416a12c8ca72521db70c5b02bf6428e435886315eaffea3a578cd25e1a6b379",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.933209,
+          "margin": 0.20373299999999994,
+          "margin_12": 0.224188,
+          "abstained": false,
+          "nearest_key": "m2:Q2.2",
+          "hit": {
+            "key": "m2:Q2.2",
+            "construct_key": "m2:Q2.2",
+            "dict_construct_key": "m2:Q2.2",
+            "module": "2",
+            "target_id": 72,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q2.2"
+            ],
+            "stratum": "insurance_access",
+            "unmeasured_stratum": true
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.8",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:54859c0b47368445f04b396a67b96ed6934dcd16cef08c3db16e3357147c596b",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:54859c0b47368445f04b396a67b96ed6934dcd16cef08c3db16e3357147c596b",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.981144,
+          "margin": 0.251668,
+          "margin_12": 0.110645,
+          "abstained": false,
+          "nearest_key": "m2:Q5.8",
+          "hit": {
+            "key": "m2:Q5.8",
+            "construct_key": "m2:Q5.8",
+            "dict_construct_key": "m2:Q5.8",
+            "module": "2",
+            "target_id": 157,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.8"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q2.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.11",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.10",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.7",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q4.12",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q2.2",
+    "outcome": "m2:Q5.8",
+    "expected_direction": "no_difference",
+    "nodes": [
+      {
+        "key": "m2:Q2.2",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.8",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "precision",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q2.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "precision",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q5.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m1:Q5.7",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q4.12",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q2.2",
+        "target": "m2:Q5.8",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q2.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q5.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q2.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.4",
+        "target": "m2:Q5.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q2.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q2.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q5.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q2.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q5.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q2.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q5.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.10",
+        "target": "m2:Q5.8",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q5.11",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.8",
+        "target": "m2:Q5.10",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q2.15_3",
+      "m1:Q3.3",
+      "m1:Q3.4",
+      "m1:Q3.10",
+      "m1:Q3.8",
+      "m1:Q3.11",
+      "m1:Q5.4",
+      "m1:Q2.10"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q4.12 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q4.12",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

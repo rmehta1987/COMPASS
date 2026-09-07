@@ -1,0 +1,1 @@
+{"run_id":"c075","seq":0,"pair_id":"m1:Q3.10 -> m2:Q9.117","exposure_key":"m1:Q3.10","outcome_key":"m2:Q9.117","exposure_stratum":"demographics","outcome_stratum":"healthcare_util","estimability":"blocked_no_metadata","outcome":"refused","protocol_id":null,"record_hash":null,"artefact":null,"note":"RefusalReason.free_text_anchor","at":"2026-09-07T04:13:22+00:00"}

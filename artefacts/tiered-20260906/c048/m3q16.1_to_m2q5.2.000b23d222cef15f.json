@@ -1,0 +1,638 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m3q16.1_to_m2q5.2",
+    "record_hash": "000b23d222cef15f",
+    "pair_id": "m3:Q16.1 -> m2:Q5.2",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m3q16.1_to_m2q5.2",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does neighborhood social cohesion protect against asthma diagnosis?",
+      "exposure": {
+        "kind": "derivation",
+        "derivation_id": "social_cohesion_scale",
+        "unit": "mean Likert score, 5 items",
+        "component_keys": [
+          "m3:Q16.1_1",
+          "m3:Q16.1_2",
+          "m3:Q16.1_3",
+          "m3:Q16.1_4",
+          "m3:Q16.1_5"
+        ]
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.2",
+        "quoted_wording": "sha256:e672fe3877afaccf4fdb8494eb3a52b9b49409338fc5e962bf41e697ec74fbfb"
+      },
+      "expected_direction": {
+        "direction": "decrease",
+        "magnitude": "5 percentage points",
+        "magnitude_source": "analyst-specified threshold for falsification; protective effect hypothesis comparing highest versus lowest social cohesion category"
+      },
+      "falsifier": "The null hypothesis is that neighborhood social cohesion has no association with asthma diagnosis. The alternative hypothesis is that higher social cohesion is associated with lower asthma prevalence (a protective effect), and the effect is at least 5 percentage points in risk difference for the comparison of highest versus lowest social cohesion category.",
+      "falsifier_threshold": {
+        "value": 5.0,
+        "unit": "percentage points",
+        "comparator": "<="
+      },
+      "model_spec": {
+        "form": "Logistic regression with asthma diagnosis as binary outcome, social_cohesion_scale as primary predictor, adjusted for pre-exposure demographic and socioeconomic confounders",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area (cluster-robust standard errors)"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_3",
+            "quoted_wording": "sha256:ad7c805a862e7b7a8108d049792b0ac9c0565ecf18fb6bd6180854a61aed5e2c"
+          },
+          "mechanism": "Age is a fixed baseline characteristic influencing both social perception and asthma prevalence through developmental and immunologic pathways.",
+          "justification": "Age is measured at baseline and predates both exposure and outcome. Age independently predicts asthma diagnosis prevalence and correlates with social cohesion perceptions through generational factors. Adjustment reduces confounding from age differences.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q1.8",
+            "quoted_wording": "sha256:dd506fb26782a15e8b85ef427d7c49a15e1f410cad8f95d65022706f7d14555f"
+          },
+          "mechanism": "Sex classification is a fixed characteristic affecting both social participation patterns and asthma risk through biological and social pathways.",
+          "justification": "Sex is recorded at baseline and does not lie on the causal pathway from social cohesion to asthma. Sex differences exist in both social cohesion perception and asthma prevalence, particularly in pediatric populations.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race functions as a proxy for structural social position, accumulated discrimination exposure, and differential access to health resources, each independently associated with both social cohesion perception and asthma prevalence.",
+          "justification": "Race measured at baseline captures systemic dimensions of social position. Racial groups differ in both neighborhood-level social cohesion measures and asthma prevalence due to historical and contemporary factors including healthcare access, environmental exposures, and chronic stress.",
+          "role": "proxy",
+          "proxy_for": "Structural social position, cumulative discrimination exposure, and differential access to health resources across the life course",
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Ethnicity captures cultural participation patterns, immigration-related factors, and social network structure, each associated with both collective efficacy perception and asthma risk.",
+          "justification": "Ethnicity measured at baseline captures cultural and social participation factors distinct from racial categorization. Hispanic/Latino identity is associated with distinct patterns in neighborhood social cohesion measures and asthma prevalence.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:79590ca38c808b483369e51527ceca6aca100f2472a404c51b46d36b4411c743"
+          },
+          "mechanism": "Household income operates as a key determinant of neighborhood selection, access to preventive healthcare, environmental exposures, and chronic stress levels, creating multiple causal pathways linking income to both social cohesion perception and asthma risk.",
+          "justification": "Household income measured at baseline is a central marker of socioeconomic position influencing both neighborhood choice and health outcomes. Higher income enables residence in neighborhoods with higher social cohesion and better environmental conditions; income also directly influences access to preventive care. Adjustment reduces confounding from socioeconomic differences.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q5.3",
+            "quoted_wording": "sha256:0b2b70c540be204127d82634d76757440e284c58b45962c566401bdf3ac84978"
+          },
+          "mechanism": "Age at diagnosis is a direct feature of the asthma diagnosis event itself, providing information only when the outcome occurs.",
+          "justification": "This variable measures age at asthma diagnosis, which is logically and temporally downstream of the outcome (asthma diagnosis). It is only defined for participants with asthma and represents an outcome-conditional feature, not a pre-exposure confounder. Including outcome-descendant variables induces conditioning-on-outcome bias and collides the effect estimate.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q11.5",
+            "quoted_wording": "sha256:1988764166598130cb66e276c44712faf10b6f297c4d0f6486ef35e219b600cb"
+          },
+          "mechanism": "Allergic/atopic disease could pre-exist both exposure and outcome and independently increase asthma risk (confounder), lie on the causal pathway from social cohesion to asthma through stress reduction (mediator), or be confounded by shared genetic or neighborhood factors.",
+          "justification": "The temporal order of allergy history relative to social cohesion exposure and asthma outcome cannot be established from cross-sectional questionnaire data where all variables are measured at a single time point. Allergic conditions could occupy multiple causal positions. A cross-sectional design cannot resolve whether a comorbid condition pre-dates, mediates, or confounds the association of interest.",
+          "role": "confounder_or_mediator",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [
+        {
+          "construct_sought": "Mental health (anxiety, depression, chronic stress)",
+          "search_phrases": [
+            "stress anxiety depression mental health emotional"
+          ],
+          "why_rejected": "Search returned low-confidence results; no clear mapping to COMPASS items without expert confirmation was achieved.",
+          "exposes_the_estimate_to": "Confounding or mediation bias if mental health is influenced by neighborhood social cohesion and independently affects asthma risk through immunologic or healthcare-seeking pathways."
+        },
+        {
+          "construct_sought": "Healthcare access and insurance coverage",
+          "search_phrases": [
+            "healthcare access insurance provider coverage"
+          ],
+          "why_rejected": "Searches yielded no results or low-confidence matches; the construct does not appear to be directly measured in available COMPASS modules.",
+          "exposes_the_estimate_to": "Detection bias if healthcare access differs by neighborhood social cohesion level and affects asthma diagnosis likelihood through differential access to care or provider referral networks."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "Highest versus lowest category of continuous social_cohesion_scale; equivalently, one-unit increase in mean Likert score",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 16.81
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 9.7
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 5.32
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 3.07
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 1.68
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.1,
+          "value": 1.68,
+          "unit": "percentage points",
+          "at_n": 10000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.1; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": "social_cohesion_scale",
+      "selection_rationale": {
+        "selection_mode": "externally_posed",
+        "screened_from": 0,
+        "prior_work": "COMPASS cohort study based on Sampson social cohesion and collective efficacy scale framework. Established measurement of neighborhood-level social constructs in epidemiologic literature.",
+        "why_this_cohort": "COMPASS provides rich neighborhood social context measures and health outcome data for Chicago residents. The m3 social cohesion derivation enables investigation of neighborhood collective efficacy's protective association with asthma diagnosis, with demographic and socioeconomic confounders measured at baseline."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "9bd0544a6bc3f777",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 3,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q5.2\"}) -> unique",
+          "list_derivations({}) -> ok",
+          "resolve_variable({\"key\": \"m3:Q16.1_1\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q16.1_2\"}) -> unique",
+          "get_derivation({\"derivation_id\": \"social_cohesion_scale\"}) -> ok",
+          "get_derivation({\"derivation_id\": \"met_hours_week\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"age years old birth\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"sex gender male female\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"race ethnicity Hispanic Black White\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"income education employment\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"participant respondent age years\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"smoking cigarette tobacco\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"allergy allergic atopy eczema\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"neighborhood pollution air quality environmental\"}) -> low_confidence",
+          "browse_variables({\"limit\": \"20\", \"module\": \"1\", \"section\": \"demographics\"}) -> error",
+          "resolve_variable({\"key\": \"m2:Q11.5\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "browse_variables({\"module\": \"1\", \"section\": \"demographics\"}) -> not_found",
+          "search_variables({\"limit\": 5, \"phrase\": \"What is your sex biological sex male female\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"current age born birth year month day\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q1.8\"}) -> unique",
+          "search_variables({\"limit\": 5, \"phrase\": \"How old are you today currently years age\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"race White Black African American Asian Pacific Islander Native American\"}) -> low_confidence",
+          "browse_variables({\"module\": \"1\", \"section\": \"2\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "search_variables({\"limit\": 5, \"phrase\": \"birth date date of birth when were you born\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m1:Q2.15_3\"}) -> unique",
+          "search_variables({\"limit\": 5, \"phrase\": \"stress anxiety depression mental health emotional\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"asthma medication treatment inhaler controller\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"physical activity exercise fitness\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"asthma told diagnosed age when\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"how many times emergency room hospital asthma\"}) -> ok",
+          "resolve_variable({\"key\": \"m2:Q5.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.40\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "estimate_n({\"keys\": [\"m3:Q16.1_1\", \"m3:Q16.1_2\", \"m3:Q16.1_3\", \"m3:Q16.1_4\", \"m3:Q16.1_5\", \"m2:Q5.2\", \"m1:Q2.15_3\", \"m2:Q1.8\", \"m1:Q3.10\", \"m1:Q3.8\", \"m1:Q5.4\", \"m2:Q11.5\") -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.1}) -> ok",
+          "check_access({\"keys\": [\"m3:Q16.1_1\", \"m3:Q16.1_2\", \"m3:Q16.1_3\", \"m3:Q16.1_4\", \"m3:Q16.1_5\", \"m2:Q5.2\", \"m1:Q2.15_3\", \"m2:Q1.8\", \"m1:Q3.10\", \"m1:Q3.8\", \"m1:Q5.4\", \"m2:Q11.5\") -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:415c92f7a3fe323b6b7c5ca5259e9cf8a72e58be09babeb94d634fd2298569c6",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:415c92f7a3fe323b6b7c5ca5259e9cf8a72e58be09babeb94d634fd2298569c6",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.883932,
+        "margin": 0.15445600000000004,
+        "margin_12": 0.127756,
+        "abstained": false,
+        "nearest_key": "m3:Q16.1_2",
+        "hit": {
+          "key": "m3:Q16.1_2",
+          "construct_key": "m3:Q16.1",
+          "dict_construct_key": "m3:Q16.1",
+          "module": "3",
+          "target_id": 1341,
+          "fold_size": 1,
+          "n_siblings": 4,
+          "members": [
+            "m3:Q16.1_2"
+          ],
+          "stratum": "residence_commute",
+          "unmeasured_stratum": false
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:e672fe3877afaccf4fdb8494eb3a52b9b49409338fc5e962bf41e697ec74fbfb",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:e672fe3877afaccf4fdb8494eb3a52b9b49409338fc5e962bf41e697ec74fbfb",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.97811,
+        "margin": 0.24863400000000002,
+        "margin_12": 0.123614,
+        "abstained": false,
+        "nearest_key": "m2:Q5.2",
+        "hit": {
+          "key": "m2:Q5.2",
+          "construct_key": "m2:Q5.2",
+          "dict_construct_key": "m2:Q5.2",
+          "module": "2",
+          "target_id": 151,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.2"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "derivation:social_cohesion_scale",
+        "where": "exposure",
+        "kind": "derivation",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:415c92f7a3fe323b6b7c5ca5259e9cf8a72e58be09babeb94d634fd2298569c6",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:415c92f7a3fe323b6b7c5ca5259e9cf8a72e58be09babeb94d634fd2298569c6",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.883932,
+          "margin": 0.15445600000000004,
+          "margin_12": 0.127756,
+          "abstained": false,
+          "nearest_key": "m3:Q16.1_2",
+          "hit": {
+            "key": "m3:Q16.1_2",
+            "construct_key": "m3:Q16.1",
+            "dict_construct_key": "m3:Q16.1",
+            "module": "3",
+            "target_id": 1341,
+            "fold_size": 1,
+            "n_siblings": 4,
+            "members": [
+              "m3:Q16.1_2"
+            ],
+            "stratum": "residence_commute",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.2",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:e672fe3877afaccf4fdb8494eb3a52b9b49409338fc5e962bf41e697ec74fbfb",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:e672fe3877afaccf4fdb8494eb3a52b9b49409338fc5e962bf41e697ec74fbfb",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.97811,
+          "margin": 0.24863400000000002,
+          "margin_12": 0.123614,
+          "abstained": false,
+          "nearest_key": "m2:Q5.2",
+          "hit": {
+            "key": "m2:Q5.2",
+            "construct_key": "m2:Q5.2",
+            "dict_construct_key": "m2:Q5.2",
+            "module": "2",
+            "target_id": 151,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.2"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q1.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q5.3",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q11.5",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "derivation:social_cohesion_scale",
+    "outcome": "m2:Q5.2",
+    "expected_direction": "decrease",
+    "nodes": [
+      {
+        "key": "derivation:social_cohesion_scale",
+        "kind": "derivation",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.2",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q1.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "proxy",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q5.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q11.5",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder_or_mediator",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "derivation:social_cohesion_scale",
+        "target": "m2:Q5.2",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "derivation:social_cohesion_scale",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q5.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "derivation:social_cohesion_scale",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q1.8",
+        "target": "m2:Q5.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "derivation:social_cohesion_scale",
+        "relation": "proxies"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.2",
+        "relation": "proxies"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "derivation:social_cohesion_scale",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q5.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "derivation:social_cohesion_scale",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q5.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q5.2",
+        "target": "m2:Q5.3",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q2.15_3",
+      "m2:Q1.8",
+      "m1:Q3.10",
+      "m1:Q3.8",
+      "m1:Q5.4"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m2:Q11.5 carries role 'confounder_or_mediator', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m2:Q11.5",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

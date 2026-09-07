@@ -1,0 +1,604 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m2q4.9_to_m2q9.117",
+    "record_hash": "3cb0aca7d7b4deec",
+    "pair_id": "m2:Q4.9 -> m2:Q9.117",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m2q4.9_to_m2q9.117",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does unmet medical need in the past 12 months increase the risk of having a lifetime diagnosis of uterine fibroids?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m2:Q4.9",
+        "quoted_wording": "sha256:b9e7ea971d71e9dd4adc7e1838784ef70b9088e877704a71be28a01217003e81"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q9.117",
+        "quoted_wording": "sha256:ca5c6a7868bd606db7b340f1cbb34a0e25b626e068259b8333026e139de1ddae"
+      },
+      "expected_direction": {
+        "direction": "decrease",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "A risk difference of 8.86 percentage points or larger between those with unmet medical need and those with met medical need. That is, if the proportion diagnosed with uterine fibroids among those with unmet need differs from those with met need by 8.86 percentage points or more, the null hypothesis (no association) would be rejected at the environment-specified significance and power.",
+      "falsifier_threshold": {
+        "value": 8.86,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Logistic regression with unmet medical need as the primary predictor, adjusted for race, ethnicity, education, and household income. The outcome is binary (diagnosed with fibroids: yes/no).",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area level clustering with unknown design effect"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Education is a marker of socioeconomic position and correlates with healthcare access (affects likelihood of unmet need) and overall health outcomes (affects fibroids diagnosis through healthcare-seeking behavior and access to diagnosis).",
+          "justification": "This is a confounder—it influences both the exposure (higher education typically associated with better healthcare access and lower unmet need) and the outcome (education affects healthcare utilization and likelihood of receiving a diagnosis).",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race/ethnicity is associated with healthcare access disparities and variation in prevalence of uterine fibroids across racial groups, independent of actual medical need.",
+          "justification": "Documented racial disparities exist in both healthcare access (affecting unmet need) and in fibroids prevalence and detection rates. Race is not caused by either exposure or outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Hispanic/Latino ethnicity is associated with both healthcare access barriers (affecting unmet need) and distinct patterns of health outcomes including fibroids diagnosis.",
+          "justification": "Ethnic disparities in healthcare access and health outcomes are well-documented. Hispanic/Latino ethnicity is an independent confounder.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:13d3548965635d4117cbd0b28b41f20541d0d0827da994eef2ca27064ff58d60"
+          },
+          "mechanism": "Income directly influences access to healthcare and ability to obtain care when needed (affects unmet need), and also affects access to diagnosis and preventive care (affects outcome likelihood).",
+          "justification": "Household income is a classic confounder in health disparities research—it directly affects both healthcare access and health outcomes.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.104",
+            "quoted_wording": "sha256:e770648a9d0b1b81410fba79beaa830081a58ae6bcab245a1745d353222efe71"
+          },
+          "mechanism": "Hysterectomy is often performed as treatment for fibroids or related conditions. It lies on the causal pathway downstream of the outcome (fibroids diagnosis) or represents a consequence of fibroids-related treatment.",
+          "justification": "Hysterectomy is a descendant of the outcome. It is not a cause of unmet medical need, and including it would block the path from outcome to exposure. Inclusion would bias estimates toward null.",
+          "role": "descendant_of_outcome",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.114",
+            "quoted_wording": "sha256:b53e805b7b97d529a5b03b2b411aad95a64b4c3cc3613de2269cb9647e75ceb8"
+          },
+          "mechanism": "Endometriosis is a separate gynecological condition with overlapping symptoms to fibroids but no direct causal relationship to unmet medical need. While both are gynecological diagnoses that may share some diagnostic pathways, endometriosis is not a cause of the exposure (unmet need).",
+          "justification": "Endometriosis is not a cause of either exposure or outcome in the causal model. It is an independent condition that may be diagnosed concurrently but does not generate unmet medical need or cause fibroids.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q9.119",
+            "quoted_wording": "sha256:027d98f627b87e78253e282ede8e2f921f045af728419450c34bdf5483a29869"
+          },
+          "mechanism": "PCOS is a distinct endocrine disorder unrelated to unmet medical need and not causally related to fibroids diagnosis.",
+          "justification": "PCOS is not a cause of either the exposure (unmet medical need) or the outcome (fibroids). It represents a separate condition that should be excluded to maintain causal focus.",
+          "role": "not_a_cause_of_either",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m2:Q2.2",
+            "quoted_wording": "sha256:e83a2c35edfd30f2ea3f17c0b6baf7cdf5f2a7d34ed56f0fa0780a6749a21bba"
+          },
+          "mechanism": "Health insurance status could be a confounder (independently affects access to care and likelihood of receiving diagnosis) or could lie on the causal pathway from socioeconomic status (income/education) to unmet need to fibroids diagnosis (mediator).",
+          "justification": "Insurance status is causally complex. Higher income and education predict insurance coverage, which predicts access to care and diagnosis. Insurance could thus be on the pathway from SES to unmet need, making it a potential mediator. Alternatively, insurance status could represent an independent barrier to access not fully captured by income. One questionnaire cannot establish temporal order or separate direct from indirect effects. The question asks about current coverage without temporal relationship to the exposure (past 12 months) or outcome (lifetime diagnosis), making causal interpretation uncertain.",
+          "role": "unadjudicated",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2"
+        ],
+        "exposure_contrast": "Unmet medical need (needed care but did not receive it) versus met medical need (received care every time needed)",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 24.26
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 14.01
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 7.67
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 4.43
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.43
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.25,
+          "value": 7.67,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.25; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "externally_posed",
+        "screened_from": 0,
+        "prior_work": "No prior work cited for this exposure-outcome pair",
+        "why_this_cohort": "COMPASS is a Chicago-based cross-sectional survey providing data on health outcomes and healthcare access"
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "1ac16b789252e6a1",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 0,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m2:Q4.9\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.117\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"age years born\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"race ethnicity Hispanic Black White\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"education school highest grade\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"income money household family earnings\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"insurance health coverage healthcare\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"health status excellent fair poor general\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"doctor regular provider visit appointment healthcare\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"insurance coverage health plan medical\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q2.2\"}) -> unique",
+          "search_variables({\"limit\": 10, \"phrase\": \"menstrual period bleeding heavy cramps\"}) -> low_confidence",
+          "search_variables({\"limit\": 10, \"phrase\": \"hysterectomy surgery removed uterus womb\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"endometriosis pelvic pain gynecological\"}) -> low_confidence",
+          "resolve_variable({\"key\": \"m2:Q9.104\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.114\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q9.119\"}) -> unique",
+          "estimate_n({\"keys\": [\"m2:Q4.9\", \"m2:Q9.117\", \"m1:Q3.11\", \"m1:Q3.10\", \"m1:Q3.8\", \"m1:Q5.4\", \"m2:Q2.2\"]}) -> ok",
+          "check_access({\"keys\": [\"m2:Q4.9\", \"m2:Q9.117\", \"m1:Q3.11\", \"m1:Q3.10\", \"m1:Q3.8\", \"m1:Q5.4\", \"m2:Q9.104\", \"m2:Q9.114\", \"m2:Q9.119\", \"m2:Q2.2\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.25}) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "outcome_prevalence_unconfirmed",
+        "design_effect_for_community_area_clustering"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:e1fb4cc680737ad6be123aae45083fe61e33f911997e263c0145e7a321adfb9e",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:e1fb4cc680737ad6be123aae45083fe61e33f911997e263c0145e7a321adfb9e",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.963969,
+        "margin": 0.23449299999999995,
+        "margin_12": 0.241014,
+        "abstained": false,
+        "nearest_key": "m2:Q4.9",
+        "hit": {
+          "key": "m2:Q4.9",
+          "construct_key": "m2:Q4.9",
+          "dict_construct_key": "m2:Q4.9",
+          "module": "2",
+          "target_id": 130,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q4.9"
+          ],
+          "stratum": "insurance_access",
+          "unmeasured_stratum": true
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:6ad41b35ad145fca0f8a4233ef951ea5466879d383114e056956118df4855274",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:6ad41b35ad145fca0f8a4233ef951ea5466879d383114e056956118df4855274",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.976114,
+        "margin": 0.24663800000000002,
+        "margin_12": 0.174732,
+        "abstained": false,
+        "nearest_key": "m2:Q9.117",
+        "hit": {
+          "key": "m2:Q9.117",
+          "construct_key": "m2:Q9.117",
+          "dict_construct_key": "m2:Q9.117",
+          "module": "2",
+          "target_id": 420,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q9.117"
+          ],
+          "stratum": "healthcare_util",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m2:Q4.9",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:e1fb4cc680737ad6be123aae45083fe61e33f911997e263c0145e7a321adfb9e",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:e1fb4cc680737ad6be123aae45083fe61e33f911997e263c0145e7a321adfb9e",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.963969,
+          "margin": 0.23449299999999995,
+          "margin_12": 0.241014,
+          "abstained": false,
+          "nearest_key": "m2:Q4.9",
+          "hit": {
+            "key": "m2:Q4.9",
+            "construct_key": "m2:Q4.9",
+            "dict_construct_key": "m2:Q4.9",
+            "module": "2",
+            "target_id": 130,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q4.9"
+            ],
+            "stratum": "insurance_access",
+            "unmeasured_stratum": true
+          }
+        }
+      },
+      {
+        "key": "m2:Q9.117",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:6ad41b35ad145fca0f8a4233ef951ea5466879d383114e056956118df4855274",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:6ad41b35ad145fca0f8a4233ef951ea5466879d383114e056956118df4855274",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.976114,
+          "margin": 0.24663800000000002,
+          "margin_12": 0.174732,
+          "abstained": false,
+          "nearest_key": "m2:Q9.117",
+          "hit": {
+            "key": "m2:Q9.117",
+            "construct_key": "m2:Q9.117",
+            "dict_construct_key": "m2:Q9.117",
+            "module": "2",
+            "target_id": 420,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q9.117"
+            ],
+            "stratum": "healthcare_util",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.104",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.114",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q9.119",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m2:Q2.2",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m2:Q4.9",
+    "outcome": "m2:Q9.117",
+    "expected_direction": "decrease",
+    "nodes": [
+      {
+        "key": "m2:Q4.9",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q9.117",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m2:Q9.104",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_outcome",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q9.114",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q9.119",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "not_a_cause_of_either",
+        "decision": "excluded"
+      },
+      {
+        "key": "m2:Q2.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "unadjudicated",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m2:Q4.9",
+        "target": "m2:Q9.117",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q4.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q9.117",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q4.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q9.117",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q4.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q9.117",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q4.9",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q9.117",
+        "relation": "causes"
+      },
+      {
+        "source": "m2:Q9.117",
+        "target": "m2:Q9.104",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q3.11",
+      "m1:Q3.10",
+      "m1:Q3.8",
+      "m1:Q5.4"
+    ]
+  },
+  "critiques": [],
+  "revision": 0,
+  "generation": null
+}

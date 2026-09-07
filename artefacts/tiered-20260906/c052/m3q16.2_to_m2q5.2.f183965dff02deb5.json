@@ -1,0 +1,782 @@
+{
+  "artefact": {
+    "artefact_version": 1,
+    "protocol_id": "m3q16.2_to_m2q5.2",
+    "record_hash": "f183965dff02deb5",
+    "pair_id": "m3:Q16.2 -> m2:Q5.2",
+    "estimability": "blocked_no_metadata",
+    "protocol": {
+      "protocol_id": "m3q16.2_to_m2q5.2",
+      "dictionary_version": "3dc8415eccfe",
+      "question": "Does perceiving crime and violence as a serious community problem increase the risk of asthma diagnosis?",
+      "exposure": {
+        "kind": "variable",
+        "key": "m3:Q16.2",
+        "quoted_wording": "sha256:c997b4ea4d92535660e1aff609cf63d4d0dca2cc6402832179181516394a3595"
+      },
+      "outcome": {
+        "kind": "variable",
+        "key": "m2:Q5.2",
+        "quoted_wording": "sha256:e672fe3877afaccf4fdb8494eb3a52b9b49409338fc5e962bf41e697ec74fbfb"
+      },
+      "expected_direction": {
+        "direction": "increase",
+        "magnitude": null,
+        "magnitude_source": null
+      },
+      "falsifier": "The magnitude of association between perceived community crime/violence and asthma diagnosis, when compared at the extremes of the agreement scale (highest vs. lowest category), will be not less than 10 percentage points risk difference.",
+      "falsifier_threshold": {
+        "value": 10.0,
+        "unit": "percentage points",
+        "comparator": ">="
+      },
+      "model_spec": {
+        "form": "Logistic regression with binary outcome (asthma: yes/no)",
+        "unit_of_analysis": "participant",
+        "clustering": "Community area (Chicago) with cluster-robust standard errors"
+      },
+      "adjusted_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q2.15_3",
+            "quoted_wording": "sha256:ad7c805a862e7b7a8108d049792b0ac9c0565ecf18fb6bd6180854a61aed5e2c"
+          },
+          "mechanism": "Older age relates to both higher asthma prevalence and potentially different neighborhood risk perceptions.",
+          "justification": "Age is a fundamental demographic characteristic conceptually prior to both exposure perception and asthma diagnosis outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.3",
+            "quoted_wording": "sha256:1502a55645513419f8997fa1a3261928116635487d10c83882c7b7ce91cc61fa"
+          },
+          "mechanism": "Sex at birth is a predictor of asthma prevalence and may relate to differential perception of neighborhood safety.",
+          "justification": "Sex at birth is a fundamental demographic characteristic conceptually prior to both exposure perception and asthma diagnosis.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.10",
+            "quoted_wording": "sha256:780728bf35035558d044eb83b0a0913fa9ac23432800ba7771332210ddb7cedd"
+          },
+          "mechanism": "Race/ethnicity carries well-documented disparities in both asthma prevalence and neighborhood segregation/perceived crime levels.",
+          "justification": "Race is a fundamental demographic characteristic conceptually prior to both exposure perception and outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.8",
+            "quoted_wording": "sha256:a10a496fc05ed9ee27e352d585b73564c6380fa93220d96d5bb1bf12b34e95e6"
+          },
+          "mechanism": "Hispanic/Latino ethnicity is associated with specific patterns in both asthma prevalence and neighborhood experience.",
+          "justification": "Hispanic/Latino ethnicity is adjusted separately to capture specific ethnic patterns in both asthma and neighborhood experience.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.4",
+            "quoted_wording": "sha256:13d3548965635d4117cbd0b28b41f20541d0d0827da994eef2ca27064ff58d60"
+          },
+          "mechanism": "Household income, as a marker of socioeconomic position, influences both neighborhood residential choice and access to preventive healthcare.",
+          "justification": "Household income is conceptually prior to both exposure perception and asthma diagnosis outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q3.11",
+            "quoted_wording": "sha256:45f00b152c1b85953fc15fb60065f1ca1ffffc566a72d7902ecca4f602786ef1"
+          },
+          "mechanism": "Educational attainment, a marker of socioeconomic position, relates to health knowledge, neighborhood choice, and health outcomes.",
+          "justification": "Educational attainment is conceptually prior to both exposure perception and asthma diagnosis.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m1:Q5.2",
+            "quoted_wording": "sha256:9ecd6856d45a759270a1fce0a9ad0239852cf8bcecc18f7143e41c3757f1de41"
+          },
+          "mechanism": "Residential tenure indicates neighborhood stability and duration of exposure to neighborhood stressors.",
+          "justification": "Residential tenure is conceptually prior to both current exposure perception and lifetime asthma diagnosis outcome.",
+          "role": "confounder",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "excluded_variables": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q16.3",
+            "quoted_wording": "sha256:68d30d456b8d65e22cedafafb319218847654b0fabd23645c77fd4d636c72f5d"
+          },
+          "mechanism": "Exercise avoidance behavior is explicitly motivated by the crime perception exposure.",
+          "justification": "This is a direct behavioral consequence of perceiving crime, not a prior cause of the exposure perception.",
+          "role": "descendant_of_exposure",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q16.4",
+            "quoted_wording": "sha256:f82d221b9cdeeb859c2e97f48f2618283fb391e4495eaca4a987a26f26a4c539"
+          },
+          "mechanism": "Subjective impact on daily life is a direct consequence of perceiving crime.",
+          "justification": "This is a consequence of perceiving crime and violence, not a prior cause.",
+          "role": "descendant_of_exposure",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "undetermined_covariates": [
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q4.2",
+            "quoted_wording": "sha256:56ec57ddb44e152996a592022b531db93239caf71a91bb3232b95bb462d167eb"
+          },
+          "mechanism": "Lifetime smoking could confound if socioeconomic position predicts both neighborhood residence and smoking behavior and asthma risk, or could lie on the causal pathway if perceived crime stress increases smoking, which then increases asthma risk.",
+          "justification": "In a single cross-sectional questionnaire, both mechanisms are observationally indistinguishable.",
+          "role": "unadjudicated",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q855",
+            "quoted_wording": "sha256:1294a3dacc917496ea7e656e6601fe45b93d1234f0e040794fa1f38a1300c775"
+          },
+          "mechanism": "Depressive mood could be a confounder if chronic depression predates and predicts both perceiving threats and asthma, a consequence of perceived crime stress, or a consequence of asthma diagnosis.",
+          "justification": "The cross-sectional design cannot temporally order depression relative to exposure perception and outcome.",
+          "role": "unadjudicated",
+          "proxy_for": null,
+          "contestable": false
+        },
+        {
+          "variable": {
+            "kind": "variable",
+            "key": "m3:Q856",
+            "quoted_wording": "sha256:65a9010a7129f48b33ff8e1d6a79cfb179536fdc673ef88e04152fb934290be0"
+          },
+          "mechanism": "Anxiety symptoms could be a confounder if chronic anxiety predates and predicts both perceiving threats and asthma, a consequence of perceived crime stress, or a consequence of asthma diagnosis.",
+          "justification": "The cross-sectional design cannot temporally order anxiety relative to exposure perception and outcome.",
+          "role": "unadjudicated",
+          "proxy_for": null,
+          "contestable": false
+        }
+      ],
+      "sought_covariates": [
+        {
+          "construct_sought": "Work-related stress",
+          "search_phrases": [
+            "stress anxiety depression mental health"
+          ],
+          "why_rejected": "Found m1:Q4.6 ('How much stress do you feel at work?') but it is too narrow (workplace-specific) to capture chronic neighborhood-related stress or general psychosocial stress.",
+          "exposes_the_estimate_to": "Confounding from unmeasured neighborhood-level and general chronic stress."
+        },
+        {
+          "construct_sought": "Physical activity levels",
+          "search_phrases": [
+            "exercise physical activity"
+          ],
+          "why_rejected": "Multiple exercise/recreational activity items exist (m3:Q2.32 series) but form a long grid; unclear whether a single scalar summary exists, and m3:Q16.3 already captures exercise avoidance due to crime.",
+          "exposes_the_estimate_to": "Residual confounding from unmeasured overall physical activity."
+        }
+      ],
+      "estimability": {
+        "analytic_n": null,
+        "n_source": "unknown",
+        "modules_required": [
+          "m1",
+          "m2",
+          "m3"
+        ],
+        "exposure_contrast": "Highest vs. lowest category of agreement",
+        "collinearity_max": null,
+        "smallest_detectable_effect": {
+          "curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 16.81
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 9.7
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 5.32
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 3.07
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 1.68
+            }
+          ],
+          "worst_case_curve": [
+            {
+              "n": 100,
+              "sde_percentage_points": 28.02
+            },
+            {
+              "n": 300,
+              "sde_percentage_points": 16.17
+            },
+            {
+              "n": 1000,
+              "sde_percentage_points": 8.86
+            },
+            {
+              "n": 3000,
+              "sde_percentage_points": 5.11
+            },
+            {
+              "n": 10000,
+              "sde_percentage_points": 2.8
+            }
+          ],
+          "asserted_baseline_prevalence": 0.1,
+          "value": 5.32,
+          "unit": "percentage points",
+          "at_n": 1000,
+          "assumptions": "two_sided_alpha=0.05; power=0.8; z_alpha=1.959964; z_beta=0.841621; baseline_prevalence=0.1; worst_case_prevalence=0.5; bound_alpha=0.05; bound_power=0.8; allocation=1:1; test=two-proportion normal approximation"
+        }
+      },
+      "access": {
+        "decision": "pass",
+        "reconstruction_load": 0,
+        "budget": 3,
+        "location_bearing_keys": [],
+        "per_place_working": "no location-bearing variable named",
+        "origin_unknown_keys": []
+      },
+      "derivation_ref": null,
+      "selection_rationale": {
+        "selection_mode": "externally_posed",
+        "screened_from": 0,
+        "prior_work": "COMPASS is an established population-level cohort study with multi-module baseline questionnaire data.",
+        "why_this_cohort": "COMPASS data cover both neighborhood perception and asthma diagnosis across comprehensive demographic and socioeconomic variables, enabling cross-sectional analysis of their association."
+      },
+      "provenance": {
+        "dictionary_version": "3dc8415eccfe",
+        "module_version": "3",
+        "prompt_hash": "fc6e73e64bc32c74",
+        "model_id": "claude-cli:claude-haiku-4-5",
+        "weights_sha256": null,
+        "seed": 2,
+        "sampling": {},
+        "tool_calls": [
+          "resolve_variable({\"key\": \"m3:Q16.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m2:Q5.2\"}) -> unique",
+          "browse_variables({\"module\": \"2\"}) -> ok",
+          "browse_variables({\"module\": \"3\"}) -> ok",
+          "browse_variables({\"module\": \"1\"}) -> ok",
+          "browse_variables({\"module\": \"2\", \"section\": \"5\"}) -> ok",
+          "browse_variables({\"module\": \"3\", \"section\": \"16\"}) -> ok",
+          "search_variables({\"limit\": 10, \"phrase\": \"stress anxiety depression mental health\"}) -> low_confidence",
+          "search_variables({\"limit\": 5, \"phrase\": \"smoking cigarettes tobacco\"}) -> ok",
+          "search_variables({\"limit\": 5, \"phrase\": \"exercise physical activity\"}) -> ok",
+          "resolve_variable({\"key\": \"m1:Q2.15_3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.10\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.8\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q3.11\"}) -> unique",
+          "resolve_variable({\"key\": \"m1:Q5.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q16.3\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q16.4\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q4.2\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q856\"}) -> unique",
+          "resolve_variable({\"key\": \"m3:Q855\"}) -> unique",
+          "estimate_n({\"keys\": [\"m3:Q16.2\", \"m2:Q5.2\", \"m1:Q2.15_3\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q3.8\", \"m1:Q5.4\", \"m1:Q3.11\", \"m1:Q5.2\", \"m3:Q4.2\", \"m3:Q855\", \"m3:Q856\"]}) -> ok",
+          "estimate_detectability({\"baseline_prevalence\": 0.1}) -> ok",
+          "check_access({\"keys\": [\"m3:Q16.2\", \"m2:Q5.2\", \"m1:Q2.15_3\", \"m1:Q3.3\", \"m1:Q3.10\", \"m1:Q3.8\", \"m1:Q5.4\", \"m1:Q3.11\", \"m1:Q5.2\", \"m3:Q4.2\", \"m3:Q855\", \"m3:Q856\", \"m3:Q16.3\", ) -> ok"
+        ],
+        "specifier_trace_sha256": null
+      },
+      "status": "draft",
+      "blocked_on": [
+        "module_co_completion_counts",
+        "design_effect_for_community_area_clustering",
+        "outcome_prevalence_unconfirmed"
+      ],
+      "derivation_not_fitted_to_outcome": true,
+      "no_participant_data_used": true
+    },
+    "retrieval": {
+      "exposure": {
+        "request": {
+          "construct_text": "sha256:c997b4ea4d92535660e1aff609cf63d4d0dca2cc6402832179181516394a3595",
+          "role": "exposure",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:c997b4ea4d92535660e1aff609cf63d4d0dca2cc6402832179181516394a3595",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.977423,
+        "margin": 0.24794700000000003,
+        "margin_12": 0.114072,
+        "abstained": false,
+        "nearest_key": "m3:Q16.2",
+        "hit": {
+          "key": "m3:Q16.2",
+          "construct_key": "m3:Q16.2",
+          "dict_construct_key": "m3:Q16.2",
+          "module": "3",
+          "target_id": 1345,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m3:Q16.2"
+          ],
+          "stratum": "unclassified",
+          "unmeasured_stratum": true
+        }
+      },
+      "outcome": {
+        "request": {
+          "construct_text": "sha256:e672fe3877afaccf4fdb8494eb3a52b9b49409338fc5e962bf41e697ec74fbfb",
+          "role": "outcome",
+          "population": null,
+          "timeframe": null,
+          "instances": [],
+          "source": "instrument"
+        },
+        "query": "sha256:e672fe3877afaccf4fdb8494eb3a52b9b49409338fc5e962bf41e697ec74fbfb",
+        "dictionary_hash": "3dc8415eccfe",
+        "min_cos": 0.729476,
+        "best_cos": 0.97811,
+        "margin": 0.24863400000000002,
+        "margin_12": 0.123614,
+        "abstained": false,
+        "nearest_key": "m2:Q5.2",
+        "hit": {
+          "key": "m2:Q5.2",
+          "construct_key": "m2:Q5.2",
+          "dict_construct_key": "m2:Q5.2",
+          "module": "2",
+          "target_id": 151,
+          "fold_size": 1,
+          "n_siblings": 0,
+          "members": [
+            "m2:Q5.2"
+          ],
+          "stratum": "chronic_condition",
+          "unmeasured_stratum": false
+        }
+      }
+    },
+    "variables": [
+      {
+        "key": "m3:Q16.2",
+        "where": "exposure",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:c997b4ea4d92535660e1aff609cf63d4d0dca2cc6402832179181516394a3595",
+            "role": "exposure",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:c997b4ea4d92535660e1aff609cf63d4d0dca2cc6402832179181516394a3595",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.977423,
+          "margin": 0.24794700000000003,
+          "margin_12": 0.114072,
+          "abstained": false,
+          "nearest_key": "m3:Q16.2",
+          "hit": {
+            "key": "m3:Q16.2",
+            "construct_key": "m3:Q16.2",
+            "dict_construct_key": "m3:Q16.2",
+            "module": "3",
+            "target_id": 1345,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m3:Q16.2"
+            ],
+            "stratum": "unclassified",
+            "unmeasured_stratum": true
+          }
+        }
+      },
+      {
+        "key": "m2:Q5.2",
+        "where": "outcome",
+        "kind": "variable",
+        "source": "retrieval",
+        "retrieval": {
+          "request": {
+            "construct_text": "sha256:e672fe3877afaccf4fdb8494eb3a52b9b49409338fc5e962bf41e697ec74fbfb",
+            "role": "outcome",
+            "population": null,
+            "timeframe": null,
+            "instances": [],
+            "source": "instrument"
+          },
+          "query": "sha256:e672fe3877afaccf4fdb8494eb3a52b9b49409338fc5e962bf41e697ec74fbfb",
+          "dictionary_hash": "3dc8415eccfe",
+          "min_cos": 0.729476,
+          "best_cos": 0.97811,
+          "margin": 0.24863400000000002,
+          "margin_12": 0.123614,
+          "abstained": false,
+          "nearest_key": "m2:Q5.2",
+          "hit": {
+            "key": "m2:Q5.2",
+            "construct_key": "m2:Q5.2",
+            "dict_construct_key": "m2:Q5.2",
+            "module": "2",
+            "target_id": 151,
+            "fold_size": 1,
+            "n_siblings": 0,
+            "members": [
+              "m2:Q5.2"
+            ],
+            "stratum": "chronic_condition",
+            "unmeasured_stratum": false
+          }
+        }
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.3",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.10",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.8",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.4",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q3.11",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m1:Q5.2",
+        "where": "adjusted",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q16.3",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q16.4",
+        "where": "excluded",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q4.2",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q855",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      },
+      {
+        "key": "m3:Q856",
+        "where": "undetermined",
+        "kind": "variable",
+        "source": "specifier_tool",
+        "retrieval": null
+      }
+    ],
+    "redacted": true
+  },
+  "structure": {
+    "design": "cross_sectional",
+    "unit_of_analysis": "participant",
+    "exposure": "m3:Q16.2",
+    "outcome": "m2:Q5.2",
+    "expected_direction": "increase",
+    "nodes": [
+      {
+        "key": "m3:Q16.2",
+        "kind": "variable",
+        "position": "exposure",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m2:Q5.2",
+        "kind": "variable",
+        "position": "outcome",
+        "role": null,
+        "decision": null
+      },
+      {
+        "key": "m1:Q2.15_3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.10",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.8",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q3.11",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m1:Q5.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "confounder",
+        "decision": "adjusted"
+      },
+      {
+        "key": "m3:Q16.3",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_exposure",
+        "decision": "excluded"
+      },
+      {
+        "key": "m3:Q16.4",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "descendant_of_exposure",
+        "decision": "excluded"
+      },
+      {
+        "key": "m3:Q4.2",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "unadjudicated",
+        "decision": "undetermined"
+      },
+      {
+        "key": "m3:Q855",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "unadjudicated",
+        "decision": "undetermined"
+      },
+      {
+        "key": "m3:Q856",
+        "kind": "variable",
+        "position": "covariate",
+        "role": "unadjudicated",
+        "decision": "undetermined"
+      }
+    ],
+    "edges": [
+      {
+        "source": "m3:Q16.2",
+        "target": "m2:Q5.2",
+        "relation": "hypothesised"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m3:Q16.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q2.15_3",
+        "target": "m2:Q5.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m3:Q16.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.3",
+        "target": "m2:Q5.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m3:Q16.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.10",
+        "target": "m2:Q5.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m3:Q16.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.8",
+        "target": "m2:Q5.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m3:Q16.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.4",
+        "target": "m2:Q5.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m3:Q16.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q3.11",
+        "target": "m2:Q5.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.2",
+        "target": "m3:Q16.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m1:Q5.2",
+        "target": "m2:Q5.2",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q16.2",
+        "target": "m3:Q16.3",
+        "relation": "causes"
+      },
+      {
+        "source": "m3:Q16.2",
+        "target": "m3:Q16.4",
+        "relation": "causes"
+      }
+    ],
+    "adjustment_set": [
+      "m1:Q2.15_3",
+      "m1:Q3.3",
+      "m1:Q3.10",
+      "m1:Q3.8",
+      "m1:Q5.4",
+      "m1:Q3.11",
+      "m1:Q5.2"
+    ]
+  },
+  "critiques": [
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m3:Q16.3 carries role 'descendant_of_exposure', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m3:Q16.3",
+      "severity": "major",
+      "resolved": false
+    },
+    {
+      "source": "validator:temporality",
+      "category": "identification",
+      "statement": "m3:Q16.4 carries role 'descendant_of_exposure', a temporal claim a cross-sectional design cannot settle",
+      "grounding_key": "m3:Q16.4",
+      "severity": "major",
+      "resolved": false
+    }
+  ],
+  "revision": 0,
+  "generation": null
+}

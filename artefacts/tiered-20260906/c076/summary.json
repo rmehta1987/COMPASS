@@ -1,0 +1,11 @@
+{
+  "run_id": "c076",
+  "total_generated_this_run": 1,
+  "by_outcome": {
+    "emitted": 1
+  },
+  "strata": [
+    "healthcare_util",
+    "insurance_access"
+  ]
+}

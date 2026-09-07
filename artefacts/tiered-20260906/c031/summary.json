@@ -1,0 +1,11 @@
+{
+  "run_id": "c031",
+  "total_generated_this_run": 1,
+  "by_outcome": {
+    "emitted": 1
+  },
+  "strata": [
+    "chronic_condition",
+    "insurance_access"
+  ]
+}
