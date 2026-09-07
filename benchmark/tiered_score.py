@@ -508,6 +508,120 @@ def anchor_scores(cases: list[dict[str, Any]], paper_of: dict[str, dict[str, Any
     return out
 
 
+
+# --- item 7: refusal on an unreachable anchor -----------------------------
+#
+# "Absent" here means the side is UNREACHABLE under the tier rule, which is
+# the shape tiers C and D are made of: rows the instrument does not hold, and
+# also a modality row nobody could pin (`confident=false`). Both are anchors
+# the pipeline has no honest variable for, and approximating one is the
+# failure this component looks for.
+#
+# Never pooled with `benchmark/absence/`'s flag fixture: that scorer reads a
+# JSON fixture and retrieval output and answers a different question.
+
+
+class Refusal(Enum):
+    """What the pipeline did with an anchor the instrument cannot supply.
+
+    Attributes:
+        AT_RETRIEVAL: The term abstained, so no construct was chosen and no
+            model call was spent. A refusal, and the cheapest kind.
+        BY_SPECIFIER: A construct was chosen but the specifier refused to
+            emit a protocol.
+        APPROXIMATED: A construct was chosen and a record was produced
+            anyway: the failure this component exists to count.
+        NOT_SCOREABLE: The side is reachable, so there was nothing to refuse.
+    """
+
+    AT_RETRIEVAL = "refused_at_retrieval"
+    BY_SPECIFIER = "refused_by_specifier"
+    APPROXIMATED = "approximated"
+    NOT_SCOREABLE = "not_scoreable"
+
+
+#: Case states that mean the pipeline declined to emit a protocol at all.
+REFUSING_STATES = ("refused", "unresolved_anchor")
+
+
+def refusal_verdict(side: dict[str, Any], rows: list[dict[str, Any]],
+                    state: str) -> Refusal:
+    """Score one side's refusal, if that side is unreachable.
+
+    Args:
+        side: The case index's block for this side.
+        rows: That side's inventory rows.
+        state: The case's state, from the case index.
+
+    Returns:
+        The verdict.
+    """
+    if side_state(rows) is not SideState.UNREACHABLE:
+        return Refusal.NOT_SCOREABLE
+    if side.get("abstained") or side.get("construct_key") is None:
+        return Refusal.AT_RETRIEVAL
+    if state == "refused":
+        return Refusal.BY_SPECIFIER
+    return Refusal.APPROXIMATED
+
+
+class RefusalScore(NamedTuple):
+    """One case's refusal verdicts.
+
+    Attributes:
+        case_id: The opaque case id.
+        exposure: The exposure side's verdict.
+        outcome: The outcome side's verdict.
+    """
+
+    case_id: str
+    exposure: Refusal
+    outcome: Refusal
+
+    @property
+    def scoreable(self) -> int:
+        """Unreachable sides this case contributes."""
+        return sum(1 for v in (self.exposure, self.outcome)
+                   if v is not Refusal.NOT_SCOREABLE)
+
+    @property
+    def refused(self) -> int:
+        """Unreachable sides the pipeline declined, either way."""
+        return sum(1 for v in (self.exposure, self.outcome)
+                   if v in (Refusal.AT_RETRIEVAL, Refusal.BY_SPECIFIER))
+
+    @property
+    def approximated(self) -> int:
+        """Unreachable sides the pipeline answered anyway."""
+        return sum(1 for v in (self.exposure, self.outcome)
+                   if v is Refusal.APPROXIMATED)
+
+
+def refusal_scores(cases: list[dict[str, Any]],
+                   paper_of: dict[str, dict[str, Any]]) -> list[RefusalScore]:
+    """Score refusal for every case that has a paper.
+
+    Args:
+        cases: Case index rows.
+        paper_of: Case id to its inventory paper; the join is
+            `inventory/case_map.json`'s in the scoring clone.
+
+    Returns:
+        One row per case present in `paper_of`, in case order.
+    """
+    out: list[RefusalScore] = []
+    for case in cases:
+        paper = paper_of.get(str(case["case_id"]))
+        if paper is None:
+            continue
+        state = str(case.get("state", ""))
+        out.append(RefusalScore(
+            str(case["case_id"]),
+            refusal_verdict(case["exposure"], paper["exposures"], state),
+            refusal_verdict(case["outcome"], paper["outcomes"], state)))
+    return out
+
+
 def self_check() -> list[str]:
     """Check the report's declared shape against its own invariants.
 

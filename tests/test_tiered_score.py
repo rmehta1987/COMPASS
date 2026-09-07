@@ -22,12 +22,14 @@ from benchmark.tiered_score import (
     Anchor,
     Cell,
     HandoffMismatch,
+    Refusal,
     SideState,
     UnclassifiablePaper,
     anchor_scores,
     built_dictionary_hash,
     load_handoff,
     main,
+    refusal_scores,
     self_check,
     side_state,
     tier_of,
@@ -364,3 +366,64 @@ def test_a_variable_key_is_never_compared_with_a_construct_key(construct_of):
     case = _case("f001", construct_of(key), construct_of(fa["outcomes"][0]["key"]))
     (score,) = anchor_scores([case], {"f001": fa}, construct_of)
     assert score.exposure is Anchor.KEY
+
+
+# --- item 7: refusal on an unreachable anchor -----------------------------
+
+
+def _state(case: dict, state: str) -> dict:
+    return {**case, "state": state}
+
+
+def test_an_abstention_on_an_absent_anchor_is_a_refusal():
+    fd = next(p for p in PAPERS if p["paper"] == "fD")
+    case = _state(_case("f010", None, None), "unresolved_anchor")
+    (score,) = refusal_scores([case], {"f010": fd})
+    assert (score.exposure, score.outcome) == (Refusal.AT_RETRIEVAL,) * 2
+    assert score.refused == 2 and score.scoreable == 2 and score.approximated == 0
+
+
+def test_a_record_built_on_an_absent_anchor_is_an_approximation():
+    # The failure this component exists to count: the instrument has no
+    # variable for the side and the pipeline produced a protocol anyway.
+    fd = next(p for p in PAPERS if p["paper"] == "fD")
+    case = _state(_case("f010", "m1:Q5.4", "m2:Q5.8"), "emitted")
+    (score,) = refusal_scores([case], {"f010": fd})
+    assert (score.exposure, score.outcome) == (Refusal.APPROXIMATED,) * 2
+    assert score.refused == 0 and score.approximated == 2
+
+
+def test_a_specifier_refusal_counts_separately_from_an_abstention():
+    fd = next(p for p in PAPERS if p["paper"] == "fD")
+    case = _state(_case("f010", "m1:Q5.4", "m2:Q5.8"), "refused")
+    (score,) = refusal_scores([case], {"f010": fd})
+    assert (score.exposure, score.outcome) == (Refusal.BY_SPECIFIER,) * 2
+    assert score.refused == 2
+
+
+def test_only_the_unreachable_side_of_a_tier_c_case_is_scored():
+    # The matrix: refusal has one side in tier C and both in D. The reachable
+    # side is item 6's, and counting it here would double-count the case.
+    fc = next(p for p in PAPERS if p["paper"] == "fC")
+    case = _state(_case("f004", "m2:Q9.105", None), "unresolved_anchor")
+    (score,) = refusal_scores([case], {"f004": fc})
+    assert score.exposure is Refusal.NOT_SCOREABLE
+    assert score.outcome is Refusal.AT_RETRIEVAL
+    assert score.scoreable == 1
+
+
+def test_an_unpinned_modality_side_is_an_unreachable_anchor_too():
+    # fE's outcome is a modality row with an analogue but confident=false.
+    # Under the tier rule that side is unreachable, so refusal is the correct
+    # behaviour there and the component scores it.
+    fe = next(p for p in PAPERS if p["paper"] == "fE")
+    case = _state(_case("f011", None, None), "unresolved_anchor")
+    (score,) = refusal_scores([case], {"f011": fe})
+    assert score.scoreable == 2 and score.refused == 2
+
+
+def test_a_reachable_case_contributes_nothing_to_the_refusal_denominator():
+    fa = next(p for p in PAPERS if p["paper"] == "fA")
+    case = _state(_case("f001", "m3:Q16.1", "m2:Q5.19"), "emitted")
+    (score,) = refusal_scores([case], {"f001": fa})
+    assert score.scoreable == 0 and score.refused == 0
