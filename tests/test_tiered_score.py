@@ -21,6 +21,7 @@ from benchmark.tiered_score import (
     SCOREABLE_CELLS,
     TIERS,
     Anchor,
+    CaseReport,
     Cell,
     HandoffMismatch,
     Refusal,
@@ -39,6 +40,7 @@ from benchmark.tiered_score import (
     modal_covariates,
     modal_size_disagreement,
     refusal_scores,
+    render_case_studies,
     scorable_covariates,
     self_check,
     side_state,
@@ -659,3 +661,67 @@ def test_every_fixture_direction_is_one_a_record_can_hold():
     # The fixture cannot exercise agreement with a vocabulary the record has
     # no member for; only the deliberate "mixed" case above does that.
     assert {d for _, d in directions_by_case(PAPERS).values()} <= set(RECORD_DIRECTIONS)
+
+
+# --- item 12: tiers A and B as case studies -------------------------------
+
+
+def _report(construct_of, paper_id: str, case_id: str, tier: str,
+            adjustment: list[str] | None = None) -> CaseReport:
+    paper = next(p for p in PAPERS if p["paper"] == paper_id)
+    case = _case(case_id, construct_of(paper["exposures"][0].get("key") or "m1:Q5.4"),
+                 construct_of(paper["outcomes"][0].get("key") or "m1:Q5.4"))
+    cov = (None if adjustment is None
+           else covariate_score(case_id, paper, adjustment))
+    modal = modal_covariates(PAPERS)
+    (direction,) = [d for d in direction_scores(
+        {case_id: "increase"}, [paper]) if d.case_id == case_id] or [None]
+    return CaseReport(
+        case_id=case_id, paper=paper_id, tier=tier, state="emitted",
+        anchor=anchor_scores([case], {case_id: paper}, construct_of)[0],
+        analogue=analogue_scores([case], {case_id: paper}, construct_of)[0],
+        refusal=refusal_scores([case], {case_id: paper})[0],
+        covariate=cov,
+        margin=None if cov is None else margin_score(cov, paper, modal),
+        direction=direction)
+
+
+def test_a_case_study_prints_counts_and_never_a_rate(construct_of):
+    out = render_case_studies(
+        [_report(construct_of, "fA", "f001", "A", ["m1:Q5.4", "m2:Q5.6"])], "A")
+    assert "%" not in out
+    assert not re.search(r"\d\.\d", out), "a ratio in a tier of one case is a rate"
+    assert "2 of 3 recovered" in out
+    assert "fA / f001" in out
+
+
+def test_a_case_study_names_every_component_including_the_empty_ones(construct_of):
+    out = render_case_studies([_report(construct_of, "fA", "f001", "A", [])], "A")
+    for name in ("anchor resolution", "modality analogue",
+                 "refusal on absent anchor", "covariate recall",
+                 "margin over modal", "direction"):
+        assert name in out, name
+    # A missing row reads as "not applicable" when it means "not yet built".
+    assert "mismatch flag UNAVAILABLE" in out
+
+
+def test_a_case_with_no_record_says_so_rather_than_scoring_zero(construct_of):
+    out = render_case_studies([_report(construct_of, "fA", "f001", "A", None)], "A")
+    assert "no record emitted" in out
+    assert "0 of" not in out
+
+
+def test_an_empty_tier_reads_unmeasured_and_not_zero_per_cent():
+    # 14a: tier A is one paper with one posed pair. At the pipeline's observed
+    # discard rate that case can vanish, and the column must then say so.
+    out = render_case_studies([], "A")
+    assert "UNMEASURED" in out and "%" not in out
+    assert "not a rate of zero" in out.lower()
+    assert not re.search(r"\d", out.split("UNMEASURED")[1])
+
+
+def test_the_margin_is_shown_as_counts_in_a_small_tier(construct_of):
+    out = render_case_studies(
+        [_report(construct_of, "fA", "f001", "A", ["m1:Q5.4", "m2:Q5.6", "m2:Q9.1"])],
+        "A")
+    assert "record 3 of 3, the modal set alone 2 of 3" in out

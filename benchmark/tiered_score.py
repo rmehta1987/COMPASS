@@ -1103,6 +1103,126 @@ def direction_summary(rows: list[DirectionScore]) -> DirectionSummary:
         unscored=unscored)
 
 
+
+# --- item 12: tiers A and B are case studies, never rates -----------------
+#
+# Tier A is ONE paper and tier B is two: 9 of the 19 cells sit at n <= 2. A
+# percentage over one case is not a measurement of anything, so these tiers
+# are rendered as case studies -- name the case, name each component, say what
+# happened, in counts. The renderer prints no ratio at all, and a test enforces
+# it, because "tier A: 100%" is exactly the sentence this report must not
+# produce.
+
+
+class CaseReport(NamedTuple):
+    """Every component's verdict for one case, ready to render.
+
+    Attributes:
+        case_id: The opaque case id.
+        paper: The inventory paper's id.
+        tier: `A`, `B`, `C` or `D`.
+        state: What the run did with the case, from the case index.
+        anchor: Anchor resolution, or None where the case was not scored.
+        analogue: Analogue resolution, or None.
+        refusal: Refusal, or None.
+        covariate: Covariate recall, or None where no record was emitted.
+        margin: The margin over the modal set, or None.
+        direction: Direction agreement, or None.
+    """
+
+    case_id: str
+    paper: str
+    tier: str
+    state: str
+    anchor: AnchorScore | None = None
+    analogue: AnalogueScore | None = None
+    refusal: RefusalScore | None = None
+    covariate: CovariateScore | None = None
+    margin: MarginScore | None = None
+    direction: DirectionScore | None = None
+
+
+def _sides(verdicts: tuple[Any, Any]) -> str:
+    e, o = verdicts
+    return f"exposure {e.value}, outcome {o.value}"
+
+
+def _case_study(report: CaseReport) -> list[str]:
+    """One case, in counts, with every component named including the empty ones.
+
+    Args:
+        report: The case.
+
+    Returns:
+        Lines, indented under the case's heading.
+    """
+    def row(name: str, text: str) -> str:
+        return f"    {name:<28}{text}"
+
+    out = [f"  {report.paper} / {report.case_id}  ({report.state})"]
+    a, g, r = report.anchor, report.analogue, report.refusal
+    out.append(row("anchor resolution",
+                   _sides((a.exposure, a.outcome)) if a else "not scored"))
+    out.append(row("modality analogue",
+                   (_sides((g.exposure, g.outcome)) if g else "not scored")
+                   + f"; mismatch flag UNAVAILABLE ({MODALITY_MISMATCH_BLOCKER})"))
+    out.append(row("refusal on absent anchor",
+                   _sides((r.exposure, r.outcome)) if r else "not scored"))
+    c, m = report.covariate, report.margin
+    if c is None:
+        out.append(row("covariate recall", "no record emitted"))
+    else:
+        excl = (", ".join(f"{n} {why}" for why, n in c.excluded.items())
+                or "none excluded")
+        out.append(row("covariate recall",
+                       f"{c.hits} of {c.recoverable} recovered; adjusted for "
+                       f"{c.adjusted}; {c.paper_covariates} rows in the paper, "
+                       f"{excl}"))
+    if m is None or c is None:
+        out.append(row("margin over modal", "no record emitted"))
+    else:
+        modal_hits = round((m.modal_recall or 0.0) * c.recoverable)
+        out.append(row("margin over modal",
+                       f"record {c.hits} of {c.recoverable}, the modal set alone "
+                       f"{modal_hits} of {c.recoverable} ({m.modal_size} keys)"))
+    d = report.direction
+    if d is None:
+        out.append(row("direction", "not scored"))
+    elif d.agree is None:
+        out.append(row("direction",
+                       f"paper {d.reported}, record "
+                       f"{d.specified or 'none emitted'}, not scored"))
+    else:
+        out.append(row("direction", f"paper {d.reported}, record {d.specified}, "
+                                    f"{'agreed' if d.agree else 'disagreed'}"))
+    return out
+
+
+def render_case_studies(reports: list[CaseReport], tier: str) -> str:
+    """Render one small tier as case studies.
+
+    Args:
+        reports: Every case in the tier, scored or not.
+        tier: The tier's name, for the heading.
+
+    Returns:
+        The section. A tier with no case reads UNMEASURED, never 0 of 0: an
+        empty tier is a question that could not be asked, and tier A is one
+        paper with one case, so it can vanish entirely (14a).
+    """
+    papers = sorted({r.paper for r in reports})
+    head = (f"TIER {tier} - {len(papers)} paper(s), {len(reports)} case(s). "
+            f"Case studies, not rates: n is too small for a rate to mean anything.")
+    if not reports:
+        return (f"TIER {tier} - UNMEASURED: no case in this run reached this "
+                f"tier with a scoreable outcome. Not a rate of zero, and not "
+                f"evidence about the pipeline.")
+    lines = [head]
+    for report in sorted(reports, key=lambda r: (r.paper, r.case_id)):
+        lines.extend(_case_study(report))
+    return "\n".join(lines)
+
+
 def self_check() -> list[str]:
     """Check the report's declared shape against its own invariants.
 
