@@ -106,4 +106,12 @@ grep -E "^(gate|passed)" "$OUT"
 $PY deploy/smoke_test.py >"$OUT" 2>&1 || { tail -5 "$OUT"; fail 10 "deploy/smoke_test.py"; }
 echo "smoke_test ALL PASS"
 
+# 11. tiered harness (benchmark/tiered_score.py): its own self-check, so the
+#     gate exercises the module the tiered loop is building. Without this step
+#     a "green" here would only mean the checks that predate it passed. It runs
+#     against declared shape and synthetic fixtures only: tier assignment needs
+#     the inventory and inventory/case_map.json, both barred from this clone.
+$PY -m benchmark.tiered_score --self-check >"$OUT" 2>&1 || { cat "$OUT"; fail 11 "benchmark.tiered_score --self-check"; }
+grep "self-check" "$OUT"
+
 echo; echo "GREEN"
