@@ -282,3 +282,49 @@ def test_a_run_assembles_into_a_report_through_the_case_index(constructs, tmp_pa
     assert "SYNTHETIC" in out
     assert out.index("TARGETS") < out.index("TIER A")
     assert "fW / w001" in out and "no record emitted" in out
+
+
+def test_the_index_is_written_after_every_case_not_only_at_the_end(constructs,
+                                                                   tmp_path):
+    # b2-20260904 died at pair 16 of 48 on one backend error. A run that dies
+    # part way must still leave the scorer something to read.
+    C, version = constructs
+    r = _driver_retriever("air pollution", "fibroids", "m3:Q16.1", "m2:Q5.8")
+    run_dir = tmp_path / "tiered"
+    seen: list[int] = []
+
+    def log(_: str) -> None:
+        path = run_dir / pose_terms.CASE_INDEX
+        seen.append(len(path.read_text().splitlines()) if path.exists() else 0)
+
+    pose_terms.pose_cases(
+        [pose_terms.Case("c002", "residential radon", "fibroids"),
+         pose_terms.Case("c003", "residential radon", "fibroids")],
+        backend=_backend(version, 0), constructs=C, version=version,
+        run_dir=run_dir, retriever=r, inventory="x", synthetic=True,
+        strata=_Strata(), template=TEMPLATE, resolver=_resolver(True), k=1,
+        allow_unestimable=True, retry_pause=0.0, log=log)
+    assert max(seen) >= 1, "the index was empty until the run finished"
+
+
+def test_a_recorded_case_is_not_re_run_when_skip_recorded_is_set(constructs,
+                                                                 tmp_path):
+    C, version = constructs
+    r = _driver_retriever("air pollution", "fibroids", "m3:Q16.1", "m2:Q5.8")
+    run_dir = tmp_path / "tiered"
+    cases = [pose_terms.Case("c001", "air pollution", "fibroids")]
+    common = dict(constructs=C, version=version, run_dir=run_dir, retriever=r,
+                  inventory="x", synthetic=True, strata=_Strata(),
+                  template=TEMPLATE, resolver=_resolver(True), k=1,
+                  allow_unestimable=True, retry_pause=0.0, log=lambda s: None)
+    (first,) = pose_terms.pose_cases(cases, backend=_backend(version, 0), **common)
+
+    class _Explode:
+        name = "must-not-be-called"
+
+        def complete(self, *a: object, **kw: object) -> object:
+            raise AssertionError("a recorded case called the model again")
+
+    (again,) = pose_terms.pose_cases(cases, backend=_Explode(),
+                                     skip_recorded=True, **common)
+    assert again.state == first.state and again.artefact == first.artefact

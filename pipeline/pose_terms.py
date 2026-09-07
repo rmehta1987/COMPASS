@@ -258,7 +258,7 @@ def pose_cases(cases: list[Case], *, backend: Any, constructs: dict[str, Constru
                template: Any = None, resolver: Any = None, k: int = 5,
                workers: int = 1, allow_unestimable: bool = False,
                retry_pause: float = 30.0, min_cos: float | None = None,
-               log: Any = print) -> list[CaseOutcome]:
+               skip_recorded: bool = False, log: Any = print) -> list[CaseOutcome]:
     """Run every posed case through the pipeline, one run directory each.
 
     Args:
@@ -278,6 +278,10 @@ def pose_cases(cases: list[Case], *, backend: Any, constructs: dict[str, Constru
         allow_unestimable: Pass the gate with its marker.
         retry_pause: See `pipeline.run.run`.
         min_cos: Threshold override for the term retrieval.
+        skip_recorded: Reuse a case whose directory already holds a ledger row
+            instead of calling the model again. A run of b2-20260904's shape
+            died at pair 16 of 48 on one backend error; without this a restart
+            re-spends every completed case.
         log: Progress sink.
 
     Returns:
@@ -299,19 +303,32 @@ def pose_cases(cases: list[Case], *, backend: Any, constructs: dict[str, Constru
             log(f"[{n}/{len(cases)}] {case.case_id}: {outcome.note}")
         else:
             case_dir = run_dir / case.case_id
+            recorded = Ledger(case_dir).rows() if case_dir.exists() else []
+            if skip_recorded and recorded:
+                row = recorded[-1]
+                outcome = CaseOutcome(case.case_id, e, o, row.outcome,
+                                      getattr(row, "artefact", None) or None,
+                                      getattr(row, "note", "") or "")
+                log(f"[{n}/{len(cases)}] {case.case_id}: {outcome.state} (recorded)")
+                out.append(outcome)
+                write_case_index(run_dir, out)
+                continue
             run([cand], backend=backend, resolver=resolve, constructs=constructs,
                 version=version, screened_from=0, selection_mode=EXTERNALLY_POSED,
                 run_dir=case_dir, k=k, workers=workers,
                 allow_unestimable=allow_unestimable, retry_pause=retry_pause, log=log)
             rows = Ledger(case_dir).rows()
-            row = rows[-1] if rows else None
+            last = rows[-1] if rows else None
             outcome = CaseOutcome(case.case_id, e, o,
-                                  row.outcome if row else "no_ledger_row",
-                                  getattr(row, "artefact", None) or None,
-                                  getattr(row, "note", "") or "")
+                                  last.outcome if last else "no_ledger_row",
+                                  getattr(last, "artefact", None) or None,
+                                  getattr(last, "note", "") or "")
             log(f"[{n}/{len(cases)}] {case.case_id}: {outcome.state}")
         out.append(outcome)
-    write_case_index(run_dir, out)
+        # Rewritten after every case, not once at the end: a run that dies
+        # part way still leaves the scorer something to read, and says where
+        # it stopped.
+        write_case_index(run_dir, out)
     return out
 
 
@@ -389,6 +406,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="where the cases came from, e.g. 'handoff-public <sha>'")
     ap.add_argument("--synthetic", action="store_true",
                     help="the inventory was invented; nothing scored is a measurement")
+    ap.add_argument("--skip-recorded", action="store_true",
+                    help="reuse cases whose ledger row already exists")
     ap.add_argument("--dry-run", action="store_true",
                     help="resolve the terms and write the index; call no model")
     a = ap.parse_args(argv)
@@ -421,7 +440,8 @@ def main(argv: list[str] | None = None) -> int:
     outcomes = pose_cases(cases, backend=backend, constructs=C, version=version,
                           run_dir=run_dir, retriever=retriever, inventory=a.inventory,
                           synthetic=a.synthetic, k=a.k, workers=a.workers,
-                          allow_unestimable=a.allow_unestimable)
+                          allow_unestimable=a.allow_unestimable,
+                          skip_recorded=a.skip_recorded)
     print(f"run {a.run_id}: {attrition(outcomes)}")
     return 0
 
