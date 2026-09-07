@@ -2,8 +2,8 @@
 build: 3dc8415eccfe
 schema: inventory/schema.py@292571ccc682   (pinned by the scorer, never imported)
 tier_rule: confident_anchor
-last green: 4a6986d   (VERIFIED 2026-09-06, ./check.sh unpiped, exit 0, "GREEN";
-                       908 passed, ruff 226 <= 232, mypy 59 <= 59, R@1 0.643,
+last green: 39ded44   (VERIFIED 2026-09-06, ./check.sh unpiped, exit 0, "GREEN";
+                       929 passed, ruff 226 <= 232, mypy 59 <= 59, R@1 0.643,
                        canaries 7/7, smoke_test ALL PASS, step 11 0 problems)
 
 BLOCKED: the modality_mismatch half of item 8 — needs pipeline items 16-19.
@@ -32,10 +32,10 @@ note: the earlier TIER_STATE's blockers 1 and 2 are resolved/dissolved — the
 
 ## items  (phase 1 = build and prove on the fakes; phase 2 = generate)
 - [x] 1  add tiered_score.py to check.sh          4a6986d
-- [ ] 2  fake inventory, 5 synthetic papers       next
-- [ ] 3  posed-pair driver
-- [ ] 4  load for_harness.json, assert three hashes
-- [ ] 5  tier assignment code
+- [x] 2  fake inventory, 5 synthetic papers       cdcdfad
+- [ ] 3  posed-pair driver                        next (the largest item)
+- [x] 4  load for_harness.json, assert three hashes  0ccc446
+- [x] 5  tier assignment code                     39ded44
 - [ ] 6  anchor-resolution component
 - [ ] 7  refusal component
 - [ ] 8  modality analogue resolution (half — see 8a)
@@ -47,6 +47,14 @@ note: the earlier TIER_STATE's blockers 1 and 2 are resolved/dissolved — the
 - [ ] 14 report assembly, targets before numbers
 - [ ] 15 run the driver over all 95 cases
 - [ ] 16 commit and report attrition
+
+## Open question for the operator (not a blocker; nothing waits on it)
+- The tier predicate does not place a paper whose BOTH sides are reachable
+  only through a modality analogue: not A, not B, and not C or D since both
+  sides are reachable. `tier_of` raises `UnclassifiablePaper` on that shape
+  rather than binning it. If the real inventory holds one, phase 3 will stop
+  there and the rule needs a fifth clause from the operator. The handoff's
+  tier_counts sum to 16 with no residue, so it may well not occur.
 
 ## PARKED
 (item · three attempts · why)

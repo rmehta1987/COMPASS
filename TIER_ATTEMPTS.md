@@ -2,7 +2,17 @@
 Failures and the approach that produced them, so no approach is retried.
 Three attempts on one item then PARKED, with all three named.
 
-(no failed attempt yet)
+(no item has failed its gate yet)
+
+## Seedings that did NOT go red — the useful kind of failure
+
+- item 5, first seeding: flipping `tier_of`'s own default to
+  `require_confident=False` left every test green, because `tiers_of` forwards
+  `require_confident` explicitly and the tests went through it. The mutation was
+  real and invisible: the same shape as the `-k` selector trap in CLAUDE.md.
+  Closed by `test_the_default_reading_is_confident_anchor_on_every_entry_point`,
+  which pins the default at `side_state`, `tier_of` and `tiers_of` separately.
+  Re-seeded after landing the test: red.
 
 ## Resolved premises — recorded so they are not re-litigated
 
