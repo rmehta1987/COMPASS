@@ -31,6 +31,9 @@ from benchmark.tiered_score import (
     covariate_score,
     load_handoff,
     main,
+    margin_score,
+    modal_covariates,
+    modal_size_disagreement,
     refusal_scores,
     scorable_covariates,
     self_check,
@@ -535,3 +538,63 @@ def test_an_absent_or_unkeyed_row_is_excluded_by_its_own_reason():
     score = covariate_score("f999", paper, [])
     assert score.excluded == {"absent": 1, "modality": 1, "not_confident": 1}
     assert score.recoverable == 0 and score.paper_covariates == 3
+
+
+# --- item 10: the margin over the modal set -------------------------------
+
+
+def test_the_modal_set_is_computed_from_the_inventory_not_written_down():
+    # 10a: for_harness.json ships only modal_covariate_set_size, so no covariate
+    # term or key crosses into this clone; the set itself is computed.
+    modal = modal_covariates(PAPERS)
+    assert modal == {"m1:Q5.4", "m2:Q5.6"}
+    # m2:Q9.1 is in two of the five papers, below the majority threshold.
+    assert "m2:Q9.1" not in modal
+
+
+def test_this_module_holds_no_variable_key_literal():
+    # The rule 10a states, enforced: a hardcoded modal set would be a covariate
+    # term crossing the boundary, and it would also stop being a measurement.
+    source = Path("benchmark/tiered_score.py").read_text()
+    assert not re.search(r"\bm[123]:Q\d", source)
+
+
+def test_the_margin_is_recall_minus_what_convention_alone_would_have_scored():
+    fa = next(p for p in PAPERS if p["paper"] == "fA")
+    modal = modal_covariates(PAPERS)
+    # fA's recoverable covariates are income, diabetes and menarche; the modal
+    # set holds the first two, so convention alone recovers two of three.
+    score = covariate_score("f001", fa, ["m1:Q5.4", "m2:Q5.6", "m2:Q9.1"])
+    margin = margin_score(score, fa, modal)
+    assert margin.recall == 1.0
+    assert margin.modal_recall == pytest.approx(2 / 3)
+    assert margin.margin == pytest.approx(1 / 3)
+    assert margin.modal_size == 2
+
+
+def test_a_record_that_only_reproduces_convention_has_a_zero_margin():
+    # The raw number is not the result: this record scores 2/3 recall and adds
+    # nothing over the set a specifier could propose without reading anything.
+    fa = next(p for p in PAPERS if p["paper"] == "fA")
+    modal = modal_covariates(PAPERS)
+    score = covariate_score("f001", fa, sorted(modal))
+    margin = margin_score(score, fa, modal)
+    assert margin.recall == pytest.approx(2 / 3)
+    assert margin.margin == 0.0
+
+
+def test_an_unscoreable_paper_has_no_margin_rather_than_a_zero_one():
+    empty = {"paper": "fZ", "covariates": []}
+    margin = margin_score(covariate_score("f999", empty, ["m1:Q5.4"]), empty,
+                          modal_covariates(PAPERS))
+    assert margin.recall is None and margin.modal_recall is None
+    assert margin.margin is None
+
+
+def test_the_modal_size_is_cross_checked_against_the_handoff_and_reported():
+    # Against the fakes a disagreement is expected and must not raise: the
+    # published size is a fact about the real inventory. In the scoring clone
+    # the same call is a real cross-check.
+    msg = modal_size_disagreement(modal_covariates(PAPERS), load_handoff())
+    assert msg is not None and "synthetic" in msg
+    assert modal_size_disagreement(frozenset("abcdef"), load_handoff()) is None

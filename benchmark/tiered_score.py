@@ -36,10 +36,14 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import Counter
 from collections.abc import Callable, Iterable
 from enum import Enum
+from math import ceil
 from pathlib import Path
 from typing import Any, NamedTuple
+
+from benchmark.paper_inventory import MODAL_SHARE
 
 #: The report's tiers, in report order. Not derived from any data here: the
 #: tier of a case is assigned in the scoring clone, never in this one.
@@ -852,6 +856,108 @@ def covariate_score(case_id: str, paper: dict[str, Any],
         recoverable=len(cov), hits=hits, recall=_ratio(hits, len(cov)),
         precision=_ratio(hits, len(adjusted)), excluded=covariate_exclusions(paper),
         paper_covariates=len(paper.get("covariates", [])))
+
+
+
+# --- item 10: the margin over the modal set -------------------------------
+#
+# The modal set is COMPUTED from the inventory's keyed covariate rows at run
+# time and is never written down here: handoff/for_harness.json ships only
+# `modal_covariate_set_size`, so no covariate term or key crosses into this
+# clone. A test asserts this module holds no variable-key literal at all.
+#
+# Raw recall is a ceiling effect -- a specifier that always proposes age, sex,
+# race, income, BMI and smoking scores well on almost any paper without one
+# hypothesis-specific thought. THE MARGIN IS THE RESULT; the raw number is not.
+
+
+def modal_covariates(papers: list[dict[str, Any]],
+                     share: float = MODAL_SHARE) -> frozenset[str]:
+    """The conventional adjustment set, computed from the inventory.
+
+    Args:
+        papers: The inventory's papers.
+        share: A key is modal when at least this share of the papers with a
+            scorable covariate adjusted for it. `MODAL_SHARE` is read from
+            `benchmark.paper_inventory`, which owns it.
+
+    Returns:
+        The modal keys; empty when no paper has a scorable covariate.
+    """
+    with_cov = [p for p in papers if scorable_covariates(p)]
+    if not with_cov:
+        return frozenset()
+    threshold = max(1, ceil(share * len(with_cov)))
+    counts: Counter[str] = Counter()
+    for paper in with_cov:
+        counts.update(scorable_covariates(paper))
+    return frozenset(k for k, n in counts.items() if n >= threshold)
+
+
+def modal_size_disagreement(modal: frozenset[str], handoff: Handoff) -> str | None:
+    """Compare the computed modal set with the size the key branch published.
+
+    A cross-check for the scoring clone, where the inventory is real. In the
+    generation clone the fixture is synthetic and a disagreement is expected,
+    so this REPORTS rather than raises: the size is a fact about the real
+    inventory, not about the fake.
+
+    Args:
+        modal: The computed modal set.
+        handoff: The handoff header.
+
+    Returns:
+        A message, or None when the sizes agree.
+    """
+    if len(modal) == handoff.modal_covariate_set_size:
+        return None
+    return (f"modal set computed here holds {len(modal)} keys; the handoff says "
+            f"the real inventory's holds {handoff.modal_covariate_set_size}. "
+            f"Expected against a synthetic inventory; in the scoring clone it "
+            f"means the modal rule or the inventory moved.")
+
+
+class MarginScore(NamedTuple):
+    """One case's recall against the modal baseline.
+
+    Attributes:
+        case_id: The opaque case id.
+        paper: The inventory paper's id.
+        recall: The record's recall over the recoverable covariates.
+        modal_recall: What the modal set alone would have recovered, over the
+            same denominator.
+        margin: `recall - modal_recall`, the result; None when either side is.
+        modal_size: How many keys the modal set holds, so the baseline can be
+            read without it.
+    """
+
+    case_id: str
+    paper: str
+    recall: float | None
+    modal_recall: float | None
+    margin: float | None
+    modal_size: int
+
+
+def margin_score(score: CovariateScore, paper: dict[str, Any],
+                 modal: frozenset[str]) -> MarginScore:
+    """Put one case's recall beside what convention alone would have scored.
+
+    Args:
+        score: The case's raw covariate score.
+        paper: Its inventory paper.
+        modal: The computed modal set.
+
+    Returns:
+        The row.
+    """
+    cov = scorable_covariates(paper)
+    modal_recall = _ratio(len(modal & cov), len(cov))
+    margin = (None if score.recall is None or modal_recall is None
+              else score.recall - modal_recall)
+    return MarginScore(case_id=score.case_id, paper=score.paper, recall=score.recall,
+                       modal_recall=modal_recall, margin=margin,
+                       modal_size=len(modal))
 
 
 def self_check() -> list[str]:
