@@ -39,6 +39,7 @@ from benchmark.tiered_score import (
     direction_summary,
     directions_by_case,
     load_handoff,
+    load_papers,
     main,
     margin_score,
     modal_covariates,
@@ -901,3 +902,33 @@ def test_the_report_carries_attrition_between_the_targets_and_the_tiers(
     out = render_report([], handoff=load_handoff(), inventory="fake",
                         synthetic=True, run_id="t-1", cases=rows)
     assert out.index("TARGETS") < out.index("ATTRITION") < out.index("TIER A")
+
+
+# --- the scoring clone's command line -------------------------------------
+
+
+def test_the_fixture_and_a_directory_of_papers_both_load(tmp_path):
+    # The fixture here is one file with a papers list; the real inventory in
+    # the scoring clone is one file per paper. Both are read as data.
+    papers, synthetic = load_papers(Path("tests/fake_tiered_inventory.json"))
+    assert len(papers) == 5 and synthetic is True
+    for paper in papers[:2]:
+        (tmp_path / f"{paper['paper']}.json").write_text(json.dumps(paper))
+    (tmp_path / "case_map.json").write_text(json.dumps({"f001": "fA"}))
+    from_dir, synthetic_dir = load_papers(tmp_path)
+    assert [p["paper"] for p in from_dir] == ["fA", "fB"]
+    assert synthetic_dir is False
+
+
+def test_the_case_map_is_never_read_as_a_paper(tmp_path):
+    # inventory/case_map.json is the answer key's join table. It is passed in
+    # deliberately with --case-map or not at all; it is never picked up by the
+    # glob that reads the papers.
+    (tmp_path / "case_map.json").write_text(json.dumps({"f001": "fA"}))
+    assert load_papers(tmp_path) == ([], False)
+
+
+def test_a_run_without_an_inventory_is_refused_rather_than_half_scored(capsys):
+    with pytest.raises(SystemExit):
+        main(["--run", "artefacts/nowhere"])
+    assert "go together" in capsys.readouterr().err

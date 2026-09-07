@@ -1663,6 +1663,55 @@ def render_attrition(cases: list[dict[str, Any]], *, min_cos: float | None = Non
     return "\n".join(lines)
 
 
+
+def load_papers(path: Path) -> tuple[list[dict[str, Any]], bool]:
+    """Read an inventory, from one JSON file or a directory of per-paper files.
+
+    Two shapes because two clones hold two things: the synthetic fixture here
+    is a single file with a `papers` list and a `synthetic` flag, and the real
+    inventory in the scoring clone is one file per paper under `inventory/`.
+    Whichever it is, the rows are read as DATA; the schema module is never
+    imported, and `load_handoff` pins the version they are read under.
+
+    Args:
+        path: The file or directory.
+
+    Returns:
+        `(papers, synthetic)`. `synthetic` is True only when the source says
+        so, so a real run can never be labelled a rehearsal by accident, and a
+        rehearsal can never lose the label by omission.
+
+    Raises:
+        FileNotFoundError: When the path does not exist.
+        ValueError: When a file holds neither a paper nor a `papers` list.
+    """
+    if not path.exists():
+        raise FileNotFoundError(f"{path}: no inventory there")
+    if path.is_dir():
+        papers = []
+        for f in sorted(path.glob("*.json")):
+            if f.name == "case_map.json":
+                continue          # the answer key's join table, never read here
+            row = json.loads(f.read_text())
+            papers.append(row)
+        return papers, False
+    doc = json.loads(path.read_text())
+    if isinstance(doc, dict) and "papers" in doc:
+        return list(doc["papers"]), bool(doc.get("synthetic", False))
+    if isinstance(doc, list):
+        return list(doc), False
+    raise ValueError(f"{path}: holds neither a papers list nor a paper")
+
+
+def _construct_of() -> ConstructOf:
+    from generate.funnel import load_constructs
+    from pipeline.pose import construct_index
+
+    constructs, _ = load_constructs()
+    index = construct_index(constructs)
+    return lambda key: index[key].construct_key if key in index else None
+
+
 def self_check() -> list[str]:
     """Check the report's declared shape against its own invariants.
 
@@ -1719,9 +1768,24 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--self-check", action="store_true",
                         help="check the report's declared shape and exit")
+    parser.add_argument("--run", type=Path,
+                        help="a tiered run directory (pipeline.pose_terms output)")
+    parser.add_argument("--inventory", type=Path,
+                        help="the inventory: one JSON file, or a directory of "
+                             "per-paper files")
+    parser.add_argument("--case-map", type=Path,
+                        help="inventory/case_map.json, the case id -> paper join. "
+                             "Scoring clone only; it may never be in a generation "
+                             "clone, so without it the papers' own pairs are used")
+    parser.add_argument("--min-cos", type=float,
+                        help="the run's abstention threshold, for the near-miss split")
     args = parser.parse_args(argv)
+    if args.run or args.inventory:
+        if not (args.run and args.inventory):
+            parser.error("--run and --inventory go together")
+        return _report_main(args)
     if not args.self_check:
-        parser.error("nothing to do yet: pass --self-check")
+        parser.error("nothing to do yet: pass --self-check, or --run and --inventory")
     problems = self_check()
     for problem in problems:
         print(f"tiered_score: {problem}")
@@ -1732,6 +1796,29 @@ def main(argv: list[str] | None = None) -> int:
         print(f"handoff pinned: dictionary {h.dictionary_version_hash}, "
               f"schema {h.schema_version}, tier_rule {h.tier_rule}")
     return 1 if problems else 0
+
+
+def _report_main(args: argparse.Namespace) -> int:
+    """Render a run's report to stdout.
+
+    Args:
+        args: The parsed command line.
+
+    Returns:
+        A process exit status.
+    """
+    from pipeline.pose_terms import read_case_index
+
+    handoff = load_handoff()
+    papers, synthetic = load_papers(args.inventory)
+    case_map = (None if args.case_map is None
+                else {str(k): str(v) for k, v in
+                      json.loads(args.case_map.read_text()).items()})
+    reports = assemble(args.run, papers, _construct_of(), case_map=case_map)
+    print(render_report(reports, handoff=handoff, inventory=str(args.inventory),
+                        synthetic=synthetic, run_id=args.run.name,
+                        cases=read_case_index(args.run), min_cos=args.min_cos))
+    return 0
 
 
 if __name__ == "__main__":
