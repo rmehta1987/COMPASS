@@ -610,5 +610,11 @@
   },
   "critiques": [],
   "revision": 0,
-  "generation": null
+  "generation": {
+    "key_present": false,
+    "key_fetchable": false,
+    "tree_sha": "11c03f47b6883c0149929a10541708f677a9d453",
+    "tree_clean": true,
+    "branch": "ralph-loop"
+  }
 }
