@@ -48,3 +48,15 @@ is against the fakes.
   sides resolve, 10 cases resolve on BOTH sides. Not a defect: most posed
   exposures (PM2.5 and similar) are linked spatial measures the instrument
   does not hold, which is what tiers C and D are made of.
+- item 15 · 11c03f4 · LIVE RUN tiered-20260906, claude-haiku-4-5, k=5,
+  workers=5, --allow-unestimable, 2026-09-06 22:11-01:5x: 95 cases posed,
+  9 emitted, 1 refused (c075), 85 unresolved_anchor (both sides 38, exposure
+  only 37, outcome only 10; 18 abstaining sides within 0.05 of the threshold).
+  No case was discarded by a validator. attrition.json written.
+- item 15 stamp · 9e862b4 · stamped at 11c03f4 after the push, tree_clean
+  true, key_present false; tagged posed-3dc8415eccfe-tiered-20260906. The
+  first stamp read tree_clean=False (untracked b4/b5/dry run directories) and
+  was discarded, not accepted.
+- post-run · ed49ff3 · the case-id test was seeded against the real artefacts
+  and failed twice over: fragile to a sha256 hex collision, and blind to a
+  case id reaching the prompt through a stem. Both closed.

@@ -2,7 +2,7 @@
 build: 3dc8415eccfe
 schema: inventory/schema.py@292571ccc682   (pinned by the scorer, never imported)
 tier_rule: confident_anchor
-last green: ad0faa8   (VERIFIED 2026-09-06, ./check.sh unpiped, exit 0, "GREEN";
+last green: ed49ff3   (VERIFIED 2026-09-06, ./check.sh unpiped, exit 0, "GREEN";
                        ruff 226 <= 232, mypy 59 <= 59, R@1 0.643, canaries 7/7,
                        smoke_test ALL PASS, step 11 0 problems)
 
@@ -45,12 +45,35 @@ note: the earlier TIER_STATE's blockers 1 and 2 are resolved/dissolved — the
 - [x] 12 tier A and B renderer — case studies  d64132d
 - [x] 13 tier C and D renderer — rates  f4e4d20
 - [x] 14 report assembly, targets before numbers  db959a2
-- [~] 15 run the driver over all 95 cases       LAUNCHED 2026-09-06 22:11
-         `python -u -m pipeline.pose_terms tiered-20260906 --inventory
-         'handoff-public dcd80da' --k 5 --workers 5 --allow-unestimable`;
-         log in the session scratchpad. 85 of 95 cases resolve no anchor
-         and spend no model call, so ~10 cases reach the model.
-- [x] 16 commit and report attrition  ad0faa8 (code; the run's own numbers pending)
+- [x] 15 run the driver over all 95 cases       11c03f4, stamped 9e862b4,
+         tagged posed-3dc8415eccfe-tiered-20260906. 9 emitted, 1 refused,
+         85 unresolved_anchor. Pushed.
+- [x] 16 commit and report attrition  ad0faa8 (code) + 11c03f4 (the run's
+         own attrition.json: both sides 38, exposure only 37, outcome only
+         10, emitted 9, refused 1; 18 abstaining SIDES near the threshold)
+
+## PHASE 3 IS THE OPERATOR'S, in compass-score
+The loop cannot run it: tier assignment needs the inventory and
+inventory/case_map.json, and neither may ever be in compass-gen.
+
+    git fetch && git checkout <ralph-loop at ed49ff3 or later>
+    python -m benchmark.contamination_check --live        # before scoring
+    python -m benchmark.tiered_score \
+        --run artefacts/tiered-20260906 \
+        --inventory inventory/ \
+        --case-map inventory/case_map.json \
+        --min-cos 0.729476
+
+The scorer reads inventory rows as data and pins schema_version; it never
+imports inventory/schema.py, and it never reads case_map.json unless handed it
+with --case-map. If the tier predicate meets a paper reachable on both sides
+only through an analogue it raises UnclassifiablePaper rather than binning it
+(see below).
+
+stamping note: `pipeline.generation_env.stamp(require_pushed=True)` records
+tree_clean, and baseline_score refuses a stamp taken on a dirty tree. The
+untracked run directories under artefacts/ (b4, b5, the tiered dry run) must
+be moved out of the tree before stamping and restored after.
 
 ## Open question for the operator (not a blocker; nothing waits on it)
 - The tier predicate does not place a paper whose BOTH sides are reachable
