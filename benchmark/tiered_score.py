@@ -39,7 +39,7 @@ import sys
 from collections import Counter
 from collections.abc import Callable, Iterable
 from enum import Enum
-from math import ceil
+from math import ceil, sqrt
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -1220,6 +1220,165 @@ def render_case_studies(reports: list[CaseReport], tier: str) -> str:
     lines = [head]
     for report in sorted(reports, key=lambda r: (r.paper, r.case_id)):
         lines.extend(_case_study(report))
+    return "\n".join(lines)
+
+
+
+# --- item 13: tiers C and D carry rates, with an interval and an n --------
+#
+# Tier C is 7 papers and tier D is 6, so a rate is meaningful here in a way it
+# is not in A or B -- but only just. At n = 6 and 7 a Wilson interval is very
+# wide, and that width IS the honest presentation: one case flipping moves the
+# point estimate by more than a tenth. Every figure carries its n, and a tier
+# that scored nothing reads UNMEASURED rather than zero.
+
+
+def wilson(hits: int, n: int, z: float = 1.96) -> tuple[float | None, float | None]:
+    """The 95% Wilson score interval for a proportion.
+
+    The formula `src/char_strata.py::wilson` uses. Not imported from there:
+    `src/` is the retrieval tree, excluded from ruff and mypy, and importing
+    it would pull an unannotated module into the pipeline's typed surface.
+
+    Args:
+        hits: Successes.
+        n: Trials.
+        z: The normal quantile; 1.96 for 95%.
+
+    Returns:
+        `(low, high)`, or `(None, None)` when n is zero -- an interval over no
+        trials is not a wide interval, it is no interval.
+    """
+    if n <= 0:
+        return (None, None)
+    p = hits / n
+    d = 1 + z * z / n
+    centre = p + z * z / (2 * n)
+    half = z * sqrt(p * (1 - p) / n + z * z / (4 * n * n))
+    return (round((centre - half) / d, 3), round((centre + half) / d, 3))
+
+
+class Rate(NamedTuple):
+    """One component's rate in one tier, with everything needed to read it.
+
+    Attributes:
+        name: The component's name, as the matrix names it.
+        hits: Numerator.
+        n: Denominator -- sides, cases or papers, whichever the component
+            counts; `unit` says which.
+        unit: What `n` counts.
+        low: Wilson lower bound, None when n is zero or the figure is not a
+            proportion.
+        high: Wilson upper bound, likewise.
+        note: Anything the reader needs to not misread it, including
+            `UNMEASURED` when n is zero.
+    """
+
+    name: str
+    hits: int
+    n: int
+    unit: str
+    low: float | None
+    high: float | None
+    note: str = ""
+
+    @property
+    def rate(self) -> float | None:
+        """Hits over n, or None when nothing was scored."""
+        return _ratio(self.hits, self.n)
+
+
+def _rate(name: str, hits: int, n: int, unit: str, note: str = "") -> Rate:
+    low, high = wilson(hits, n)
+    if n == 0:
+        # UNMEASURED leads, because it is the fact that changes how every other
+        # word on the line is read.
+        note = ("UNMEASURED: no case in this tier produced a scoreable outcome; "
+                "this is not a rate of zero") + (f". {note}" if note else "")
+    return Rate(name, hits, n, unit, low, high, note.strip())
+
+
+def component_rates(reports: list[CaseReport]) -> list[Rate]:
+    """Every component's rate for one tier, in matrix order.
+
+    Args:
+        reports: The tier's cases.
+
+    Returns:
+        One `Rate` per component, including the components that scored
+        nothing: a component dropped from the list would read as inapplicable.
+    """
+    anchors = [r.anchor for r in reports if r.anchor is not None]
+    analogues = [r.analogue for r in reports if r.analogue is not None]
+    refusals = [r.refusal for r in reports if r.refusal is not None]
+    covs = [r.covariate for r in reports if r.covariate is not None]
+    margins = [(r.margin, r.covariate) for r in reports
+               if r.margin is not None and r.covariate is not None]
+    directions = [r.direction for r in reports if r.direction is not None]
+    dsum = direction_summary(directions)
+
+    modal_hits = sum(round((m.modal_recall or 0.0) * c.recoverable)
+                     for m, c in margins)
+    modal_n = sum(c.recoverable for _, c in margins)
+    record_hits = sum(c.hits for _, c in margins)
+    margin_note = "not a proportion: recall minus the modal baseline"
+    if modal_n:
+        margin_note += (f"; record {record_hits} of {modal_n}, modal set "
+                        f"{modal_hits} of {modal_n}, margin "
+                        f"{(record_hits - modal_hits) / modal_n:+.3f}")
+
+    return [
+        _rate("anchor resolution", sum(a.hits for a in anchors),
+              sum(a.scoreable for a in anchors), "sides"),
+        _rate("modality analogue resolution", sum(a.hits for a in analogues),
+              sum(a.scoreable for a in analogues), "sides",
+              note=f"mismatch flag UNAVAILABLE ({MODALITY_MISMATCH_BLOCKER})"),
+        _rate("refusal on absent anchor", sum(r.refused for r in refusals),
+              sum(r.scoreable for r in refusals), "unreachable sides"),
+        _rate("covariate recall, raw", sum(c.hits for c in covs),
+              sum(c.recoverable for c in covs), "recoverable covariates"),
+        Rate("covariate recall, margin over modal", record_hits - modal_hits,
+             modal_n, "recoverable covariates", None, None, margin_note),
+        _rate("direction agreement, per pair", round((dsum.per_pair or 0.0)
+                                                     * dsum.scored),
+              dsum.scored, "cases",
+              note=(f"weighted per paper {dsum.per_paper:.3f} over "
+                    f"{dsum.papers} papers; majority direction "
+                    f"{dsum.base_direction} at base rate {dsum.base_rate:.3f}; "
+                    f"largest paper holds {dsum.largest_paper_share:.3f} of the "
+                    f"cases; {dsum.unscored} carried unscored"
+                    if dsum.scored else "")),
+    ]
+
+
+def render_rates(reports: list[CaseReport], tier: str) -> str:
+    """Render one tier as rates, with an interval and an n on every figure.
+
+    Args:
+        reports: The tier's cases.
+        tier: The tier's name, for the heading.
+
+    Returns:
+        The section.
+    """
+    papers = sorted({r.paper for r in reports})
+    lines = [f"TIER {tier} - {len(papers)} paper(s), {len(reports)} case(s). "
+             f"Rates with 95% Wilson intervals; at this n the interval is wide, "
+             f"and that is the measurement."]
+    if not reports:
+        return (f"TIER {tier} - UNMEASURED: no case in this run reached this "
+                f"tier with a scoreable outcome. Not a rate of zero, and not "
+                f"evidence about the pipeline.")
+    for rate in component_rates(reports):
+        if rate.n == 0:
+            lines.append(f"  {rate.name:<38}n=0  {rate.note}")
+            continue
+        interval = ("" if rate.low is None
+                    else f"  [{rate.low:.3f}, {rate.high:.3f}]")
+        value = "" if rate.rate is None else f"{rate.rate:.3f}"
+        lines.append(f"  {rate.name:<38}{rate.hits} of {rate.n} {rate.unit} "
+                     f"{value}{interval}  n={rate.n}"
+                     + (f"  ({rate.note})" if rate.note else ""))
     return "\n".join(lines)
 
 

@@ -30,6 +30,7 @@ from benchmark.tiered_score import (
     analogue_scores,
     anchor_scores,
     built_dictionary_hash,
+    component_rates,
     covariate_score,
     direction_scores,
     direction_summary,
@@ -41,11 +42,13 @@ from benchmark.tiered_score import (
     modal_size_disagreement,
     refusal_scores,
     render_case_studies,
+    render_rates,
     scorable_covariates,
     self_check,
     side_state,
     tier_of,
     tiers_of,
+    wilson,
 )
 from env.tools import resolve_variable
 from generate.funnel import load_constructs
@@ -725,3 +728,64 @@ def test_the_margin_is_shown_as_counts_in_a_small_tier(construct_of):
         [_report(construct_of, "fA", "f001", "A", ["m1:Q5.4", "m2:Q5.6", "m2:Q9.1"])],
         "A")
     assert "record 3 of 3, the modal set alone 2 of 3" in out
+
+
+# --- item 13: tiers C and D as rates --------------------------------------
+
+
+def test_the_wilson_interval_matches_the_projects_own_formula():
+    # The same 95% interval src/char_strata.py computes; checked against a
+    # hand calculation so the two cannot drift silently.
+    assert wilson(6, 7) == (0.487, 0.974)
+    assert wilson(0, 6) == (0.0, 0.39)
+    assert wilson(0, 0) == (None, None), "no trials is no interval, not a wide one"
+
+
+def test_every_printed_figure_carries_its_n(construct_of):
+    reports = [_report(construct_of, "fC", f"f00{i}", "C", ["m1:Q5.4"])
+               for i in (4, 5, 6)]
+    out = render_rates(reports, "C")
+    for line in out.splitlines()[1:]:
+        assert "n=" in line, line
+
+
+def test_a_rate_is_printed_with_its_interval(construct_of):
+    reports = [_report(construct_of, "fC", f"f00{i}", "C", ["m1:Q5.4"])
+               for i in (4, 5, 6)]
+    out = render_rates(reports, "C")
+    assert re.search(r"\[\d\.\d{3}, \d\.\d{3}\]", out)
+    assert "Wilson" in out
+
+
+def test_a_component_that_scored_nothing_says_unmeasured_and_keeps_its_row(
+        construct_of):
+    # Tier D has no present anchor, so anchor resolution has n=0 there. It
+    # keeps its row and says so: a dropped row reads as inapplicable.
+    reports = [_report(construct_of, "fD", "f010", "D", ["m1:Q5.4"])]
+    out = render_rates(reports, "D")
+    assert "anchor resolution" in out
+    assert "n=0" in out and "UNMEASURED" in out
+    rates = {r.name: r for r in component_rates(reports)}
+    assert rates["anchor resolution"].rate is None, "not a rate of zero"
+
+
+def test_an_empty_tier_is_unmeasured_rather_than_a_rate_of_zero():
+    out = render_rates([], "C")
+    assert "UNMEASURED" in out
+    assert not re.search(r"\d\.\d", out)
+
+
+def test_the_margin_row_is_marked_as_not_a_proportion(construct_of):
+    reports = [_report(construct_of, "fC", "f004", "C", ["m1:Q5.4", "m2:Q5.6"])]
+    (row,) = [r for r in component_rates(reports) if "margin" in r.name]
+    assert row.low is None and row.high is None
+    assert "not a proportion" in row.note
+    assert "margin " in row.note
+
+
+def test_the_direction_row_carries_the_weighting_and_the_base_rate(construct_of):
+    reports = [_report(construct_of, "fC", f"f00{i}", "C", ["m1:Q5.4"])
+               for i in (4, 5, 6)]
+    (row,) = [r for r in component_rates(reports) if "direction" in r.name]
+    assert "weighted per paper" in row.note
+    assert "base rate" in row.note and "largest paper" in row.note
