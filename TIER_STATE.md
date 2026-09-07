@@ -2,7 +2,7 @@
 build: 3dc8415eccfe
 schema: inventory/schema.py@292571ccc682   (pinned by the scorer, never imported)
 tier_rule: confident_anchor
-last green: e558660   (VERIFIED 2026-09-06, ./check.sh unpiped, exit 0, "GREEN";
+last green: ad0faa8   (VERIFIED 2026-09-06, ./check.sh unpiped, exit 0, "GREEN";
                        ruff 226 <= 232, mypy 59 <= 59, R@1 0.643, canaries 7/7,
                        smoke_test ALL PASS, step 11 0 problems)
 
@@ -42,11 +42,15 @@ note: the earlier TIER_STATE's blockers 1 and 2 are resolved/dissolved — the
 - [x] 9  covariate recall, raw  2def6e7
 - [x] 10 covariate recall, margin over modal  d56aaed
 - [x] 11 direction agreement, weighted per paper  e558660
-- [ ] 12 tier A and B renderer — case studies
-- [ ] 13 tier C and D renderer — rates
-- [ ] 14 report assembly, targets before numbers
-- [ ] 15 run the driver over all 95 cases
-- [ ] 16 commit and report attrition
+- [x] 12 tier A and B renderer — case studies  d64132d
+- [x] 13 tier C and D renderer — rates  f4e4d20
+- [x] 14 report assembly, targets before numbers  db959a2
+- [~] 15 run the driver over all 95 cases       LAUNCHED 2026-09-06 22:11
+         `python -u -m pipeline.pose_terms tiered-20260906 --inventory
+         'handoff-public dcd80da' --k 5 --workers 5 --allow-unestimable`;
+         log in the session scratchpad. 85 of 95 cases resolve no anchor
+         and spend no model call, so ~10 cases reach the model.
+- [x] 16 commit and report attrition  ad0faa8 (code; the run's own numbers pending)
 
 ## Open question for the operator (not a blocker; nothing waits on it)
 - The tier predicate does not place a paper whose BOTH sides are reachable

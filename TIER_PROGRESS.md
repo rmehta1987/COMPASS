@@ -32,3 +32,19 @@ is against the fakes.
   variable-key literal may appear in the module.
 - item 11 · e558660 · direction weighted per paper, with the per-pair rate,
   the concentration and the majority base rate beside it.
+- item 12 · d64132d · tiers A and B render as case studies in counts; an empty
+  tier reads UNMEASURED and prints no figure (14a).
+- item 13 · f4e4d20 · tiers C and D render as rates with 95% Wilson intervals
+  and n on every line; the margin and the per-paper direction rate are marked
+  not-a-proportion and print their counts.
+- item 14 · db959a2 · report assembly: provenance, the residual limitation,
+  the targets, attrition, then the tiers. assemble() scores only emitted
+  records. End-to-end test drives the real driver into the real scorer.
+- item 15 prep · afccaf9 · the case index is written after every case and
+  --skip-recorded reuses a completed one (b2/b4 outage history).
+- item 16 · ad0faa8 · attrition by cause, unresolved anchors split by side,
+  near misses against a stated band, denominator printed.
+- DRY RUN 2026-09-06 (tiered-dry-20260906, no model call): 95 cases, 67 of 190
+  sides resolve, 10 cases resolve on BOTH sides. Not a defect: most posed
+  exposures (PM2.5 and similar) are linked spatial measures the instrument
+  does not hold, which is what tiers C and D are made of.
