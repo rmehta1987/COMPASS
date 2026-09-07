@@ -1,0 +1,53 @@
+# TIER STATE
+build: 3dc8415eccfe
+schema: inventory/schema.py@292571ccc682   (pinned by the scorer, never imported)
+tier_rule: confident_anchor
+last green: 4a6986d   (VERIFIED 2026-09-06, ./check.sh unpiped, exit 0, "GREEN";
+                       908 passed, ruff 226 <= 232, mypy 59 <= 59, R@1 0.643,
+                       canaries 7/7, smoke_test ALL PASS, step 11 0 problems)
+
+BLOCKED: the modality_mismatch half of item 8 — needs pipeline items 16-19.
+         Everything else is buildable.
+
+inputs:  BOTH PRESENT as of 6779b78. posed_pairs.json (95 rows, exactly
+         {case_id, exposure, outcome}, c001..c095) and handoff/for_harness.json,
+         taken from the orphan branch handoff-public (dcd80da), which shares no
+         history with scoring-key. case_map.json is NOT here and never may be.
+         Re-checked after the fetch: `git show scoring-key:...` finds nothing,
+         no benchmark/prevalence_key.py in the tree, so check.sh step 0 holds
+         and the artefacts generated here are not void.
+
+seal:    the loop must never fetch scoring-key. handoff-public is fetched by
+         explicit refspec only (`git fetch origin handoff-public`); the clone's
+         configured refspec stays +refs/heads/ralph-loop:refs/remotes/origin/ralph-loop.
+
+note: design agreement is not a component (design=false, 7 of 16 untrustworthy).
+note: the real run is an operator step in compass-score; tier assignment needs
+      the inventory and case_map.json, so it is BUILT and TESTED here against
+      the fakes only. Never assert against the real tier_counts here.
+note: an empty tier is UNMEASURED, never 0% (14a). Tier A is one paper with one
+      posed pair; at the observed temporality discard it can vanish entirely.
+note: the earlier TIER_STATE's blockers 1 and 2 are resolved/dissolved — the
+      reasoning is in TIER_ATTEMPTS.md so it is not re-litigated.
+
+## items  (phase 1 = build and prove on the fakes; phase 2 = generate)
+- [x] 1  add tiered_score.py to check.sh          4a6986d
+- [ ] 2  fake inventory, 5 synthetic papers       next
+- [ ] 3  posed-pair driver
+- [ ] 4  load for_harness.json, assert three hashes
+- [ ] 5  tier assignment code
+- [ ] 6  anchor-resolution component
+- [ ] 7  refusal component
+- [ ] 8  modality analogue resolution (half — see 8a)
+- [ ] 9  covariate recall, raw
+- [ ] 10 covariate recall, margin over modal
+- [ ] 11 direction agreement, weighted per paper
+- [ ] 12 tier A and B renderer — case studies
+- [ ] 13 tier C and D renderer — rates
+- [ ] 14 report assembly, targets before numbers
+- [ ] 15 run the driver over all 95 cases
+- [ ] 16 commit and report attrition
+
+## PARKED
+(item · three attempts · why)
+(none)
