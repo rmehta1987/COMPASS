@@ -322,7 +322,8 @@ def test_every_json_response_is_filtered_at_one_chokepoint() -> None:
 
     class Capture(Handler):
         def __init__(self) -> None:
-            self.state = types.SimpleNamespace(scrubber=Scrubber(path=dic))
+            self.state = types.SimpleNamespace(scrubber=Scrubber(path=dic),
+                                               show_instrument=False)
             self.wfile = io.BytesIO()
             self.codes: list[int] = []
 
@@ -436,6 +437,80 @@ def test_pseudonyms_are_wide_enough_not_to_collide_over_the_corpus() -> None:
     assert bits >= 48, f"{bits}-bit labels: birthday risk over 1,353 targets"
     seen = {p.label(i) for i in range(1, 1354)}
     assert len(seen) == 1353, "collision across the corpus"
+
+
+def test_show_instrument_returns_the_wording_and_is_off_by_default() -> None:
+    """The redaction is aimed at other people, not at the operator's own disk.
+
+    A pseudonym cannot tell you whether the retriever found the RIGHT variable,
+    which is the one question a retrieval demo exists to answer. So the flag
+    returns the wording -- but the DEFAULT still has to be the safe one, because
+    that default is what stops a later `--host 0.0.0.0` publishing the codebook.
+    """
+    default = pseudonymise_hit(FULL_HIT, Pseudonymiser(salt="fixed"))
+    assert not WITHHELD_HIT_FIELDS & set(default)
+
+    shown = pseudonymise_hit(FULL_HIT, Pseudonymiser(salt="fixed"),
+                             show_instrument=True)
+    assert shown["stem"] == FULL_HIT["stem"], "the question wording is the point"
+    assert shown["option"] == FULL_HIT["option"]
+    assert shown["key"] == FULL_HIT["key"]
+    assert shown["target_id"] == FULL_HIT["target_id"]
+    assert "INSTRUMENT_SHOWN" in shown, "unredacted output must say so"
+    assert shown["target"] == default["target"], "the pseudonym stays, for the map"
+
+
+def test_show_instrument_is_refused_on_a_non_loopback_bind() -> None:
+    """Who can reach the socket, and what the socket says, are separate claims.
+
+    Together the two flags are "publish the withheld instrument to the network",
+    so the combination is refused rather than warned about.
+    """
+    from serve.api import main
+
+    os.environ.setdefault("COMPASS_DICTIONARY", str(ROOT / "dictionary.json"))
+    site = ROOT / "serve"          # any real directory with no withheld markers
+    assert main(["--show-instrument", "--host", "0.0.0.0",
+                 "--i-am-not-serving-the-public",
+                 "--site-dir", str(site), "--port", "0"]) == 2
+
+
+def test_the_chokepoint_does_not_cancel_the_flag(tmp_path: Path) -> None:
+    """Scrubbing an intentionally-unredacted response would silently undo it."""
+    import io
+    import types
+
+    from serve.api import Handler
+
+    dic = _dictionary_or_skip()
+    entries = json.loads(dic.read_text(encoding="utf-8"))["entries"]
+    wording = next(e["question_text"] for e in entries
+                   if isinstance(e.get("question_text"), str)
+                   and len(e["question_text"].split()) > 6)
+
+    class Capture(Handler):
+        def __init__(self, show: bool) -> None:
+            self.state = types.SimpleNamespace(scrubber=Scrubber(path=dic),
+                                               show_instrument=show)
+            self.wfile = io.BytesIO()
+
+        def send_response(self, code: int, message: str | None = None) -> None:
+            return
+
+        def send_header(self, *a: object, **k: object) -> None:
+            return
+
+        def end_headers(self) -> None:
+            return
+
+    on = Capture(show=True)
+    on._send(200, {"stem": wording})
+    assert wording in on.wfile.getvalue().decode(), "the flag was cancelled"
+    assert "REDACTION_DISABLED" in on.wfile.getvalue().decode()
+
+    off = Capture(show=False)
+    off._send(200, {"stem": wording})
+    assert wording not in off.wfile.getvalue().decode(), "default must still redact"
 
 
 def test_the_pipeline_model_is_named_and_reported_not_assumed() -> None:

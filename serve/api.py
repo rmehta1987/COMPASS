@@ -89,17 +89,22 @@ class State:
         run_dir: Where the pseudonym map is written. Never served.
     """
 
-    def __init__(self, deploy_root: Path, site_dir: Path, run_dir: Path) -> None:
+    def __init__(self, deploy_root: Path, site_dir: Path, run_dir: Path,
+                 show_instrument: bool = False) -> None:
         """Prepare shared state and fail early on a missing instrument.
 
         Args:
             deploy_root: The `deploy/` bundle directory.
             site_dir: The static page directory.
             run_dir: Private output directory for the pseudonym map.
+            show_instrument: Serve withheld instrument content -- the question
+                wording as well as the key -- unredacted. `main` refuses to set
+                this on a non-loopback bind.
         """
         self.deploy_root = deploy_root
         self.site_dir = site_dir
         self.run_dir = run_dir
+        self.show_instrument = show_instrument
         self.scrubber = Scrubber()
         self.pseud = Pseudonymiser()
         self._retriever: Any = None
@@ -184,12 +189,21 @@ def _retrieve(state: State, body: dict[str, Any]) -> dict[str, Any]:
         "threshold": r.min_cos,
         "abstained": bool(top < r.min_cos),
         "margin_12": round(hits[0]["cos"] - hits[1]["cos"], 6) if len(hits) > 1 else None,
-        "hits": [pseudonymise_hit(h, state.pseud) for h in hits],
+        "hits": [pseudonymise_hit(h, state.pseud,
+                                  show_instrument=state.show_instrument)
+                 for h in hits],
         # No absolute path here: it named `run_dir` on every response, and said
         # "is written" in the present tense about a file only written at
         # shutdown -- false for the whole life of the server, and permanently
-        # false if the process is killed.
-        "note": ("Targets are pseudonymised: the instrument is withheld "
+        # false if the process is killed. And the note must not claim targets
+        # are pseudonymised while --show-instrument is printing the wording:
+        # a response that describes itself wrongly is worse than one that says
+        # nothing, because it is the part a reader trusts.
+        "note": ("UNREDACTED: question wording, options and variable keys are "
+                 "verbatim withheld instrument content (README.md §What is "
+                 "withheld). Loopback only; do not paste this anywhere."
+                 if state.show_instrument else
+                 "Targets are pseudonymised: the instrument is withheld "
                  "(README.md §What is withheld). The label->target map is "
                  "written to the run directory at shutdown and never served. "
                  "`cos` is a wording oracle by construction -- see "
@@ -331,9 +345,19 @@ class Handler(BaseHTTPRequestHandler):
             code: HTTP status.
             payload: The body.
         """
-        payload, marks = self.state.scrubber.scrub(payload)
-        if marks:
-            payload = {**payload, "redactions": marks}
+        if self.state.show_instrument:
+            # The flag exists to show exactly what the scrubber removes, so
+            # scrubbing here would silently cancel it -- the operator would pass
+            # --show-instrument and still get pseudonyms, with nothing saying
+            # why. Only reachable on a loopback bind: `main` refuses the
+            # combination otherwise.
+            payload = {**payload,
+                       "REDACTION_DISABLED": "--show-instrument is on; this "
+                                             "response carries withheld content"}
+        else:
+            payload, marks = self.state.scrubber.scrub(payload)
+            if marks:
+                payload = {**payload, "redactions": marks}
         raw = json.dumps(payload, indent=1).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
@@ -516,6 +540,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                     default=Path("/home/mehta5/compass-site/site"))
     ap.add_argument("--deploy-root", type=Path, default=ROOT / "deploy")
     ap.add_argument("--run-dir", type=Path, default=ROOT / "run" / "serve")
+    ap.add_argument("--show-instrument", action="store_true",
+                    help="return the question wording, options and variable key "
+                         "beside each hit instead of a pseudonym. Loopback only. "
+                         "For an operator testing retrieval against a dictionary "
+                         "already on their own disk -- a pseudonym cannot tell "
+                         "you whether the RIGHT variable was found.")
     ap.add_argument("--i-am-not-serving-the-public", action="store_true",
                     help="required to bind a non-loopback address; every "
                          "request spends the seat COMPASS_CLAUDE_CONFIG_DIR "
@@ -547,15 +577,32 @@ def main(argv: list[str]) -> int:
     if unsafe:
         print(unsafe, file=sys.stderr)
         return 2
-    state = State(a.deploy_root.resolve(), a.site_dir.resolve(), a.run_dir.resolve())
+    # The two flags are individually defensible and together are "publish the
+    # withheld instrument to the network", so the combination is refused rather
+    # than warned about. `--i-am-not-serving-the-public` is a statement about who
+    # can reach the socket; `--show-instrument` is a statement about what the
+    # socket says. Only the second is safe on loopback.
+    if a.show_instrument and a.host not in LOOPBACK:
+        print(f"refusing --show-instrument on {a.host}: it returns question "
+              f"wording, options and variable keys verbatim, and that is "
+              f"withheld (README.md §What is withheld). It is for an operator "
+              f"reading a dictionary already on their own disk, over loopback.",
+              file=sys.stderr)
+        return 2
+    state = State(a.deploy_root.resolve(), a.site_dir.resolve(), a.run_dir.resolve(),
+                  show_instrument=a.show_instrument)
     srv = build_server(a.host, a.port, state)
     print(f"COMPASS test endpoint   http://{a.host}:{a.port}/")
     print(f"  site        {state.site_dir}")
     print(f"  deploy      {state.deploy_root}")
     print(f"  dictionary  {state.scrubber.source} "
           f"({len(state.scrubber.corpus)} five-word runs indexed)")
-    print("  routes      GET /api/health · POST /api/retrieve · POST /api/specify")
+    print("  routes      GET /api/health · GET /console · POST /api/retrieve"
+          " · POST /api/specify")
     print("  NOT a measurement surface: posed records, screened_from=0.")
+    if state.show_instrument:
+        print("  ** --show-instrument: responses carry question wording, options "
+              "and keys VERBATIM. Withheld content. Loopback only. **")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

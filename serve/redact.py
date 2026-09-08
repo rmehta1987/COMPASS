@@ -200,24 +200,42 @@ class Pseudonymiser:
                         encoding="utf-8")
 
 
-def pseudonymise_hit(hit: dict[str, Any], pseud: Pseudonymiser) -> dict[str, Any]:
+def pseudonymise_hit(hit: dict[str, Any], pseud: Pseudonymiser,
+                     *, show_instrument: bool = False) -> dict[str, Any]:
     """Reduce a retriever hit to what may leave the process.
 
     Allowlist, deliberately. `_hit` is owned by the deploy bundle and may gain a
     field; the failure mode of a denylist here is publishing the instrument, and
     the failure mode of an allowlist is an absent number in a demo panel.
 
+    `show_instrument` turns the allowlist off. It exists because the redaction is
+    aimed at OTHER PEOPLE, and an operator testing on loopback against a
+    dictionary already on their own disk is not other people: with only a
+    pseudonym they cannot tell whether the retriever found the RIGHT variable,
+    which is the one question a retrieval demo is for. `serve/api.py` will not
+    set it on a non-loopback bind, so the default protects the deployment and
+    the flag serves the person who already has the file.
+
     Args:
         hit: A dict as returned by `deploy/retriever.py::CompassRetriever.search`.
         pseud: The map supplying this target's stand-in.
+        show_instrument: Return the withheld fields alongside the pseudonym.
+            Loopback only; `api.py::main` is what enforces that.
 
     Returns:
-        A new dict carrying the pseudonym and the safe scalar fields only.
+        A new dict carrying the pseudonym and the safe scalar fields, plus the
+        instrument fields when `show_instrument` is set.
     """
     out: dict[str, Any] = {"target": pseud.label(int(hit["target_id"]))}
     for k in sorted(SAFE_HIT_FIELDS):
         if k in hit:
             out[k] = hit[k]
+    if show_instrument:
+        for k in sorted(WITHHELD_HIT_FIELDS):
+            if k in hit:
+                out[k] = hit[k]
+        out["target_id"] = hit["target_id"]
+        out["INSTRUMENT_SHOWN"] = "withheld content, loopback only, do not paste"
     return out
 
 
