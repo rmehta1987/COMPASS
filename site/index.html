@@ -188,6 +188,14 @@ let live=null;
    reply lands after they picked an example and paints over it. */
 let liveGen=null;
 async function liveRetrieve(q){
+  /* INERT unless the endpoint said so. On GitHub Pages a root-relative
+     "/api/retrieve" does NOT fail: it resolves against the Pages origin, the
+     POST leaves the browser carrying what the reader typed, and a not-found
+     answer comes back. The offline gate certifies "zero external requests" and cannot see
+     a hostless URL, so the page must be unable to make that request at all --
+     not merely handle its failure. Only the server can honestly claim to be
+     the server, so it sets the flag when it serves this file. */
+  if(!window.COMPASS_ENDPOINT) return null;
   try{
     const r=await fetch("/api/retrieve",{method:"POST",
       headers:{"Content-Type":"application/json"},
