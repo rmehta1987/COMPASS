@@ -44,10 +44,13 @@
   <section>
     <h2>Specifier</h2>
     <p class="hint">Real run: <code>claude -p</code> with MCP tools, then transduction, then the gate.
-    Minutes, not seconds. One at a time &mdash; the server serialises them.</p>
+    Minutes, not seconds. One at a time &mdash; the server serialises them.
+    Keys are deliberately not pre-filled: this file is served straight from <code>serve/</code>, which
+    the site gate does not scan and the runtime filter does not touch, so a key left here would ship
+    on every request.</p>
     <div class="row">
-      <div><label for="e">Exposure construct key</label><input id="e" value="m3:Q16.1"></div>
-      <div><label for="o">Outcome construct key</label><input id="o" value="m2:Q5.8"></div>
+      <div><label for="e">Exposure construct key</label><input id="e" placeholder="module:qid, e.g. the exposure anchor" autocomplete="off"></div>
+      <div><label for="o">Outcome construct key</label><input id="o" placeholder="module:qid, e.g. the outcome anchor" autocomplete="off"></div>
     </div>
     <div class="row">
       <div><label for="sk">k (samples)</label><input id="sk" type="number" value="1" min="1" max="5"></div>

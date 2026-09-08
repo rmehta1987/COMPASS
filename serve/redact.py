@@ -27,15 +27,27 @@ Whichever fires, the WHOLE string is replaced and the path is named in
 `redactions`. Editing inside a sentence leaves something that still reads as a
 citation and hides how much leaked; a named replacement does not.
 
-Two things this is known NOT to do, stated because a filter believed to be
-total is worse than one whose edges are written down:
+Four things this is known NOT to do, stated because a filter believed to be
+total is worse than one whose edges are written down. The last three are why
+`serve/api.py` binds loopback and why that is a property of the design rather
+than a default someone may flip:
 
   * The five-word rule cannot see instrument text shorter than five words.
     THREE dictionary rows are (MEASURED 2026-09-08, 2,804 entries), two of them
     "List of Countries". `WORDING_FIELDS` is what covers them.
-  * It filters what this process SENDS. It does not stop a caller correlating
-    pseudonyms across queries; the salt is what bounds that, and it is random
-    per run unless `COMPASS_SERVE_SALT` pins it.
+  * IT DOES NOT STOP CORRELATION, AND THE SALT DOES NOT EITHER. An earlier
+    version of this paragraph claimed the salt bounds it; that was wrong. The
+    allowlisted scalars are properties of the target row, not of the salt:
+    `module`, `fold_size` and `n_siblings` are invariant across restarts, and
+    `cos` is deterministic for a given (query, target). Record that tuple, take
+    a new salt, re-issue the query, and the two labels join to one target.
+  * `cos` IS A WORDING ORACLE. It is on the allowlist by design and returned at
+    full precision even when the retriever abstains, so cosine against a
+    candidate phrase is a per-word gradient: hill-climb it and you reconstruct
+    wording no field ever printed. Rounding it would break the panel it exists
+    for. Nothing here closes this; the bind address does.
+  * It filters what this process SENDS. It says nothing about what the directory
+    handed to `--site-dir` contains -- see `api.py::_refuse_unsafe_site_dir`.
 """
 from __future__ import annotations
 
@@ -43,6 +55,7 @@ import hashlib
 import json
 import os
 import re
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -65,8 +78,16 @@ WITHHELD_HIT_FIELDS = frozenset({"key", "construct_key", "stem", "option", "memb
 #: `QN.N#N_N`, `QN.N_N`, `QN`, `QN_N`, `QN.N_N_TEXT`, `QN.N#N_N_N`, plus the
 #: `~{occurrence}` suffix the key rule adds where a qid repeats in its module.
 #: This pattern full-matches all 2,804 keys and all 1,080 construct keys.
+#:
+#: CASE-INSENSITIVE, and the literal sweep below case-folds both sides. Without
+#: it, `M1:1_Q6.2` at the start of a sentence and `m1:1_q6.2` from a model that
+#: lower-cased its own prose are missed by the regex AND by the literal set that
+#: exists to back the regex up. `agent/schema.py::UnresolvedCovariate.why_rejected`
+#: is free prose that asks the model to "name the keys you looked at and turned
+#: down", so a case-shifted key there is reachable, not hypothetical.
 KEY_RE = re.compile(
-    r"\bm\d+:(?:\d+_)?Q\d+(?:\.\d+)?(?:#\d+(?:_\d+)*)?(?:_\d+)*(?:_TEXT)?(?:~\d+)?")
+    r"\bm\d+:(?:\d+_)?Q\d+(?:\.\d+)?(?:#\d+(?:_\d+)*)?(?:_\d+)*(?:_TEXT)?(?:~\d+)?",
+    re.IGNORECASE)
 
 #: Record fields whose value is instrument text by construction. `Cited.wording`
 #: is `question_text` byte for byte (`env/labels.py`), and the five-word-run rule
@@ -141,6 +162,11 @@ class Pseudonymiser:
         """
         self.salt = salt or os.environ.get("COMPASS_SERVE_SALT") or os.urandom(16).hex()
         self._map: dict[int, str] = {}
+        # `ThreadingHTTPServer` runs a thread per request and `dump` iterates
+        # `_map`, so without this a shutdown during an in-flight retrieval hit
+        # `RuntimeError: dictionary changed size during iteration`, wrote no map,
+        # and left every pseudonym that run permanently uninvertible.
+        self._lock = threading.Lock()
 
     def label(self, target_id: int) -> str:
         """The stand-in for one target.
@@ -151,10 +177,15 @@ class Pseudonymiser:
         Returns:
             A short opaque label, stable for the life of this salt.
         """
-        if target_id not in self._map:
-            h = hashlib.sha256(f"{self.salt}:{target_id}".encode()).hexdigest()
-            self._map[target_id] = f"V{h[:6].upper()}"
-        return self._map[target_id]
+        with self._lock:
+            if target_id not in self._map:
+                h = hashlib.sha256(f"{self.salt}:{target_id}".encode()).hexdigest()
+                # 48 bits, not 24. Over the corpus's 1,353 targets a 24-bit
+                # label collides with probability 1353^2/(2*2^24) ~= 5.5% per
+                # salt, and a collision silently renders two different variables
+                # as one label AND makes the dumped map ambiguous to invert.
+                self._map[target_id] = f"V{h[:12].upper()}"
+            return self._map[target_id]
 
     def dump(self, path: Path) -> None:
         """Write the map so a tester can invert it; never served over HTTP.
@@ -162,10 +193,11 @@ class Pseudonymiser:
         Args:
             path: Destination file. Parents are created.
         """
+        with self._lock:
+            snapshot = {str(k): v for k, v in self._map.items()}
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(
-            {"salt": self.salt, "labels": {str(k): v for k, v in self._map.items()}},
-            indent=1), encoding="utf-8")
+        path.write_text(json.dumps({"salt": self.salt, "labels": snapshot}, indent=1),
+                        encoding="utf-8")
 
 
 def pseudonymise_hit(hit: dict[str, Any], pseud: Pseudonymiser) -> dict[str, Any]:
@@ -249,10 +281,12 @@ class Scrubber:
             Sorted descriptions of what was found; empty when the text is clean.
         """
         found = [f"key {k}" for k in sorted(set(KEY_RE.findall(text)))]
-        # The literal sweep is 2,804 substring tests, so it is skipped for text
+        # The literal sweep is 3,005 substring tests, so it is skipped for text
         # that cannot contain a key at all: every key has the form `m<n>:...`.
+        # Case-folded on both sides for the same reason `KEY_RE` is IGNORECASE.
         if ":" in text:
-            found += [f"key {k}" for k in sorted(self.keys) if k in text]
+            low = text.casefold()
+            found += [f"key {k}" for k in sorted(self.keys) if k.casefold() in low]
         found += [" ".join(g) for g in sorted(_grams(text) & self.corpus)]
         return sorted(set(found))
 
@@ -290,11 +324,18 @@ class Scrubber:
                 # `{"m1:1_Q6.2": {...}}` would otherwise ship the key untouched,
                 # because the walk only ever looked at values.
                 if isinstance(k, str) and self.hits(k):
-                    sub, m = self.scrub(v, here)
+                    # The MARK MUST NOT NAME THE KEY. `here` interpolates the
+                    # dict key, and `Handler._send` ships marks to the client
+                    # under `redactions` -- so reporting `here` would delete the
+                    # key from the body and reprint it verbatim in the report.
+                    # The position is what a reader needs; the value is the
+                    # thing being withheld.
+                    safe_here = f"{_path}[key #{i}]" if _path else f"[key #{i}]"
+                    sub, m = self.scrub(v, safe_here)
                     # Suffixed so two redacted keys in one dict cannot collide
                     # and silently drop a value.
                     out[f"{REDACTED}#{i}"] = sub
-                    marks += [f"{here} <key>", *m]
+                    marks += [f"{safe_here} <key>", *m]
                     continue
                 sub, m = self.scrub(v, here)
                 out[k] = sub

@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import mimetypes
 import sys
 import threading
@@ -145,9 +146,16 @@ def _int_arg(body: dict[str, Any], name: str, default: int) -> int:
     raw = body.get(name, default)
     if isinstance(raw, bool) or not isinstance(raw, (int, float, str)):
         raise ValueError(f"{name} must be a number, got {type(raw).__name__}")
+    # `json.loads` accepts the non-standard literals `Infinity` and `NaN`, and
+    # `1e400` overflows to inf. Those are floats, so they pass the check above,
+    # and `int(inf)` raises OverflowError -- which is neither TypeError nor
+    # ValueError, so it escaped to the 500 branch: the exact confusion of "bad
+    # request" with "server error" this function exists to prevent.
+    if isinstance(raw, float) and not math.isfinite(raw):
+        raise ValueError(f"{name} must be a finite number, got {raw}")
     try:
         return int(raw)
-    except (TypeError, ValueError) as exc:
+    except (TypeError, ValueError, OverflowError) as exc:
         raise ValueError(f"{name} must be a number: {exc}") from exc
 
 
@@ -177,9 +185,15 @@ def _retrieve(state: State, body: dict[str, Any]) -> dict[str, Any]:
         "abstained": bool(top < r.min_cos),
         "margin_12": round(hits[0]["cos"] - hits[1]["cos"], 6) if len(hits) > 1 else None,
         "hits": [pseudonymise_hit(h, state.pseud) for h in hits],
+        # No absolute path here: it named `run_dir` on every response, and said
+        # "is written" in the present tense about a file only written at
+        # shutdown -- false for the whole life of the server, and permanently
+        # false if the process is killed.
         "note": ("Targets are pseudonymised: the instrument is withheld "
-                 "(README.md §What is withheld). The map is written to "
-                 f"{state.run_dir}/pseudonyms.json and never served."),
+                 "(README.md §What is withheld). The label->target map is "
+                 "written to the run directory at shutdown and never served. "
+                 "`cos` is a wording oracle by construction -- see "
+                 "serve/redact.py's module docstring."),
     }
 
 
@@ -347,10 +361,11 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, {
                 "ok": True,
                 "uptime_s": round(time.time() - s.started, 1),
-                "site_dir": str(s.site_dir),
-                "deploy_root": str(s.deploy_root),
-                "dictionary": str(s.scrubber.source),
-                "instrument_runs_indexed": len(s.scrubber.corpus),
+                # Names, not absolute paths: the full location of the withheld
+                # dictionary was on this response.
+                "site_dir": s.site_dir.name,
+                "deploy_root": s.deploy_root.name,
+                "dictionary": s.scrubber.source.name,
                 "retriever_loaded": s._retriever is not None,
             })
             return
@@ -392,8 +407,13 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             body = json.loads(self.rfile.read(max(n, 0)) or b"{}")
-        except (ValueError, UnicodeDecodeError) as exc:
-            self._send(400, {"error": f"bad JSON body: {exc}"})
+        except (ValueError, UnicodeDecodeError, RecursionError) as exc:
+            # RecursionError is a RuntimeError, not a ValueError: a 4 KB body of
+            # nested brackets -- far under MAX_BODY_BYTES -- escaped do_POST
+            # entirely, reached socketserver.handle_error and reset the socket,
+            # so the client got no status at all from a handler whose sibling
+            # branches exist to tell 400 from 500.
+            self._send(400, {"error": f"bad JSON body: {type(exc).__name__}"})
             return
         if not isinstance(body, dict):
             self._send(400, {"error": "body must be a JSON object"})
@@ -426,6 +446,43 @@ class Handler(BaseHTTPRequestHandler):
             The error body, with any instrument content replaced.
         """
         return {"error": f"{type(exc).__name__}: {exc}" if prefix else str(exc)}
+
+
+#: Names that mark a directory as holding withheld material rather than the
+#: published page. `README.md` §What is withheld is the source of the list.
+WITHHELD_MARKERS = ("dictionary.json", "build", "targets.json", "raw",
+                    "prevalence_key.py", "cohort_papers.py")
+
+
+def _refuse_unsafe_site_dir(site_dir: Path, run_dir: Path) -> str | None:
+    """Refuse a `--site-dir` whose contents the static route must not publish.
+
+    The containment check on the static route is correct: it keeps a request
+    inside `site_dir`. It says nothing about what `site_dir` IS. Handed the
+    repository root it happily serves `build/dictionary.json` -- every
+    `question_text` in the instrument -- and, if the run directory sits inside
+    it, `pseudonyms.json`, which un-does the pseudonymiser completely. The
+    filter guards what this process COMPUTES; nothing guarded what it was
+    pointed at.
+
+    Args:
+        site_dir: The resolved directory to be served at `/`.
+        run_dir: The resolved private output directory.
+
+    Returns:
+        The refusal message, or None when the directory is safe to serve.
+    """
+    for marker in WITHHELD_MARKERS:
+        if (site_dir / marker).exists():
+            return (f"refusing to serve {site_dir}: it contains {marker!r}, which "
+                    f"is withheld (README.md §What is withheld). The static route "
+                    f"has no content filter -- point --site-dir at the published "
+                    f"page directory, not at a source tree.")
+    if run_dir == site_dir or run_dir.is_relative_to(site_dir):
+        return (f"refusing to serve {site_dir}: the run directory {run_dir} is "
+                f"inside it, so pseudonyms.json would be downloadable and the "
+                f"pseudonymiser would be pointless.")
+    return None
 
 
 def build_server(host: str, port: int, state: State) -> ThreadingHTTPServer:
@@ -485,6 +542,10 @@ def main(argv: list[str]) -> int:
         return 2
     if not a.site_dir.is_dir():
         print(f"site dir not found: {a.site_dir}", file=sys.stderr)
+        return 2
+    unsafe = _refuse_unsafe_site_dir(a.site_dir.resolve(), a.run_dir.resolve())
+    if unsafe:
+        print(unsafe, file=sys.stderr)
         return 2
     state = State(a.deploy_root.resolve(), a.site_dir.resolve(), a.run_dir.resolve())
     srv = build_server(a.host, a.port, state)

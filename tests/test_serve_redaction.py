@@ -349,6 +349,95 @@ def test_every_json_response_is_filtered_at_one_chokepoint() -> None:
     assert "redactions" not in out
 
 
+def test_files_serve_ships_verbatim_carry_no_instrument_content() -> None:
+    """`serve/console.html` is in NEITHER gate's scope, so it gets its own.
+
+    `do_GET` serves it with `read_bytes()` straight to the socket: the runtime
+    scrubber never sees it, and `site/tools/no_instrument.py` scans `site/`, not
+    `serve/`. Two real construct keys sat in it as input defaults until this
+    test existed.
+    """
+    dic = _dictionary_or_skip()
+    s = Scrubber(path=dic)
+    served = ROOT / "serve" / "console.html"
+    text = served.read_text(encoding="utf-8")
+    found = s.hits(text)
+    assert not found, f"{served.name} carries instrument content: {found[:3]}"
+
+
+def test_key_matching_is_case_insensitive_on_both_paths() -> None:
+    """A model that lower-cased its own prose still names a real key."""
+    dic = _dictionary_or_skip()
+    s = Scrubber(path=dic)
+    for variant in ("m1:1_Q6.2", "M1:1_Q6.2", "m1:1_q6.2", "M1:1_q6.2"):
+        assert s.hits(f"I turned down {variant} because it is the wrong construct"), \
+            f"{variant} slipped both the regex and the literal sweep"
+
+
+def test_a_redaction_mark_never_reprints_what_it_removed() -> None:
+    """`_send` ships `redactions` to the client, so a mark is a response too.
+
+    The path was interpolated from the dict key, so a key-keyed map had its key
+    deleted from the body and reprinted verbatim in the report beside it.
+    """
+    dic = _dictionary_or_skip()
+    s = Scrubber(path=dic)
+    clean, marks = s.scrub({"per_variable": {"m1:1_Q6.2": {"role": "confounder"}}})
+    whole = json.dumps({"body": clean, "redactions": marks})
+    assert "m1:1_Q6.2" not in whole, f"the mark reprinted the key: {marks}"
+    assert marks and all(not s.hits(m) for m in marks)
+
+
+def test_a_non_finite_k_is_a_bad_request_not_a_server_error() -> None:
+    """`json.loads` accepts `Infinity`; `int(inf)` raises OverflowError."""
+    from serve.api import _int_arg
+
+    assert json.loads('{"k": Infinity}')["k"] == float("inf")
+    for bad in (float("inf"), float("-inf"), float("nan"), 1e400):
+        with pytest.raises(ValueError):
+            _int_arg({"k": bad}, "k", 3)
+
+
+def test_a_site_dir_holding_withheld_material_is_refused(tmp_path: Path) -> None:
+    """The containment check keeps requests INSIDE site_dir; nothing checked what it is.
+
+    Pointed at a source tree, the static route serves `build/dictionary.json` --
+    every `question_text` in the instrument -- and `pseudonyms.json`, which
+    un-does the pseudonymiser entirely.
+    """
+    from serve.api import _refuse_unsafe_site_dir
+
+    safe = tmp_path / "site"
+    safe.mkdir()
+    assert _refuse_unsafe_site_dir(safe, tmp_path / "run") is None
+
+    repo_ish = tmp_path / "tree"
+    (repo_ish / "build").mkdir(parents=True)
+    assert _refuse_unsafe_site_dir(repo_ish, tmp_path / "run") is not None
+
+    nested_run = tmp_path / "site2"
+    nested_run.mkdir()
+    assert _refuse_unsafe_site_dir(nested_run, nested_run / "run") is not None
+
+    # And the wiring, not just the function: a guard nothing calls is not a guard.
+    from serve.api import main
+
+    os.environ.setdefault("COMPASS_DICTIONARY", str(ROOT / "dictionary.json"))
+    assert main(["--site-dir", str(repo_ish), "--port", "0"]) == 2
+    assert main(["--site-dir", str(safe), "--run-dir", str(safe / "run"),
+                 "--port", "0"]) == 2
+
+
+def test_pseudonyms_are_wide_enough_not_to_collide_over_the_corpus() -> None:
+    """24 bits over 1,353 targets collides ~5.5% of runs, merging two variables."""
+    p = Pseudonymiser(salt="fixed")
+    label = p.label(1)
+    bits = 4 * (len(label) - 1)
+    assert bits >= 48, f"{bits}-bit labels: birthday risk over 1,353 targets"
+    seen = {p.label(i) for i in range(1, 1354)}
+    assert len(seen) == 1353, "collision across the corpus"
+
+
 def test_the_pipeline_model_is_named_and_reported_not_assumed() -> None:
     """A caller may name a model; the payload must say whether it was the proxy."""
     from serve.api import PIPELINE_MODEL
