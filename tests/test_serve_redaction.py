@@ -569,3 +569,64 @@ def test_the_pipeline_model_is_named_and_reported_not_assumed() -> None:
     from serve.api import PIPELINE_MODEL
 
     assert PIPELINE_MODEL == "claude-haiku-4-5"
+
+
+# ------------------------------------------------------------- shared access
+
+
+def test_a_public_bind_requires_a_password() -> None:
+    """Off loopback the OS stops limiting reach, so something else must."""
+    from serve.api import main
+
+    os.environ.setdefault("COMPASS_DICTIONARY", str(ROOT / "dictionary.json"))
+    os.environ.pop("COMPASS_SERVE_AUTH", None)
+    site = ROOT / "serve"
+    assert main(["--host", "0.0.0.0", "--i-am-not-serving-the-public",
+                 "--site-dir", str(site), "--port", "0"]) == 2
+
+
+def test_wording_off_loopback_needs_the_password_not_a_flag() -> None:
+    """Wording behind a password is disclosure; on an open socket it is publication.
+
+    The redaction is a contamination control aimed at the in-pipeline model, and
+    that model cannot reach a web page (`agent/sealed.py::DENY_TOOLS` denies
+    WebSearch and WebFetch). So the question off-loopback is who reads it, and
+    auth is the line.
+    """
+    from serve.api import main
+
+    os.environ.setdefault("COMPASS_DICTIONARY", str(ROOT / "dictionary.json"))
+    os.environ.pop("COMPASS_SERVE_AUTH", None)
+    site = ROOT / "serve"
+    assert main(["--show-instrument", "--host", "0.0.0.0",
+                 "--i-am-not-serving-the-public",
+                 "--site-dir", str(site), "--port", "0"]) == 2
+
+
+def test_the_sealed_model_cannot_reach_a_web_page() -> None:
+    """The premise the off-loopback decision rests on, asserted rather than assumed."""
+    from agent.sealed import DENY_TOOLS
+
+    assert "WebFetch" in DENY_TOOLS
+    assert "WebSearch" in DENY_TOOLS
+
+
+def test_specify_is_off_by_default_anywhere_but_loopback() -> None:
+    """Each run spends the operator's seat and holds the lock for minutes."""
+    import inspect
+
+    from serve.api import main
+
+    src = inspect.getsource(main)
+    assert "enable_specify = loopback if a.enable_specify is None" in src
+
+
+def test_the_rate_limit_actually_limits(tmp_path: Path) -> None:
+    """Anti-vacuity: a limiter that never says no is not a limiter."""
+    from serve.api import RATE_LIMIT, State
+
+    os.environ.setdefault("COMPASS_DICTIONARY", str(ROOT / "dictionary.json"))
+    st = State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    assert all(st.allow("1.2.3.4") for _ in range(RATE_LIMIT))
+    assert not st.allow("1.2.3.4"), "the limit never fires"
+    assert st.allow("5.6.7.8"), "one client's traffic throttled another"

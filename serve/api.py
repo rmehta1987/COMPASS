@@ -21,11 +21,27 @@ It is NOT a measurement surface and NOT a public service.
   * There is no grammar enforcement through the CLI (`agent/cli_backend.py`
     names this), and no seed or temperature, so k samples vary without being
     reproducible. A run through here is not evidence about the 8-27B target.
-  * It binds loopback. `ClaudeCliBackend` uses the CLI's own auth rather than an
-    API key, so every request spends a named human's seat -- the one
-    `COMPASS_CLAUDE_CONFIG_DIR` selects. Serving that to anyone else is not a
-    configuration choice, so `--host` refuses a non-loopback address unless
-    `--i-am-not-serving-the-public` is passed as well.
+  * It binds loopback by default. `ClaudeCliBackend` uses the CLI's own auth
+    rather than an API key, so every `/api/specify` run spends a named human's
+    seat -- the one `COMPASS_CLAUDE_CONFIG_DIR` selects -- which is why that
+    route is OFF by default anywhere but loopback.
+
+OFF-LOOPBACK, FOR NAMED PEOPLE
+------------------------------
+`--host` off loopback requires `--auth USER:PASS`, and auth is also what
+permits `--show-instrument` there. The distinction is disclosure, not secrecy:
+the redaction is a contamination control aimed at the IN-PIPELINE model, and
+that model cannot reach a web page at all (`agent/sealed.py::DENY_TOOLS` denies
+WebSearch and WebFetch, and `cli_backend.py` passes them to `claude -p`), so
+nothing served here can contaminate a run. What is left is who reads it, and
+the study distributes the codebooks -- so a researcher who already holds the
+dictionary learns nothing new from wording behind a password. An anonymous
+socket is a different claim, and the password is the line between them.
+
+Two things auth does NOT fix, both bounded rather than closed: `cos` remains a
+wording oracle (`serve/redact.py`), which the rate limit prices rather than
+removes; and `/api/specify` has no per-caller accounting, so it stays disabled
+unless `--enable-specify` is passed deliberately.
 
 Serving the page from the same origin as the API is the point of the design:
 it removes the mixed-content problem, CORS and the tunnel in one move. The
@@ -35,9 +51,12 @@ artefacts and never learns this endpoint exists.
 from __future__ import annotations
 
 import argparse
+import base64
+import hmac
 import json
 import math
 import mimetypes
+import os
 import sys
 import threading
 import time
@@ -69,6 +88,14 @@ MAX_BODY_BYTES = 64 * 1024
 #: Loopback only. Named rather than inlined so the test can assert on it.
 LOOPBACK = frozenset({"127.0.0.1", "::1", "localhost"})
 
+#: Requests per client per window, and the window, for a shared endpoint.
+#: `cos` is a wording oracle by construction (`serve/redact.py`), and an oracle
+#: is only useful at volume: reconstructing a stem means hill-climbing hundreds
+#: of near-miss queries. A researcher looking things up makes a handful. This
+#: does not close the channel -- nothing does -- but it prices it.
+RATE_LIMIT = 60
+RATE_WINDOW_S = 60.0
+
 
 class State:
     """Process-wide handles, built lazily and shared across requests.
@@ -90,27 +117,54 @@ class State:
     """
 
     def __init__(self, deploy_root: Path, site_dir: Path, run_dir: Path,
-                 show_instrument: bool = False) -> None:
+                 show_instrument: bool = False, auth: str | None = None,
+                 enable_specify: bool = True) -> None:
         """Prepare shared state and fail early on a missing instrument.
 
         Args:
             deploy_root: The `deploy/` bundle directory.
             site_dir: The static page directory.
             run_dir: Private output directory for the pseudonym map.
-            show_instrument: Serve withheld instrument content -- the question
-                wording as well as the key -- unredacted. `main` refuses to set
-                this on a non-loopback bind.
+            show_instrument: Serve instrument content -- the question wording as
+                well as the key -- unredacted. `main` permits this off loopback
+                only when `auth` is set.
+            auth: `USER:PASS` for HTTP Basic, or None for no authentication.
+                `main` requires it for any non-loopback bind.
+            enable_specify: Allow `POST /api/specify`. `main` defaults it to
+                loopback-only, because each run spends the operator's seat.
         """
         self.deploy_root = deploy_root
         self.site_dir = site_dir
         self.run_dir = run_dir
         self.show_instrument = show_instrument
+        self.auth = auth
+        self.enable_specify = enable_specify
+        # Per-client request times, for the rate limit. Keyed by source address,
+        # which is all a shared endpoint has: this bounds volume, not identity.
+        self._hits: dict[str, list[float]] = {}
+        self._hits_lock = threading.Lock()
         self.scrubber = Scrubber()
         self.pseud = Pseudonymiser()
         self._retriever: Any = None
         self._retriever_lock = threading.Lock()
         self.model_lock = threading.Lock()
         self.started = time.time()
+
+    def allow(self, client: str) -> bool:
+        """Record a request from `client` and say whether it is within the limit.
+
+        Args:
+            client: Source address.
+
+        Returns:
+            True when the request may proceed.
+        """
+        now = time.time()
+        with self._hits_lock:
+            seen = [t for t in self._hits.get(client, []) if now - t < RATE_WINDOW_S]
+            seen.append(now)
+            self._hits[client] = seen
+            return len(seen) <= RATE_LIMIT
 
     def retriever(self) -> Any:
         """The deployed retriever, loaded on first use.
@@ -426,8 +480,43 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(raw)
 
+    def _gate(self) -> bool:
+        """Authenticate and rate-limit before any route runs.
+
+        Applied to EVERY request including the static page, because the gate is
+        what makes off-loopback exposure defensible at all: the endpoint answers
+        with instrument wording when `--show-instrument` is set, and `main`
+        permits that off-loopback only when auth is configured. A gate the
+        static branch skipped would be a gate with a door next to it.
+
+        Returns:
+            True when the request may proceed; otherwise the response has
+            already been written.
+        """
+        client = self.client_address[0] if self.client_address else "?"
+        if not self.state.allow(client):
+            self.send_response(429)
+            self.send_header("Retry-After", str(int(RATE_WINDOW_S)))
+            self.end_headers()
+            return False
+        if self.state.auth is None:
+            return True
+        offered = self.headers.get("Authorization", "")
+        expected = "Basic " + base64.b64encode(self.state.auth.encode()).decode()
+        # Constant-time: a naive `==` leaks the shared secret one byte at a time
+        # to anyone who can time responses, and this endpoint is reachable from
+        # off the machine exactly when this check is the thing protecting it.
+        if hmac.compare_digest(offered, expected):
+            return True
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="COMPASS test endpoint"')
+        self.end_headers()
+        return False
+
     def do_GET(self) -> None:
         """Serve `/console`, `/api/health`, or a file from the site directory."""
+        if not self._gate():
+            return
         route = self.path.split("?")[0]
         if route in ("/console", "/console/"):
             # Shipped from serve/, NOT from site/. The published page is built
@@ -476,7 +565,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         """Dispatch `/api/retrieve` and `/api/specify`."""
+        if not self._gate():
+            return
         route = self.path.split("?")[0]
+        if route == "/api/specify" and not self.state.enable_specify:
+            # Disabled rather than merely rate-limited: every call spends a named
+            # human's Claude seat with no per-caller accounting, and runs
+            # serialise, so one visitor holds the lock for ten minutes.
+            self._send(403, {"error": "/api/specify is disabled on this endpoint "
+                                      "(start with --enable-specify). Each run "
+                                      "spends the operator's Claude seat and "
+                                      "blocks every other caller while it runs."})
+            return
         routes = {"/api/retrieve": _retrieve, "/api/specify": _specify}
         fn = routes.get(route)
         if fn is None:
@@ -601,6 +701,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                     default=Path("/home/mehta5/compass-site/site"))
     ap.add_argument("--deploy-root", type=Path, default=ROOT / "deploy")
     ap.add_argument("--run-dir", type=Path, default=ROOT / "run" / "serve")
+    ap.add_argument("--auth", default=None,
+                    help="USER:PASS for HTTP Basic auth, or set COMPASS_SERVE_AUTH. "
+                         "Required for any non-loopback bind, and it is what "
+                         "permits --show-instrument off-loopback.")
+    ap.add_argument("--enable-specify", action="store_true", default=None,
+                    help="allow POST /api/specify. On by default on loopback; "
+                         "OFF by default anywhere else, because each run spends "
+                         "the operator's Claude seat and serialises the server.")
     ap.add_argument("--show-instrument", action="store_true",
                     help="return the question wording, options and variable key "
                          "beside each hit instead of a pseudonym. Loopback only. "
@@ -638,20 +746,36 @@ def main(argv: list[str]) -> int:
     if unsafe:
         print(unsafe, file=sys.stderr)
         return 2
-    # The two flags are individually defensible and together are "publish the
-    # withheld instrument to the network", so the combination is refused rather
-    # than warned about. `--i-am-not-serving-the-public` is a statement about who
-    # can reach the socket; `--show-instrument` is a statement about what the
-    # socket says. Only the second is safe on loopback.
-    if a.show_instrument and a.host not in LOOPBACK:
-        print(f"refusing --show-instrument on {a.host}: it returns question "
-              f"wording, options and variable keys verbatim, and that is "
-              f"withheld (README.md §What is withheld). It is for an operator "
-              f"reading a dictionary already on their own disk, over loopback.",
-              file=sys.stderr)
+    auth = a.auth or os.environ.get("COMPASS_SERVE_AUTH")
+    loopback = a.host in LOOPBACK
+    # Auth is what makes an off-loopback bind defensible, so it is required
+    # there rather than recommended. On loopback the OS already limits reach.
+    if not loopback and not auth:
+        print(f"refusing to bind {a.host} without --auth USER:PASS (or "
+              f"COMPASS_SERVE_AUTH). Off loopback this endpoint is reachable by "
+              f"anyone who can route to it, and it answers with instrument "
+              f"content.", file=sys.stderr)
         return 2
+    if auth and ":" not in auth:
+        print("--auth must be USER:PASS", file=sys.stderr)
+        return 2
+    # `--show-instrument` off-loopback is permitted ONLY behind auth. The
+    # redaction is a contamination control aimed at the in-pipeline model, and
+    # that model cannot reach a web page at all -- `agent/sealed.py::DENY_TOOLS`
+    # denies WebSearch and WebFetch at the process boundary, so nothing served
+    # here can reach it. What remains is disclosure, and the codebooks are
+    # distributed by the study, so a named researcher who already holds the
+    # dictionary learns nothing new. An ANONYMOUS socket is a different claim,
+    # and auth is the line between the two.
+    if a.show_instrument and not loopback and not auth:
+        print(f"refusing --show-instrument on {a.host} without --auth: wording "
+              f"behind a password is a disclosure to named people; wording on "
+              f"an open socket is a publication.", file=sys.stderr)
+        return 2
+    enable_specify = loopback if a.enable_specify is None else a.enable_specify
     state = State(a.deploy_root.resolve(), a.site_dir.resolve(), a.run_dir.resolve(),
-                  show_instrument=a.show_instrument)
+                  show_instrument=a.show_instrument, auth=auth,
+                  enable_specify=enable_specify)
     srv = build_server(a.host, a.port, state)
     print(f"COMPASS test endpoint   http://{a.host}:{a.port}/")
     print(f"  site        {state.site_dir}")
