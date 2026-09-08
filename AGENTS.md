@@ -144,6 +144,46 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 - An externally-posed record carries `screened_from=0` and `externally_posed` selection,
   never enters a benchmark denominator; log the lexical ranker's disagreement.
 
+## Publication Boundary
+Governs what an agent report may put on a public branch. Distinct from
+§Contamination Practice: that section governs what the MODEL can see inside a sealed
+run, this one governs what the WORLD can see in a pushed commit. A fact can be safe
+under one and barred by the other. Mechanical check: `tests/test_publication_surface.py`.
+
+- The line is AGGREGATE versus ROW-LEVEL, not sensitive versus insensitive. A rate is
+  publishable; the rows it was computed from are not.
+- PUBLISHABLE: rates, counts, denominators, confidence intervals, bands; pre-registered
+  targets and whether they were met; component and tier names, structural findings,
+  defect descriptions; code, tests, manifests, thresholds, R@1 — already public by
+  design; and the SHAPE of an error class ("an area-level measure resolved to a
+  participant-level item").
+- WITHHELD: any term paired with its inventory status (`absent`, `modality`, `present`);
+  any term paired with an `expected_key`, `analogue_key` or resolved key; a per-row cosine
+  attached to a named term; any PMID paired with its inventory content; and anything from
+  which a reader could reconstruct rows of the answer key.
+- 🛑 WHEN IT IS UNCLEAR WHICH SIDE A FACT BELONGS ON, IT GOES IN THE WITHHELD DOCUMENT.
+  An agent writing a report wants it complete and will otherwise resolve ambiguity toward
+  publishing. Ambiguity is not a tie to be broken on judgement; it is a decision already
+  made, in favour of withholding.
+- Two documents, always: a PUBLIC report carrying aggregates, and a WITHHELD companion
+  carrying the row-level detail. The companion is named `*.withheld.md`, lives under
+  `run/` (gitignored) and matches `.git/info/exclude`; it is never committed, never
+  quoted into the public report, and never pasted into a prompt.
+- An audit that ENUMERATES boundary crossings is itself a compact restatement of the key:
+  publish its counts by category, never its contents, and withhold every working file the
+  counting produced.
+- Illustrate a rule with an INVENTED term and an INVENTED key, and say in the text that
+  they are invented. A rule illustrated by a real term→status pairing publishes the thing
+  it forbids. Worked example, all three invented: "`m9:Q99.9` ← `borborygmus frequency`,
+  status `absent`" is withheld; "one term resolved to an item measuring a different
+  construct" is publishable, and so is "3 of 14 sides, 0.214 [0.076, 0.459]".
+- Prior exposure is never precedent. That a pairing is already public does not make a
+  second instance free; this boundary governs from now regardless of what preceded it.
+- Disclose an exposure by WINDOW and COUNT — the commits, their author and commit dates,
+  the window's end state, and counts by category. Never enumerate. Exposure from a date
+  is establishable; whether anything scraped it is not, and
+  `benchmark/contamination_check.py` scans files, not weights, so it cannot settle it.
+
 ## Parallel Lanes
 - Lanes run in their own `git worktree`. Assign every file to exactly one lane, including
   what it must NOT touch; anything unlisted is unassigned — assign it before dispatch.
