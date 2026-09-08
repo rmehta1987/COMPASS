@@ -88,6 +88,45 @@ publishes or blocks a downstream stage.
 - C16 second acceptance: `benchmark/input_leakage.py` scans a SUBMITTED prompt with a
   red-turning positive control; its `environment_supplied` currently rests on enumeration
   choosing the pair.
+- **C28 — a model-proposed derivation that enters the design.** Operator decision
+  2026-09-08: a model needing an unsigned derivation may PROPOSE one citing prior art, the
+  proposal ENTERS THE DESIGN, and the run completes rather than blocking. Two defects must
+  be closed before a builder is dispatched; both were found by cold critics and reproduce.
+  (a) `agent/specifier.py::_rank` compares `len(blocked_on)` BEFORE status, so a proposal
+  admitting no blockers outranks a signed-file record that honestly admits one — measured,
+  the two differ at that term. RESOLVED IN DESIGN by amending `_rank` with a
+  proposal-count term ascending, inserted before `len(blocked_on)`: verified
+  backward-compatible (the term is 0 on every existing record, so no current ordering
+  moves) and verified to survive `tests/test_specifier.py::test_selection_never_consults_the_model`,
+  whose AST scan forbids the substrings `backend`, `chat(`, `score`, `judge`, `rating` —
+  `groundedness_score` and `derivation_rating` would turn it red, `proposed_derivations`
+  passes. Amending `_rank` is a user amendment and is hereby authorised for C28 only.
+  (b) OPEN: `agent/schema.py::_ref_key` puts only `derivation:<id>` into `canonical_form`,
+  so two proposals sharing an id but differing in recipe hash identically — the collapse
+  "enters the design" exists to prevent. Needs a normalised structural key (sorted
+  `component_keys` plus an enumerated aggregation kind) emitted ONLY when a proposal is
+  present, so the 21 saved records' hashes — which are filenames — do not move.
+  (c) OPEN: the amendment must argue against the real baseline. `RefusalReason.no_signed_derivation`
+  exists in the enum but `agent/specifier.py::adjudicate` never returns it,
+  `PAIR_ADJUDICABLE` excludes it, `_refusal_table` therefore never offers it to the model,
+  and a model-claimed refusal on a specifiable pair is discarded as `unearned_refusal`.
+  Exactly ONE legal move exists today: name a sub-item.
+  `benchmark/calibration_set.py::WHY_NO_SIGNED_DERIVATION_WAS_DROPPED` records why the
+  category was dropped 2026-08-28.
+  (d) Also unresolved: `agent/schema.py::DerivationRef` raises unless a file of that id
+  exists, so a proposal cannot reuse it unchanged; the proposed/signed mark must be
+  stamped by the environment from file state, never model-emitted (the
+  `agent/tool_authority.py` restatement pattern), or it repeats the caller-declared
+  `modality` defect; a proposal recipe using scale language will trip
+  `benchmark/unearned_assertions.py::SCALE_PATTERNS` because
+  `tests/test_contamination_surface.py::_traces_to_a_signed_derivation` excuses a hit only
+  when a signed FILE carries the same language; and the prohibition being reinterpreted is
+  against recipe SEARCH ("hundreds of defensible ways to combine them"), not against
+  ambiguity of review, so the amendment must say plainly that it weakens that guard.
+  Cross-lane: the prohibition is stated to the model in `agent/specifier.py::SYSTEM`, the
+  user prompt and three places in `env/tools.py` (Lane B), so schema-only acceptance would
+  contradict every prompt surface. ACCEPT: a proposal never outranks a record resting on a
+  signed file, proven by a run and not by inference; and no saved record's hash moves.
 - **C17 — provenance for a run with two models.** BLOCKED on C16.
   `agent/schema.py::Provenance.model_id` is one string and the Haiku pin covers the
   Specifier, not a resolver, so a larger resolver is legitimate and a record hiding it is
