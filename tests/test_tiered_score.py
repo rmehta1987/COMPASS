@@ -16,21 +16,27 @@ import pytest
 
 from benchmark import tiered_score
 from benchmark.tiered_score import (
+    INVENTORY_UNSCOREABLE,
     MATRIX,
     NEAR_MISS_BAND,
     RECORD_DIRECTIONS,
     RESIDUAL_LIMITATION,
     SCOREABLE_CELLS,
+    SPECIFICATION_COMPONENTS,
+    TIER_RULE_PROBE,
     TIERS,
     Anchor,
     CaseReport,
     Cell,
+    DirectionState,
     HandoffMismatch,
     Refusal,
     SideState,
     UnclassifiablePaper,
+    _carried,
     analogue_scores,
     anchor_scores,
+    attach_pairs,
     attrition_causes,
     built_dictionary_hash,
     component_rates,
@@ -38,18 +44,24 @@ from benchmark.tiered_score import (
     direction_scores,
     direction_summary,
     directions_by_case,
+    git_blob_hash,
+    implemented_tier_rule,
     load_handoff,
     load_papers,
     main,
     margin_score,
     modal_covariates,
     modal_size_disagreement,
+    normalise_papers,
+    read_case_map,
     refusal_scores,
     render_attrition,
     render_case_studies,
     render_rates,
     render_report,
+    render_specification_case_studies,
     render_targets,
+    schema_version_of,
     scorable_covariates,
     self_check,
     side_state,
@@ -207,8 +219,17 @@ def test_the_tree_holds_the_build_the_handoff_names():
 def test_each_pinned_field_raises_rather_than_warning(tmp_path, field, value):
     # 4a: all three are silent failures otherwise. The bare-status reading in
     # particular gives C=8 D=5 against C=7 D=6, and both sum to 16.
+    #
+    # The schema is supplied here rather than taken from the tree, because
+    # `schema_version` is now computed from the file: a clone without
+    # `inventory/` would otherwise make this case unfalsifiable, which is the
+    # defect the computation was added to remove.
+    schema = tmp_path / "schema.py"
+    schema.write_text("# a schema this test controls\n")
+    good = f"{schema.as_posix()}@{git_blob_hash(schema.read_bytes())[:12]}"
+    path = _handoff_at(tmp_path, **{"schema_version": good, field: value})
     with pytest.raises(HandoffMismatch) as e:
-        load_handoff(_handoff_at(tmp_path, **{field: value}))
+        load_handoff(path, schema_path=schema)
     assert field in str(e.value)
 
 
@@ -749,11 +770,49 @@ def test_the_wilson_interval_matches_the_projects_own_formula():
 
 
 def test_every_printed_figure_carries_its_n(construct_of):
+    """Every RATE line carries its n.
+
+    render_rates now prints two sections: the retrieval components as rates,
+    then the three specification components as case studies (they are never a
+    rate, at any tier). The n invariant belongs to the first section; the
+    second is checked by the two tests below.
+    """
     reports = [_report(construct_of, "fC", f"f00{i}", "C", ["m1:Q5.4"])
                for i in (4, 5, 6)]
     out = render_rates(reports, "C")
-    for line in out.splitlines()[1:]:
+    rates, _, _ = out.partition("SPECIFICATION COMPONENTS")
+    body = [line for line in rates.splitlines()[1:] if line.strip()]
+    assert body, "the rate section printed nothing"
+    for line in body:
         assert "n=" in line, line
+
+
+def test_the_specification_components_are_never_a_rate(construct_of):
+    """Tier C and D print covariate recall, the margin and direction per case.
+
+    The specification arm is scored only where a record was emitted, which
+    needs both anchors to resolve; that denominator is small and selected by
+    the retriever, so a percentage over it would be a number about retrieval
+    wearing the specifier's name.
+    """
+    reports = [_report(construct_of, "fC", f"f00{i}", "C", ["m1:Q5.4"])
+               for i in (4, 5, 6)]
+    out = render_rates(reports, "C")
+    rates, marker, studies = out.partition("SPECIFICATION COMPONENTS")
+    assert marker, "the specification section is missing from a tier C render"
+    for name in SPECIFICATION_COMPONENTS:
+        assert name not in rates, f"{name} was printed as a rate"
+    assert not re.search(r"\[\d\.\d{3}, \d\.\d{3}\]", studies), (
+        "a specification case study printed a confidence interval")
+
+
+def test_an_empty_specification_section_reads_unmeasured(construct_of):
+    """A tier where nothing was emitted says so, and never 0%."""
+    reports = [_report(construct_of, "fD", "f007", "D", [])]
+    out = render_specification_case_studies(
+        [r._replace(covariate=None, margin=None) for r in reports])
+    assert "UNMEASURED" in out
+    assert "0%" not in out and "0.000" not in out
 
 
 def test_a_rate_is_printed_with_its_interval(construct_of):
@@ -943,3 +1002,214 @@ def test_the_margin_row_says_unmeasured_when_nothing_was_recoverable(construct_o
     (row,) = [r for r in component_rates(reports) if "margin" in r.name]
     assert row.n == 0 and "UNMEASURED" in row.note
     assert "not a margin of zero" in row.note
+
+
+# --- defect 4: the direction vocabularies are disjoint --------------------
+#
+# Every one of run tiered-20260906's 95 cases came back `agree=None`, which
+# read as the `mixed` escape hatch and was in fact 91 rows the record
+# vocabulary cannot express at all. `agree is None` cannot tell those apart;
+# `state` can, and these pin that it must.
+
+
+def test_an_out_of_vocabulary_direction_is_unmapped_not_the_mixed_hatch():
+    """Drift must not be able to hide inside the exemption built for `mixed`."""
+    papers = [{"paper": "p", "pairs": [{"case_id": "x1", "direction": "positive"}]}]
+    (row,) = direction_scores({"x1": "increase"}, papers)
+    assert row.agree is None
+    assert row.state is DirectionState.UNMAPPED
+
+
+def test_mixed_is_still_the_declared_escape_hatch():
+    """`mixed` is unscoreable by design and must not be reported as drift."""
+    papers = [{"paper": "p", "pairs": [{"case_id": "x1", "direction": "mixed"}]}]
+    (row,) = direction_scores({"x1": "increase"}, papers)
+    assert row.agree is None
+    assert row.state is DirectionState.MIXED
+
+
+def test_a_case_with_no_record_is_distinguishable_from_a_vocabulary_mismatch():
+    """The two reasons a row is unscored must never collapse into one count."""
+    papers = [{"paper": "p", "pairs": [{"case_id": "x1", "direction": "increase"}]}]
+    (row,) = direction_scores({"x1": None}, papers)
+    assert row.state is DirectionState.NO_RECORD
+
+
+def test_the_summary_splits_unscored_by_reason():
+    """A summary that only totals `unscored` cannot report a broken component."""
+    papers = [{"paper": "p", "pairs": [
+        {"case_id": "a", "direction": "positive"},   # unmapped
+        {"case_id": "b", "direction": "mixed"},      # declared hatch
+        {"case_id": "c", "direction": "increase"},   # no record
+    ]}]
+    s = direction_summary(direction_scores({"a": "increase", "c": None}, papers))
+    assert s.scored == 0
+    assert (s.unscored, s.unmapped, s.mixed, s.no_record) == (3, 1, 1, 1)
+
+
+def test_an_unmapped_row_says_the_vocabularies_are_disjoint_not_that_it_disagreed():
+    """The rendered note must name the mismatch; silence reads as a result."""
+    papers = [{"paper": "p", "pairs": [{"case_id": "a", "direction": "positive"}]}]
+    note = _carried(direction_summary(direction_scores({"a": "increase"}, papers)))
+    assert "UNMAPPED" in note
+    assert "vocabulary mismatch" in note
+    assert "NOT a pipeline result" in note
+
+
+def test_the_escape_hatch_never_overlaps_the_record_vocabulary():
+    """If a record direction were also 'unscoreable', real verdicts would vanish."""
+    assert not set(INVENTORY_UNSCOREABLE) & set(RECORD_DIRECTIONS)
+
+
+# --- defect 5: the three renames, read in the scorer not in a helper ------
+#
+# These were bridged by an out-of-tree `phase3_adapt.py` that had to be run
+# first. The join in `attach_pairs` is the one that can score the wrong pair's
+# answer, so its assertion is pinned here rather than left to a passing run.
+
+
+REAL_SHAPE_PAPER = {
+    "pmid": "111", "exposures": [{"term": "E0"}, {"term": "E1"}],
+    "outcomes": [{"term": "O0"}], "directions": [["E1", "O0", "positive"]],
+}
+REAL_SHAPE_CASES = {"c001": {"pmid": "111", "exposure_row": "exposures[1]",
+                             "outcome_row": "outcomes[0]",
+                             "direction_row": "directions[0]"}}
+
+
+def test_pmid_is_read_as_the_paper_id():
+    """Rename 1: the fixture says `paper`, the real inventory says `pmid`."""
+    (p,) = normalise_papers([REAL_SHAPE_PAPER])
+    assert p["paper"] == "111"
+
+
+def test_an_existing_paper_id_is_never_overwritten():
+    """The synthetic fixture must survive the rename untouched."""
+    (p,) = normalise_papers([{"paper": "fA", "pmid": "999"}])
+    assert p["paper"] == "fA"
+
+
+def test_both_case_map_shapes_are_read(tmp_path):
+    """Rename 2: a flat map and the real header-plus-`cases` map."""
+    flat = tmp_path / "flat.json"
+    flat.write_text(json.dumps({"c001": "fA"}))
+    assert read_case_map(flat) == ({"c001": "fA"}, {})
+    real = tmp_path / "real.json"
+    real.write_text(json.dumps({"n_cases": 1, "cases": REAL_SHAPE_CASES}))
+    mapping, cases = read_case_map(real)
+    assert mapping == {"c001": "111"}
+    assert cases["c001"]["direction_row"] == "directions[0]"
+
+
+def test_pairs_are_projected_from_the_direction_triples():
+    """Rename 3: `directions` triples carry no case ids; the join supplies them."""
+    (p,) = attach_pairs(normalise_papers([REAL_SHAPE_PAPER]), REAL_SHAPE_CASES)
+    assert p["pairs"] == [{"case_id": "c001", "direction": "positive"}]
+
+
+def test_a_direction_triple_naming_other_terms_is_refused():
+    """A wrong join scores one pair's answer against another's, silently."""
+    bad = {"c001": {**REAL_SHAPE_CASES["c001"], "exposure_row": "exposures[0]"}}
+    with pytest.raises(ValueError, match="but the row addresses give"):
+        attach_pairs(normalise_papers([REAL_SHAPE_PAPER]), bad)
+
+
+# --- the schema pin: computed from the file, and only one of it --------------
+#
+# It used to be `raw["schema_version"] != EXPECT_SCHEMA_VERSION`: two recorded
+# strings, neither read from `inventory/schema.py`. The schema gained a
+# validated `Direction` enum on 2026-09-07, its blob moved off `292571ccc682`,
+# and nothing went red -- while the mismatch message claimed a moved schema was
+# exactly what it caught.
+
+
+def test_the_blob_hash_is_gits_own():
+    """Comparable with `git hash-object`, or the pin is not the thing it names."""
+    # git hash-object of an empty file, a value git itself will not change.
+    assert git_blob_hash(b"") == "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    assert git_blob_hash(b"x\n") == "587be6b4c3f93f93c489c0111bba5596147a26cb"
+
+
+def test_the_schema_pin_is_read_from_the_file(tmp_path):
+    """The identity must be a function of the bytes, not of a constant."""
+    schema = tmp_path / "schema.py"
+    schema.write_text("# one\n")
+    first = schema_version_of(schema)
+    assert first == f"{schema.as_posix()}@{git_blob_hash(schema.read_bytes())[:12]}"
+    schema.write_text("# two\n")
+    assert schema_version_of(schema) != first
+
+
+def test_a_schema_that_is_not_in_this_tree_is_unverifiable_not_passing(tmp_path):
+    """A missing file must never read as a pin that matched."""
+    assert schema_version_of(tmp_path / "absent.py") is None
+    h = load_handoff(_handoff_at(tmp_path), schema_path=tmp_path / "absent.py")
+    assert h.schema_verified is False
+
+
+def test_a_schema_that_is_present_and_matching_is_recorded_as_verified(tmp_path):
+    """The report must be able to say which pins were actually checked."""
+    schema = tmp_path / "schema.py"
+    schema.write_text("# a schema this test controls\n")
+    good = f"{schema.as_posix()}@{git_blob_hash(schema.read_bytes())[:12]}"
+    h = load_handoff(_handoff_at(tmp_path, schema_version=good), schema_path=schema)
+    assert h.schema_verified is True
+
+
+def test_the_tree_holds_the_schema_the_handoff_names():
+    """The live pin, against the live file. Red means one of them moved."""
+    assert load_handoff().schema_version == schema_version_of()
+
+
+def test_there_is_no_second_recorded_copy_of_the_schema_pin():
+    """One pin, live and computed.
+
+    A constant carrying a `path@blob` would restore the dual role that let the
+    drift through: a live config value doubling as a historical record. The run
+    identity belongs in that run's own report, which is immutable.
+    """
+    src = Path("benchmark/tiered_score.py").read_text()
+    literals = [n.value for n in ast.walk(ast.parse(src))
+                if isinstance(n, ast.Constant) and isinstance(n.value, str)
+                and re.search(r"schema\.py@[0-9a-f]{6,}", n.value)]
+    assert literals == [], f"a second recorded schema pin is back: {literals}"
+
+
+# --- the tier rule: probed from behaviour, not restated -----------------------
+#
+# It used to be `raw["tier_rule"] != EXPECT_TIER_RULE`, a word against a word.
+# Flipping `side_state`'s default left `--self-check` at 0 problems and the
+# report header still printing `confident_anchor`, so the provenance line was
+# not evidence that the harness implemented the rule it named.
+
+
+def test_the_probe_is_the_shape_the_two_readings_disagree_on():
+    """A probe both readings answer alike would make the pin unfalsifiable."""
+    probe = list(TIER_RULE_PROBE)
+    assert side_state(probe, require_confident=True) is SideState.UNREACHABLE
+    assert side_state(probe, require_confident=False) is SideState.MODALITY
+
+
+def test_the_tier_rule_is_read_from_side_state():
+    """The label must be a function of the code, not a second copy of the word."""
+    assert implemented_tier_rule() == "confident_anchor"
+
+
+def test_the_tree_implements_the_tier_rule_the_handoff_names():
+    """The live pin against the live behaviour. Red means one of them moved."""
+    assert load_handoff().tier_rule == implemented_tier_rule()
+
+
+def test_no_module_level_constant_restates_a_tier_rule():
+    """A recorded copy would restore the word-against-word compare.
+
+    The literal is allowed inside `implemented_tier_rule`, which computes it.
+    What may not come back is a module-level constant holding it, because that
+    is the thing the handoff would then be compared against.
+    """
+    tree = ast.parse(Path("benchmark/tiered_score.py").read_text())
+    named = [t.id for node in tree.body if isinstance(node, ast.Assign)
+             for t in node.targets if isinstance(t, ast.Name)
+             if isinstance(node.value, ast.Constant)
+             and node.value.value in ("confident_anchor", "bare_status")]
+    assert named == [], f"a recorded tier-rule constant is back: {named}"

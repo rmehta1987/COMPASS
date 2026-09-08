@@ -1,6 +1,6 @@
 {
   "dictionary_version_hash": "3dc8415eccfe",
-  "schema_version": "inventory/schema.py@292571ccc682",
+  "schema_version": "inventory/schema.py@5a5bf0723b2a",
   "status_values": ["present", "modality", "absent"],
   "modality_values": ["self_report", "measured", "ehr", "assay", "linked", "administrative"],
   "row_counts": {"total": 261, "present": 118, "modality": 25, "absent": 118},

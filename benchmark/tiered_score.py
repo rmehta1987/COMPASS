@@ -34,6 +34,7 @@ not make by omission.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from collections import Counter
@@ -115,6 +116,10 @@ HANDOFF_PATH = Path("handoff/for_harness.json")
 POSED_PAIRS_PATH = Path("posed_pairs.json")
 BUILD_VERSION_PATH = Path("build/version.json")
 
+#: The inventory schema whose blob the handoff pins. Recomputed from this file
+#: at load time; see `schema_version_of`.
+SCHEMA_PATH = Path("inventory/schema.py")
+
 #: What the harness pins the handoff against. Each is asserted, never warned
 #: about, because each failure is silent otherwise:
 #:   * a key resolved against another build names a different variable;
@@ -123,8 +128,51 @@ BUILD_VERSION_PATH = Path("build/version.json")
 #:   * the bare-status reading of the tier rule gives C=8 D=5 against
 #:     confident_anchor's C=7 D=6 -- both sum to 16, so a mismatched rule
 #:     shows up in no total.
-EXPECT_SCHEMA_VERSION = "inventory/schema.py@292571ccc682"
-EXPECT_TIER_RULE = "confident_anchor"
+#:
+#: `tier_rule` HAS NO CONSTANT HERE either, for the same reason: it named a
+#: BEHAVIOUR and was compared against another recorded string, so flipping
+#: `side_state`'s default left `--self-check` at 0 problems and the report
+#: header still printing `confident_anchor`. It is probed from `side_state`
+#: now; see `implemented_tier_rule`.
+#:
+#: `schema_version` HAS NO CONSTANT HERE, deliberately. It used to, and the
+#: check compared that constant against the handoff's string: two recorded
+#: values, neither read from `inventory/schema.py`. On 2026-09-07 the schema
+#: gained a validated `Direction` enum, its blob moved off `292571ccc682`, and
+#: nothing went red -- while the mismatch message above claimed a moved schema
+#: was exactly what it caught. The blob is computed from the file now, and the
+#: handoff is the single pin it is compared against. Do not reintroduce a
+#: second recorded copy: the run's identity is already immutable in that run's
+#: own report, and a live config file must not double as a historical record.
+def git_blob_hash(data: bytes) -> str:
+    """The git object id of `data` as a blob, without invoking git.
+
+    Args:
+        data: The file's bytes.
+
+    Returns:
+        The 40-character SHA-1 hex digest git would give the same content, so
+        the value is comparable with `git hash-object` and with the handoff.
+    """
+    return hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
+
+
+def schema_version_of(path: Path | None = None) -> str | None:
+    """The `path@blob` identity of the inventory schema, computed from the file.
+
+    Args:
+        path: The schema file; `SCHEMA_PATH` when None.
+
+    Returns:
+        `"<posix path>@<blob[:12]>"`, or None when the file is not in this
+        tree. None means UNVERIFIABLE HERE, never "matches": the generation
+        clone holds no `inventory/`, and a missing file must not read as a
+        passing check.
+    """
+    path = SCHEMA_PATH if path is None else path
+    if not path.exists():
+        return None
+    return f"{path.as_posix()}@{git_blob_hash(path.read_bytes())[:12]}"
 
 #: The fields `load_handoff` requires. Anything else in the file is carried
 #: through untouched; a missing one is a mismatch, not a default.
@@ -172,6 +220,9 @@ class Handoff(NamedTuple):
             the margin can be reported without a covariate term crossing the
             boundary.
         raw: The file as read, so a field added later is not lost here.
+        schema_verified: Whether `schema_version` was checked against the blob
+            of the schema file in this tree. False means the file is not here,
+            so the pin was carried as declared and nothing confirmed it.
     """
 
     dictionary_version_hash: str
@@ -185,6 +236,7 @@ class Handoff(NamedTuple):
     components_available: dict[str, Any]
     modal_covariate_set_size: int
     raw: dict[str, Any]
+    schema_verified: bool = False
 
 
 def built_dictionary_hash(path: Path = BUILD_VERSION_PATH) -> str:
@@ -212,7 +264,8 @@ def built_dictionary_hash(path: Path = BUILD_VERSION_PATH) -> str:
 
 
 def load_handoff(path: Path | None = None,
-                 *, dictionary_hash: str | None = None) -> Handoff:
+                 *, dictionary_hash: str | None = None,
+                 schema_path: Path | None = None) -> Handoff:
     """Load the handoff header and refuse a tree it does not describe.
 
     Args:
@@ -220,6 +273,10 @@ def load_handoff(path: Path | None = None,
             test can point the module at another file.
         dictionary_hash: The build to check against; read from
             `build/version.json` when None.
+        schema_path: The inventory schema whose blob is recomputed and compared
+            with the handoff's `schema_version`; `SCHEMA_PATH` when None. When
+            that file is absent the pin cannot be checked in this tree and is
+            carried unverified -- `schema_verified` records which.
 
     Returns:
         The header.
@@ -247,20 +304,23 @@ def load_handoff(path: Path | None = None,
                         f"but this tree holds {want_dict!r}: the inventory's keys "
                         f"were resolved against another build and name other "
                         f"variables here")
-    if raw["schema_version"] != EXPECT_SCHEMA_VERSION:
-        problems.append(f"schema_version {raw['schema_version']!r} but this harness "
-                        f"reads rows under {EXPECT_SCHEMA_VERSION!r}; it never imports "
-                        f"the schema module, so a moved schema is silent unless "
-                        f"pinned here")
-    if raw["tier_rule"] != EXPECT_TIER_RULE:
+    want_schema = schema_version_of(schema_path)
+    if want_schema is not None and raw["schema_version"] != want_schema:
+        problems.append(f"schema_version {raw['schema_version']!r} but the schema in "
+                        f"this tree is {want_schema!r}; the harness reads rows as "
+                        f"plain data and never imports the module, so a moved schema "
+                        f"is silent unless this pin is computed from the file")
+    want_rule = implemented_tier_rule()
+    if raw["tier_rule"] != want_rule:
         problems.append(f"tier_rule {raw['tier_rule']!r} but this harness implements "
-                        f"{EXPECT_TIER_RULE!r}; the bare-status reading gives C=8 D=5 "
-                        f"against C=7 D=6 and both sum to 16, so the disagreement "
-                        f"appears in no total")
+                        f"{want_rule!r}, probed from side_state itself; the bare-status "
+                        f"reading gives C=8 D=5 against C=7 D=6 and both sum to 16, so "
+                        f"the disagreement appears in no total")
     if problems:
         raise HandoffMismatch(f"{path}: " + "; ".join(problems))
 
-    return Handoff(dictionary_version_hash=str(raw["dictionary_version_hash"]),
+    return Handoff(schema_verified=want_schema is not None,
+                   dictionary_version_hash=str(raw["dictionary_version_hash"]),
                    schema_version=str(raw["schema_version"]),
                    tier_rule=str(raw["tier_rule"]),
                    status_values=tuple(raw["status_values"]),
@@ -337,6 +397,27 @@ def side_state(rows: list[dict[str, Any]], *,
     if any(usable(r, "modality", "analogue_key") for r in rows):
         return SideState.MODALITY
     return SideState.UNREACHABLE
+
+
+#: The one side shape the two readings disagree about: a modality row that
+#: carries an analogue but that nobody could pin. `confident_anchor` calls it
+#: UNREACHABLE, the bare-status reading calls it MODALITY. Probing this shape is
+#: what makes the handoff's `tier_rule` a claim about behaviour rather than a
+#: second copy of a word.
+TIER_RULE_PROBE: tuple[dict[str, Any], ...] = (
+    {"status": "modality", "analogue_key": "m0:Q0.0", "confident": False},
+)
+
+
+def implemented_tier_rule() -> str:
+    """Which reading `side_state` actually implements, asked rather than declared.
+
+    Returns:
+        `"confident_anchor"` when a non-confident modality side reads
+        UNREACHABLE, `"bare_status"` when it reads MODALITY.
+    """
+    state = side_state(list(TIER_RULE_PROBE))
+    return "confident_anchor" if state is SideState.UNREACHABLE else "bare_status"
 
 
 def tier_of(paper: dict[str, Any], *, require_confident: bool = True) -> str:
@@ -978,6 +1059,35 @@ def margin_score(score: CovariateScore, paper: dict[str, Any],
 #: carried unscored rather than counted as a disagreement.
 RECORD_DIRECTIONS: tuple[str, ...] = tuple(d.value for d in Direction)
 
+#: The one inventory direction a record legitimately cannot hold. `mixed` means
+#: the paper's own pairs disagree; no record member expresses that, so a `mixed`
+#: row is unscoreable BY DESIGN. Every other unscoreable value is drift.
+INVENTORY_UNSCOREABLE: tuple[str, ...] = ("mixed",)
+
+
+class DirectionState(Enum):
+    """Why a direction row does or does not carry a verdict.
+
+    `agree=None` alone cannot distinguish these, and conflating them is how a
+    dead component passes for a live one: on run tiered-20260906 all 95 cases
+    came back `agree=None`, which read as the `MIXED` escape hatch and was in
+    fact 91 UNMAPPED rows -- the inventory says positive/inverse/null and a
+    record says increase/decrease/no_difference, so nothing could ever match.
+
+    Attributes:
+        SCORED: `agree` is a real verdict.
+        NO_RECORD: The case emitted no record, so there was nothing to compare.
+        MIXED: The paper's direction is `mixed`, which no record can express.
+            The declared escape hatch, and the only legitimate one.
+        UNMAPPED: The paper's direction is outside the record vocabulary and is
+            not `mixed`. The component is not measuring; it is broken.
+    """
+
+    SCORED = "scored"
+    NO_RECORD = "no_record"
+    MIXED = "mixed"
+    UNMAPPED = "unmapped"
+
 
 def directions_by_case(papers: list[dict[str, Any]]) -> dict[str, tuple[str, str]]:
     """Map each case id to its paper and the direction the paper reported.
@@ -1008,6 +1118,8 @@ class DirectionScore(NamedTuple):
             emitted.
         agree: Whether they match; None when the case produced no record, or
             the paper's direction is not one the record vocabulary can hold.
+        state: WHY there is or is not a verdict. Read this, never `agree is
+            None`, to tell a declared escape hatch from a vocabulary mismatch.
     """
 
     case_id: str
@@ -1015,6 +1127,7 @@ class DirectionScore(NamedTuple):
     reported: str
     specified: str | None
     agree: bool | None
+    state: DirectionState = DirectionState.SCORED
 
 
 def direction_scores(specified: dict[str, str | None], papers: list[dict[str, Any]],
@@ -1038,8 +1151,17 @@ def direction_scores(specified: dict[str, str | None], papers: list[dict[str, An
     out: list[DirectionScore] = []
     for case_id, (paper, reported) in directions_by_case(papers).items():
         got = specified.get(case_id)
-        agree = None if got is None or reported not in allowed else got == reported
-        out.append(DirectionScore(case_id, paper, reported, got, agree))
+        if reported not in allowed:
+            # An out-of-vocabulary direction is `mixed` (declared, expected) or
+            # drift (a broken component). They are never merged.
+            state = (DirectionState.MIXED if reported in INVENTORY_UNSCOREABLE
+                     else DirectionState.UNMAPPED)
+            agree = None
+        elif got is None:
+            state, agree = DirectionState.NO_RECORD, None
+        else:
+            state, agree = DirectionState.SCORED, got == reported
+        out.append(DirectionScore(case_id, paper, reported, got, agree, state))
     return out
 
 
@@ -1058,8 +1180,14 @@ class DirectionSummary(NamedTuple):
         base_rate: What always guessing the inventory's majority direction
             would score, over the scored cases.
         base_direction: That majority direction.
-        unscored: Cases carried but not scored, because no record was emitted
-            or the direction is outside the record vocabulary.
+        unscored: Cases carried but not scored, for any reason.
+        no_record: Of those, the ones that emitted no record.
+        mixed: Of those, the ones the inventory reports as `mixed` -- the
+            declared escape hatch.
+        unmapped: Of those, the ones whose direction is outside the record
+            vocabulary and is not `mixed`. NOT a result: a vocabulary
+            mismatch. Any value above zero means the component is broken, and
+            the report must say so rather than print an absence of agreement.
     """
 
     scored: int
@@ -1070,6 +1198,9 @@ class DirectionSummary(NamedTuple):
     base_rate: float | None
     base_direction: str | None
     unscored: int
+    no_record: int = 0
+    mixed: int = 0
+    unmapped: int = 0
 
 
 def direction_summary(rows: list[DirectionScore]) -> DirectionSummary:
@@ -1084,8 +1215,12 @@ def direction_summary(rows: list[DirectionScore]) -> DirectionSummary:
     """
     scored = [r for r in rows if r.agree is not None]
     unscored = len(rows) - len(scored)
+    by_state = Counter(r.state for r in rows)
+    split = dict(no_record=by_state[DirectionState.NO_RECORD],
+                 mixed=by_state[DirectionState.MIXED],
+                 unmapped=by_state[DirectionState.UNMAPPED])
     if not scored:
-        return DirectionSummary(0, 0, None, None, None, None, None, unscored)
+        return DirectionSummary(0, 0, None, None, None, None, None, unscored, **split)
     by_paper: dict[str, list[DirectionScore]] = {}
     for row in scored:
         by_paper.setdefault(row.paper, []).append(row)
@@ -1100,7 +1235,7 @@ def direction_summary(rows: list[DirectionScore]) -> DirectionSummary:
         per_paper=sum(per_paper_rates) / len(per_paper_rates),
         largest_paper_share=biggest / len(scored),
         base_rate=_ratio(base_n, len(scored)), base_direction=str(base_direction),
-        unscored=unscored)
+        unscored=unscored, **split)
 
 
 
@@ -1168,6 +1303,40 @@ def _case_study(report: CaseReport) -> list[str]:
                    + f"; mismatch flag UNAVAILABLE ({MODALITY_MISMATCH_BLOCKER})"))
     out.append(row("refusal on absent anchor",
                    _sides((r.exposure, r.outcome)) if r else "not scored"))
+    out.extend(_specification_rows(report))
+    return out
+
+
+#: The three components reported per case at EVERY tier, C and D included, and
+#: never as a rate. These are the names `component_rates` emits, which are not
+#: everywhere the names `MATRIX` uses (the matrix says "direction agreement,
+#: weighted per paper", the rate row says "per pair"). `self_check` asserts
+#: every name here is one `component_rates` actually produces, so a rename on
+#: either side reddens the gate instead of quietly leaving a rate behind.
+SPECIFICATION_COMPONENTS = ("covariate recall, raw",
+                            "covariate recall, margin over modal",
+                            "direction agreement, per pair")
+
+
+def _specification_rows(report: CaseReport) -> list[str]:
+    """Covariate recall, the margin and direction, for one case.
+
+    These never become a rate. The specification arm reaches the model only on
+    a case whose two anchors both resolved, which on this corpus is ~10 cases
+    of 95, and a case reaches it disproportionately when the retriever
+    over-accepted a side. A percentage over that is a number about the
+    retriever's errors wearing the specifier's name.
+
+    Args:
+        report: The case.
+
+    Returns:
+        Three lines, indented under the case's heading.
+    """
+    def row(name: str, text: str) -> str:
+        return f"    {name:<28}{text}"
+
+    out: list[str] = []
     c, m = report.covariate, report.margin
     if c is None:
         out.append(row("covariate recall", "no record emitted"))
@@ -1188,10 +1357,17 @@ def _case_study(report: CaseReport) -> list[str]:
     d = report.direction
     if d is None:
         out.append(row("direction", "not scored"))
+    elif d.state is DirectionState.UNMAPPED:
+        out.append(row("direction",
+                       f"paper {d.reported}, record "
+                       f"{d.specified or 'none emitted'}, NOT COMPARABLE: "
+                       f"{d.reported!r} is outside the record vocabulary "
+                       f"{list(RECORD_DIRECTIONS)} and is not 'mixed'"))
     elif d.agree is None:
         out.append(row("direction",
                        f"paper {d.reported}, record "
-                       f"{d.specified or 'none emitted'}, not scored"))
+                       f"{d.specified or 'none emitted'}, not scored "
+                       f"({d.state.value})"))
     else:
         out.append(row("direction", f"paper {d.reported}, record {d.specified}, "
                                     f"{'agreed' if d.agree else 'disagreed'}"))
@@ -1352,9 +1528,35 @@ def component_rates(reports: list[CaseReport]) -> list[Rate]:
                     f"{dsum.papers} papers; majority direction "
                     f"{dsum.base_direction} at base rate {dsum.base_rate:.3f}; "
                     f"largest paper holds {dsum.largest_paper_share:.3f} of the "
-                    f"cases; {dsum.unscored} carried unscored"
-                    if dsum.scored else "")),
+                    f"cases; {_carried(dsum)}"
+                    if dsum.scored else _carried(dsum))),
     ]
+
+
+def _carried(dsum: DirectionSummary) -> str:
+    """Say what was carried unscored, and name a vocabulary mismatch as one.
+
+    Args:
+        dsum: The direction summary.
+
+    Returns:
+        A phrase for the rate note. When any row is UNMAPPED the phrase says
+        the component did not measure and why, because an unmeasured component
+        that prints like a measured one is the defect this split exists for.
+    """
+    parts = [f"{dsum.unscored} carried unscored"]
+    if dsum.no_record:
+        parts.append(f"{dsum.no_record} emitted no record")
+    if dsum.mixed:
+        parts.append(f"{dsum.mixed} report 'mixed', which no record can express")
+    if dsum.unmapped:
+        parts.append(
+            f"{dsum.unmapped} UNMAPPED: the inventory's direction vocabulary and the "
+            f"record's {list(RECORD_DIRECTIONS)} are disjoint, so these could not be "
+            f"compared at all. This is a vocabulary mismatch, NOT a pipeline result, "
+            f"and the mapping is an operator decision (in particular whether 'null' "
+            f"means tested-and-no-difference or not-tested)")
+    return "; ".join(parts)
 
 
 def render_rates(reports: list[CaseReport], tier: str) -> str:
@@ -1376,6 +1578,8 @@ def render_rates(reports: list[CaseReport], tier: str) -> str:
                 f"tier with a scoreable outcome. Not a rate of zero, and not "
                 f"evidence about the pipeline.")
     for rate in component_rates(reports):
+        if rate.name in SPECIFICATION_COMPONENTS:
+            continue          # rendered as case studies below, never as a rate
         if rate.n == 0:
             lines.append(f"  {rate.name:<38}n=0  {rate.note}")
             continue
@@ -1385,6 +1589,40 @@ def render_rates(reports: list[CaseReport], tier: str) -> str:
         lines.append(f"  {rate.name:<38}{rate.hits} of {rate.n} {rate.unit} "
                      f"{value}{interval}  n={rate.n}"
                      + (f"  ({rate.note})" if rate.note else ""))
+    lines.append("")
+    lines.extend(render_specification_case_studies(reports).splitlines())
+    return "\n".join(lines)
+
+
+def render_specification_case_studies(reports: list[CaseReport]) -> str:
+    """The three specification components for one tier, per case.
+
+    Tiers C and D carry rates for the retrieval components because those are
+    scored on every posed side, resolved or not. The specification components
+    are scored only where the pipeline emitted a record, which needs BOTH
+    anchors to resolve; that is a different and much smaller denominator, and
+    one selected by the retriever's behaviour rather than drawn from the
+    corpus. So they are reported per case here exactly as in tiers A and B.
+
+    Args:
+        reports: The tier's cases.
+
+    Returns:
+        The section, or an UNMEASURED line when no case emitted a record.
+    """
+    scored = [r for r in reports if r.covariate is not None]
+    head = ("  SPECIFICATION COMPONENTS - case studies at every tier, never a "
+            "rate.\n  Scored on cases that emitted a record, not on the tier's "
+            f"case count: {len(scored)} of {len(reports)} here.")
+    if not scored:
+        return (head + "\n    UNMEASURED: no case in this tier emitted a record, "
+                "so covariate\n    recall, the margin and direction have nothing "
+                "to report. Not a rate\n    of zero, and not evidence about the "
+                "specifier.")
+    lines = [head]
+    for report in sorted(scored, key=lambda r: (r.paper, r.case_id)):
+        lines.append(f"    {report.paper} / {report.case_id}  ({report.state})")
+        lines.extend(f"  {line}" for line in _specification_rows(report))
     return "\n".join(lines)
 
 
@@ -1526,7 +1764,12 @@ def assemble(run_dir: Path, papers: list[dict[str, Any]], construct_of: Construc
                else covariate_score(case_id, paper, adjustment))
         direction = None
         if case_id in directions:
-            (direction,) = direction_scores({case_id: specified}, [paper])
+            # direction_scores returns a row for EVERY case of the paper, not
+            # only the one asked about: a paper with more than one posed pair
+            # (the real inventory has one with 23) returned 23 rows into a
+            # one-element unpack. Select this case's row.
+            direction = next(d for d in direction_scores({case_id: specified}, [paper])
+                             if d.case_id == case_id)
         out.append(CaseReport(
             case_id=case_id, paper=str(paper["paper"]),
             tier=tier_of(paper), state=str(case.get("state", "")),
@@ -1712,6 +1955,120 @@ def load_papers(path: Path) -> tuple[list[dict[str, Any]], bool]:
     raise ValueError(f"{path}: holds neither a papers list nor a paper")
 
 
+# --- defect 5: the inventory's field names, read here rather than in a helper
+#
+# The harness was built and accepted against tests/fake_tiered_inventory.json,
+# which disagrees with inventory/schema.py in three places. They were bridged
+# by an out-of-tree helper (`phase3_adapt.py`) that had to be run first and
+# remembered; a helper that must be remembered is how the next run gets scored
+# wrong. They are renames, not judgements, so they live here now. The FOURTH
+# disagreement, the direction vocabulary, is a judgement and is deliberately
+# NOT bridged -- see `DirectionState` and `Direction` in inventory/schema.py.
+
+
+def _row_index(addr: str) -> int:
+    """`directions[7]` -> 7.
+
+    Args:
+        addr: A `field[i]` address from `inventory/case_map.json`.
+
+    Returns:
+        The index.
+    """
+    return int(str(addr).rstrip("]").split("[")[1])
+
+
+def normalise_papers(papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Give every paper the `paper` id the harness reads.
+
+    Rename 1 of 3: the fixture says `paper`, `inventory/schema.py` says `pmid`.
+
+    Args:
+        papers: Inventory papers, either spelling.
+
+    Returns:
+        The same papers, each carrying `paper`. Papers that already have one
+        are untouched, so the synthetic fixture is unaffected.
+    """
+    out = []
+    for paper in papers:
+        if "paper" not in paper and "pmid" in paper:
+            paper = {**paper, "paper": str(paper["pmid"])}
+        out.append(paper)
+    return out
+
+
+def read_case_map(path: Path) -> tuple[dict[str, str], dict[str, dict[str, Any]]]:
+    """Read either shape of case map.
+
+    Rename 2 of 3: the fixture wants a flat `{case_id: paper_id}`; the real
+    `inventory/case_map.json` is a header plus a `cases` object whose values
+    carry `pmid` and the three row addresses.
+
+    Args:
+        path: The case map file.
+
+    Returns:
+        `(flat, cases)`. `cases` is empty for the flat shape, which carries no
+        row addresses and therefore cannot supply pairs.
+
+    Raises:
+        ValueError: If the document is neither shape.
+    """
+    doc = json.loads(path.read_text())
+    if not isinstance(doc, dict):
+        raise ValueError(f"{path}: case map is not an object")
+    cases = doc.get("cases")
+    if isinstance(cases, dict):
+        return ({str(k): str(v["pmid"]) for k, v in cases.items()},
+                {str(k): dict(v) for k, v in cases.items()})
+    if all(isinstance(v, str) for v in doc.values()):
+        return {str(k): str(v) for k, v in doc.items()}, {}
+    raise ValueError(f"{path}: neither a flat case map nor a header with `cases`")
+
+
+def attach_pairs(papers: list[dict[str, Any]],
+                 cases: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """Project the inventory's `directions` triples onto the `pairs` the harness reads.
+
+    Rename 3 of 3, and the only one that is a join rather than a spelling: the
+    fixture's `pairs` are `[{case_id, direction}]`; the inventory's `directions`
+    are `[exposure_term, outcome_term, direction]` triples carrying no case ids
+    at all. The join is the `direction_row` index the case map already records.
+
+    Args:
+        papers: Papers carrying `paper` (see `normalise_papers`).
+        cases: The real case map's `cases` object. Empty means nothing to do.
+
+    Returns:
+        The papers, each with `pairs`. Papers that already carry `pairs` and an
+        empty `cases` are returned unchanged.
+
+    Raises:
+        ValueError: If a case's direction triple does not name the same two
+            terms its `exposure_row` and `outcome_row` address. A wrong join
+            scores one pair's answer against another's, silently, so this is
+            asserted for every case rather than spot-checked.
+    """
+    if not cases:
+        return papers
+    by_id = {str(p["paper"]): p for p in papers}
+    pairs: dict[str, list[dict[str, str]]] = {p: [] for p in by_id}
+    for case_id, m in sorted(cases.items()):
+        paper = by_id.get(str(m["pmid"]))
+        if paper is None:
+            continue
+        triple = paper["directions"][_row_index(m["direction_row"])]
+        exposure = paper["exposures"][_row_index(m["exposure_row"])]["term"]
+        outcome = paper["outcomes"][_row_index(m["outcome_row"])]["term"]
+        if (triple[0], triple[1]) != (exposure, outcome):
+            raise ValueError(
+                f"{case_id}: {m['direction_row']} names {triple[0]!r} -> {triple[1]!r} "
+                f"but the row addresses give {exposure!r} -> {outcome!r}")
+        pairs[str(m["pmid"])].append({"case_id": case_id, "direction": triple[2]})
+    return [{**p, "pairs": pairs[str(p["paper"])]} for p in papers]
+
+
 def _construct_of() -> ConstructOf:
     from generate.funnel import load_constructs
     from pipeline.pose import construct_index
@@ -1743,6 +2100,13 @@ def self_check() -> list[str]:
     names = [row.name for row in MATRIX]
     if len(set(names)) != len(names):
         problems.append(f"duplicate component names: {names}")
+    rate_names = {r.name for r in component_rates([])}
+    for name in SPECIFICATION_COMPONENTS:
+        if name not in rate_names:
+            problems.append(
+                f"{name!r} is listed as a specification component but is not a "
+                f"row component_rates emits ({sorted(rate_names)}); the filter "
+                f"in render_rates would leave it printed as a rate")
     scoreable = sum(1 for row in MATRIX for c in row.cells if c is not Cell.NA)
     if scoreable != SCOREABLE_CELLS:
         problems.append(f"matrix has {scoreable} scoreable cells, expected "
@@ -1754,6 +2118,23 @@ def self_check() -> list[str]:
     if not MODALITY_MISMATCH_AVAILABLE and not half_rows:
         problems.append("the modality half is still unbuilt but no row is marked "
                         "half available; an unbuilt half must be rendered, not dropped")
+    # The direction escape hatch must stay narrow. If anything outside the
+    # record vocabulary can be carried as `mixed`, a whole vocabulary can drift
+    # out of range and still read as the declared, expected exemption.
+    overlap = set(INVENTORY_UNSCOREABLE) & set(RECORD_DIRECTIONS)
+    if overlap:
+        problems.append(f"{sorted(overlap)} is both a record direction and a declared "
+                        f"unscoreable one; the escape hatch would swallow real verdicts")
+    probe = direction_scores(
+        {"probe": "increase"},
+        [{"paper": "p", "pairs": [{"case_id": "probe", "direction": "positive"}]}])
+    if probe[0].state is not DirectionState.UNMAPPED:
+        problems.append(
+            "an out-of-vocabulary inventory direction did not come back UNMAPPED "
+            f"(got {probe[0].state.value}); a dead direction component would read as "
+            "the 'mixed' escape hatch, which is how run tiered-20260906 reported "
+            "nothing for all 95 cases while looking as though it had run")
+
     try:
         handoff = load_handoff()
     except HandoffMismatch as e:
@@ -1855,9 +2236,11 @@ def _report_main(args: argparse.Namespace) -> int:
 
     handoff = load_handoff()
     papers, synthetic = load_papers(args.inventory)
-    case_map = (None if args.case_map is None
-                else {str(k): str(v) for k, v in
-                      json.loads(args.case_map.read_text()).items()})
+    papers = normalise_papers(papers)
+    case_map: dict[str, str] | None = None
+    if args.case_map is not None:
+        case_map, cases = read_case_map(args.case_map)
+        papers = attach_pairs(papers, cases)
     reports = assemble(args.run, papers, _construct_of(), case_map=case_map)
     print(render_report(reports, handoff=handoff, inventory=str(args.inventory),
                         synthetic=synthetic, run_id=args.run.name,
