@@ -218,18 +218,33 @@ MARKERS = [
     *_published_n_tokens(),
 ]
 
-# `prior-art` asserts ONE thing: the CONSTRUCT or SCALE is taken from a named
-# external work. It asserts nothing about the binding of that work to instrument
-# keys, nothing about response coding, and nothing about study-team
-# confirmation. Both derivations carrying it bind an external construct to keys
-# in ways the cited work does not supply — met_hours_week's seasonally-weighted
-# sum over the activity battery is not Ainsworth's, and social_cohesion_scale's
-# own caveat says the Likert direction is unconfirmed — so the file's `caveat`,
-# not this value, is where that residue is stated. `study-team` remains the only
-# value that claims confirmation, and it may be named only in writing.
-ALLOWED_SOURCES = {"study-team", "instrument-derived", "authored-unconfirmed",
-                   "prior-art"}
+#: Conventions only. The narrowness IS the enforcement of the Hard Constraint
+#: "Conventions stay `authored-unconfirmed`; only the user upgrades one, in
+#: writing" (`AGENTS.md`). `prior-art` was briefly added here and made a
+#: convention citing external work pass a check that had refused it; a
+#: convention is design guidance the model follows, so widening this set is a
+#: user amendment, never a lane's. Pinned by
+#: `tests/test_specifier.py::test_a_convention_may_not_declare_a_derivation_only_source`.
+ALLOWED_SOURCES = {"study-team", "instrument-derived", "authored-unconfirmed"}
 SOURCE_RE = re.compile(r"\*\*Source:\*\*\s*`?([a-z-]+)`?", re.I)
+
+# Derivations split provenance in two, because a single value cannot tell the
+# truth about them: the CONSTRUCT is cited and the BINDING to instrument keys is
+# authored. met_hours_week takes MET values from a compendium but its
+# seasonally-weighted sum over the activity battery is nobody's but the author's;
+# social_cohesion_scale takes a five-item form but its own caveat says the Likert
+# direction is unconfirmed. One field picked whichever half the author preferred,
+# and the preferred half was the flattering one.
+#
+# `prior-art` is deliberately absent from BINDING_SOURCES and that asymmetry is
+# the whole point: prior art supplies a construct, never a binding to THIS
+# instrument's keys or response coding. `binding_source: prior-art` is
+# unrepresentable, so the laundering is blocked by the vocabulary rather than by
+# a reviewer noticing. `study-team` still claims confirmation in either field and
+# is still upgradable only by the user, in writing.
+CONSTRUCT_SOURCES = {"study-team", "instrument-derived", "authored-unconfirmed",
+                     "prior-art"}
+BINDING_SOURCES = {"study-team", "instrument-derived", "authored-unconfirmed"}
 
 # An outcome that means the tool did its work. Anything else is a tool that
 # bailed before touching the data it would normally return, which is the shape a
@@ -955,37 +970,60 @@ def check_provenance() -> list[str]:
     establishes only that a source was named, and `study-team` may be named only
     after the study team confirms in writing.
 
-    Derivations declare the same vocabulary in a `source` key rather than a
-    `**Source:**` line, and are held to the same set. The requirement is not
-    grandfathered: a derivation without a source is a defect, not a legacy file.
-    It is also not `signed` — see `_signed_derivations` in `agent/schema.py`,
-    which loads every file regardless of that flag. `signed` records
-    permissiveness, never provenance.
+    Derivations declare TWO sources, not one, in `construct_source` and
+    `binding_source`. A single field could not tell the truth about them: the
+    construct is cited and the binding to instrument keys is authored, and one
+    field silently picked a half. `prior-art` is legal only for the construct.
+
+    Neither is `signed` — see `_signed_derivations` in `agent/schema.py`, which
+    loads every file regardless of that flag, and `env/tools.py::list_derivations`,
+    which calls every file signed while reading the flag on none. `signed`
+    records permissiveness, never provenance.
+
+    Both loops carry a one-sided floor. Without one an absent or empty
+    `curated/` scans nothing and returns clean, the failure
+    `_instrument_text_by_module` raises rather than tolerates. The floor is a
+    presence check, not a count: it may never pin today's corpus.
 
     Returns:
-        One string per document with a missing or disallowed source, and per
-        derivation missing a construct_validity_basis or fitted to an outcome.
+        One string per document with a missing or disallowed source, per
+        derivation missing a construct_validity_basis or fitted to an outcome,
+        and one per partition that scanned nothing at all.
     """
     bad = []
-    for p in sorted((ROOT / "curated" / "conventions").glob("*.md")):
+    conventions = sorted((ROOT / "curated" / "conventions").glob("*.md"))
+    for p in conventions:
         m = SOURCE_RE.search(p.read_text())
         if not m:
             bad.append(f"{p.relative_to(ROOT)}: no **Source:** declared")
         elif m.group(1).lower() not in ALLOWED_SOURCES:
             bad.append(f"{p.relative_to(ROOT)}: source {m.group(1)!r} "
                        f"not in {sorted(ALLOWED_SOURCES)}")
-    for p in sorted((ROOT / "curated" / "derivations").glob("*.json")):
+    derivations = sorted((ROOT / "curated" / "derivations").glob("*.json"))
+    for p in derivations:
         d = json.loads(p.read_text())
-        src = d.get("source")
-        if not src:
-            bad.append(f"{p.relative_to(ROOT)}: no source declared")
-        elif str(src).lower() not in ALLOWED_SOURCES:
-            bad.append(f"{p.relative_to(ROOT)}: source {src!r} "
-                       f"not in {sorted(ALLOWED_SOURCES)}")
+        for field, allowed in (("construct_source", CONSTRUCT_SOURCES),
+                               ("binding_source", BINDING_SOURCES)):
+            v = d.get(field)
+            # `.strip()` where the conventions branch gets it free: SOURCE_RE's
+            # `[a-z-]+` capture cannot include surrounding whitespace, so only
+            # the JSON side can carry `"prior-art "` and print the
+            # cry-wolf-shaped "not in [... 'prior-art' ...]".
+            if not v or not str(v).strip():
+                bad.append(f"{p.relative_to(ROOT)}: no {field} declared")
+            elif str(v).strip().lower() not in allowed:
+                bad.append(f"{p.relative_to(ROOT)}: {field} {v!r} "
+                           f"not in {sorted(allowed)}")
         if not d.get("construct_validity_basis"):
             bad.append(f"{p.relative_to(ROOT)}: no construct_validity_basis")
         if d.get("fitted_to_outcome"):
             bad.append(f"{p.relative_to(ROOT)}: fitted_to_outcome is true")
+    if not conventions:
+        bad.append("curated/conventions/: scanned no files; a provenance check "
+                   "that reads nothing reports clean")
+    if not derivations:
+        bad.append("curated/derivations/: scanned no files; a provenance check "
+                   "that reads nothing reports clean")
     return bad
 
 
@@ -1147,7 +1185,7 @@ def main() -> int:
             check_input_does_not_contain_the_answer(),
         "survey platform named in surface":
             check_no_platform_name_in_surface(surface),
-        "convention provenance": check_provenance(),
+        "curated provenance": check_provenance(),
         "seal configuration": check_seal_config(),
         "held-out registry unreachable": check_holdout_not_reachable(),
     }

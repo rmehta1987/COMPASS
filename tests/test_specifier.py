@@ -801,54 +801,145 @@ def test_the_check_actually_catches_a_planted_leak():
     assert "2836" in MARKERS and "PM2.5" in MARKERS
 
 
-def test_a_derivation_that_declares_no_source_is_caught(tmp_path, monkeypatch):
-    """`check_provenance` holds derivations to `ALLOWED_SOURCES`, both ways.
+def _provenance_root(tmp_path, monkeypatch) -> tuple:
+    """A tmp `curated/` tree with `check_provenance` pointed at it.
+
+    Never plant into the real `curated/`: it is inside
+    `tests/test_contamination_surface.py::SCANNED`, so a seeded file would enter
+    the model-visible surface. `check_provenance` reads a module-global `ROOT`
+    and takes no path argument, hence the monkeypatch.
+
+    Args:
+        tmp_path: pytest's per-test directory.
+        monkeypatch: pytest's attribute patcher.
+
+    Returns:
+        A `(module, write_convention, write_derivation)` triple.
+    """
+    import json as _json
+
+    from benchmark import contamination_check as CC
+
+    conv = tmp_path / "curated" / "conventions"
+    deriv = tmp_path / "curated" / "derivations"
+    conv.mkdir(parents=True)
+    deriv.mkdir()
+    monkeypatch.setattr(CC, "ROOT", tmp_path)
+
+    def write_convention(name: str = "c",
+                         source: str = "authored-unconfirmed") -> None:
+        (conv / f"{name}.md").write_text(f"# c\n\n**Source:** `{source}`\n")
+
+    def write_derivation(name: str = "x", **over: object) -> None:
+        d = {"derivation_id": name, "construct_source": "prior-art",
+             "binding_source": "authored-unconfirmed",
+             "construct_validity_basis": "a named external work",
+             "fitted_to_outcome": False}
+        d.update(over)
+        (deriv / f"{name}.json").write_text(_json.dumps(
+            {k: v for k, v in d.items() if v is not ...}))
+
+    return CC, write_convention, write_derivation
+
+
+def test_check_provenance_is_red_on_every_rule_it_claims_to_enforce(
+        tmp_path, monkeypatch):
+    """One seed per rule, so deleting any rule reddens this test.
 
     The import is IN-BODY on purpose. `benchmark.contamination_check` reaches
     `benchmark.prevalence_key`, which lives only on the `scoring-key` branch and
     is unreachable in the generation clone by design. At module level it would
     break COLLECTION of this whole file, and `check.sh` step 2 forbids
     `--continue-on-collection-errors`, so the gate would go RED instead of
-    deselecting one node. Red and green for this test are therefore observed in
-    the SCORING clone, not the generation clone, where its node id sits in
-    `check.sh`'s deselect list.
+    deselecting one node. Red and green are therefore observed in the SCORING
+    clone, where this node id is not deselected.
 
-    Seeded against `tmp_path`, never by planting a bad file into the real
-    `curated/derivations/`: that directory is inside
-    `tests/test_contamination_surface.py::SCANNED`, so a planted file would
-    enter the model-visible surface. `check_provenance` reads a module-global
-    `ROOT` and takes no path argument, hence the monkeypatch.
-
-    Both seeds, because absence-only detection is half a check: a derivation
-    with no `source` at all, and one whose `source` is outside the set.
+    The earlier version of this test asserted `any(...)` over two seeds and
+    stayed GREEN while the entire conventions loop, the
+    `construct_validity_basis` rule and the `fitted_to_outcome` rule were each
+    deleted in turn — a cold critic reproduced all five mutations on
+    2026-09-08. A seed per rule is the fix: every branch below is the only
+    thing keeping some line of `check_provenance` honest.
     """
-    import json as _json
+    CC, convention, derivation = _provenance_root(tmp_path, monkeypatch)
 
-    from benchmark import contamination_check as CC
+    # Anti-vacuity green control: a well-formed pair of both artefact kinds.
+    convention()
+    derivation()
+    assert CC.check_provenance() == []
 
-    derivations = tmp_path / "curated" / "derivations"
-    derivations.mkdir(parents=True)
-    (tmp_path / "curated" / "conventions").mkdir()
-    monkeypatch.setattr(CC, "ROOT", tmp_path)
+    def only(**over: object) -> list[str]:
+        derivation(**over)
+        return CC.check_provenance()
 
-    good = {"derivation_id": "x", "source": "prior-art",
-            "construct_validity_basis": "a named external work",
-            "fitted_to_outcome": False}
-    seeded = derivations / "x.json"
+    # Each derivation rule, seeded absent AND out-of-set.
+    assert any("no construct_source" in b for b in only(construct_source=...))
+    assert any("no binding_source" in b for b in only(binding_source=...))
+    assert any("construct_source 'vibes'" in b for b in only(construct_source="vibes"))
+    assert any("binding_source 'vibes'" in b for b in only(binding_source="vibes"))
+    assert any("no construct_validity_basis" in b
+               for b in only(construct_validity_basis=""))
+    assert any("fitted_to_outcome is true" in b for b in only(fitted_to_outcome=True))
 
-    # Anti-vacuity: the green control, so a rule that fired on everything —
-    # or on nothing — could not pass the two seeds below by accident.
-    seeded.write_text(_json.dumps(good))
-    assert CC.check_provenance() == [], "a declared, allowed source must pass"
+    # `prior-art` is legal for the construct and UNREPRESENTABLE for the
+    # binding. That asymmetry is the whole reason the field was split: prior art
+    # supplies a construct, never a binding to this instrument's keys.
+    assert only(construct_source="prior-art") == []
+    assert any("binding_source 'prior-art'" in b
+               for b in only(binding_source="prior-art"))
 
-    seeded.write_text(_json.dumps({k: v for k, v in good.items()
-                                   if k != "source"}))
-    absent = CC.check_provenance()
-    assert any("no source" in b for b in absent), absent
+    # Surrounding whitespace is accepted, not reported as "not in [... it ...]".
+    assert only(construct_source=" prior-art\n") == []
+    # Casing is accepted, matching the conventions branch's re.I + .lower().
+    assert only(construct_source="Prior-Art") == []
 
-    seeded.write_text(_json.dumps({**good, "source": "the-literature"}))
-    outside = CC.check_provenance()
-    assert any("the-literature" in b for b in outside), outside
+
+def test_a_convention_may_not_declare_a_derivation_only_source(
+        tmp_path, monkeypatch):
+    """`prior-art` is legal for a derivation and illegal for a convention.
+
+    `AGENTS.md` §Hard Constraints: "Conventions stay `authored-unconfirmed`;
+    only the user upgrades one, in writing." The narrowness of `ALLOWED_SOURCES`
+    is that constraint's only mechanical enforcement. df87041 added `prior-art`
+    to the single shared set and silently made a convention citing external work
+    pass a check that had refused it — green on a file that had been red, caught
+    by a cold critic, not by this suite. This test is why that cannot recur.
+    """
+    CC, convention, derivation = _provenance_root(tmp_path, monkeypatch)
+    derivation()
+
+    convention(source="authored-unconfirmed")
+    assert CC.check_provenance() == []
+
+    convention(source="prior-art")
+    problems = CC.check_provenance()
+    assert any("prior-art" in b for b in problems), problems
+    assert "prior-art" not in CC.ALLOWED_SOURCES
+    assert "prior-art" in CC.CONSTRUCT_SOURCES
+    assert "prior-art" not in CC.BINDING_SOURCES
+
+
+def test_a_provenance_check_that_reads_nothing_does_not_report_clean(
+        tmp_path, monkeypatch):
+    """An empty `curated/` must be RED, not silently clean.
+
+    Both loops are `for p in sorted(...glob(...))`: an empty glob is zero
+    iterations and an empty problem list, and `main()` then prints `ok`. This
+    module raises rather than degrades everywhere else it matters —
+    `_instrument_text_by_module` raises `FileNotFoundError` because "a marker
+    scan over a dictionary that failed to load would report clean". The floor
+    is a presence check, never a count: pinning today's six conventions and two
+    derivations would be pinning the corpus (`AGENTS.md` §Testing Patterns).
+    """
+    CC, convention, derivation = _provenance_root(tmp_path, monkeypatch)
+    empty = CC.check_provenance()
+    assert any("curated/conventions/" in b for b in empty), empty
+    assert any("curated/derivations/" in b for b in empty), empty
+
+    convention()
+    assert any("curated/derivations/" in b for b in CC.check_provenance())
+    derivation()
+    assert CC.check_provenance() == []
 
 
 # --------------------------------------------------------------------------- #
