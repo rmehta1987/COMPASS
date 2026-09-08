@@ -1022,10 +1022,34 @@ def list_derivations() -> dict:
 
 @_logged
 def get_derivation(derivation_id: str) -> dict:
-    p = CURATED / "derivations" / f"{derivation_id}.json"
-    if not p.exists():
-        return {"outcome": "not_found",
-                "log": f"No signed derivation {derivation_id!r} in curated/derivations/."}
+    root = (CURATED / "derivations").resolve()
+    miss = {"outcome": "not_found",
+            "log": f"No signed derivation {derivation_id!r} in curated/derivations/."}
+    # `derivation_id` arrives exactly as the model wrote it. Nothing validates it:
+    # `agent/registry.py::GetDerivationArgs.derivation_id` is a bare `str` with no
+    # pattern, and no `model_validate` runs on the call path. Pasted into a path it
+    # was a traversal -- `get_derivation("../../benchmark/fixtures/retrieval_queries")`
+    # returned the held-out retrieval fixtures as `outcome: ok`, and
+    # `../../build/dictionary` returned the built dictionary. The Hard Constraint
+    # `benchmark/contamination_check.py::check_holdout_not_reachable` enforces was
+    # reporting `ok` throughout, because it scans THIS FILE'S SOURCE TEXT for the
+    # word "benchmark" and the offending path is composed at run time.
+    #
+    # Containment is therefore decided on the RESOLVED path, never inferred from the
+    # id's spelling: a denylist of "../" would miss absolute ids and symlinks. The
+    # rejection is byte-identical to a genuine miss, so a probe learns nothing about
+    # what exists outside; `_logged` still records the id it was called with.
+    #
+    # Requiring the parent to be exactly `root` also makes this agree with the two
+    # readers that were already shallow -- `list_derivations`' `glob("*.json")` and
+    # `agent/schema.py::_signed_derivations` -- which `get_derivation` alone
+    # contradicted by reaching `curated/derivations/sub/x.json`.
+    try:
+        p = (root / f"{derivation_id}.json").resolve()
+    except (OSError, ValueError):
+        return miss
+    if p.parent != root or not p.exists():
+        return miss
     return {"outcome": "ok", **json.loads(p.read_text())}
 
 

@@ -186,3 +186,59 @@ def test_no_tool_accepts_a_parameter_it_ignores():
         f"these tools take arguments their bodies never read: {dead}. A "
         f"parameter the code ignores is prompt-adjacent surface promising "
         f"behaviour that does not exist; delete it, or read it.")
+
+
+def test_get_derivation_cannot_escape_the_derivations_directory(tmp_path, monkeypatch):
+    """A model-supplied id is a path fragment, and was a traversal until 2026-09-08.
+
+    `get_derivation` composed `CURATED / "derivations" / f"{derivation_id}.json"`
+    from a string the model writes, with no validation anywhere on the call path:
+    `agent/registry.py::GetDerivationArgs.derivation_id` is a bare `str`, and no
+    `model_validate` runs against it. Measured before the fix,
+    `get_derivation("../../benchmark/fixtures/retrieval_queries")` returned
+    `outcome: ok` carrying the held-out retrieval fixtures, and
+    `../../build/dictionary` returned the built dictionary.
+
+    `benchmark/contamination_check.py::check_holdout_not_reachable` reported
+    `ok  held-out registry unreachable` the entire time, because it scans
+    `env/tools.py`'s SOURCE TEXT for the literal "benchmark" and the offending
+    path is assembled at run time. A source-text scan cannot see a composed
+    path, so this test exists rather than an extension of that check.
+
+    Seeded against `tmp_path` with a real file planted OUTSIDE the derivations
+    directory, and asserting that file is readable first: without that positive
+    control every `not_found` below would pass on a target that does not exist,
+    which is the vacuous-green shape `AGENTS.md` §Verification Discipline names
+    ("Could not detect X is never X is absent").
+    """
+    from env import tools as T
+
+    curated = tmp_path / "curated"
+    (curated / "derivations").mkdir(parents=True)
+    (curated / "conventions").mkdir()
+    (curated / "derivations" / "real.json").write_text('{"derivation_id": "real"}')
+    (curated / "derivations" / "sub").mkdir()
+    (curated / "derivations" / "sub" / "nested.json").write_text('{"x": 1}')
+    held_out = tmp_path / "held_out.json"
+    held_out.write_text('{"answer_key": "REACHED"}')
+    monkeypatch.setattr(T, "CURATED", curated)
+
+    # Positive control: the target exists, is readable, and the tool works at all.
+    assert held_out.exists() and "REACHED" in held_out.read_text()
+    assert T.get_derivation("real")["outcome"] == "ok"
+
+    for probe in ("../held_out", "../../held_out", "../../../held_out",
+                  str(held_out.with_suffix("")), "../conventions/../../held_out",
+                  "sub/nested", "..%2f..%2fheld_out", "\\..\\..\\held_out"):
+        out = T.get_derivation(probe)
+        assert out["outcome"] == "not_found", (probe, out)
+        assert "answer_key" not in out, (
+            f"{probe!r} read a file outside curated/derivations/")
+        # The refusal must be indistinguishable from a genuine miss apart from
+        # the id echoed back, which is the model's own string and tells it
+        # nothing new. A probe that could tell "outside" from "absent" would map
+        # the filesystem one call at a time.
+        miss = T.get_derivation("no_such_derivation_at_all")
+        assert set(out) == set(miss) == {"outcome", "log"}, probe
+        assert out["log"] == miss["log"].replace(
+            "'no_such_derivation_at_all'", repr(probe)), probe
