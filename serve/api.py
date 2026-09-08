@@ -602,6 +602,18 @@ class Handler(BaseHTTPRequestHandler):
             return
         body = target.read_bytes()
         ctype = mimetypes.guess_type(str(target))[0] or "application/octet-stream"
+        if ctype == "text/html":
+            # The page's live panel is INERT unless this marker is present, and
+            # only the server can honestly set it. Without it the committed page
+            # would have to guess whether an endpoint is there, and on GitHub
+            # Pages a root-relative `/api/retrieve` does not fail -- it resolves
+            # against github.io, leaves the browser carrying the reader's typed
+            # text, and returns 404. `site/tools/offline.py` certifies "zero
+            # external requests" and cannot see that, so the page must not be
+            # able to make it at all.
+            body = body.replace(
+                b"</head>",
+                b"<script>window.COMPASS_ENDPOINT=true;</script></head>", 1)
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
