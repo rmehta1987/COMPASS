@@ -2,6 +2,7 @@
   "derivation_id": "social_cohesion_scale",
   "author": "R. Mehta",
   "date": "2026-08-26",
+  "source": "prior-art",
   "signed": true,
   "unit": "mean Likert score, 5 items",
   "component_keys": ["m3:Q16.1_1","m3:Q16.1_2","m3:Q16.1_3","m3:Q16.1_4","m3:Q16.1_5"],

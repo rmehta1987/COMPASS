@@ -801,6 +801,56 @@ def test_the_check_actually_catches_a_planted_leak():
     assert "2836" in MARKERS and "PM2.5" in MARKERS
 
 
+def test_a_derivation_that_declares_no_source_is_caught(tmp_path, monkeypatch):
+    """`check_provenance` holds derivations to `ALLOWED_SOURCES`, both ways.
+
+    The import is IN-BODY on purpose. `benchmark.contamination_check` reaches
+    `benchmark.prevalence_key`, which lives only on the `scoring-key` branch and
+    is unreachable in the generation clone by design. At module level it would
+    break COLLECTION of this whole file, and `check.sh` step 2 forbids
+    `--continue-on-collection-errors`, so the gate would go RED instead of
+    deselecting one node. Red and green for this test are therefore observed in
+    the SCORING clone, not the generation clone, where its node id sits in
+    `check.sh`'s deselect list.
+
+    Seeded against `tmp_path`, never by planting a bad file into the real
+    `curated/derivations/`: that directory is inside
+    `tests/test_contamination_surface.py::SCANNED`, so a planted file would
+    enter the model-visible surface. `check_provenance` reads a module-global
+    `ROOT` and takes no path argument, hence the monkeypatch.
+
+    Both seeds, because absence-only detection is half a check: a derivation
+    with no `source` at all, and one whose `source` is outside the set.
+    """
+    import json as _json
+
+    from benchmark import contamination_check as CC
+
+    derivations = tmp_path / "curated" / "derivations"
+    derivations.mkdir(parents=True)
+    (tmp_path / "curated" / "conventions").mkdir()
+    monkeypatch.setattr(CC, "ROOT", tmp_path)
+
+    good = {"derivation_id": "x", "source": "prior-art",
+            "construct_validity_basis": "a named external work",
+            "fitted_to_outcome": False}
+    seeded = derivations / "x.json"
+
+    # Anti-vacuity: the green control, so a rule that fired on everything —
+    # or on nothing — could not pass the two seeds below by accident.
+    seeded.write_text(_json.dumps(good))
+    assert CC.check_provenance() == [], "a declared, allowed source must pass"
+
+    seeded.write_text(_json.dumps({k: v for k, v in good.items()
+                                   if k != "source"}))
+    absent = CC.check_provenance()
+    assert any("no source" in b for b in absent), absent
+
+    seeded.write_text(_json.dumps({**good, "source": "the-literature"}))
+    outside = CC.check_provenance()
+    assert any("the-literature" in b for b in outside), outside
+
+
 # --------------------------------------------------------------------------- #
 # tool authority: the environment owns the gate fields, not the model
 # --------------------------------------------------------------------------- #

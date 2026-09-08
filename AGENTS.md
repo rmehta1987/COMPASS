@@ -206,7 +206,9 @@ under one and barred by the other. Mechanical check: `tests/test_publication_sur
 
 - Files: A = `agent/specifier.py schema.py tool_authority.py cli_backend.py backends.py
   prompt_contract.py`;
-  B = `curated/ env/ benchmark/ mcp/ agent/sealed.py agent/registry.py build.py checks.py`;
+  B = `curated/ env/ benchmark/ mcp/ agent/sealed.py agent/registry.py build.py
+  checks.py check.sh` — `check.sh` reads its thresholds from the modules B owns and
+  runs them, so its deselect list moves with them;
   C = `generate/
   agent/RUNNING.md`. `tests/` follow their module; anything unlisted is unassigned.
 

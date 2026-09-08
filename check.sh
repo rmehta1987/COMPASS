@@ -38,6 +38,7 @@ $PY -m pytest tests/ -q -p no:cacheprovider \
     --ignore=tests/test_tier_gate.py \
     --deselect tests/test_catalogue.py::test_no_index_position_reads_as_a_withheld_figure \
     --deselect tests/test_specifier.py::test_contamination_check_passes_offline \
+    --deselect tests/test_specifier.py::test_a_derivation_that_declares_no_source_is_caught \
     --deselect tests/test_specifier.py::test_the_check_actually_catches_a_planted_leak \
     --deselect tests/test_specifier.py::test_the_refusal_prompt_and_schema_carry_no_study_content \
     >"$OUT" 2>&1
