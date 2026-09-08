@@ -159,7 +159,7 @@ function examples(){
   el("#examples").innerHTML=DATA.runs.examples.map((e,i)=>
     `<button class="g" data-ex="${i}">${esc(e.label)}</button>`).join("");
   document.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>{
-    cur=DATA.runs.examples[+b.dataset.ex]; typed=null; live=null;
+    cur=DATA.runs.examples[+b.dataset.ex]; typed=null; live=null; liveGen={};
     el("#q").value=cur.request.text; draw();});
 }
 
@@ -183,6 +183,10 @@ function placeholder(s){
    wording under --show-instrument -- so this renders what it is given and
    claims nothing about which. */
 let live=null;
+/* Every request that can change the panel takes a ticket. An await
+   suspends, and the reader keeps clicking: without this, a slow live
+   reply lands after they picked an example and paints over it. */
+let liveGen=null;
 async function liveRetrieve(q){
   try{
     const r=await fetch("/api/retrieve",{method:"POST",
@@ -391,12 +395,14 @@ function draw(){
 
 el("#run").onclick=async()=>{
   const q=el("#q").value.trim(); if(!q)return;
+  const gen=(liveGen={});
   live=null; cur=match(q); typed=cur?null:q;
   /* Draw the committed answer first, so the page never blocks on a network
      call that will usually not be there, then upgrade if the endpoint replies. */
   draw();
   if(cur) return;
   const j=await liveRetrieve(q);
+  if(gen!==liveGen) return;
   if(j){ live=j; sel="retriever"; draw(); }
 };
 el("#dl-src").onclick=()=>{
