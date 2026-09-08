@@ -88,7 +88,7 @@ publishes or blocks a downstream stage.
 - C16 second acceptance: `benchmark/input_leakage.py` scans a SUBMITTED prompt with a
   red-turning positive control; its `environment_supplied` currently rests on enumeration
   choosing the pair.
-- **C28 — a model-proposed derivation that enters the design.** Operator decision
+- **C29 — a model-proposed derivation that enters the design.** Operator decision
   2026-09-08: a model needing an unsigned derivation may PROPOSE one citing prior art, the
   proposal ENTERS THE DESIGN, and the run completes rather than blocking. Two defects must
   be closed before a builder is dispatched; both were found by cold critics and reproduce.
@@ -100,7 +100,9 @@ publishes or blocks a downstream stage.
   moves) and verified to survive `tests/test_specifier.py::test_selection_never_consults_the_model`,
   whose AST scan forbids the substrings `backend`, `chat(`, `score`, `judge`, `rating` —
   `groundedness_score` and `derivation_rating` would turn it red, `proposed_derivations`
-  passes. Amending `_rank` is a user amendment and is hereby authorised for C28 only.
+  passes. Amending `_rank` is a user amendment and is hereby authorised for C29 only.
+  Note C28 below is a SECOND `_rank` defect, on the covariate-count term, and the
+  two amendments must be designed together or the second will undo the first.
   (b) OPEN: `agent/schema.py::_ref_key` puts only `derivation:<id>` into `canonical_form`,
   so two proposals sharing an id but differing in recipe hash identically — the collapse
   "enters the design" exists to prevent. Needs a normalised structural key (sorted

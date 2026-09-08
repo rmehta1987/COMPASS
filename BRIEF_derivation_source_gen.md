@@ -4,7 +4,7 @@ Run in `/home/mehta5/compass-gen`, branch `ralph-loop`. The verification half is
 `BRIEF_derivation_source_score.md` and runs in the scoring clone; you cannot do it here.
 
 Scope: **items 1 and 2 only.** Items 3-4 (the propose path) are a user amendment and are
-recorded in `TASKS.md` as C28; do not build them. Cite `path::symbol`, never line numbers.
+recorded in `TASKS.md` as C29; do not build them. Cite `path::symbol`, never line numbers.
 
 ## 0. What you cannot verify here
 
