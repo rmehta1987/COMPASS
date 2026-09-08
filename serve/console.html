@@ -1,0 +1,87 @@
+<title>COMPASS test console</title>
+<style>
+  :root{--bg:#fbfaf8;--fg:#1a1a1a;--dim:#6b6b6b;--line:#e0ddd8;--card:#fff;--warn:#8a4b00;--warnbg:#fff6e8;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+  @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#16151a;--fg:#eae8e4;--dim:#9b968e;--line:#2f2d33;--card:#1e1d23;--warn:#ffb968;--warnbg:#2a1f10}}
+  :root[data-theme=dark]{--bg:#16151a;--fg:#eae8e4;--dim:#9b968e;--line:#2f2d33;--card:#1e1d23;--warn:#ffb968;--warnbg:#2a1f10}
+  body{background:var(--bg);color:var(--fg);font:14px/1.55 ui-sans-serif,system-ui,sans-serif;margin:0;padding:28px 20px 60px}
+  main{max-width:860px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 2px;letter-spacing:-.01em}
+  .sub{color:var(--dim);margin:0 0 20px}
+  .warn{background:var(--warnbg);color:var(--warn);border:1px solid currentColor;border-radius:7px;padding:10px 13px;margin:0 0 22px;font-size:13px}
+  section{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:16px 17px;margin:0 0 16px}
+  h2{font-size:14px;margin:0 0 3px}
+  .hint{color:var(--dim);font-size:12.5px;margin:0 0 12px}
+  label{display:block;font-size:12px;color:var(--dim);margin:9px 0 3px}
+  input,button{font:inherit;color:var(--fg)}
+  input{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;box-sizing:border-box}
+  .row{display:flex;gap:11px;flex-wrap:wrap}.row>div{flex:1;min-width:150px}
+  button{margin-top:13px;background:var(--fg);color:var(--bg);border:0;border-radius:6px;padding:8px 15px;cursor:pointer;font-weight:600}
+  button[disabled]{opacity:.5;cursor:progress}
+  pre{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:12px;overflow-x:auto;font-family:var(--mono);font-size:12px;margin:13px 0 0;white-space:pre-wrap;word-break:break-word}
+  code{font-family:var(--mono);font-size:12.5px}
+</style>
+<main>
+  <h1>COMPASS test console</h1>
+  <p class="sub">Loopback dev rig for <code>serve/api.py</code>. Same origin as the page, so no CORS and no tunnel.</p>
+
+  <p class="warn"><b>Not a measurement surface.</b> Pairs posed here are <code>externally_posed</code> with
+  <code>screened_from=0</code> and never enter a benchmark denominator. There is no grammar enforcement through
+  the CLI and no seed, so samples vary without being reproducible &mdash; a run here is not evidence about the
+  8&ndash;27B target. Every request spends the Claude seat <code>COMPASS_CLAUDE_CONFIG_DIR</code> selects.
+  Targets come back pseudonymised: the instrument is withheld.</p>
+
+  <section>
+    <h2>Retriever</h2>
+    <p class="hint">Fine-tuned bge-small, argmax cosine over 1,353 target vectors, CPU. No model call.</p>
+    <label for="q">Query</label>
+    <input id="q" value="exogenous hormone medication use">
+    <label for="rk">k</label>
+    <input id="rk" type="number" value="5" min="1" max="20">
+    <button id="go-r">Retrieve</button>
+    <pre id="out-r">ready</pre>
+  </section>
+
+  <section>
+    <h2>Specifier</h2>
+    <p class="hint">Real run: <code>claude -p</code> with MCP tools, then transduction, then the gate.
+    Minutes, not seconds. One at a time &mdash; the server serialises them.</p>
+    <div class="row">
+      <div><label for="e">Exposure construct key</label><input id="e" value="m3:Q16.1"></div>
+      <div><label for="o">Outcome construct key</label><input id="o" value="m2:Q5.8"></div>
+    </div>
+    <div class="row">
+      <div><label for="sk">k (samples)</label><input id="sk" type="number" value="1" min="1" max="5"></div>
+      <div><label for="m">Model</label><input id="m" value="claude-haiku-4-5"></div>
+    </div>
+    <button id="go-s">Run Specifier</button>
+    <pre id="out-s">ready</pre>
+  </section>
+
+  <section>
+    <h2>Health</h2>
+    <button id="go-h">Check</button>
+    <pre id="out-h">ready</pre>
+  </section>
+</main>
+<script>
+const el = id => document.getElementById(id);
+async function call(route, body, out, btn){
+  const t0 = performance.now();
+  btn.disabled = true; el(out).textContent = "running…";
+  try{
+    const r = await fetch(route, body ? {method:"POST", headers:{"Content-Type":"application/json"},
+                                        body:JSON.stringify(body)} : {});
+    const j = await r.json();
+    const s = ((performance.now()-t0)/1000).toFixed(2);
+    el(out).textContent = `HTTP ${r.status}  ${s}s\n\n` + JSON.stringify(j, null, 1);
+  }catch(err){
+    el(out).textContent = "request failed: " + err.message;
+  }finally{ btn.disabled = false; }
+}
+el("go-r").onclick = e => call("/api/retrieve",
+  {query: el("q").value, k: +el("rk").value}, "out-r", e.target);
+el("go-s").onclick = e => call("/api/specify",
+  {exposure: el("e").value, outcome: el("o").value, k: +el("sk").value, model: el("m").value},
+  "out-s", e.target);
+el("go-h").onclick = e => call("/api/health", null, "out-h", e.target);
+</script>
