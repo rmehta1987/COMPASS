@@ -513,6 +513,57 @@ def test_the_chokepoint_does_not_cancel_the_flag(tmp_path: Path) -> None:
     assert wording not in off.wfile.getvalue().decode(), "default must still redact"
 
 
+# ------------------------------------------------------- posed-key resolution
+
+
+def test_a_mis_cased_key_is_fixed_in_code_and_reported_not_guessed() -> None:
+    """The harness may canonicalise case; the model may never substitute a key.
+
+    The Specifier is forbidden to swap a key that does not resolve -- "a key
+    that resolves while naming the wrong construct is the one failure with no
+    automated detector" -- and that rule cannot be relaxed for a capital letter
+    without also relaxing it for `m3:Q16.1` -> `m3:Q16.2`. So the fix lives in
+    Python, as an exact case-insensitive lookup against the dictionary's own
+    keys, and the correction is reported rather than applied silently.
+    """
+    from serve.api import _canonical_key
+
+    constructs = {"m3:Q16.1": object(), "m2:Q5.8": object()}
+    seen: dict[str, str] = {}
+    assert _canonical_key("m3:Q16.1", constructs, "exposure", seen) == "m3:Q16.1"
+    assert seen == {}, "an exact match is not a correction"
+
+    assert _canonical_key("m3:q16.1", constructs, "exposure", seen) == "m3:Q16.1"
+    assert seen == {"m3:q16.1": "m3:Q16.1"}, "the rewrite must be reported"
+
+
+def test_an_unresolvable_key_costs_nothing() -> None:
+    """A typo cost a live run 78s and $0.04 before this existed."""
+    from serve.api import _canonical_key
+
+    constructs = {"m3:Q16.1": object()}
+    with pytest.raises(ValueError, match="does not resolve"):
+        _canonical_key("m3:Q99.9", constructs, "exposure", {})
+
+
+def test_case_insensitive_key_matching_is_unambiguous_on_this_instrument() -> None:
+    """The canonicaliser is only safe while no two keys differ by case alone."""
+    dic = _dictionary_or_skip()
+    entries = json.loads(dic.read_text(encoding="utf-8"))["entries"]
+    both = {e["key"] for e in entries} | {e["construct_key"] for e in entries}
+    folded = [k.casefold() for k in both]
+    assert len(set(folded)) == len(both), "two keys differ only by case"
+
+
+def test_the_refusal_path_stays_reachable_on_purpose() -> None:
+    """`stand_in` exists so an unresolvable pair is representable; keep it so."""
+    from generate.live_specifier import stand_in
+
+    c = stand_in("m3:Q99.9")
+    assert c.construct_key == "m3:Q99.9"
+    assert c.stem_text == "", "stand_in must invent no wording"
+
+
 def test_the_pipeline_model_is_named_and_reported_not_assumed() -> None:
     """A caller may name a model; the payload must say whether it was the proxy."""
     from serve.api import PIPELINE_MODEL

@@ -211,6 +211,56 @@ def _retrieve(state: State, body: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _canonical_key(key: str, constructs: dict[str, Any], role: str,
+                   canonical: dict[str, str]) -> str:
+    """Resolve a construct key's case before a model call, or refuse cheaply.
+
+    WHY THIS IS NOT THE MODEL'S JOB. The Specifier is forbidden to substitute a
+    key: "never substitute a similar-sounding item -- a key that resolves while
+    naming the wrong construct is the one failure with no automated detector."
+    That rule has to hold for `m3:Q16.1` -> `m3:Q16.2` as much as for a capital
+    letter, and a model cannot be given the second permission without the first.
+
+    So the fix belongs here instead, where it is deterministic and checkable: an
+    EXACT case-insensitive match against the dictionary's own key set, which is
+    a lookup and not a judgement. MEASURED 2026-09-08: over the 2,929 keys and
+    construct keys in `dictionary.json` there are ZERO case-insensitive
+    collisions, so such a match names exactly one construct or none.
+
+    Anything short of that is a 400 before any model call. `m3:q16.1` cost a
+    live run 78s and $0.04 to be told about a capital letter -- and the refusal
+    it produced was correct, which is exactly why the harness has to catch it
+    first. Pass `allow_unresolvable` to skip this and drive the refusal path on
+    purpose; `generate/live_specifier.py::stand_in` exists so that stays possible.
+
+    Args:
+        key: The construct key as the caller typed it.
+        constructs: Construct keys to Construct, from `load_constructs`.
+        role: `exposure` or `outcome`, for the error message.
+        canonical: Mutated with `{typed: resolved}` when a case fix was applied,
+            so the response can report it rather than silently rewriting input.
+
+    Returns:
+        The key as the dictionary spells it.
+
+    Raises:
+        ValueError: When the key resolves to no construct.
+    """
+    if key in constructs:
+        return key
+    folded = {k.casefold(): k for k in constructs}
+    fixed = folded.get(key.casefold())
+    if fixed is not None:
+        canonical[key] = fixed
+        return fixed
+    raise ValueError(
+        f"{role} {key!r} does not resolve to a construct in dictionary "
+        f"{(constructs and 'loaded') or 'empty'}. Keys are case-sensitive and "
+        f"look like 'm3:Q16.1' (module, colon, capital Q, question id). "
+        f"Nothing was spent: this is checked before the model runs. Pass "
+        f'"allow_unresolvable": true to drive the refusal path deliberately.')
+
+
 def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
     """Run the real Specifier against headless `claude -p` on a posed pair.
 
@@ -221,8 +271,9 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
 
     Args:
         state: Shared handles.
-        body: The request, carrying `exposure`, `outcome` and optionally `k`
-            and `model`.
+        body: The request, carrying `exposure`, `outcome` and optionally `k`,
+            `model`, and `allow_unresolvable` to drive the refusal path with a
+            key the dictionary does not contain.
 
     Returns:
         The run: identity, per-sample gate values, and both outcome fields --
@@ -230,7 +281,8 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
         replaced and the replacements listed under `redactions`.
 
     Raises:
-        ValueError: When either construct key is missing, or k is out of range.
+        ValueError: When either construct key is missing or does not resolve,
+            or k is out of range.
     """
     exposure = str(body.get("exposure") or "").strip()
     outcome = str(body.get("outcome") or "").strip()
@@ -254,6 +306,11 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
     from generate.live_specifier import run_identity, stand_in
 
     C, version = load_constructs()
+    allow_unresolvable = bool(body.get("allow_unresolvable"))
+    canonical: dict[str, str] = {}
+    if not allow_unresolvable:
+        exposure = _canonical_key(exposure, C, "exposure", canonical)
+        outcome = _canonical_key(outcome, C, "outcome", canonical)
     pair = Candidate(exposure=C.get(exposure) or stand_in(exposure),
                      outcome=C.get(outcome) or stand_in(outcome))
 
@@ -278,6 +335,10 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
             "dictionary_version": version,
             "screened_from": 0,
             "selection_mode": "externally_posed",
+            # A silent rewrite of the caller's input is its own small version of
+            # the substitution problem: say what was changed and to what.
+            "key_case_corrected": canonical or None,
+            "allow_unresolvable": allow_unresolvable,
             "model_requested": model,
             "is_pipeline_model": model == PIPELINE_MODEL,
         },

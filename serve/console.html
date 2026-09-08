@@ -19,38 +19,58 @@
   button[disabled]{opacity:.5;cursor:progress}
   pre{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:12px;overflow-x:auto;font-family:var(--mono);font-size:12px;margin:13px 0 0;white-space:pre-wrap;word-break:break-word}
   code{font-family:var(--mono);font-size:12.5px}
+  a.ex{color:inherit;text-decoration:underline dotted;cursor:pointer}
+  .cand{display:flex;gap:10px;align-items:baseline;padding:7px 9px;margin-top:6px;
+        border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+  .cand.weak{opacity:.7;border-style:dashed}
+  .cand .cos{font-family:var(--mono);font-size:12px;color:var(--dim);flex:none}
+  .cand .txt{flex:1;font-size:12.5px}
+  .cand .pick{margin:0;padding:3px 8px;font-size:11.5px;font-weight:500;
+              background:transparent;color:var(--dim);border:1px solid var(--line);flex:none}
+  .cand .pick:hover{color:var(--fg);border-color:currentColor}
 </style>
 <main>
   <h1>COMPASS test console</h1>
   <p class="sub">Loopback dev rig for <code>serve/api.py</code>. Same origin as the page, so no CORS and no tunnel.</p>
 
-  <p class="warn"><b>Not a measurement surface.</b> Pairs posed here are <code>externally_posed</code> with
-  <code>screened_from=0</code> and never enter a benchmark denominator. There is no grammar enforcement through
-  the CLI and no seed, so samples vary without being reproducible &mdash; a run here is not evidence about the
-  8&ndash;27B target. Every request spends the Claude seat <code>COMPASS_CLAUDE_CONFIG_DIR</code> selects.
-  Targets come back pseudonymised: the instrument is withheld.</p>
-
   <section>
-    <h2>Retriever</h2>
-    <p class="hint">Fine-tuned bge-small, argmax cosine over 1,353 target vectors, CPU. No model call.</p>
-    <label for="q">Query</label>
-    <input id="q" value="exogenous hormone medication use">
+    <h2>1 &middot; Find a variable</h2>
+    <p class="hint"><b>One construct at a time, as a bare noun phrase.</b> This maps a described
+    construct onto instrument items &mdash; it is not a search engine for relationships, and a
+    question naming two constructs will silently match only one of them
+    (measured: <i>environment and hypertension</i> returned five hypertension items and no
+    environment item, without abstaining).
+    Skip <i>"show me questions related to&hellip;"</i>: measured, that wrapper costs
+    0.11&ndash;0.27 cosine and can push a good hit below the abstention threshold.</p>
+    <p class="hint">Works (measured cosine): <a href="#" class="ex">hypertension</a> 0.94 &middot;
+    <a href="#" class="ex">age at first menstrual period</a> 0.97 &middot;
+    <a href="#" class="ex">breast cancer diagnosis</a> 0.94 &middot;
+    <a href="#" class="ex">type 2 diabetes diagnosis</a> 0.92 &middot;
+    <a href="#" class="ex">household income</a> 0.90 &middot;
+    <a href="#" class="ex">cigarette smoking frequency</a> 0.84 &middot;
+    <a href="#" class="ex">neighborhood environment</a> 0.86.
+    Abstains (below 0.729, correctly): <a href="#" class="ex">age at cancer diagnosis</a> 0.66 &middot;
+    <a href="#" class="ex">air pollution exposure</a> 0.68.</p>
+    <label for="q">Construct</label>
+    <input id="q" value="hypertension" autocomplete="off">
     <label for="rk">k</label>
     <input id="rk" type="number" value="5" min="1" max="20">
-    <button id="go-r">Retrieve</button>
+    <button id="go-r">Find</button>
+    <div id="cands"></div>
     <pre id="out-r">ready</pre>
   </section>
 
   <section>
-    <h2>Specifier</h2>
-    <p class="hint">Real run: <code>claude -p</code> with MCP tools, then transduction, then the gate.
-    Minutes, not seconds. One at a time &mdash; the server serialises them.
-    Keys are deliberately not pre-filled: this file is served straight from <code>serve/</code>, which
-    the site gate does not scan and the runtime filter does not touch, so a key left here would ship
-    on every request.</p>
+    <h2>2 &middot; Specify a pair</h2>
+    <p class="hint">Pick each anchor from the results above rather than typing it &mdash; the
+    harness resolves your choice to a key, the way <code>agent/prompt_contract.py</code> resolves a
+    candidate index, so there is no key to mistype. Run one construct through step 1, set it as
+    exposure; run the other, set it as outcome.
+    A real run: <code>claude -p</code> with MCP tools, then transduction, then the gate.
+    Minutes, not seconds, and one at a time &mdash; the server serialises them.</p>
     <div class="row">
-      <div><label for="e">Exposure construct key</label><input id="e" placeholder="module:qid, e.g. the exposure anchor" autocomplete="off"></div>
-      <div><label for="o">Outcome construct key</label><input id="o" placeholder="module:qid, e.g. the outcome anchor" autocomplete="off"></div>
+      <div><label for="e">Exposure</label><input id="e" placeholder="use “set as exposure” above" autocomplete="off"></div>
+      <div><label for="o">Outcome</label><input id="o" placeholder="use “set as outcome” above" autocomplete="off"></div>
     </div>
     <div class="row">
       <div><label for="sk">k (samples)</label><input id="sk" type="number" value="1" min="1" max="5"></div>
@@ -77,14 +97,68 @@ async function call(route, body, out, btn){
     const j = await r.json();
     const s = ((performance.now()-t0)/1000).toFixed(2);
     el(out).textContent = `HTTP ${r.status}  ${s}s\n\n` + JSON.stringify(j, null, 1);
+    return j;
   }catch(err){
     el(out).textContent = "request failed: " + err.message;
+    return null;
   }finally{ btn.disabled = false; }
 }
-el("go-r").onclick = e => call("/api/retrieve",
-  {query: el("q").value, k: +el("rk").value}, "out-r", e.target);
+
+// Candidates are PICKED, never typed. The harness turns the choice into a key,
+// which is the same reason agent/prompt_contract.py hands the model an index:
+// a key you never type is a key you cannot mistype.
+function renderCandidates(j){
+  const box = el("cands");
+  box.innerHTML = "";
+  if(!j || !j.hits || !j.hits.length) return;
+  const note = document.createElement("p");
+  note.className = "hint";
+  note.textContent = j.abstained
+    ? `Top cosine ${j.hits[0].cos.toFixed(4)} is BELOW the ${j.threshold} threshold — the retriever abstains. Treat these as unconfirmed.`
+    : `Top cosine ${j.hits[0].cos.toFixed(4)}, above the ${j.threshold} threshold.`;
+  box.appendChild(note);
+  for(const h of j.hits){
+    const row = document.createElement("div");
+    row.className = "cand" + (j.abstained ? " weak" : "");
+    const ck = h.construct_key || h.key || null;
+    const label = h.stem ? h.stem : "(wording withheld — run with --show-instrument to see it)";
+    const cos = document.createElement("span");
+    cos.className = "cos"; cos.textContent = h.cos.toFixed(4);
+    const txt = document.createElement("span");
+    txt.className = "txt"; txt.textContent = label;
+    row.appendChild(cos); row.appendChild(txt);
+    if(ck){
+      for(const [field, word] of [["e","exposure"],["o","outcome"]]){
+        const b = document.createElement("button");
+        b.className = "pick"; b.textContent = "set as " + word;
+        b.onclick = () => { el(field).value = ck; b.textContent = "✓ " + word;
+                            setTimeout(() => b.textContent = "set as " + word, 1200); };
+        row.appendChild(b);
+      }
+    }
+    box.appendChild(row);
+  }
+  if(!j.hits[0].construct_key){
+    const w = document.createElement("p");
+    w.className = "hint";
+    w.textContent = "Targets are pseudonymised, so there is no key to pick. Restart with --show-instrument to choose anchors here.";
+    box.appendChild(w);
+  }
+}
+
+el("go-r").onclick = async e => {
+  const j = await call("/api/retrieve",
+    {query: el("q").value, k: +el("rk").value}, "out-r", e.target);
+  renderCandidates(j);
+};
 el("go-s").onclick = e => call("/api/specify",
   {exposure: el("e").value, outcome: el("o").value, k: +el("sk").value, model: el("m").value},
   "out-s", e.target);
 el("go-h").onclick = e => call("/api/health", null, "out-h", e.target);
+
+// The measured examples fill the box rather than being decoration.
+for(const a of document.querySelectorAll("a.ex")){
+  a.onclick = ev => { ev.preventDefault(); el("q").value = a.textContent;
+                      el("go-r").click(); };
+}
 </script>
