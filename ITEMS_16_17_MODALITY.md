@@ -289,5 +289,20 @@ justification and the replication behind it is 8 sides.
 - **Item 19's published figures.**
 - **The 0.854 / 0.963 refusal-denominator question.**
 
-The item 16 and 17 code changes are **not** committed. They sit in the compass-gen working
-tree for review; this report is the only thing committed and pushed.
+## Commit state
+
+This report was written and pushed before the code it describes, which was backwards: the
+reviewable artefact sat in the working tree while the narrative about it was in history.
+Corrected 2026-09-07. The item 16 and 17 changes are now committed, in the order the work
+was done:
+
+| commit | what |
+|---|---|
+| `5f1dc67` | Carry modality on the request and the record, never rendered. **Red on its own** — editing the shipped `template.py` breaks check.sh steps 6 and 10 until the bundle is re-frozen. |
+| `6f6508e` | Re-freeze the bundle: `template.py`'s checksum, and the proof chain flipping `ast_identical_modulo_docstrings` to `false`. Green restored. |
+
+The split is deliberate even though no green state exists between the two, so history shows
+the order rather than a single squashed change. Anyone bisecting across `5f1dc67` should
+expect `BundleIntegrityError`, not a regression.
+
+The serving-machine re-close described under Finding 3 remains **outstanding**.
