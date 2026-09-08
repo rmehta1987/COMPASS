@@ -274,9 +274,9 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
             "externally posed, screened_from=0, no grammar enforcement, no seed. "
             "Never cite this as a result (AGENTS.md §Verification Discipline)."),
     }
-    clean, marks = state.scrubber.scrub(payload)
-    clean["redactions"] = marks
-    return clean
+    # No scrub here: `Handler._send` filters EVERY response body. Doing it per
+    # route is how `/api/retrieve` ended up relying on `pseudonymise_hit` alone.
+    return payload
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -299,12 +299,27 @@ class Handler(BaseHTTPRequestHandler):
         sys.stderr.write(f"{time.strftime('%H:%M:%S')} {fmt % args}\n")
 
     def _send(self, code: int, payload: dict[str, Any]) -> None:
-        """Write one JSON response.
+        """Write one JSON response, filtered.
+
+        THE FILTER LIVES HERE, not in each route. Scrubbing per route is how
+        `/api/retrieve` came to rely on `pseudonymise_hit`'s allowlist alone
+        while `/api/specify` was filtered, and how the error path was filtered
+        by neither: a new route, or a new error, is unprotected by default. One
+        chokepoint makes "nothing reaches the socket unscrubbed" a property of
+        the class rather than a habit of whoever adds the next handler.
+
+        The static-file branch of `do_GET` deliberately does not pass through
+        here: it serves `site/`, whose contents are already proved clean by
+        `site/tools/no_instrument.py`, and its own containment check is what
+        keeps it inside that directory.
 
         Args:
             code: HTTP status.
             payload: The body.
         """
+        payload, marks = self.state.scrubber.scrub(payload)
+        if marks:
+            payload = {**payload, "redactions": marks}
         raw = json.dumps(payload, indent=1).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
@@ -386,11 +401,31 @@ class Handler(BaseHTTPRequestHandler):
         try:
             self._send(200, fn(self.state, body))
         except ValueError as exc:
-            self._send(400, {"error": str(exc)})
+            self._send(400, self._scrubbed_error(exc))
         except Exception as exc:
             # The whole failure, not its first line: a run that costs a model
             # call is exactly where the reason has to survive.
-            self._send(500, {"error": f"{type(exc).__name__}: {exc}"})
+            self._send(500, self._scrubbed_error(exc, prefix=True))
+
+    def _scrubbed_error(self, exc: Exception, *, prefix: bool = False) -> dict[str, Any]:
+        """Filter an exception message before it is sent.
+
+        THE ERROR PATH IS A RESPONSE PATH. `_specify` scrubs the payload it
+        returns, but a raised exception went straight to the socket unfiltered,
+        and the exceptions this endpoint raises are the ones most likely to
+        quote the instrument: a pydantic `ValidationError` echoes the offending
+        field VALUE, and for a record built out of `Cited` labels that value is
+        `question_text` byte for byte. So the filter that guards the success
+        path guards this one too.
+
+        Args:
+            exc: The exception to report.
+            prefix: Whether to include the exception class name.
+
+        Returns:
+            The error body, with any instrument content replaced.
+        """
+        return {"error": f"{type(exc).__name__}: {exc}" if prefix else str(exc)}
 
 
 def build_server(host: str, port: int, state: State) -> ThreadingHTTPServer:

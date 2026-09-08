@@ -265,6 +265,90 @@ def test_a_json_null_is_a_bad_request_not_a_server_error() -> None:
             _int_arg({"k": bad}, "k", 3)
 
 
+def test_key_pattern_matches_every_key_the_instrument_actually_uses() -> None:
+    """The regex encodes a belief about the key grammar; check it against reality.
+
+    The pattern this started as a copy of matched 1,080 of 2,804 keys and missed
+    every roster-prefixed shape. A key-shaped regex that quietly covers 39% of
+    the instrument is worse than none, because it reads as enforcement.
+    """
+    dic = _dictionary_or_skip()
+    entries = json.loads(dic.read_text(encoding="utf-8"))["entries"]
+    keys = {e["key"] for e in entries} | {e["construct_key"] for e in entries}
+    missed = sorted(k for k in keys if not KEY_RE.fullmatch(k))
+    assert not missed, f"{len(missed)} of {len(keys)} keys unmatched, e.g. {missed[:5]}"
+
+
+def test_a_variable_key_used_as_a_dict_key_is_caught() -> None:
+    """The walk only looked at values, so a key-keyed map shipped its keys."""
+    dic = _dictionary_or_skip()
+    s = Scrubber(path=dic)
+    clean, marks = s.scrub({"per_variable": {"m1:1_Q6.2": {"role": "confounder"}}})
+    assert "m1:1_Q6.2" not in json.dumps(clean)
+    assert any("<key>" in m for m in marks)
+    assert clean["per_variable"][f"{REDACTED}#0"]["role"] == "confounder"
+
+
+def test_wording_fields_go_structurally_not_by_word_count() -> None:
+    """Three dictionary rows are under five words; the run rule cannot see them."""
+    dic = _dictionary_or_skip()
+    s = Scrubber(path=dic)
+    short = "List of Countries"
+    assert not s.hits(short), "this row is no longer short; pick another"
+    clean, marks = s.scrub({"cited": {"key": "m1:Q2.2_1", "wording": short}})
+    assert clean["cited"]["wording"] == REDACTED
+    assert "cited.wording" in marks
+
+
+def test_every_json_response_is_filtered_at_one_chokepoint() -> None:
+    """`_send` filters, so a new route or a new error is protected by default.
+
+    Scrubbing per route is how `/api/retrieve` came to rely on the hit allowlist
+    alone while `/api/specify` was scrubbed, and the 500 path by neither. The
+    exceptions this endpoint raises are the ones most likely to quote the
+    instrument: a pydantic `ValidationError` echoes the offending field VALUE,
+    and for a record built from `Cited` labels that value is `question_text`.
+    """
+    import io
+    import types
+
+    from serve.api import Handler
+
+    dic = _dictionary_or_skip()
+    entries = json.loads(dic.read_text(encoding="utf-8"))["entries"]
+    wording = next(e["question_text"] for e in entries
+                   if isinstance(e.get("question_text"), str)
+                   and len(e["question_text"].split()) > 6)
+
+    class Capture(Handler):
+        def __init__(self) -> None:
+            self.state = types.SimpleNamespace(scrubber=Scrubber(path=dic))
+            self.wfile = io.BytesIO()
+            self.codes: list[int] = []
+
+        def send_response(self, code: int, message: str | None = None) -> None:
+            self.codes.append(code)
+
+        def send_header(self, *a: object, **k: object) -> None:
+            return
+
+        def end_headers(self) -> None:
+            return
+
+    h = Capture()
+    h._send(500, {"error": f"ValidationError: bad value: {wording}"})
+    body = h.wfile.getvalue().decode()
+    assert wording not in body, "the error path put instrument wording on the wire"
+    assert REDACTED in body
+    assert "redactions" in body
+
+    clean = Capture()
+    clean._send(400, {"error": "k must be a number"})
+    out = json.loads(clean.wfile.getvalue())
+    assert out["error"] == "k must be a number", "clean errors must stay readable"
+    assert "redactions" not in out
+
+
 def test_the_pipeline_model_is_named_and_reported_not_assumed() -> None:
     """A caller may name a model; the payload must say whether it was the proxy."""
     from serve.api import PIPELINE_MODEL

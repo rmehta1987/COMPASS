@@ -9,20 +9,33 @@ identifiers included, and `site/tools/no_instrument.py` exists to prove that
 none of it reaches `site/`. An endpoint that answers queries one at a time
 walks around that gate unless something stands in the way. This is that thing.
 
-Two filters, because they fail differently:
+Three filters, because they fail differently and no one of them is enough:
 
-  * STRUCTURAL (`pseudonymise_hit`) — an allowlist. A field is dropped unless
-    it is named safe, so a new key in `_hit` is excluded by default rather than
-    published by default.
-  * TEXTUAL (`Scrubber`) — the pipeline's own five-word-run rule, applied to
-    free prose where wording arrives inside a sentence the model wrote. Same
-    rule as `tests/test_query_rewrite.py::test_the_prompt_carries_no_instrument_wording`
-    and `site/tools/no_instrument.py`: collapse whitespace, lower-case, forbid
-    any five consecutive words shared with a dictionary entry.
+  * STRUCTURAL, BY FIELD SET (`pseudonymise_hit`) — an allowlist over what the
+    retriever returns. A field is dropped unless it is named safe, so a key
+    `_hit` gains next year is excluded by default rather than published by
+    default.
+  * STRUCTURAL, BY FIELD NAME (`WORDING_FIELDS`) — a `Cited.wording` IS
+    `question_text` byte for byte, and the textual rule below cannot see wording
+    shorter than five words. Naming those fields closes that without lowering
+    the run length, which the pipeline rejected as too noisy.
+  * TEXTUAL (`Scrubber.hits`) — the pipeline's own five-word-run rule for prose
+    where wording arrives inside a sentence the model wrote, plus the
+    instrument's own key set matched literally.
 
-The textual filter REPLACES the offending field and says so in the response
-rather than editing inside the sentence. A half-scrubbed sentence still reads
-as a citation and hides how much leaked; a named replacement does not.
+Whichever fires, the WHOLE string is replaced and the path is named in
+`redactions`. Editing inside a sentence leaves something that still reads as a
+citation and hides how much leaked; a named replacement does not.
+
+Two things this is known NOT to do, stated because a filter believed to be
+total is worse than one whose edges are written down:
+
+  * The five-word rule cannot see instrument text shorter than five words.
+    THREE dictionary rows are (MEASURED 2026-09-08, 2,804 entries), two of them
+    "List of Countries". `WORDING_FIELDS` is what covers them.
+  * It filters what this process SENDS. It does not stop a caller correlating
+    pseudonyms across queries; the salt is what bounds that, and it is random
+    per run unless `COMPASS_SERVE_SALT` pins it.
 """
 from __future__ import annotations
 
@@ -41,9 +54,27 @@ SAFE_HIT_FIELDS = frozenset({"cos", "margin_12", "fold_size", "n_siblings", "mod
 #: can assert on the intersection rather than on today's field list.
 WITHHELD_HIT_FIELDS = frozenset({"key", "construct_key", "stem", "option", "members"})
 
-#: Tier A forbids a bare variable key anywhere the browser can see it; the same
-#: pattern `site/tools/no_instrument.py` scans for.
-KEY_RE = re.compile(r"\bm\d+:Q\d+(?:[._~]\w+)*")
+#: Tier A forbids a bare variable key anywhere the browser can see it.
+#:
+#: Derived from the built dictionary's own `key_rule` and shape table, NOT from
+#: `site/tools/no_instrument.py`, whose `m\d+:Q\d+(?:[._~]\w+)*` this started as
+#: a copy of. MEASURED 2026-09-08 against `dictionary.json` (2,804 entries):
+#: that pattern full-matches 1,080 keys and MISSES 1,724 -- every roster-prefixed
+#: shape (`m1:1_Q6.2`, 970 + 550 rows) and every matrix shape whose qid it cannot
+#: reach (`m1:Q2.9#1_1`). The shapes are `N_QN.N`, `QN.N`, `N_QN.N#N_N`,
+#: `QN.N#N_N`, `QN.N_N`, `QN`, `QN_N`, `QN.N_N_TEXT`, `QN.N#N_N_N`, plus the
+#: `~{occurrence}` suffix the key rule adds where a qid repeats in its module.
+#: This pattern full-matches all 2,804 keys and all 1,080 construct keys.
+KEY_RE = re.compile(
+    r"\bm\d+:(?:\d+_)?Q\d+(?:\.\d+)?(?:#\d+(?:_\d+)*)?(?:_\d+)*(?:_TEXT)?(?:~\d+)?")
+
+#: Record fields whose value is instrument text by construction. `Cited.wording`
+#: is `question_text` byte for byte (`env/labels.py`), and the five-word-run rule
+#: cannot see wording shorter than five words -- three dictionary rows are
+#: (MEASURED 2026-09-08). Naming the field closes that on the structural side
+#: instead of lowering the run length, which the pipeline rejected as too noisy.
+WORDING_FIELDS = frozenset({"wording", "question_text", "stem_text",
+                            "searchable_text", "quoted_wording", "subitem_text"})
 
 #: Words per forbidden run. The pipeline's number, not a new one.
 RUN = 5
@@ -190,12 +221,23 @@ class Scrubber:
                 "than serve unchecked.")
         self.source = p
         corpus: set[tuple[str, ...]] = set()
+        keys: set[str] = set()
         for e in json.loads(p.read_text(encoding="utf-8"))["entries"]:
             for f in ("searchable_text", "question_text", "stem_text"):
                 v = e.get(f)
                 if isinstance(v, str):
                     corpus |= _grams(v)
+            for f in ("key", "construct_key", "group_key"):
+                v = e.get(f)
+                if isinstance(v, str) and v:
+                    keys.add(v)
         self.corpus = corpus
+        # The instrument's OWN keys, matched literally. A regex encodes a belief
+        # about the key grammar and the previous one was wrong about 61% of it;
+        # this set is exhaustive by construction and cannot drift when a new
+        # shape is built. The regex stays as the backstop for a key-shaped
+        # string the dictionary does not contain.
+        self.keys = keys
 
     def hits(self, text: str) -> list[str]:
         """Instrument runs and bare keys present in `text`.
@@ -207,8 +249,12 @@ class Scrubber:
             Sorted descriptions of what was found; empty when the text is clean.
         """
         found = [f"key {k}" for k in sorted(set(KEY_RE.findall(text)))]
+        # The literal sweep is 2,804 substring tests, so it is skipped for text
+        # that cannot contain a key at all: every key has the form `m<n>:...`.
+        if ":" in text:
+            found += [f"key {k}" for k in sorted(self.keys) if k in text]
         found += [" ".join(g) for g in sorted(_grams(text) & self.corpus)]
-        return found
+        return sorted(set(found))
 
     def scrub(self, obj: Any, _path: str = "") -> tuple[Any, list[str]]:
         """Walk a JSON-shaped object, replacing any string that carries wording.
@@ -231,8 +277,26 @@ class Scrubber:
         if isinstance(obj, dict):
             out: dict[str, Any] = {}
             marks: list[str] = []
-            for k, v in obj.items():
-                sub, m = self.scrub(v, f"{_path}.{k}" if _path else str(k))
+            for i, (k, v) in enumerate(obj.items()):
+                here = f"{_path}.{k}" if _path else str(k)
+                if k in WORDING_FIELDS and isinstance(v, str) and v:
+                    # Structural, not textual: this field IS instrument text by
+                    # construction, and the five-word rule cannot see wording
+                    # shorter than five words.
+                    out[k] = REDACTED
+                    marks.append(here)
+                    continue
+                # A dict KEY can carry a variable key -- a record mapping
+                # `{"m1:1_Q6.2": {...}}` would otherwise ship the key untouched,
+                # because the walk only ever looked at values.
+                if isinstance(k, str) and self.hits(k):
+                    sub, m = self.scrub(v, here)
+                    # Suffixed so two redacted keys in one dict cannot collide
+                    # and silently drop a value.
+                    out[f"{REDACTED}#{i}"] = sub
+                    marks += [f"{here} <key>", *m]
+                    continue
+                sub, m = self.scrub(v, here)
                 out[k] = sub
                 marks += m
             return out, marks
