@@ -159,7 +159,8 @@ function examples(){
   el("#examples").innerHTML=DATA.runs.examples.map((e,i)=>
     `<button class="g" data-ex="${i}">${esc(e.label)}</button>`).join("");
   document.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>{
-    cur=DATA.runs.examples[+b.dataset.ex]; typed=null; el("#q").value=cur.request.text; draw();});
+    cur=DATA.runs.examples[+b.dataset.ex]; typed=null; live=null;
+    el("#q").value=cur.request.text; draw();});
 }
 
 const norm=s=>s.toLowerCase().replace(/[^a-z0-9 ]+/g," ").split(/\s+/).filter(Boolean).join(" ");
@@ -172,6 +173,49 @@ function placeholder(s){
   return `<p class="sec">output</p><div class="ph"><b>PLACEHOLDER</b> — no committed artefact yet. ${esc(s.placeholder)}`
     +(s.waits_for?` Waits for ${esc(s.waits_for)}.`:"")+`</div>`;
 }
+/* Live retrieval, used only when this page is being SERVED BY serve/api.py.
+   Same origin, so there is no host in the URL and no CORS: the offline gate
+   forbids a host precisely because an external request is what this page must
+   never make, and a same-origin call the reader triggers is not one. Opened
+   from GitHub Pages or from file:// there is no /api, the fetch fails, and
+   everything below falls back to the committed runs exactly as before. The
+   endpoint answers with whatever IT was started with -- pseudonyms by default,
+   wording under --show-instrument -- so this renders what it is given and
+   claims nothing about which. */
+let live=null;
+async function liveRetrieve(q){
+  try{
+    const r=await fetch("/api/retrieve",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({query:q})});
+    if(!r.ok) return null;
+    const j=await r.json();
+    return (j&&Array.isArray(j.hits)&&j.hits.length)?j:null;
+  }catch(err){ return null; }
+}
+
+function livePanel(){
+  const j=live, [top]=j.hits;
+  let h=`<p class="sec">live retrieval &middot; served by the endpoint, not a committed run</p>`;
+  h+=`<dl>`
+    +row("query",esc(j.query),true)
+    +row("top cosine",f4(top.cos),true)
+    +row("min_cos",`${f4(j.threshold)} &middot; ${j.abstained?`<span class="flag">not cleared</span>`:"cleared"}`,true)
+    +row("abstained",j.abstained?`<span class="flag">true</span>`:"false",true)
+    +(typeof j.margin_12==="number"?row("margin to rank two",f4(j.margin_12),true):"")
+    +`</dl>`;
+  h+=`<p class="sec">candidates</p><div class="tools">`+j.hits.map(c=>
+      `<div class="t"><span class="call"><b>${esc(c.target)}</b>`
+      +`${c.key?` &middot; ${esc(c.key)}`:""}</span>`
+      +`<span class="ret">cos ${f4(c.cos)}`
+      +`${c.cos<j.threshold?" &middot; below min_cos":""}</span></div>`
+      +(c.stem?`<div class="t"><span class="call">${esc(c.stem)}</span></div>`:"")
+    ).join("")+`</div>`;
+  if(j.note) h+=`<p class="sec">known limitation</p>`
+    +`<div class="none" style="color:var(--signal)">${esc(j.note)}</div>`;
+  return h;
+}
+
 function noRun(){
   return `<p class="sec">output</p><div class="ph"><b>NO COMMITTED RUN</b> — this page has no encoder and never invents a score. The request is shown verbatim and nothing else: <em>${esc(typed)}</em>. The example buttons load the runs that were committed with this page.</div>`;
 }
@@ -328,7 +372,8 @@ function draw(){
   const s=DATA.stages.stages.find(x=>x.id===sel);
   let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
          <ul class="does">${s.does.map(d=>`<li>${esc(d)}</li>`).join("")}</ul>`;
-  if(typed!==null&&!cur) h+=noRun();
+  if(live&&sel==="retriever") h+=livePanel();
+  else if(typed!==null&&!cur) h+=noRun();
   else if(sel==="retriever"&&cur) h+=retrieverPanel();
   else if(sel==="intake"&&cur) h+=intakePanel();
   else if(sel==="funnel") h+=funnelPanel();
@@ -344,9 +389,15 @@ function draw(){
   el("#png").onclick=panelPNG;
 }
 
-el("#run").onclick=()=>{
+el("#run").onclick=async()=>{
   const q=el("#q").value.trim(); if(!q)return;
-  cur=match(q); typed=cur?null:q; draw();
+  live=null; cur=match(q); typed=cur?null:q;
+  /* Draw the committed answer first, so the page never blocks on a network
+     call that will usually not be there, then upgrade if the endpoint replies. */
+  draw();
+  if(cur) return;
+  const j=await liveRetrieve(q);
+  if(j){ live=j; sel="retriever"; draw(); }
 };
 el("#dl-src").onclick=()=>{
   /* One self-contained file: the live DOM as rendered, plus every loaded
