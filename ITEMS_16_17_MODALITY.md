@@ -236,6 +236,53 @@ and loaded by nothing.)
 That is a structural argument, not a clean run. The check must be run in compass-score before
 any benchmark run.
 
+### Publication-boundary disclosure
+
+This report crossed the boundary later written into `AGENTS.md` §Publication Boundary,
+which did not exist when it was first pushed. The operator's decision was
+yes-with-limits: the material stays, the history is not rewritten, and the exposure is
+disclosed rather than erased. Recorded here by window and count.
+
+| commit | author date | commit date |
+|---|---|---|
+| `e6d9e79` | 2026-09-07T14:24:20-05:00 | 2026-09-07T14:24:20-05:00 |
+| `e45b2eb` | 2026-09-07T21:50:27-05:00 | 2026-09-07T21:50:27-05:00 |
+
+`e45b2eb` is the corrected form and `e6d9e79` is superseded, but a superseded commit
+stays fetchable, so both are exposure. The two differ only in the "Commit state"
+paragraph, which carries no key material, so their counts are equal by construction.
+
+What crossed, by category, identical in both:
+
+| category | count |
+|---|---|
+| term paired with its inventory status | 6 |
+| term paired with an expected / analogue / resolved key | 1 |
+| per-row cosine attached to a named term | 0 |
+| PMID paired with inventory content | 0 |
+
+Nothing is enumerated here on purpose: a list of the pairings would be a compact
+restatement of the rows it describes, which is the thing the boundary withholds. The
+enumeration is in the withheld companion under `run/`, which is gitignored and matches
+`*.withheld.md` in `.git/info/exclude`.
+
+**Window end state: open-ended.** Both commits are on the public `ralph-loop` branch and
+remain fetchable. Per `README.md` §What is withheld, history persists "until the operator
+rewrites it or makes the repository private"; neither was chosen, so the window has a
+start and no end.
+
+**The limit of this claim.** What is established is that the material was publicly
+fetchable from 2026-09-07. Whether anything retrieved it is NOT established and cannot be
+established from here: `benchmark/contamination_check.py` scans files, not weights. This
+disclosure is a time window someone can compare against a model's training cutoff. It is
+not a finding that no contamination occurred, and it must not be read as one.
+
+The mechanical guard added alongside this disclosure,
+`tests/test_publication_surface.py`, detects key-shaped material by SHAPE rather than by
+a term list. It does not catch a term paired with a status when no key token is nearby —
+which is the shape of the 6 pairings above. Its green state means no key-shaped material
+crossed, never that no row-level material crossed.
+
 ---
 
 ## The scope question for the operator (brief §4)
