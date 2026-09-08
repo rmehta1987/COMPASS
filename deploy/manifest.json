@@ -229,8 +229,8 @@
    "bytes": 940840
   },
   "template.py": {
-   "sha256": "a5254caebb54a6998196dc692cd055eb0f2648c52cbd81f561e896fe5bbda844",
-   "bytes": 5498
+   "sha256": "32eb85c19ae0450f1328be0d858691e25a70dbcb11e587c9d4efbebd738d6f80",
+   "bytes": 7073
   }
  },
  "proof_chain": {
@@ -249,8 +249,8 @@
    },
    "template.py": {
     "sha256_then": "9c78d0b0bb0139a3b85c8648a7be47e6375c7c214e93b4409e4c810dbe190ce8",
-    "sha256_now": "a5254caebb54a6998196dc692cd055eb0f2648c52cbd81f561e896fe5bbda844",
-    "ast_identical_modulo_docstrings": true
+    "sha256_now": "32eb85c19ae0450f1328be0d858691e25a70dbcb11e587c9d4efbebd738d6f80",
+    "ast_identical_modulo_docstrings": false
    }
   },
   "identical_to_proved_bundle": false,
