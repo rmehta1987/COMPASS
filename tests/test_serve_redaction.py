@@ -55,6 +55,20 @@ FULL_HIT = {
 }
 
 
+@pytest.fixture(autouse=True)
+def _clean_serve_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Never let the operator's own shell decide what these tests exercise.
+
+    `COMPASS_SERVE_AUTH` is the documented way to configure auth, so it is
+    routinely set in the shell that runs the suite. Read by `main`, it changes
+    which guard a test reaches -- one test fell past every guard into
+    `serve_forever()` and hung the run on `0.0.0.0`, and others would have
+    passed on the auth check rather than the one they are named for.
+    """
+    monkeypatch.delenv("COMPASS_SERVE_AUTH", raising=False)
+    monkeypatch.setenv("COMPASS_DICTIONARY", str(ROOT / "dictionary.json"))
+
+
 def _dictionary_or_skip() -> Path:
     """The built dictionary, or skip -- it is withheld from the public tree.
 
@@ -423,10 +437,12 @@ def test_a_site_dir_holding_withheld_material_is_refused(tmp_path: Path) -> None
     # And the wiring, not just the function: a guard nothing calls is not a guard.
     from serve.api import main
 
-    os.environ.setdefault("COMPASS_DICTIONARY", str(ROOT / "dictionary.json"))
-    assert main(["--site-dir", str(repo_ish), "--port", "0"]) == 2
-    assert main(["--site-dir", str(safe), "--run-dir", str(safe / "run"),
-                 "--port", "0"]) == 2
+    # `--no-auth` so these reach the site-dir check. Without it they would exit
+    # 2 on the auth gate and pass for a reason that has nothing to do with the
+    # guarantee they are named for.
+    assert main(["--no-auth", "--site-dir", str(repo_ish), "--port", "0"]) == 2
+    assert main(["--no-auth", "--site-dir", str(safe),
+                 "--run-dir", str(safe / "run"), "--port", "0"]) == 2
 
 
 def test_pseudonyms_are_wide_enough_not_to_collide_over_the_corpus() -> None:
@@ -460,17 +476,26 @@ def test_show_instrument_returns_the_wording_and_is_off_by_default() -> None:
     assert shown["target"] == default["target"], "the pseudonym stays, for the map"
 
 
-def test_show_instrument_is_refused_on_a_non_loopback_bind() -> None:
+def test_show_instrument_is_refused_on_an_unauthenticated_public_bind(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Who can reach the socket, and what the socket says, are separate claims.
 
-    Together the two flags are "publish the withheld instrument to the network",
+    Together the two flags are "publish the instrument to an anonymous socket",
     so the combination is refused rather than warned about.
+
+    `COMPASS_SERVE_AUTH` is DELETED, not defaulted. This test omitted that and
+    its siblings did not: with the variable set in the operator's own shell --
+    the documented way to configure auth -- `main` fell through every guard to
+    `serve_forever()`, so the suite hung on `0.0.0.0` with wording unredacted
+    and the thirteen tests after it never ran.
     """
     from serve.api import main
 
-    os.environ.setdefault("COMPASS_DICTIONARY", str(ROOT / "dictionary.json"))
+    monkeypatch.delenv("COMPASS_SERVE_AUTH", raising=False)
+    monkeypatch.setenv("COMPASS_DICTIONARY", str(ROOT / "dictionary.json"))
     site = ROOT / "serve"          # any real directory with no withheld markers
-    assert main(["--show-instrument", "--host", "0.0.0.0",
+    assert main(["--show-instrument", "--host", "0.0.0.0", "--no-auth",
                  "--i-am-not-serving-the-public",
                  "--site-dir", str(site), "--port", "0"]) == 2
 
@@ -611,16 +636,6 @@ def test_the_sealed_model_cannot_reach_a_web_page() -> None:
     assert "WebSearch" in DENY_TOOLS
 
 
-def test_specify_is_off_by_default_anywhere_but_loopback() -> None:
-    """Each run spends the operator's seat and holds the lock for minutes."""
-    import inspect
-
-    from serve.api import main
-
-    src = inspect.getsource(main)
-    assert "enable_specify = loopback if a.enable_specify is None" in src
-
-
 def test_the_rate_limit_actually_limits(tmp_path: Path) -> None:
     """Anti-vacuity: a limiter that never says no is not a limiter."""
     from serve.api import RATE_LIMIT, State
@@ -630,3 +645,79 @@ def test_the_rate_limit_actually_limits(tmp_path: Path) -> None:
     assert all(st.allow("1.2.3.4") for _ in range(RATE_LIMIT))
     assert not st.allow("1.2.3.4"), "the limit never fires"
     assert st.allow("5.6.7.8"), "one client's traffic throttled another"
+
+
+def test_a_tunnel_is_a_loopback_bind() -> None:
+    """The bind address must decide nothing: cloudflared forwards to 127.0.0.1.
+
+    Every guard used to read `a.host in LOOPBACK` and conclude "private" for
+    exactly the deployment that is public. Auth was not required, and
+    `/api/specify` -- which spends the operator's Claude seat with no
+    per-caller accounting -- was ENABLED, on the one bind an anonymous caller
+    could reach.
+    """
+    from serve.api import main
+
+    site = ROOT / "serve"
+    assert main(["--host", "127.0.0.1", "--site-dir", str(site), "--port", "0"]) == 2
+
+
+def test_specify_is_off_unless_asked_for_on_every_bind() -> None:
+    """It defaulted to `loopback`, which is True behind a tunnel."""
+    import inspect
+
+    from serve.api import main
+
+    src = inspect.getsource(main)
+    assert "enable_specify = bool(a.enable_specify)" in src
+    assert "loopback if a.enable_specify" not in src
+
+
+def test_a_refused_request_is_not_recorded(tmp_path: Path) -> None:
+    """Recording a refusal kept the window permanently full: a one-line DoS.
+
+    `allow` appended before comparing, so a client over the limit could never
+    fall back under it -- one loop from any address held the bucket shut for
+    everyone, including the operator, unauthenticated, for as long as it ran.
+    """
+    from serve.api import RATE_LIMIT, State
+
+    st = State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    for _ in range(RATE_LIMIT):
+        assert st.allow("1.2.3.4")
+    assert not st.allow("1.2.3.4")
+    st._hits["1.2.3.4"] = []
+    assert st.allow("1.2.3.4"), "a refused client could never recover"
+
+
+def test_a_non_ascii_authorization_header_is_a_401_not_a_crash() -> None:
+    """Headers decode as ISO-8859-1; `compare_digest` on non-ASCII str raises.
+
+    An unauthenticated TypeError told an attacker the password guard was on
+    before they spent a guess, and reset the connection with no status.
+    """
+    import io
+    import types
+
+    from serve.api import Handler
+
+    class Capture(Handler):
+        def __init__(self) -> None:
+            self.state = types.SimpleNamespace(auth="u:p", allow=lambda c: True)
+            self.headers = {"Authorization": "Basic \xff\xfe"}
+            self.client_address = ("1.2.3.4", 1)
+            self.wfile = io.BytesIO()
+            self.codes: list[int] = []
+
+        def send_response(self, code: int, message: str | None = None) -> None:
+            self.codes.append(code)
+
+        def send_header(self, *a: object, **k: object) -> None:
+            return
+
+        def end_headers(self) -> None:
+            return
+
+    h = Capture()
+    assert h._gate() is False
+    assert h.codes == [401]

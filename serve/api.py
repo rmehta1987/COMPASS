@@ -96,6 +96,15 @@ LOOPBACK = frozenset({"127.0.0.1", "::1", "localhost"})
 RATE_LIMIT = 60
 RATE_WINDOW_S = 60.0
 
+#: Distinct clients tracked before aged-out windows are swept.
+RATE_CLIENTS = 4096
+
+#: Wall-clock ceiling on one request's socket. `BaseHTTPRequestHandler` sets
+#: none, so a connection that opens and sends nothing holds a thread for ever,
+#: BEFORE `_gate` runs -- neither auth nor the rate limit is involved. A few
+#: thousand of those exhaust a `ThreadingHTTPServer` with no request made.
+REQUEST_TIMEOUT_S = 30
+
 
 class State:
     """Process-wide handles, built lazily and shared across requests.
@@ -162,9 +171,22 @@ class State:
         now = time.time()
         with self._hits_lock:
             seen = [t for t in self._hits.get(client, []) if now - t < RATE_WINDOW_S]
+            # DO NOT record a refused request. Appending before the comparison
+            # meant a client over the limit kept its own window permanently full
+            # and could never recover -- one loop from any address held the
+            # bucket shut for everyone, unauthenticated, forever.
+            if len(seen) >= RATE_LIMIT:
+                self._hits[client] = seen
+                return False
             seen.append(now)
             self._hits[client] = seen
-            return len(seen) <= RATE_LIMIT
+            # Evict clients whose windows have aged out. Pruning only the
+            # REQUESTING client left a key per address seen, which a rotating
+            # source grows without bound.
+            if len(self._hits) > RATE_CLIENTS:
+                self._hits = {k: v for k, v in self._hits.items()
+                              if v and now - v[-1] < RATE_WINDOW_S}
+            return True
 
     def retriever(self) -> Any:
         """The deployed retriever, loaded on first use.
@@ -431,6 +453,9 @@ class Handler(BaseHTTPRequestHandler):
 
     state: State
     server_version = "compass-serve"
+    #: `socketserver.StreamRequestHandler` honours this; without it a socket
+    #: that opens and never speaks pins a thread indefinitely, before `_gate`.
+    timeout = REQUEST_TIMEOUT_S
 
     def log_message(self, fmt: str, *args: Any) -> None:
         """Log to stderr with a timestamp.
@@ -503,10 +528,18 @@ class Handler(BaseHTTPRequestHandler):
             return True
         offered = self.headers.get("Authorization", "")
         expected = "Basic " + base64.b64encode(self.state.auth.encode()).decode()
+        # Headers are decoded as ISO-8859-1, so any byte >= 0x80 yields a
+        # non-ASCII str and `compare_digest` raises TypeError rather than
+        # returning False -- an unauthenticated crash that told an attacker the
+        # password guard was on before they spent a guess. Compare bytes.
+        try:
+            offered_b = offered.encode("ascii")
+        except UnicodeEncodeError:
+            offered_b = b""
         # Constant-time: a naive `==` leaks the shared secret one byte at a time
-        # to anyone who can time responses, and this endpoint is reachable from
-        # off the machine exactly when this check is the thing protecting it.
-        if hmac.compare_digest(offered, expected):
+        # to anyone who can time responses, and this check is the thing
+        # protecting the endpoint exactly when it is reachable off the machine.
+        if hmac.compare_digest(offered_b, expected.encode("ascii")):
             return True
         self.send_response(401)
         self.send_header("WWW-Authenticate", 'Basic realm="COMPASS test endpoint"')
@@ -515,6 +548,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         """Serve `/console`, `/api/health`, or a file from the site directory."""
+        try:
+            self._get()
+        except Exception as exc:
+            # `do_POST` distinguished 400 from 500 and `do_GET` had no `try` at
+            # all, so three reachable cases reset the connection with no status:
+            # a NUL byte in the path (`Path.resolve` raises ValueError), a
+            # missing console.html, and a mode-000 file that `is_file()` says
+            # exists. A reset is indistinguishable from a dead endpoint.
+            self._send(500, self._scrubbed_error(exc, prefix=True))
+
+    def _get(self) -> None:
+        """The GET routes, wrapped by `do_GET`."""
         if not self._gate():
             return
         route = self.path.split("?")[0]
@@ -703,12 +748,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     ap.add_argument("--run-dir", type=Path, default=ROOT / "run" / "serve")
     ap.add_argument("--auth", default=None,
                     help="USER:PASS for HTTP Basic auth, or set COMPASS_SERVE_AUTH. "
-                         "Required for any non-loopback bind, and it is what "
-                         "permits --show-instrument off-loopback.")
-    ap.add_argument("--enable-specify", action="store_true", default=None,
-                    help="allow POST /api/specify. On by default on loopback; "
-                         "OFF by default anywhere else, because each run spends "
-                         "the operator's Claude seat and serialises the server.")
+                         "Required unless --no-auth is passed. The bind address "
+                         "does not decide this: a tunnel forwards to 127.0.0.1.")
+    ap.add_argument("--no-auth", action="store_true",
+                    help="serve with no password, stating that this socket is "
+                         "unreachable. An explicit claim, because the process "
+                         "cannot see what forwards to it.")
+    ap.add_argument("--enable-specify", action="store_true",
+                    help="allow POST /api/specify. OFF by default on every bind: "
+                         "each run spends the operator's Claude seat, has no "
+                         "per-caller accounting, and holds the lock for minutes.")
     ap.add_argument("--show-instrument", action="store_true",
                     help="return the question wording, options and variable key "
                          "beside each hit instead of a pseudonym. Loopback only. "
@@ -750,11 +799,19 @@ def main(argv: list[str]) -> int:
     loopback = a.host in LOOPBACK
     # Auth is what makes an off-loopback bind defensible, so it is required
     # there rather than recommended. On loopback the OS already limits reach.
-    if not loopback and not auth:
-        print(f"refusing to bind {a.host} without --auth USER:PASS (or "
-              f"COMPASS_SERVE_AUTH). Off loopback this endpoint is reachable by "
-              f"anyone who can route to it, and it answers with instrument "
-              f"content.", file=sys.stderr)
+    # A TUNNEL IS A LOOPBACK BIND. `cloudflared tunnel --url http://127.0.0.1:P`
+    # connects TO 127.0.0.1, so `a.host` is a loopback address while the whole
+    # internet is routed to the socket. Every guard that read the bind address
+    # concluded "private" for exactly the deployment that is public, and the
+    # operator was never asked for a password on the one that needed it most.
+    # So the bind address decides NOTHING here any more: reachability is a fact
+    # about the network, which this process cannot see, and the operator states
+    # it instead of the code guessing.
+    if not auth and not a.no_auth:
+        print("refusing to serve without authentication. Pass --auth USER:PASS "
+              "(or COMPASS_SERVE_AUTH), or --no-auth to say plainly that this "
+              "socket is unreachable. The bind address cannot tell us which: a "
+              "tunnel forwards to 127.0.0.1 and is public.", file=sys.stderr)
         return 2
     if auth and ":" not in auth:
         print("--auth must be USER:PASS", file=sys.stderr)
@@ -767,12 +824,19 @@ def main(argv: list[str]) -> int:
     # distributed by the study, so a named researcher who already holds the
     # dictionary learns nothing new. An ANONYMOUS socket is a different claim,
     # and auth is the line between the two.
-    if a.show_instrument and not loopback and not auth:
-        print(f"refusing --show-instrument on {a.host} without --auth: wording "
+    # Reachable now. The previous form tested `not loopback and not auth`, which
+    # the auth gate above had already returned on, so it was dead code that read
+    # like a guarantee. `--no-auth` is the case it actually has to catch.
+    if a.show_instrument and a.no_auth and not loopback:
+        print(f"refusing --show-instrument with --no-auth on {a.host}: wording "
               f"behind a password is a disclosure to named people; wording on "
-              f"an open socket is a publication.", file=sys.stderr)
+              f"an unauthenticated socket is a publication.", file=sys.stderr)
         return 2
-    enable_specify = loopback if a.enable_specify is None else a.enable_specify
+    # OFF unless asked for, on every bind. It used to default to `loopback`,
+    # which meant it was ON behind a tunnel -- the one place where an anonymous
+    # caller could spend the operator's Claude seat and hold the lock for
+    # minutes. A route that expensive is not something to infer.
+    enable_specify = bool(a.enable_specify)
     state = State(a.deploy_root.resolve(), a.site_dir.resolve(), a.run_dir.resolve(),
                   show_instrument=a.show_instrument, auth=auth,
                   enable_specify=enable_specify)
