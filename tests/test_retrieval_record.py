@@ -53,7 +53,7 @@ def test_the_wire_format_is_plain_json_with_no_wording_fields():
                              "target_id", "fold_size", "n_siblings", "members",
                              "stratum", "unmeasured_stratum"}
     assert set(d["request"]) == {"construct_text", "role", "population", "timeframe",
-                                 "instances", "source"}
+                                 "instances", "source", "modality"}
     assert d["request"]["source"] == "user"
     for wording in ("stem", "option", "text", "question_text"):
         assert wording not in d["hit"]

@@ -9,7 +9,9 @@
 Template:   [population] construct [timeframe][: instance, instance, ...]
 
 A slot is rendered only when its content words are not already in the text.
-`role` is never rendered. No model call, no network, pure string concatenation.
+`role` and `modality` are never rendered: both are carried for the caller and
+the record, and neither reaches the encoder. No model call, no network, pure
+string concatenation.
 
 Shipped contract (manifest["template"]): INSTANCES ONLY. Leave `population`
 at its default of None. Supplying it measured net -1 row on the 17 rows where it
@@ -19,8 +21,8 @@ to 0.0001. Removing it from the full template measured net 0 over all 224 rows
 (R@1 0.6429 either way; 4 rows gained, 4 lost), so the contract rests on the
 mechanism, not on the headline.
 
-Provenance: `RetrievalRequest`, `to_query`, `covered`, `VariableRole` copied
-verbatim from src/query_expand.py; `STOPWORDS`, `TOKEN_RE`, `light_stem`,
+Provenance: `RetrievalRequest`, `to_query`, `covered`, `VariableRole`, `Modality`
+copied verbatim from src/query_expand.py; `STOPWORDS`, `TOKEN_RE`, `light_stem`,
 `content_words` copied verbatim from src/phrase_overlap.py. Nothing else was
 brought across: `fields_from_target()` reads the gold target's metadata and
 is the fixture's stand-in for a specifier, not production code. The smoke test
@@ -87,6 +89,37 @@ class VariableRole(str, enum.Enum):
     CONFOUNDER = "confounder"
 
 
+class Modality(str, enum.Enum):
+    """How the requester's variable was measured. Caller-declared, NOT rendered.
+
+    The instrument holds one item per construct, so a request for *measured*
+    hypertension and one for *self-reported* hypertension select the same
+    self-report item at a cosine no threshold separates: the construct
+    genuinely is in the instrument. The defect is that the record does not say
+    which measurement was wanted, so a substitution reads as a clean resolve.
+
+    UNKNOWN is the default and is never a guess. Modality is NEVER inferred
+    from the construct's wording -- not from "measured", not from "self-
+    reported", not from the role, not from anything. An inferred modality
+    would manufacture a mismatch on a legitimate resolve, which is a worse
+    failure than the silence it replaces. A caller that does not know leaves
+    it UNKNOWN, and UNKNOWN reads as "nobody declared one", which is also how
+    a record written before this field existed reads.
+
+    The values other than UNKNOWN are the inventory's vocabulary, as
+    `handoff/for_harness.json::modality_values` lists it; the enum is pinned
+    against that file by `tests/test_modality.py`.
+    """
+
+    UNKNOWN = "unknown"
+    SELF_REPORT = "self_report"
+    MEASURED = "measured"
+    EHR = "ehr"
+    ASSAY = "assay"
+    LINKED = "linked"
+    ADMINISTRATIVE = "administrative"
+
+
 def covered(phrase: str, text: str) -> bool:
     """True when every content word of `phrase` is already in `text`.
     Empty phrases (all stopwords) count as covered: nothing to add."""
@@ -101,6 +134,7 @@ class RetrievalRequest:
     population: str | None = None      # shipped contract: leave None (see module doc)
     timeframe: str | None = None       # "past 12 months" | "lifetime" | "current"
     instances: tuple[str, ...] = ()    # ("ibuprofen", "naproxen", "aspirin")
+    modality: Modality = Modality.UNKNOWN   # caller-declared -- NOT rendered
 
     def to_query(self, *, with_instances: bool = True) -> str:
         """Deterministic template. No model call, no network."""

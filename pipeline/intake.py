@@ -37,6 +37,25 @@ ROLES = ("exposure", "outcome", "confounder")
 _TIMEFRAME = re.compile(r"\s*\[([^\[\]]+)\]\s*$")
 
 
+def modalities() -> tuple[str, ...]:
+    """The modality values a caller may declare, from the template's own enum.
+
+    Read from `deploy/template.py` rather than restated, so the vocabulary has
+    one definition. Deliberately a function, not a module constant: the
+    template is loaded by path and a constant would run that at import time.
+
+    Intake never reads a modality out of the typed text. "measured blood
+    pressure" is a construct whose wording happens to contain a modality word,
+    and treating that as a declaration is exactly the inference the UNKNOWN
+    default exists to prevent: it would invent a mismatch on a legitimate
+    resolve. A caller declares one or the request stays `unknown`.
+
+    Returns:
+        Every `Modality` value, `unknown` included.
+    """
+    return tuple(m.value for m in load_template().Modality)
+
+
 @dataclass(frozen=True)
 class Intake:
     """A parsed request and what intake noticed about it.
@@ -57,7 +76,8 @@ class Intake:
 
 
 def parse_request(text: str, *, role: str = "exposure",
-                  timeframe: str | None = None) -> Intake:
+                  timeframe: str | None = None,
+                  modality: str = "unknown") -> Intake:
     """Parse one typed request.
 
     Args:
@@ -65,15 +85,21 @@ def parse_request(text: str, *, role: str = "exposure",
             the timeframe unless `timeframe` is given explicitly.
         role: `exposure`, `outcome` or `confounder`. Not rendered; carried.
         timeframe: Overrides a bracketed suffix.
+        modality: One of `modalities()`. Declared by the caller or left
+            `unknown`; never read out of `text`, and never rendered.
 
     Returns:
         The intake.
 
     Raises:
-        ValueError: On an empty construct or an unknown role.
+        ValueError: On an empty construct, an unknown role or an unknown
+            modality.
     """
     if role not in ROLES:
         raise ValueError(f"role must be one of {ROLES}, got {role!r}")
+    allowed = modalities()
+    if modality not in allowed:
+        raise ValueError(f"modality must be one of {allowed}, got {modality!r}")
     body = text.strip()
     m = _TIMEFRAME.search(body)
     if m:
@@ -92,7 +118,8 @@ def parse_request(text: str, *, role: str = "exposure",
     tpl = load_template()
     req = tpl.RetrievalRequest(construct=construct, role=tpl.VariableRole(role),
                                population=None, timeframe=timeframe,
-                               instances=tuple(seen))
+                               instances=tuple(seen),
+                               modality=tpl.Modality(modality))
     query = req.to_query()
     n = len(tpl.content_words(query, True))
     notes: list[str] = []
@@ -120,10 +147,13 @@ def main(argv: list[str] | None = None) -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("text", help="construct[: instances][ [timeframe] ]")
     ap.add_argument("--role", choices=ROLES, default="exposure")
+    ap.add_argument("--modality", choices=modalities(), default="unknown",
+                    help="how the variable was measured; declared, never inferred")
     a = ap.parse_args(argv)
-    it = parse_request(a.text, role=a.role)
+    it = parse_request(a.text, role=a.role, modality=a.modality)
     print(f"query:         {it.query!r}")
     print(f"role:          {it.request.role.value}")
+    print(f"modality:      {it.request.modality.value}")
     print(f"instances:     {list(it.request.instances)}")
     print(f"timeframe:     {it.request.timeframe}")
     print(f"content words: {it.content_words} ({'specific' if it.specific else 'short'})")

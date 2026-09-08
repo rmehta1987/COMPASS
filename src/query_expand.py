@@ -131,6 +131,37 @@ class VariableRole(str, enum.Enum):
     CONFOUNDER = "confounder"
 
 
+class Modality(str, enum.Enum):
+    """How the requester's variable was measured. Caller-declared, NOT rendered.
+
+    The instrument holds one item per construct, so a request for *measured*
+    hypertension and one for *self-reported* hypertension select the same
+    self-report item at a cosine no threshold separates: the construct
+    genuinely is in the instrument. The defect is that the record does not say
+    which measurement was wanted, so a substitution reads as a clean resolve.
+
+    UNKNOWN is the default and is never a guess. Modality is NEVER inferred
+    from the construct's wording -- not from "measured", not from "self-
+    reported", not from the role, not from anything. An inferred modality
+    would manufacture a mismatch on a legitimate resolve, which is a worse
+    failure than the silence it replaces. A caller that does not know leaves
+    it UNKNOWN, and UNKNOWN reads as "nobody declared one", which is also how
+    a record written before this field existed reads.
+
+    The values other than UNKNOWN are the inventory's vocabulary, as
+    `handoff/for_harness.json::modality_values` lists it; the enum is pinned
+    against that file by `tests/test_modality.py`.
+    """
+
+    UNKNOWN = "unknown"
+    SELF_REPORT = "self_report"
+    MEASURED = "measured"
+    EHR = "ehr"
+    ASSAY = "assay"
+    LINKED = "linked"
+    ADMINISTRATIVE = "administrative"
+
+
 # The population noun for each roster block of the instrument. Keyed on
 # (module, question block) because roster_family_size is not unique: module 2
 # size 20 is both Q8 (pregnancies) and Q16 (siblings). The noun is the
@@ -159,6 +190,7 @@ class RetrievalRequest:
     population: str | None = None      # "participant" | "sibling" | "household member"
     timeframe: str | None = None       # "past 12 months" | "lifetime" | "current"
     instances: tuple[str, ...] = ()    # ("ibuprofen", "naproxen", "aspirin")
+    modality: Modality = Modality.UNKNOWN   # caller-declared -- NOT rendered
 
     def to_query(self, *, with_instances: bool = True) -> str:
         """Deterministic template. No model call, no network."""

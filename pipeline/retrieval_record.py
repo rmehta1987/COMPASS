@@ -6,6 +6,12 @@ selected each key. It is written once and never backfilled: a field added later
 would leave earlier artefacts incomparable, which is why the abstained case, the
 threshold and the runner-up margin are all recorded from the start.
 
+`request.modality` is the one later addition, and it is comparable by
+construction: it defaults to `unknown`, every record written before it carried
+no declaration at all, and `unknown` is exactly what "no declaration" means. An
+old record and a new undeclared one therefore read alike, and neither can be
+mistaken for one where a caller actually declared a modality.
+
 Two deliberate absences:
 
 * No stem or option wording. Artefacts are committed to a public tree and the
@@ -38,6 +44,13 @@ class RequestSnapshot(BaseModel):
             instrument-sourced `construct_text` and its rendered `query` ARE
             withheld wording, and an artefact writer must redact them before
             anything is committed to the public tree.
+        modality: How the caller said the variable was measured, as the
+            template's `Modality` value string; `unknown` when nobody declared
+            one. Caller-declared and never inferred, so `unknown` here means
+            silence, not a failed guess. The pattern is written out rather than
+            imported, because this module deliberately holds no reference to
+            the template (see the module docstring); `tests/test_modality.py`
+            pins the two against each other.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -48,13 +61,17 @@ class RequestSnapshot(BaseModel):
     timeframe: str | None = None
     instances: tuple[str, ...] = ()
     source: str = Field(default="user", pattern="^(user|instrument)$")
+    modality: str = Field(
+        default="unknown",
+        pattern="^(unknown|self_report|measured|ehr|assay|linked|administrative)$")
 
     @classmethod
     def from_request(cls, req: Any, source: str = "user") -> RequestSnapshot:
         """Snapshot a `deploy.template.RetrievalRequest`.
 
         Typed `Any` because the dataclass is loaded by path (see module doc);
-        only the five field names are relied on.
+        only the six field names are relied on, and `modality` is read with a
+        default so a bundle predating the field still snapshots cleanly.
 
         Args:
             req: The request object.
@@ -64,10 +81,12 @@ class RequestSnapshot(BaseModel):
             The snapshot.
         """
         role = req.role
+        modality = getattr(req, "modality", "unknown")
         return cls(construct_text=req.construct,
                    role=str(getattr(role, "value", role)),
                    population=req.population, timeframe=req.timeframe,
-                   instances=tuple(req.instances), source=source)
+                   instances=tuple(req.instances), source=source,
+                   modality=str(getattr(modality, "value", modality)))
 
 
 class Hit(BaseModel):
