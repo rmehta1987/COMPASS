@@ -106,6 +106,12 @@ LOOPBACK = frozenset({"127.0.0.1", "::1", "localhost"})
 RATE_LIMIT = 60
 RATE_WINDOW_S = 60.0
 
+#: How often a client should ask again about a running job, in milliseconds.
+#: Sent to the page rather than written there: `site/tools/no_fabrication.py`
+#: forbids a numeric literal on the page, and a poll interval is a number the
+#: server knows and the page should not invent.
+POLL_MS = 4000
+
 #: Distinct clients tracked before aged-out windows are swept.
 RATE_CLIENTS = 4096
 
@@ -166,6 +172,11 @@ class State:
         # which is all a shared endpoint has: this bounds volume, not identity.
         self._hits: dict[str, list[float]] = {}
         self._hits_lock = threading.Lock()
+        # Finished and in-flight Specifier runs, by ticket. A run outlives the
+        # request that started it, so the result has to live somewhere the next
+        # request can find it.
+        self.jobs: dict[str, dict[str, Any]] = {}
+        self._jobs_lock = threading.Lock()
         self.scrubber = Scrubber()
         self.pseud = Pseudonymiser()
         self._retriever: Any = None
@@ -418,16 +429,92 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
         raise Busy("a Specifier run is already in progress on this endpoint. "
                    "Runs are serialised because each one allocates a sealed "
                    "worktree and an MCP server. Try again in a few minutes.")
-    try:
-        backend = ClaudeCliBackend(model=model, mode="benchmark")
-        identity = run_identity(pair, version, 0, backend.name, "externally_posed")
-        t0 = time.time()
-        res = specify(backend, pair, k=k, mode="benchmark",
-                      parked_dir=ROOT / "parked", identity=identity)
-        elapsed = round(time.time() - t0, 2)
-    finally:
-        state.model_lock.release()
 
+    # THE RUN OUTLIVES THE REQUEST. Cloudflare gives up on an origin after about
+    # 100 seconds and that ceiling cannot be raised on a quick tunnel, while a
+    # run takes 300-600. Held open, the request could never finish through the
+    # tunnel however healthy the run was -- and both times it was the request
+    # that died, not the run. So the POST starts a job and hands back a ticket.
+    ticket = f"{time.strftime('%H%M%S')}-{os.urandom(3).hex()}"
+    with state._jobs_lock:
+        state.jobs[ticket] = {"status": "running", "started": time.time()}
+
+    def _run() -> None:
+        try:
+            backend = ClaudeCliBackend(model=model, mode="benchmark")
+            identity = run_identity(pair, version, 0, backend.name,
+                                    "externally_posed")
+            t0 = time.time()
+            res = specify(backend, pair, k=k, mode="benchmark",
+                          parked_dir=ROOT / "parked", identity=identity)
+            payload = _specify_payload(res, identity, version, model, canonical,
+                                       allow_unresolvable, backend,
+                                       round(time.time() - t0, 2))
+            done = {"status": "done", "run": payload}
+        except Exception as exc:
+            done = {"status": "error",
+                    "error": f"{type(exc).__name__}: {exc}"}
+        finally:
+            state.model_lock.release()
+        with state._jobs_lock:
+            state.jobs[ticket] = done
+
+    threading.Thread(target=_run, daemon=True).start()
+    return {"ticket": ticket, "status": "running", "poll_after_ms": POLL_MS,
+            "note": "A run takes minutes. Ask /api/specify/status for this "
+                    "ticket; the run continues whatever happens to this page."}
+
+
+def _specify_status(state: State, body: dict[str, Any]) -> dict[str, Any]:
+    """Report a run started earlier, by ticket.
+
+    Args:
+        state: Shared handles.
+        body: The request, carrying `ticket`.
+
+    Returns:
+        `{status: running}` with a poll interval, or the finished run.
+
+    Raises:
+        ValueError: When the ticket is missing or unknown.
+    """
+    ticket = str(body.get("ticket") or "").strip()
+    if not ticket:
+        raise ValueError("ticket is required")
+    with state._jobs_lock:
+        job = state.jobs.get(ticket)
+    if job is None:
+        raise ValueError(f"no run with ticket {ticket!r} on this endpoint. "
+                         "Tickets do not survive a restart.")
+    if job["status"] == "running":
+        return {"status": "running", "poll_after_ms": POLL_MS,
+                "elapsed_s": round(time.time() - job["started"], 1)}
+    if job["status"] == "error":
+        return {"status": "error", "error": job["error"]}
+    return {"status": "done", **job["run"]}
+
+
+def _specify_payload(res: Any, identity: Any, version: str, model: str,
+                     canonical: dict[str, str], allow_unresolvable: bool,
+                     backend: Any, elapsed: float) -> dict[str, Any]:
+    """Shape a finished run for the wire.
+
+    Split out of `_specify` so the run can be assembled on the worker thread,
+    after the request that started it has already answered.
+
+    Args:
+        res: The `agent.specifier.Result`.
+        identity: The run identity.
+        version: Dictionary version hash.
+        model: The model that was asked for.
+        canonical: Any key-case corrections applied.
+        allow_unresolvable: Whether the refusal path was driven deliberately.
+        backend: The backend, for its cost.
+        elapsed: Wall-clock seconds.
+
+    Returns:
+        The payload `/api/specify/status` returns when the run is done.
+    """
     # `selected` and `refusal` are two fields on purpose: a refusal is not a
     # protocol that won, and `selected` is None whenever the environment ruled
     # the pair unspecifiable (`agent/specifier.py::Result`). Collapsing them
@@ -602,6 +689,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store, must-revalidate")
             self.end_headers()
             self.wfile.write(body)
             return
@@ -647,6 +735,13 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        # This route serves files that are being EDITED. With no cache headers a
+        # browser is free to reuse the copy it has, so a plain reload showed the
+        # previous page and a change looked like it had not been made -- which
+        # is exactly how it looked to the operator when a new panel "did
+        # nothing". A dev rig must never make someone wonder whether they are
+        # looking at their own edit.
+        self.send_header("Cache-Control", "no-store, must-revalidate")
         self.end_headers()
         self.wfile.write(body)
 
@@ -655,7 +750,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self._gate():
             return
         route = self.path.split("?")[0]
-        if route == "/api/specify" and not self.state.enable_specify:
+        if route.startswith("/api/specify") and not self.state.enable_specify:
             # Disabled rather than merely rate-limited: every call spends a named
             # human's Claude seat with no per-caller accounting, and runs
             # serialise, so one visitor holds the lock for ten minutes.
@@ -664,7 +759,8 @@ class Handler(BaseHTTPRequestHandler):
                                       "spends the operator's Claude seat and "
                                       "blocks every other caller while it runs."})
             return
-        routes = {"/api/retrieve": _retrieve, "/api/specify": _specify}
+        routes = {"/api/retrieve": _retrieve, "/api/specify": _specify,
+                  "/api/specify/status": _specify_status}
         fn = routes.get(route)
         if fn is None:
             self._send(404, {"error": f"no route {route}"})
