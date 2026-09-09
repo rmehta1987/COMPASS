@@ -944,22 +944,40 @@ function panelPNG(){
   img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(xml);
 }
 
+function stagePanel(s){
+  if(spec&&sel==="record") return recordPanel();
+  if(spec&&sel==="specifier") return specifierPanel();
+  if(ask&&sel==="retriever") return resolverPanel();
+  if(live&&sel==="retriever") return livePanel();
+  if((live||(ask&&ask.rendered_query))&&sel==="intake") return liveIntakePanel();
+  if(typed!==null&&!cur) return noRun();
+  if(sel==="retriever"&&cur) return retrieverPanel();
+  if(sel==="intake"&&cur) return intakePanel();
+  if(sel==="generate") return generatePanel();
+  if(sel==="score") return scorePanel();
+  if(sel==="metrics") return metricsPanel();
+  return placeholder(s);
+}
+
 function draw(){
   const s=DATA.stages.stages.find(x=>x.id===sel);
   let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
          <ul class="does">${s.does.map(d=>`<li>${esc(d)}</li>`).join("")}</ul>`;
-  if(spec&&sel==="record") h+=recordPanel();
-  else if(spec&&sel==="specifier") h+=specifierPanel();
-  else if(ask&&sel==="retriever") h+=resolverPanel();
-  else if(live&&sel==="retriever") h+=livePanel();
-  else if((live||(ask&&ask.rendered_query))&&sel==="intake") h+=liveIntakePanel();
-  else if(typed!==null&&!cur) h+=noRun();
-  else if(sel==="retriever"&&cur) h+=retrieverPanel();
-  else if(sel==="intake"&&cur) h+=intakePanel();
-  else if(sel==="generate") h+=generatePanel();
-  else if(sel==="score") h+=scorePanel();
-  else if(sel==="metrics") h+=metricsPanel();
-  else h+=placeholder(s);
+  /* Contain a throwing panel. Everything below -- the assignment to #panel and
+     every handler wired after it -- is downstream of this expression, so an
+     exception here does not blank one panel, it leaves the PREVIOUS stage's DOM
+     on screen with handlers still bound to a run that has moved on, and the rail
+     stops responding. The realistic cause is a malformed endpoint reply: the
+     committed artefacts pass site-check, an endpoint payload passes nothing.
+     The message is safe to show -- the payload it came from was already through
+     the server's scrubber and was about to be rendered into this same panel. */
+  try{ h+=stagePanel(s); }
+  catch(err){
+    console.error("panel failed", sel, err);
+    h+=`<div class="none"><b>This panel could not be drawn.</b> The rest of the
+        page still works: pick another stage, or run the request again. The
+        browser console has the full error.<br><code>${esc(String(err&&err.message||err))}</code></div>`;
+  }
   h+=`<div class="after"><button class="g" id="dl-json">Download this record as JSON</button><button class="g" id="png">Save panel as PNG</button></div>`;
   el("#panel").innerHTML=h;
   document.querySelectorAll("[data-anchor]").forEach(b=>b.onclick=()=>{
