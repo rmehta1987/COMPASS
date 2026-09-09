@@ -330,6 +330,88 @@ async function runSpecifier(){
   }finally{ specBusy=false; draw(); }
 }
 
+function anchorLine(a){
+  /* Exposure and outcome are a union: a variable reference, a derivation, or a
+     roster family. Show whichever arrived rather than assuming a key. */
+  if(!a) return "<em>none</em>";
+  const wording=a.quoted_wording?` &mdash; ${esc(a.quoted_wording)}`:"";
+  return `<b>${esc(a.key||a.derivation_id||a.group_key||a.kind||"")}</b>${wording}`;
+}
+
+function covBlock(title,list,note){
+  if(!list||!list.length) return `<p class="sec">${title}</p><div class="none">${note}</div>`;
+  return `<p class="sec">${title} &middot; ${list.length}</p><div class="tools">`
+    +list.map(c=>`<div class="t"><span class="call"><b>${esc(c.variable&&(c.variable.key||c.variable.derivation_id)||"")}</b>`
+      +` &middot; ${esc(c.role||"")}${c.contestable?" &middot; contestable":""}</span>`
+      +`<span class="ret">${esc(c.mechanism||c.justification||"")}</span></div>`).join("")
+    +`</div>`;
+}
+
+function readableProtocol(r){
+  const m=r.model_spec||{}, e=r.estimability||{}, a=r.access||{}, ft=r.falsifier_threshold;
+  let h=`<dl>`
+    +row("question",esc(r.question))
+    +row("expected direction",(function(d){
+        /* A structured type, not a string: direction plus an optional magnitude
+           and where that magnitude came from. Rendered as `[object Object]`
+           until this was checked against a real record. */
+        if(!d) return "<em>none</em>";
+        const mag=d.magnitude===null||d.magnitude===undefined?"":
+          ` &middot; ${esc(String(d.magnitude))}`
+          +(d.magnitude_source?` (${esc(d.magnitude_source)})`:"");
+        return `${esc(d.direction||"")}${mag}`;
+      })(r.expected_direction),true)
+    +row("exposure",anchorLine(r.exposure),true)
+    +row("outcome",anchorLine(r.outcome),true)
+    +row("model",`${esc(m.form||"")} &middot; per ${esc(m.unit_of_analysis||"")}`
+        +(m.clustering?` &middot; clustered on ${esc(m.clustering)}`:""),true)
+    +row("falsifier",esc(r.falsifier))
+    +(ft?row("threshold",`${esc(String(ft.comparator||""))} ${esc(String(ft.value))} `
+        +`${esc(ft.unit||"")}`,true):"")
+    +`</dl>`;
+  h+=covBlock("adjusted",r.adjusted_covariates,"none");
+  h+=covBlock("excluded on purpose",r.excluded_variables,
+              "none &mdash; an empty exclusion list is rejected by the schema");
+  h+=covBlock("undetermined",r.undetermined_covariates,"none");
+  if(r.sought_covariates&&r.sought_covariates.length)
+    h+=`<p class="sec">looked for and not found &middot; ${r.sought_covariates.length}</p>`
+      +`<div class="tools">`+r.sought_covariates.map(u=>
+        `<div class="t"><span class="call"><b>${esc(u.construct_sought||"")}</b></span>`
+        +`<span class="ret">${esc(u.exposes_the_estimate_to||u.why_rejected||"")}</span></div>`
+        +(u.search_phrases&&u.search_phrases.length
+          ?`<div class="t"><span class="call">tried: ${esc(u.search_phrases.join(" &middot; "))}</span></div>`:"")
+      ).join("")+`</div>`;
+  h+=`<p class="sec">estimability</p><dl>`
+    +row("analytic n",e.analytic_n===null||e.analytic_n===undefined
+        ?`<span class="flag">unknown</span> &middot; ${esc(e.n_source||"")}`
+        :`${esc(String(e.analytic_n))} &middot; ${esc(e.n_source||"")}`,true)
+    +row("modules required",esc((e.modules_required||[]).join(", ")),true)
+    +(e.exposure_contrast?row("contrast",esc(e.exposure_contrast)):"")
+    +row("access",esc(a.decision||""),true)
+    +`</dl>`;
+  h+=`<p class="sec">status</p><div class="tools">`
+    +`<div class="t gate ${(r.blocked_on||[]).length?"fail":"pass"}"><span class="call">`
+    +`<b>${esc(r.status||"")}</b></span><span class="ret">`
+    +((r.blocked_on||[]).length?`blocked on ${esc(r.blocked_on.join(", "))}`
+      :"no blockers")+`</span></div></div>`;
+  return h;
+}
+
+function readableRefusal(r){
+  let h=`<dl>`
+    +row("pair",esc(r.pair_id),true)
+    +row("reason",`<b>${esc(r.reason||"")}</b>`,true)
+    +row("statement",esc(r.statement))
+    +row("what would unblock it",esc(r.what_would_unblock))
+    +`</dl>`;
+  if(r.evidence&&r.evidence.length) h+=`<p class="sec">evidence &middot; the environment's own lookups</p>`
+    +`<div class="tools">`+r.evidence.map(v=>
+      `<div class="t"><span class="call"><b>${esc(v.tool||"")}</b>(${esc(v.argument||"")})</span>`
+      +`<span class="ret">&rarr; ${esc(v.outcome||"")}</span></div>`).join("")+`</div>`;
+  if((r.blocked_on||[]).length) h+=`<div class="none">blocked on ${esc(r.blocked_on.join(", "))}</div>`;
+  return h;
+}
+
 function specifierPanel(){
   const j=spec;
   if(j.running) return `<p class="sec">running</p><div class="ph"><b>IN PROGRESS</b>`
@@ -358,7 +440,9 @@ function specifierPanel(){
   const rec=j.selected||j.refusal;
   if(rec){
     h+=`<p class="sec">${j.selected?"selected protocol":"refusal, upheld by the environment"}</p>`
-      +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre>`;
+      +(j.selected?readableProtocol(rec):readableRefusal(rec))
+      +`<details><summary>the record as JSON &middot; provenance</summary>`
+      +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre></details>`;
   }else{
     h+=`<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.reason||"the run produced neither a protocol nor a refusal")}</div>`;
     /* A rejected design is still a design. The sample kept it, so show it: a
@@ -367,9 +451,14 @@ function specifierPanel(){
        The gate's verdict stands; this only stops it being invisible. */
     for(const a of (j.samples||[])){
       if(a.rejected_record) h+=`<p class="sec">the design the gate rejected &middot; seed ${a.seed}</p>`
-        +`<pre class="rec">${esc(typeof a.rejected_record==="string"?a.rejected_record:JSON.stringify(a.rejected_record,null,2))}</pre>`;
+        +(typeof a.rejected_record==="object"&&a.rejected_record.question
+          ?readableProtocol(a.rejected_record):"")
+        +`<details><summary>as JSON &middot; provenance</summary><pre class="rec">`
+        +`${esc(typeof a.rejected_record==="string"?a.rejected_record:JSON.stringify(a.rejected_record,null,2))}`
+        +`</pre></details>`;
       if(a.analysis) h+=`<p class="sec">what the model established &middot; seed ${a.seed}</p>`
-        +`<pre class="rec">${esc(a.analysis)}</pre>`;
+        +`<details><summary>the reasoning, in full</summary>`
+        +`<pre class="rec">${esc(a.analysis)}</pre></details>`;
     }
   }
   if(j.not_a_measurement) h+=`<div class="none" style="color:var(--signal)">${esc(j.not_a_measurement)}</div>`;
