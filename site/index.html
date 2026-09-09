@@ -71,6 +71,11 @@
     font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
   .ph{border:1px dashed var(--signal);padding:14px 12px;margin:0 0 26px;
     font-family:var(--mono);font-size:12.5px;color:var(--signal)}
+  .intro{border-left:3px solid var(--rule);padding:10px 0 10px 12px;margin:18px 0 0;
+    font-size:13px;color:var(--ink-2);max-width:62em}
+  .intro b{color:var(--ink);font-weight:600}
+  .intro p{margin:0 0 6px}
+  .intro p:last-child{margin:0}
   .ph b{letter-spacing:.06em}
 
   dl{margin:0 0 26px;display:grid;grid-template-columns:150px minmax(0,1fr);border:1px solid var(--rule)}
@@ -110,6 +115,8 @@
   <h1>COMPASS<span>Type what you want to measure. Watch each stage retrieve, refuse, or block — with the tool calls it made.</span></h1>
   <nav class="links"><button class="g" id="dl-src">Download this page</button><a href="https://github.com/rmehta1987/COMPASS">Repo</a></nav>
 </div></header>
+
+<div class="wrap"><div class="intro" id="intro"></div></div>
 
 <div class="bar"><div class="wrap">
   <input id="q" value="" aria-label="request" placeholder="a question, or a construct, or two keys">
@@ -970,6 +977,49 @@ function panelPNG(){
    reviewer would quote. Read only by `foot`. */
 let panelLive=false;
 
+/* Everything the reader is actually looking at, which is not always a committed
+   example: after a live run `cur` is null. The download used to be
+   `{stage, example: cur, provenance}` regardless, so a reviewer who had just
+   watched a run finish got a file containing `"example": null` -- named
+   `..._none.json`, under a button that says "Download this record" -- and
+   nothing of the run itself. Whatever is on screen goes in. */
+function panelRecord(){
+  const doc={stage:sel};
+  if(cur) doc.example=cur;
+  if(ask) doc.resolver=ask;
+  if(live) doc.live_retrieval=live;
+  if(spec) doc.specifier_run=spec;
+  if(gen) doc.enumeration=gen;
+  if(met) doc.metrics_keys=met;
+  doc.artefact_provenance=Object.fromEntries(Object.entries(DATA)
+    .filter(([k])=>k!=="index").map(([k,v])=>[k,v.provenance]));
+  return doc;
+}
+
+/* True when there is something to download. The PNG button is NOT gated on
+   this: a panel always renders something, and hiding a button that works would
+   be the same defect pointed the other way. */
+function panelHasRecord(){ return Boolean(cur||ask||live||spec||gen||met); }
+
+/* WHAT THIS IS AND IS NOT, before the reader touches anything. The one
+   recurring misreading of this page is the scored run: a reviewer sees the
+   observed rate and reads it as the pipeline failing, when the ceiling and the
+   observed rate are the same number and a pipeline that reasoned perfectly
+   would score identically. That sentence existed already -- inside the Metrics
+   tab, which is a side door most reviewers reach last, if at all.
+
+   Every word comes from `metrics.json`; nothing here is typed into the page.
+   That is not only the no-fabrication rule, it is the point: the caveat has to
+   move when the run does. */
+function intro(){
+  const r=DATA.metrics.reads, nb=DATA.metrics.not_built||[];
+  const cannot=nb.map(x=>esc(x.what)).join(", ");
+  el("#intro").innerHTML=
+    `<p><b>What the scored run establishes:</b> ${esc(r.establishes)}.</p>`
+   +`<p><b>What it is not:</b> ${esc(r.is_not)}.</p>`
+   +(cannot?`<p><b>Not built, and not fakeable from here:</b> ${cannot}.</p>`:"");
+}
+
 function stagePanel(s){
   panelLive=true;
   if(spec&&sel==="record") return recordPanel();
@@ -1008,7 +1058,9 @@ function draw(){
         page still works: pick another stage, or run the request again. The
         browser console has the full error.<br><code>${esc(String(err&&err.message||err))}</code></div>`;
   }
-  h+=`<div class="after"><button class="g" id="dl-json">Download this record as JSON</button><button class="g" id="png">Save panel as PNG</button></div>`;
+  h+=`<div class="after">`
+    +(panelHasRecord()?`<button class="g" id="dl-json">Download this record as JSON</button>`:"")
+    +`<button class="g" id="png">Save panel as PNG</button></div>`;
   el("#panel").innerHTML=h;
   document.querySelectorAll("[data-anchor]").forEach(b=>b.onclick=()=>{
     anchors[b.dataset.anchor]=b.dataset.key; draw();});
@@ -1019,11 +1071,13 @@ function draw(){
   document.querySelectorAll("[data-genex]").forEach(b=>b.onclick=()=>{
     anchors.exposure=b.dataset.genex; anchors.outcome=b.dataset.genout;
     runSpecifier();});
-  el("#dl-json").onclick=()=>{
-    const doc={stage:sel,example:cur,artefact_provenance:Object.fromEntries(Object.entries(DATA).filter(([k])=>k!=="index").map(([k,v])=>[k,v.provenance]))};
+  const dj=el("#dl-json"); if(dj) dj.onclick=()=>{
+    const doc=panelRecord();
     const b=new Blob([JSON.stringify(doc,null,2)],{type:"application/json"});
     const a=document.createElement("a");a.href=URL.createObjectURL(b);
-    a.download=`compass_${sel}_${cur?cur.id:"none"}.json`;a.click();URL.revokeObjectURL(a.href);};
+    /* Named for what it holds. `cur` alone put `_none` on a file full of run. */
+    a.download=`compass_${sel}_${cur?cur.id:(spec?"live_run":"live")}.json`;
+    a.click();URL.revokeObjectURL(a.href);};
   el("#png").onclick=panelPNG;
   /* After the panel, not before: `foot` reads `panelLive`, which `stagePanel` set. */
   foot();
@@ -1057,7 +1111,7 @@ el("#dl-src").onclick=()=>{
   const a=document.createElement("a");a.href=URL.createObjectURL(b);
   a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
 
-load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); draw(); foot();}).catch(e=>{
+load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); intro(); draw(); foot();}).catch(e=>{
   el("#panel").innerHTML=`<h2>Artefacts did not load</h2><div class="ph"><b>NO DATA</b> — ${esc(e.message)}. Serve this directory over HTTP; a file:// open cannot fetch the artefacts.</div>`;
 });
 </script>

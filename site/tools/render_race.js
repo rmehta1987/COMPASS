@@ -44,6 +44,10 @@ global.document = {
 };
 global.window = { devicePixelRatio: 1, COMPASS_ENDPOINT: true };
 global.alert = () => {};
+// Capture what a download would actually contain.
+let lastDownload = null;
+global.Blob = class { constructor(parts) { lastDownload = parts.join(""); this.size = lastDownload.length; } };
+global.URL = { createObjectURL: () => "blob:x", revokeObjectURL() {} };
 
 // The run is held open until the harness releases it, so "the reader navigates
 // mid-run" is a fact of the script rather than a race the test hopes to win.
@@ -119,7 +123,30 @@ const fire = (attr, val) => {
   const rec = node("#panel").innerHTML;
   if (!rec.includes(KEY.exposure)) fail("the run's own record was discarded, not merely un-steered");
 
+  // The download must carry the run the reader just watched. It used to be
+  // `{stage, example: cur, provenance}` unconditionally, and after a live run
+  // `cur` is null -- so the file said `"example": null` and held none of it.
+  // The "what this is / what it is not" header. Its whole purpose is to be read
+  // before anything else, so an empty or `undefined`-carrying one is worse than
+  // none: it reads as the page being broken at the top.
+  const intro = node("#intro").innerHTML;
+  if (!intro.trim()) fail("the intro header is empty");
+  for (const bad of ["undefined", "NaN", "[object Object]"]) {
+    if (intro.includes(bad)) fail(`the intro header contains "${bad}"`);
+  }
+  if (!/What it is not/.test(intro)) fail("the intro header does not say what this is not");
+  console.log("intro:", intro.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim());
+
+  const dl = node("#dl-json");
+  if (!dl || !dl.onclick) fail("no download offered after a completed run");
+  else {
+    dl.onclick();
+    const doc = JSON.parse(lastDownload);
+    if (!doc.specifier_run) fail("the download omits the run that just finished");
+    if ("example" in doc && doc.example === null) fail('the download carries a null "example"');
+  }
+
   console.log(failed ? `RED: ${failed} problem(s)`
-    : `GREEN: navigated to ${JSON.stringify(chosen)} mid-run, stayed there, record kept`);
+    : `GREEN: navigated to ${JSON.stringify(chosen)} mid-run, stayed there, record kept, download carries the run`);
   process.exit(failed ? 1 : 0);
 })();
