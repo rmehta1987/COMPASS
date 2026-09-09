@@ -25,7 +25,17 @@ from pathlib import Path
 
 from common import REPO, SITE, fail, ok, visible_text
 
-KEY_RE = re.compile(r"\bm\d+:Q\d+(?:[._~]\w+)*")
+# Ported byte for byte from `serve/redact.py::KEY_RE`, which is the corrected
+# pattern. The shape this replaced -- `\bm\d+:Q\d+(?:[._~]\w+)*` -- could not match a
+# numeric roster prefix between the colon and the `Q`, so it saw 1,284 of the 2,804
+# item keys and missed 1,520 (MEASURED 2026-09-09 against `key`; the two undetected
+# shapes are `m<N>:<N>_Q<N>.<N>` and `m<N>:<N>_Q<N>.<N>#<N>_<N>`). Measuring
+# `construct_key` instead hides the defect: both patterns match 100% of those, because
+# the base form carries no roster prefix. IGNORECASE for the reason `redact.py` gives:
+# a case-shifted key is reachable through free prose, not hypothetical.
+KEY_RE = re.compile(
+    r"\bm\d+:(?:\d+_)?Q\d+(?:\.\d+)?(?:#\d+(?:_\d+)*)?(?:_\d+)*(?:_TEXT)?(?:~\d+)?",
+    re.IGNORECASE)
 N = 5
 SKIP_SUFFIXES = {".safetensors", ".png", ".pt", ".bin"}
 
@@ -52,6 +62,43 @@ def corpus_grams(dic: Path) -> set[tuple[str, ...]]:
     return out
 
 
+def key_re_coverage(dic: Path) -> tuple[list[str], int]:
+    """Report the key shapes ``KEY_RE`` cannot fully match.
+
+    The gate greps for keys with one regex, so the regex IS the guarantee. A
+    pattern that silently stops covering part of the key space downgrades this
+    step to a partial scan that still prints ``ok``. Checking it against the
+    dictionary already in hand costs nothing and cannot go vacuous, because the
+    same file supplies both the corpus and the assertion. This exists because the
+    shipped pattern covered 1,284 of 2,804 item keys while reading as complete
+    (MEASURED 2026-09-09).
+
+    Digits are masked to ``N`` in the output: a gate that forbids keys under
+    ``site/`` must not print one into a build log to say so.
+
+    Args:
+        dic: Path to the built dictionary, already located by `dictionary_path`.
+
+    Returns:
+        A pair: one problem line per uncovered shape, and the number of keys
+        checked. The count is printed on green so the step cannot claim to have
+        verified coverage against a dictionary it never read.
+    """
+    seen: dict[str, int] = {}
+    total = 0
+    for e in json.loads(dic.read_text(encoding="utf-8"))["entries"]:
+        for f in ("key", "construct_key"):
+            v = e.get(f)
+            if not isinstance(v, str):
+                continue
+            total += 1
+            if KEY_RE.fullmatch(v) is None:
+                shape = re.sub(r"\d+", "N", v)
+                seen[shape] = seen.get(shape, 0) + 1
+    return ([f"KEY_RE does not cover {c} of {total} key(s) of shape {s!r}"
+             for s, c in sorted(seen.items())], total)
+
+
 def site_files() -> list[Path]:
     return sorted(p for p in SITE.rglob("*")
                   if p.is_file() and p.suffix not in SKIP_SUFFIXES and ".git" not in p.parts)
@@ -64,7 +111,8 @@ def main() -> None:
               "A scan that cannot see the instrument certifies nothing.")
         sys.exit(2)
     corpus = corpus_grams(dic)
-    problems: list[str] = []
+    key_problems, keys_checked = key_re_coverage(dic)
+    problems: list[str] = list(key_problems)
     n = 0
     for p in site_files():
         n += 1
@@ -84,7 +132,8 @@ def main() -> None:
         for s in problems:
             print("      " + s)
         fail(f"no_instrument: {len(problems)} problem(s) across {n} file(s)")
-    ok(f"no_instrument: {n} file(s) scanned against {len(corpus)} five-word runs from {dic.name}")
+    ok(f"no_instrument: {n} file(s) scanned against {len(corpus)} five-word runs "
+       f"and {keys_checked} key(s), all covered by KEY_RE, from {dic.name}")
 
 
 if __name__ == "__main__":
