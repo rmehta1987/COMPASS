@@ -93,6 +93,46 @@ DEFAULT_MODELS = frozenset({PIPELINE_MODEL})
 class Busy(RuntimeError):
     """A serialised resource is in use. Answered as 409, not 500 or a hang."""
 
+
+class Unresolvable(ValueError):
+    """A construct key that names nothing, reported so the advice survives redaction.
+
+    THE EXPLANATION AND THE OFFENDING KEY ARE SEPARATE STRINGS, deliberately.
+    `Scrubber.scrub` replaces a WHOLE string whenever it carries a key -- editing
+    inside a sentence would leave something that still reads as a citation -- so
+    a message with the key interpolated into it is redacted in full, and a
+    reviewer who typed a lower-case letter is answered with
+    `{"error": "[REDACTED: instrument wording]"}` and no way to find out why.
+    Split, the key is redacted on its own and the sentence saying what to do
+    arrives intact. Under `--show-instrument` both come through.
+
+    The advice therefore may not name a key either, not even an illustrative
+    one: a literal example in the message redacts the message just as thoroughly
+    as the caller's own input does.
+
+    Attributes:
+        role: `exposure` or `outcome`, which is what identifies the offending
+            input to a caller who typed both. It is not key-shaped, so it
+            survives the scrubber.
+        typed: The key as the caller typed it, echoed in its own field.
+    """
+
+    def __init__(self, role: str, key: str) -> None:
+        """Build the split refusal.
+
+        Args:
+            role: `exposure` or `outcome`.
+            key: The construct key as the caller typed it.
+        """
+        self.role = role
+        self.typed = key
+        super().__init__(
+            f"the {role} key does not resolve to any construct in this "
+            f"dictionary. Keys are case-sensitive. The shape is a module id, a "
+            f"colon, an optional roster prefix, a capital Q, and a question id. "
+            f"Nothing was spent: this is checked before the model runs. Pass "
+            f'"allow_unresolvable": true to drive the refusal path deliberately.')
+
 #: Largest request body accepted. A `Content-Length` is attacker-supplied even
 #: on loopback, and `rfile.read(n)` would otherwise size an allocation from it.
 MAX_BODY_BYTES = 64 * 1024
@@ -374,7 +414,8 @@ def _canonical_key(key: str, constructs: dict[str, Any], role: str,
         The key as the dictionary spells it.
 
     Raises:
-        ValueError: When the key resolves to no construct.
+        Unresolvable: When the key resolves to no construct. It subclasses
+            `ValueError`, so the 400 branch that caught the old one catches it.
     """
     if key in constructs:
         return key
@@ -383,12 +424,7 @@ def _canonical_key(key: str, constructs: dict[str, Any], role: str,
     if fixed is not None:
         canonical[key] = fixed
         return fixed
-    raise ValueError(
-        f"{role} {key!r} does not resolve to a construct in dictionary "
-        f"{(constructs and 'loaded') or 'empty'}. Keys are case-sensitive and "
-        f"look like 'm3:Q16.1' (module, colon, capital Q, question id). "
-        f"Nothing was spent: this is checked before the model runs. Pass "
-        f'"allow_unresolvable": true to drive the refusal path deliberately.')
+    raise Unresolvable(role, key)
 
 
 def _pin_keys_from_prose(request: str, constructs: dict[str, Any]) -> dict[str, str]:
@@ -1497,7 +1533,15 @@ class Handler(BaseHTTPRequestHandler):
         Returns:
             The error body, with any instrument content replaced.
         """
-        return {"error": f"{type(exc).__name__}: {exc}" if prefix else str(exc)}
+        body: dict[str, Any] = {
+            "error": f"{type(exc).__name__}: {exc}" if prefix else str(exc)}
+        # Reported BESIDE the message, never inside it -- `Unresolvable`'s
+        # docstring says what interpolating the key costs. Redacting `typed`
+        # alone is the right outcome, not a failure of this path.
+        if isinstance(exc, Unresolvable):
+            body["role"] = exc.role
+            body["typed"] = exc.typed
+        return body
 
 
 #: Names that mark a directory as holding withheld material rather than the

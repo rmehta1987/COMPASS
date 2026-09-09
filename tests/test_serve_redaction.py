@@ -830,3 +830,49 @@ def test_metrics_serves_the_ledgers_emitted_rows_not_the_directory(
     out = api._metrics(st, {"run": "r1"})
     assert set(out["pairs"]) == {"aaaa"}, "the discarded artefact was served"
     assert out["scored"] == out["served"] == 1
+
+
+def test_an_unresolvable_key_refusal_stays_readable_after_redaction() -> None:
+    """The refusal used to redact itself into silence.
+
+    `_canonical_key` interpolated the caller's key into its own message, and
+    `Scrubber.scrub` replaces a whole string that carries a key. A reviewer who
+    typed a lower-case letter therefore got `{"error": REDACTED}` and no way to
+    find out why -- the endpoint's most common 400, answered with nothing.
+    """
+    from serve.api import Unresolvable
+
+    sc = Scrubber()
+    exc = Unresolvable("exposure", "m3:1_q16.1")
+    body = {"error": str(exc), "role": exc.role, "typed": exc.typed}
+    out, marks = sc.scrub(body)
+
+    # The advice arrives whole. Asserting on the text, not merely on "not
+    # REDACTED": a message reduced to a stub would also pass that.
+    assert out["error"] == str(exc)
+    assert "case-sensitive" in out["error"]
+    assert "allow_unresolvable" in out["error"]
+    # ...and it identifies which of the two inputs was wrong, without a key.
+    assert out["role"] == "exposure"
+
+    # Anti-vacuity: the key itself is still withheld. A message that survives
+    # because the scrubber stopped working is the failure this pairs against.
+    assert out["typed"] == REDACTED
+    assert marks == ["typed"]
+
+
+def test_the_unresolvable_advice_names_no_key_of_its_own() -> None:
+    """A literal example key redacts the message as thoroughly as the caller's.
+
+    The message that this replaced said keys "look like 'm3:Q16.1'", so it was
+    redacted in full even for a caller whose own input was clean. This is the
+    property that keeps it readable, held against the scrubber rather than
+    against a regex, so a newly built key shape cannot slip past it.
+    """
+    from serve.api import Unresolvable
+
+    sc = Scrubber()
+    for role in ("exposure", "outcome"):
+        advice = str(Unresolvable(role, "m3:1_q16.1"))
+        assert sc.hits(advice) == [], (role, sc.hits(advice))
+        assert not KEY_RE.search(advice), role
