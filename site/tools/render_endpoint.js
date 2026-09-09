@@ -38,8 +38,15 @@ global.document = {
     const m = /\[data-(\w+)\]/.exec(s); if (!m) return [];
     const attr = m[1], h = Object.values(nodes).map(n => n.innerHTML).join("");
     const out = [];
-    for (const x of h.matchAll(new RegExp(`data-${attr}="([^"]+)"`, "g"))) {
-      const b = { dataset: { [attr]: x[1] }, onclick: null }; out.push(b); byData.push(b);
+    // The WHOLE opening tag, then every data-* on it. Matching only the queried
+    // attribute gave each stub a one-key dataset, so a handler reading a second
+    // one -- `data-key` beside `data-anchor`, `data-launch` beside `data-genex`
+    // -- silently received undefined and the harness proved nothing about it.
+    const tagRe = new RegExp(`<[a-zA-Z][^>]*\\bdata-${attr}="[^"]*"[^>]*>`, "g");
+    for (const t of h.matchAll(tagRe)) {
+      const ds = {};
+      for (const d of t[0].matchAll(/data-([a-zA-Z0-9-]+)="([^"]*)"/g)) ds[d[1]] = d[2];
+      const b = { dataset: ds, onclick: null }; out.push(b); byData.push(b);
     }
     return out;
   },
@@ -50,6 +57,10 @@ global.document = {
 };
 global.window = { devicePixelRatio: 1, COMPASS_ENDPOINT: true };
 global.alert = () => {};
+// Capture what a download would actually contain.
+let lastDownload = null;
+global.Blob = class { constructor(parts) { lastDownload = parts.join(""); this.size = lastDownload.length; } };
+global.URL = { createObjectURL: () => "blob:x", revokeObjectURL() {} };
 // Only /api/metrics is answered; an artefact read still goes to disk.
 global.fetch = async (rel) => rel === "/api/metrics"
   ? ({ status: 200, json: async () => payload })
@@ -104,6 +115,62 @@ global.fetch = async (rel) => rel === "/api/metrics"
   // committed artefact. Standing under a panel this endpoint just produced,
   // that sentence is false, and it is the one a reviewer would quote back. Only
   // this harness can see it: the static render never sets COMPASS_ENDPOINT.
+  // LAUNCHING A RUN FROM A SCORED ARTEFACT must tell Retriever and Intake what
+  // was actually run. Before this, the launch set the anchors and started the
+  // Specifier while those two stages went on showing whatever was there before
+  // -- a committed example, or the previous request's hits -- so the page
+  // answered "what was run?" with a different run's numbers.
+  //
+  // The page is standing on a committed example when the launch happens, which
+  // is what makes the clearing below observable.
+  node("#q").value = "a query whose retrieval must not survive the launch";
+  document.querySelectorAll("[data-s]");
+  const retTab = byData.filter(x => x.dataset.s === "retriever" && x.onclick).pop();
+  if (retTab) retTab.onclick();
+
+  document.querySelectorAll("[data-genex]");
+  const launch = byData.filter(x => x.dataset.genex && x.onclick).pop();
+  if (!launch) { console.error("no run button to launch from"); failed++; }
+  else {
+    if (!launch.dataset.launch) { console.error("the run button carries no launch token"); failed++; }
+    const want = { ex: launch.dataset.genex, out: launch.dataset.genout };
+    launch.onclick();
+    await new Promise(r => setTimeout(r, 50));
+
+    for (const [stage, must] of [["retriever", "NO RETRIEVAL WAS RUN"],
+                                 ["intake", "NO QUERY WAS RENDERED"]]) {
+      document.querySelectorAll("[data-s]");
+      const tab = byData.filter(x => x.dataset.s === stage && x.onclick).pop();
+      if (!tab) { console.error(`no ${stage} tab`); failed++; continue; }
+      tab.onclick();
+      const panel = node("#panel").innerHTML;
+      if (!panel.includes(must)) {
+        console.error(`${stage} does not say a posed pair was not retrieved`); failed++;
+      }
+      // ...and it names THIS pair, which is the whole point.
+      for (const k of [want.ex, want.out]) {
+        if (!panel.includes(k)) { console.error(`${stage} omits ${k}`); failed++; }
+      }
+      for (const bad of ["undefined", "NaN", "[object Object]"]) {
+        if (panel.includes(bad)) { console.error(`${stage} contains "${bad}"`); failed++; }
+      }
+    }
+
+    // The launch also clears the committed example it was standing on. The
+    // panels do not reveal that -- the posed branch wins before the committed
+    // one is reached -- so the DOWNLOAD is where the clearing is load-bearing:
+    // without it the file mixes a posed run with an unrelated example and takes
+    // that example's id for its name.
+    const dlp = node("#dl-json");
+    if (!dlp || !dlp.onclick) { console.error("no download after a posed launch"); failed++; }
+    else {
+      dlp.onclick();
+      const doc = JSON.parse(lastDownload);
+      if (!doc.posed_pair) { console.error("the download omits the posed pair"); failed++; }
+      if (doc.example) { console.error("the download carries an unrelated committed example"); failed++; }
+    }
+  }
+
   const f = node("#foot").innerHTML;
   if (!f.includes("<b>not</b> committed")) {
     console.error("footer still claims every figure is committed, under a live panel"); failed++;

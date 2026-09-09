@@ -32,8 +32,15 @@ global.document = {
     const m = /\[data-(\w+)\]/.exec(s); if (!m) return [];
     const attr = m[1], h = Object.values(nodes).map(n => n.innerHTML).join("");
     const out = [];
-    for (const x of h.matchAll(new RegExp(`data-${attr}="([^"]+)"`, "g"))) {
-      const b = { dataset: { [attr]: x[1] }, onclick: null }; out.push(b); byData.push(b);
+    // The WHOLE opening tag, then every data-* on it. Matching only the queried
+    // attribute gave each stub a one-key dataset, so a handler reading a second
+    // one -- `data-key` beside `data-anchor`, `data-launch` beside `data-genex`
+    // -- silently received undefined and the harness proved nothing about it.
+    const tagRe = new RegExp(`<[a-zA-Z][^>]*\\bdata-${attr}="[^"]*"[^>]*>`, "g");
+    for (const t of h.matchAll(tagRe)) {
+      const ds = {};
+      for (const d of t[0].matchAll(/data-([a-zA-Z0-9-]+)="([^"]*)"/g)) ds[d[1]] = d[2];
+      const b = { dataset: ds, onclick: null }; out.push(b); byData.push(b);
     }
     return out;
   },
@@ -126,17 +133,6 @@ const fire = (attr, val) => {
   // The download must carry the run the reader just watched. It used to be
   // `{stage, example: cur, provenance}` unconditionally, and after a live run
   // `cur` is null -- so the file said `"example": null` and held none of it.
-  // The "what this is / what it is not" header. Its whole purpose is to be read
-  // before anything else, so an empty or `undefined`-carrying one is worse than
-  // none: it reads as the page being broken at the top.
-  const intro = node("#intro").innerHTML;
-  if (!intro.trim()) fail("the intro header is empty");
-  for (const bad of ["undefined", "NaN", "[object Object]"]) {
-    if (intro.includes(bad)) fail(`the intro header contains "${bad}"`);
-  }
-  if (!/What it is not/.test(intro)) fail("the intro header does not say what this is not");
-  console.log("intro:", intro.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim());
-
   const dl = node("#dl-json");
   if (!dl || !dl.onclick) fail("no download offered after a completed run");
   else {

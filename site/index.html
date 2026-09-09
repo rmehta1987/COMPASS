@@ -71,11 +71,6 @@
     font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
   .ph{border:1px dashed var(--signal);padding:14px 12px;margin:0 0 26px;
     font-family:var(--mono);font-size:12.5px;color:var(--signal)}
-  .intro{border-left:3px solid var(--rule);padding:10px 0 10px 12px;margin:18px 0 0;
-    font-size:13px;color:var(--ink-2);max-width:62em}
-  .intro b{color:var(--ink);font-weight:600}
-  .intro p{margin:0 0 6px}
-  .intro p:last-child{margin:0}
   .ph b{letter-spacing:.06em}
 
   dl{margin:0 0 26px;display:grid;grid-template-columns:150px minmax(0,1fr);border:1px solid var(--rule)}
@@ -115,8 +110,6 @@
   <h1>COMPASS<span>Type what you want to measure. Watch each stage retrieve, refuse, or block — with the tool calls it made.</span></h1>
   <nav class="links"><button class="g" id="dl-src">Download this page</button><a href="https://github.com/rmehta1987/COMPASS">Repo</a></nav>
 </div></header>
-
-<div class="wrap"><div class="intro" id="intro"></div></div>
 
 <div class="bar"><div class="wrap">
   <input id="q" value="" aria-label="request" placeholder="a question, or a construct, or two keys">
@@ -171,7 +164,7 @@ function examples(){
   el("#examples").innerHTML=DATA.runs.examples.map((e,i)=>
     `<button class="g" data-ex="${i}">${esc(e.label)}</button>`).join("");
   document.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>{
-    cur=DATA.runs.examples[+b.dataset.ex]; typed=null; live=null; liveGen={}; navGen={};
+    cur=DATA.runs.examples[+b.dataset.ex]; typed=null; live=null; posed=null; liveGen={}; navGen={};
     el("#q").value=cur.request.text; draw();});
 }
 
@@ -200,7 +193,7 @@ async function askResolver(){
   if(!window.COMPASS_ENDPOINT) return;
   const q=el("#q").value.trim(); if(!q) return;
   const gen=(liveGen={}), nav=(navGen={});
-  live=null; cur=null; typed=null; ask={running:true}; sel="retriever"; draw();
+  live=null; posed=null; cur=null; typed=null; ask={running:true}; sel="retriever"; draw();
   try{
     const r=await fetch("/api/pair",{method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -471,14 +464,21 @@ function generatePanel(){
     +row("requires derivation",String(c.requires_derivation),true)
     +`</dl>`;
   h+=`<div class="none" style="color:var(--signal)">${esc(gen.note)}</div>`;
+  launchable={};
   h+=`<p class="sec">pairs &middot; showing ${gen.shown} of ${c.enumerated}</p><div class="tools">`
-    +gen.pairs.map(pr=>
-      `<div class="t"><span class="call"><b>${esc(pr.pair_id)}</b></span>`
+    +gen.pairs.map((pr,pi)=>{
+      const tok=`generate:${pi}`;
+      if(pr.exposure&&pr.outcome) launchable[tok]={source:"generate",
+        source_label:"the funnel's enumerated pairs on the Generate tab",
+        id:pr.pair_id, exposure:pr.exposure, outcome:pr.outcome,
+        exposure_text:pr.exposure_stem||"", outcome_text:pr.outcome_stem||"",
+        question:""};
+      return `<div class="t"><span class="call"><b>${esc(pr.pair_id)}</b></span>`
       +(pr.exposure&&pr.outcome
-        ?`<button class="g pick" data-genex="${esc(pr.exposure)}" data-genout="${esc(pr.outcome)}">specify this pair</button>`
+        ?`<button class="g pick" data-genex="${esc(pr.exposure)}" data-genout="${esc(pr.outcome)}" data-launch="${att(tok)}">specify this pair</button>`
         :`<span class="ret">keys withheld</span>`)+`</div>`
-      +`<div class="t"><span class="call">${esc(pr.exposure_stem||"")} &rarr; ${esc(pr.outcome_stem||"")}</span></div>`
-    ).join("")+`</div>`;
+      +`<div class="t"><span class="call">${esc(pr.exposure_stem||"")} &rarr; ${esc(pr.outcome_stem||"")}</span></div>`;
+    }).join("")+`</div>`;
   return h;
 }
 
@@ -581,6 +581,23 @@ let liveGen=null;
    the one it was issued. Panels still fill; only the steering is forfeited. */
 let navGen=null;
 function steer(nav,stage){ if(nav===navGen) sel=stage; }
+
+/* A pair launched from Metrics or Generate is POSED, not retrieved: no query was
+   rendered and no vectors were scored. Retriever and Intake used to keep showing
+   whatever was there before -- a committed example, or the previous request's
+   hits -- beside a record produced from a different pair entirely, so the page
+   answered "what was actually run?" with another run's numbers. `posed` is what
+   those two stages read instead, and the launch clears `live` and `ask` so there
+   is nothing stale left to fall through to. It never invents a retrieval: there
+   was none, and saying so is the whole point. */
+let posed=null;
+
+/* Rows a run can be launched from, rebuilt by whichever panel drew them and
+   addressed by token, not by bare index: a button left over from another panel
+   resolves to nothing rather than to the wrong row. The button still carries
+   the two keys, which is what the Specifier needs; this carries the wording and
+   the provenance, which is what the reader needs. */
+let launchable={};
 
 async function liveRetrieve(q){
   /* INERT unless the endpoint said so. On GitHub Pages a root-relative
@@ -862,12 +879,19 @@ function metricsPanel(){
         :"Show the keys and wording"}</button>`
       :``)+`</div>`;
   if(met&&met.error) h+=`<div class="ph"><b>NO KEYS</b> &mdash; ${esc(met.error)}.</div>`;
+  launchable={};
   h+=`<div class="tbl"><table><thead><tr><th>record</th>`
     +(keyed?`<th>exposure</th><th>outcome</th>`:`<th>exposure stratum</th><th>outcome stratum</th>`)
     +`<th>estimability</th><th>adjusted</th><th>excluded</th><th>sought, not found</th>`
     +`<th>n source</th>`+(keyed?`<th></th>`:``)+`</tr></thead><tbody>`
-    +m.artefacts.map(a=>{
+    +m.artefacts.map((a,ai)=>{
       const k=keyed?keyed[a.record_hash]:null;
+      const tok=`metrics:${ai}`;
+      if(k) launchable[tok]={source:"metrics",
+        source_label:"a scored artefact on the Metrics tab",
+        id:a.record_hash, exposure:k.exposure, outcome:k.outcome,
+        exposure_text:k.exposure_wording||"", outcome_text:k.outcome_wording||"",
+        question:k.question||""};
       return `<tr><td class="m">${esc(a.record_hash)}</td>`
         +(k?`<td class="m" title="${att(k.exposure_wording||k.exposure_wording_hash)}">`
             +`${esc(k.exposure)}</td>`
@@ -878,7 +902,7 @@ function metricsPanel(){
         +`<td>${a.n_adjusted}</td><td>${a.n_excluded}</td><td>${a.n_sought_not_found}</td>`
         +`<td>${esc(a.n_source)}</td>`
         +(k?`<td><button class="g pick" data-genex="${esc(k.exposure)}" `
-           +`data-genout="${esc(k.outcome)}">run the pipeline</button></td>`:``)
+           +`data-genout="${esc(k.outcome)}" data-launch="${att(tok)}">run the pipeline</button></td>`:``)
         +`</tr>`;}).join("")
     +`</tbody></table></div>`;
 
@@ -986,6 +1010,7 @@ let panelLive=false;
 function panelRecord(){
   const doc={stage:sel};
   if(cur) doc.example=cur;
+  if(posed) doc.posed_pair=posed;
   if(ask) doc.resolver=ask;
   if(live) doc.live_retrieval=live;
   if(spec) doc.specifier_run=spec;
@@ -999,31 +1024,60 @@ function panelRecord(){
 /* True when there is something to download. The PNG button is NOT gated on
    this: a panel always renders something, and hiding a button that works would
    be the same defect pointed the other way. */
-function panelHasRecord(){ return Boolean(cur||ask||live||spec||gen||met); }
+function panelHasRecord(){ return Boolean(cur||ask||live||posed||spec||gen||met); }
 
-/* WHAT THIS IS AND IS NOT, before the reader touches anything. The one
-   recurring misreading of this page is the scored run: a reviewer sees the
-   observed rate and reads it as the pipeline failing, when the ceiling and the
-   observed rate are the same number and a pipeline that reasoned perfectly
-   would score identically. That sentence existed already -- inside the Metrics
-   tab, which is a side door most reviewers reach last, if at all.
+/* Both anchors as they were handed to the Specifier. Wording only if the
+   endpoint supplied it: the committed artefact carries none, and an empty
+   string must read as "withheld", never as a blank that looks like an answer. */
+function posedPair(){
+  const L=posed;
+  const line=(role,key,text)=>`<div class="t"><span class="call">${role} &middot; <b>${esc(key)}</b></span>`
+    +`<span class="ret">${text?esc(text):"wording withheld here"}</span></div>`;
+  return `<div class="tools">`+line("exposure",L.exposure,L.exposure_text)
+    +line("outcome",L.outcome,L.outcome_text)+`</div>`;
+}
 
-   Every word comes from `metrics.json`; nothing here is typed into the page.
-   That is not only the no-fabrication rule, it is the point: the caveat has to
-   move when the run does. */
-function intro(){
-  const r=DATA.metrics.reads, nb=DATA.metrics.not_built||[];
-  const cannot=nb.map(x=>esc(x.what)).join(", ");
-  el("#intro").innerHTML=
-    `<p><b>What the scored run establishes:</b> ${esc(r.establishes)}.</p>`
-   +`<p><b>What it is not:</b> ${esc(r.is_not)}.</p>`
-   +(cannot?`<p><b>Not built, and not fakeable from here:</b> ${cannot}.</p>`:"");
+function posedRetrieverPanel(){
+  return `<p class="sec">tool calls</p>`
+   +`<div class="none">None. Nothing was retrieved for this run.</div>`
+   +`<p class="sec">output</p>`
+   +`<div class="ph"><b>NO RETRIEVAL WAS RUN</b> &mdash; this pair was posed`
+   +` directly from ${esc(posed.source_label)}, so the deployed retriever scored`
+   +` no vectors. There is no cosine, no threshold decision and no abstention to`
+   +` show, and this panel will not borrow another run's.</div>`
+   +`<p class="sec">what went to the Specifier instead</p>`+posedPair()
+   +(posed.question?`<p class="sec">the question this pair stands for</p>`
+     +`<div class="none">${esc(posed.question)}</div>`:``);
+}
+
+function posedIntakePanel(){
+  /* Intake renders prose into a query. A posed pair arrives as two keys, so
+     there is nothing to render -- and the identity is read off the run record
+     once it lands rather than asserted here, because the endpoint is what
+     decides it. */
+  const id=(spec&&spec.identity)||null;
+  return `<p class="sec">tool calls</p><div class="none">None.</div>`
+   +`<p class="sec">output</p>`
+   +`<div class="ph"><b>NO QUERY WAS RENDERED</b> &mdash; intake turns a request`
+   +` into a query for the retriever. Both anchors were already keys, so there`
+   +` was nothing to render and nothing to drop as covered.</div>`
+   +`<p class="sec">how this run is identified</p><dl>`
+   +row("posed from",esc(posed.source_label),true)
+   +row("row",esc(posed.id),true)
+   +(id?row("selection",`${esc(id.selection_mode)} &middot; screened_from ${id.screened_from}`,true)
+      :row("selection","<em>the run record carries it; the run has not landed yet</em>",true))
+   +`</dl>`
+   +`<p class="sec">the pair</p>`+posedPair();
 }
 
 function stagePanel(s){
   panelLive=true;
   if(spec&&sel==="record") return recordPanel();
   if(spec&&sel==="specifier") return specifierPanel();
+  /* Before the committed branches: a posed run has no retrieval of its own, and
+     falling through would show the previous one as if it were this one. */
+  if(posed&&sel==="retriever") return posedRetrieverPanel();
+  if(posed&&sel==="intake") return posedIntakePanel();
   if(ask&&sel==="retriever") return resolverPanel();
   if(live&&sel==="retriever") return livePanel();
   if((live||(ask&&ask.rendered_query))&&sel==="intake") return liveIntakePanel();
@@ -1070,6 +1124,15 @@ function draw(){
   const mk=el("#met-keys"); if(mk) mk.onclick=loadMetricKeys;
   document.querySelectorAll("[data-genex]").forEach(b=>b.onclick=()=>{
     anchors.exposure=b.dataset.genex; anchors.outcome=b.dataset.genout;
+    /* A run already holds the lock: `runSpecifier` would return in silence and
+       the click would look broken. Show the run that is blocking instead. */
+    if(specBusy){ navGen={}; sel="specifier"; draw(); return; }
+    const L=launchable[b.dataset.launch];
+    posed=L||{source:"unknown",source_label:"a pair chosen on this page",
+              id:"", exposure:b.dataset.genex, outcome:b.dataset.genout,
+              exposure_text:"", outcome_text:"", question:""};
+    /* The previous request's retrieval is not this run's evidence. */
+    live=null; ask=null; cur=null; typed=null;
     runSpecifier();});
   const dj=el("#dl-json"); if(dj) dj.onclick=()=>{
     const doc=panelRecord();
@@ -1086,7 +1149,7 @@ function draw(){
 el("#run").onclick=async()=>{
   const q=el("#q").value.trim(); if(!q)return;
   const gen=(liveGen={}), nav=(navGen={});
-  live=null; ask=null; cur=match(q); typed=cur?null:q;
+  live=null; ask=null; posed=null; cur=match(q); typed=cur?null:q;
   /* Draw the committed answer first, so the page never blocks on a network
      call that will usually not be there, then upgrade if the endpoint replies. */
   draw();
@@ -1111,7 +1174,7 @@ el("#dl-src").onclick=()=>{
   const a=document.createElement("a");a.href=URL.createObjectURL(b);
   a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
 
-load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); intro(); draw(); foot();}).catch(e=>{
+load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); draw(); foot();}).catch(e=>{
   el("#panel").innerHTML=`<h2>Artefacts did not load</h2><div class="ph"><b>NO DATA</b> — ${esc(e.message)}. Serve this directory over HTTP; a file:// open cannot fetch the artefacts.</div>`;
 });
 </script>
