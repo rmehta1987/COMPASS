@@ -255,6 +255,16 @@ function specifierPanel(){
       +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre>`;
   }else{
     h+=`<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.reason||"the run produced neither a protocol nor a refusal")}</div>`;
+    /* A rejected design is still a design. The sample kept it, so show it: a
+       run can spend ten minutes and dozens of tool calls building one, and it
+       is worth reading and scoring even when the gate refused to authorise it.
+       The gate's verdict stands; this only stops it being invisible. */
+    for(const a of (j.samples||[])){
+      if(a.rejected_record) h+=`<p class="sec">the design the gate rejected &middot; seed ${a.seed}</p>`
+        +`<pre class="rec">${esc(typeof a.rejected_record==="string"?a.rejected_record:JSON.stringify(a.rejected_record,null,2))}</pre>`;
+      if(a.analysis) h+=`<p class="sec">what the model established &middot; seed ${a.seed}</p>`
+        +`<pre class="rec">${esc(a.analysis)}</pre>`;
+    }
   }
   if(j.not_a_measurement) h+=`<div class="none" style="color:var(--signal)">${esc(j.not_a_measurement)}</div>`;
   return h;
