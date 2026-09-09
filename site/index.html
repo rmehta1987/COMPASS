@@ -205,10 +205,22 @@ async function askResolver(){
       const u=await s2.json().catch(()=>null);
       if(!u||typeof u!=="object"){ ask={error:`the endpoint answered ${s2.status}`}; return; }
       if(u.status==="running"){ ask={running:true,elapsed_s:u.elapsed_s}; draw(); continue; }
-      ask=u; adoptProposals(u); return;
+      ask=u; adoptProposals(u);
+      /* Keys in, design out. Nothing was inferred, so there is nothing to
+         confirm -- see adoptProposals for where that line is drawn. */
+      if(allPinned(u)){ draw(); runSpecifier(); return; }
+      return;
     }
   }catch(err){ ask={error:"the endpoint did not answer"}; }
   finally{ draw(); }
+}
+
+function allPinned(j){
+  /* True only when BOTH anchors came from keys in the request. A `resolved`
+     verdict is the model's judgement and still gets a look before it runs. */
+  if(!j||!j.roles) return false;
+  return ["exposure","outcome"].every(r=>
+    j.roles[r]&&j.roles[r].verdict==="pinned"&&j.roles[r].pinned_key);
 }
 
 function adoptProposals(j){
@@ -258,6 +270,9 @@ function resolverPanel(){
   const declined=["exposure","outcome"].filter(r=>j.roles&&j.roles[r]
     &&j.roles[r].verdict!=="resolved"&&j.roles[r].verdict!=="pinned");
   h+=`<p class="sec">chosen pair</p>`
+    +(allPinned(j)?`<div class="none" style="color:var(--signal)">`
+      +`Both anchors were named in the request, so nothing was inferred and the`
+      +` Specifier started automatically.</div>`:"")
     +(declined.length?`<div class="none" style="color:var(--signal)">`
       +`The model declined to choose the ${esc(declined.join(" and "))}, so nothing`
       +` was filled in there. Pick one yourself, or ask again more specifically.</div>`
