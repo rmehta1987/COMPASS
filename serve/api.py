@@ -494,6 +494,28 @@ def _specify_status(state: State, body: dict[str, Any]) -> dict[str, Any]:
     return {"status": "done", **job["run"]}
 
 
+def _maybe_json(raw: str | None) -> Any:
+    """Parse a rejected record if it is JSON, else hand back the raw text.
+
+    The object a failed transduction emitted is a STRING, and it is often not
+    valid JSON -- that is frequently why it was rejected. Returning the text
+    when it will not parse keeps the design readable instead of discarding the
+    one artefact that says what the model actually built.
+
+    Args:
+        raw: The rejected object, or None.
+
+    Returns:
+        Parsed JSON, the original string, or None.
+    """
+    if not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except (ValueError, TypeError):
+        return raw
+
+
 def _specify_payload(res: Any, identity: Any, version: str, model: str,
                      canonical: dict[str, str], allow_unresolvable: bool,
                      backend: Any, elapsed: float) -> dict[str, Any]:
@@ -543,7 +565,17 @@ def _specify_payload(res: Any, identity: Any, version: str, model: str,
             {"seed": a.seed, "gate": str(a.gate), "tool_calls": a.steps,
              "transductions": a.attempts,
              "distinct_tools": sorted(set(a.tool_names)),
-             "error": a.error}
+             "error": a.error,
+             "tool_log": a.tool_log_path,
+             # THE DESIGN SURVIVES ITS REJECTION. `Attempt` keeps both of these
+             # whatever the gate decided, and not showing them made a rejected
+             # sample look like nothing had been produced -- a run can spend ten
+             # minutes and 49 tool calls building a design and then report only
+             # that it failed. The gate's verdict is unchanged; what changes is
+             # that the reader can now see and score what was rejected, which is
+             # the whole point at this stage of the pipeline.
+             "rejected_record": _maybe_json(a.rejected),
+             "analysis": a.analysis or None}
             for a in res.attempts
         ],
         "selected": (json.loads(res.selected.model_dump_json())
