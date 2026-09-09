@@ -57,6 +57,7 @@ import json
 import math
 import mimetypes
 import os
+import re
 import sys
 import threading
 import time
@@ -451,7 +452,8 @@ def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str,
     req = RetrievalRequest(construct=request,
                            role=VariableRole.EXPOSURE if role == "exposure"
                            else VariableRole.OUTCOME)
-    hits = r.search(req.to_query(), k=k)
+    rendered = req.to_query()
+    hits = r.search(rendered, k=k)
 
     keys, facts, cos_by_key, skipped = [], {}, {}, []
     for h in hits:
@@ -470,7 +472,8 @@ def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str,
     cands = PC.candidates_from_keys(keys, facts)
     framed = f"{request}\n\nWhich item serves as the {role.upper()} here?"
     return {"surface": PC.retrieval_contract(framed, cands),
-            "cands": cands, "cos": cos_by_key, "skipped": skipped}
+            "cands": cands, "cos": cos_by_key, "skipped": skipped,
+            "rendered": rendered}
 
 
 def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
@@ -564,8 +567,17 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                          **c.facts}
                         for c in pool["cands"]],
                 }
+            rendered = shared["rendered"] if shared else request
             done = {"status": "done", "run": {
                 "request": request,
+                # The same Intake fields `/api/retrieve` returns, so the Intake
+                # panel explains a pair resolve too. Without these it rendered
+                # its placeholder after an "Ask the model" run -- the panel that
+                # says what the encoder saw, blank on the route that most needs
+                # explaining, because the pool query never came back.
+                "rendered_query": rendered,
+                "pool_request": {"construct": request, "role": "exposure",
+                                 "instances": [], "population": None},
                 "dictionary_version": version,
                 "model_id": backend.name,
                 "elapsed_s": round(time.time() - t0, 2),
@@ -584,6 +596,7 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
             state.model_lock.release()
         with state._jobs_lock:
             state.jobs[ticket] = done
+        _save_job(state, ticket, done)
 
     threading.Thread(target=_run, daemon=True).start()
     return {"ticket": ticket, "status": "running", "poll_after_ms": POLL_MS,
@@ -709,6 +722,7 @@ def _resolve(state: State, body: dict[str, Any]) -> dict[str, Any]:
             state.model_lock.release()
         with state._jobs_lock:
             state.jobs[ticket] = done
+        _save_job(state, ticket, done)
 
     threading.Thread(target=_run, daemon=True).start()
     return {"ticket": ticket, "status": "running", "poll_after_ms": POLL_MS,
@@ -852,11 +866,60 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
             state.model_lock.release()
         with state._jobs_lock:
             state.jobs[ticket] = done
+        _save_job(state, ticket, done)
 
     threading.Thread(target=_run, daemon=True).start()
     return {"ticket": ticket, "status": "running", "poll_after_ms": POLL_MS,
             "note": "A run takes minutes. Ask /api/specify/status for this "
                     "ticket; the run continues whatever happens to this page."}
+
+
+def _job_path(state: State, ticket: str) -> Path:
+    """Where a finished run is kept.
+
+    Args:
+        state: Shared handles.
+        ticket: The run's ticket.
+
+    Returns:
+        The file path. Tickets are `HHMMSS-hex`, so the name is safe.
+    """
+    return state.run_dir / "jobs" / f"{ticket}.json"
+
+
+def _save_job(state: State, ticket: str, done: dict[str, Any]) -> None:
+    """Keep a finished run, so a restart does not lose it.
+
+    Args:
+        state: Shared handles.
+        ticket: The run's ticket.
+        done: The finished job record.
+    """
+    try:
+        path = _job_path(state, ticket)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(done, indent=1), encoding="utf-8")
+    except OSError:
+        # Losing the copy must not lose the answer the caller is waiting on.
+        pass
+
+
+def _load_job(state: State, ticket: str) -> dict[str, Any] | None:
+    """A finished run kept from an earlier process, or None.
+
+    Args:
+        state: Shared handles.
+        ticket: The run's ticket.
+
+    Returns:
+        The job record, or None when nothing was kept under that ticket.
+    """
+    if not re.fullmatch(r"\d{6}-[0-9a-f]{6}", ticket):
+        return None                      # not a ticket we ever issued
+    try:
+        return json.loads(_job_path(state, ticket).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
 
 
 def _specify_status(state: State, body: dict[str, Any]) -> dict[str, Any]:
@@ -878,8 +941,18 @@ def _specify_status(state: State, body: dict[str, Any]) -> dict[str, Any]:
     with state._jobs_lock:
         job = state.jobs.get(ticket)
     if job is None:
-        raise ValueError(f"no run with ticket {ticket!r} on this endpoint. "
-                         "Tickets do not survive a restart.")
+        # Finished runs are on disk, so a restart loses only what was IN FLIGHT.
+        # The operator lost a run to a restart under them and got a message that
+        # blamed the ticket; the truthful distinction is between "this endpoint
+        # never had it", "it finished and here it is", and "the process died
+        # mid-run and the work is gone".
+        job = _load_job(state, ticket)
+    if job is None:
+        raise ValueError(
+            f"no run with ticket {ticket!r} on this endpoint. A run that was "
+            "still going when the endpoint restarted is lost -- the model call "
+            "dies with the process. Finished runs are kept on disk and would "
+            "have been found. Start it again.")
     if job["status"] == "running":
         return {"status": "running", "poll_after_ms": POLL_MS,
                 "elapsed_s": round(time.time() - job["started"], 1)}
