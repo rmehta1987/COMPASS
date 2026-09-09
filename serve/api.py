@@ -476,6 +476,117 @@ def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str,
             "rendered": rendered}
 
 
+#: Where a scored baseline run is read from. Scoring happens in the clone that
+#: holds the prevalence key, on a tag; this endpoint reads the RESULT, never the
+#: key, and cannot score. Overridable so the path is not a fact about one box.
+SCORED_RUNS = Path(os.environ.get("COMPASS_SCORED_RUNS",
+                                  "/home/mehta5/compass-score/artefacts"))
+
+#: A run id is a directory name under `SCORED_RUNS`, so it must not traverse.
+RUN_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
+
+
+def _metrics_wording(key: str) -> str | None:
+    """Bind `key` to its question wording, or None when it cannot be bound.
+
+    A scored artefact stores `quoted_wording` as a sha256, so that a run can
+    travel without carrying instrument text. Wording therefore has to be
+    re-bound from the dictionary on the serving machine, and only
+    `env/labels.py::cite` may bind one -- it raises rather than citing empty, so
+    an unbindable key becomes None here and is never filled in with a guess.
+
+    Args:
+        key: A variable key.
+
+    Returns:
+        The question wording, or None when no citation can be bound.
+    """
+    from env import labels
+
+    try:
+        return labels.cite(key).wording
+    except labels.CitationUnavailable:
+        return None
+
+
+def _metrics(state: State, body: dict[str, Any]) -> dict[str, Any]:
+    """Serve the exposure and outcome behind each scored artefact.
+
+    Keyed by `record_hash`, which is what the public artefact carries, so the
+    page can join the two without ever having held a key itself.
+
+    Args:
+        state: Shared handles.
+        body: Optionally `run`, the run id to read.
+
+    Returns:
+        `pairs`, a record hash to key-and-wording map, with the run's identity.
+
+    Raises:
+        ValueError: When the run id is malformed or the run is not on this box.
+    """
+    run = str(body.get("run") or "b3-20260904").strip()
+    if not RUN_ID_RE.fullmatch(run):
+        raise ValueError(f"{run!r} is not a run id")
+    run_dir = SCORED_RUNS / run
+    ledger = run_dir / "ledger.jsonl"
+    if not ledger.is_file():
+        raise ValueError(
+            f"no scored run {run!r} on this machine. Scoring runs in the clone "
+            f"that holds the prevalence key, on a tag, and this endpoint reads "
+            f"the result rather than producing it. Set COMPASS_SCORED_RUNS if "
+            f"that clone is elsewhere.")
+
+    if not state.show_instrument:
+        return {"run": run, "pairs": None,
+                "why": ("the keys and their wording are instrument content, and "
+                        "this endpoint was not started with --show-instrument")}
+
+    # The scored set is the ledger's `emitted` rows. More artefact files than
+    # that sit in the directory -- a discarded pair can still have written one --
+    # so globbing would inflate the denominator.
+    emitted: dict[str, dict[str, Any]] = {}
+    for line in ledger.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        r = json.loads(line)
+        if r.get("outcome") == "emitted":
+            emitted[r["record_hash"]] = r
+
+    pairs: dict[str, dict[str, Any]] = {}
+    for f in sorted(run_dir.glob("*.json")):
+        if f.name == "summary.json":
+            continue
+        try:
+            a = json.loads(f.read_text(encoding="utf-8"))["artefact"]
+        except (KeyError, ValueError):
+            continue
+        if a.get("record_hash") not in emitted:
+            continue
+        pr = a["protocol"]
+        pairs[a["record_hash"]] = {
+            "exposure": pr["exposure"]["key"],
+            "outcome": pr["outcome"]["key"],
+            "exposure_wording": _metrics_wording(pr["exposure"]["key"]),
+            "outcome_wording": _metrics_wording(pr["outcome"]["key"]),
+            "exposure_wording_hash": pr["exposure"]["quoted_wording"],
+            "outcome_wording_hash": pr["outcome"]["quoted_wording"],
+            "question": pr["question"],
+            "direction": pr["expected_direction"]["direction"],
+            "estimability": a["estimability"],
+        }
+    return {
+        "run": run, "pairs": pairs, "scored": len(emitted), "served": len(pairs),
+        "wording_note": ("the run stores each wording as a sha256, so that an "
+                         "artefact can travel without carrying instrument text. "
+                         "The wording here is re-bound from the dictionary on "
+                         "this machine; the stored hash is beside it."),
+        "note": ("read from a run scored in the clone that holds the prevalence "
+                 "key. This endpoint cannot score: the key is not here, and "
+                 "scoring runs once, on a tag, before any tuning."),
+    }
+
+
 def _enumerate(state: State, body: dict[str, Any]) -> dict[str, Any]:
     """Run the funnel: enumerate pairs, prune, and report the gate.
 
@@ -1329,7 +1440,8 @@ class Handler(BaseHTTPRequestHandler):
                   "/api/specify/status": _specify_status,
                   "/api/resolve": _resolve,
                   "/api/pair": _pair,
-                  "/api/enumerate": _enumerate}
+                  "/api/enumerate": _enumerate,
+                  "/api/metrics": _metrics}
         fn = routes.get(route)
         if fn is None:
             self._send(404, {"error": f"no route {route}"})

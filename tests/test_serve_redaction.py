@@ -761,3 +761,72 @@ def test_the_operator_can_widen_the_model_list(tmp_path: Path) -> None:
     st = State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run",
                allowed_models=frozenset({PIPELINE_MODEL, "claude-sonnet-5"}))
     assert "claude-sonnet-5" in st.allowed_models
+
+
+def _scored_run(root: Path) -> Path:
+    """Write a two-row run: one emitted artefact and one the ledger discarded.
+
+    Args:
+        root: Directory to build the runs tree under.
+
+    Returns:
+        The runs directory, ready for `COMPASS_SCORED_RUNS`.
+    """
+    run = root / "r1"
+    run.mkdir(parents=True)
+
+    def artefact(h: str, ex: str, out: str) -> dict[str, object]:
+        return {"artefact": {"record_hash": h, "estimability": "blocked_no_metadata",
+                             "protocol": {
+                                 "question": "q",
+                                 "exposure": {"key": ex, "quoted_wording": "sha256:a"},
+                                 "outcome": {"key": out, "quoted_wording": "sha256:b"},
+                                 "expected_direction": {"direction": "increase"}}}}
+
+    (run / "kept.json").write_text(json.dumps(artefact("aaaa", "m9:Q1.1", "m9:Q2.2")))
+    # Written, then discarded by the ledger. A route that globbed would serve it.
+    (run / "dropped.json").write_text(json.dumps(artefact("bbbb", "m9:Q3.3", "m9:Q4.4")))
+    (run / "ledger.jsonl").write_text(
+        json.dumps({"record_hash": "aaaa", "outcome": "emitted"}) + "\n"
+        + json.dumps({"record_hash": "bbbb", "outcome": "discarded"}) + "\n")
+    return root
+
+
+def test_metrics_withholds_the_keys_unless_the_operator_asked_for_them(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The default endpoint serves a scored run's shape, never its instrument."""
+    from serve import api
+
+    monkeypatch.setattr(api, "SCORED_RUNS", _scored_run(tmp_path / "runs"))
+    st = api.State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    assert st.show_instrument is False
+    out = api._metrics(st, {"run": "r1"})
+    assert out["pairs"] is None
+    assert "show-instrument" in out["why"]
+    assert "m9:Q1.1" not in json.dumps(out)
+
+
+def test_metrics_run_id_cannot_traverse(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`run` names a directory; a path is not a run id."""
+    from serve import api
+
+    monkeypatch.setattr(api, "SCORED_RUNS", _scored_run(tmp_path / "runs"))
+    st = api.State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    for bad in ("../r1", "r1/../r1", "/etc", "."):
+        with pytest.raises(ValueError, match="not a run id"):
+            api._metrics(st, {"run": bad})
+
+
+def test_metrics_serves_the_ledgers_emitted_rows_not_the_directory(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A discarded pair can still have written an artefact file."""
+    from serve import api
+
+    monkeypatch.setattr(api, "SCORED_RUNS", _scored_run(tmp_path / "runs"))
+    monkeypatch.setattr(api, "_metrics_wording", lambda key: None)
+    st = api.State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run",
+                   show_instrument=True)
+    out = api._metrics(st, {"run": "r1"})
+    assert set(out["pairs"]) == {"aaaa"}, "the discarded artefact was served"
+    assert out["scored"] == out["served"] == 1
