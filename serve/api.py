@@ -476,6 +476,68 @@ def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str,
             "rendered": rendered}
 
 
+def _enumerate(state: State, body: dict[str, Any]) -> dict[str, Any]:
+    """Run the funnel: enumerate pairs, prune, and report the gate.
+
+    Free and deterministic -- `generate/funnel.py` makes no model call. The
+    exposure and outcome sets default to the ones
+    `generate/live_specifier.py::main` uses, so the enumeration here is the one
+    the pipeline itself performs rather than a variant invented for a web page.
+
+    Args:
+        state: Shared handles.
+        body: Optionally `exposure_module`, `exposure_prefix`,
+            `outcome_module`, `outcome_prefix`, and `limit`.
+
+    Returns:
+        The candidates, the funnel's own counts, and the estimability gate.
+    """
+    from generate.funnel import load_constructs
+    from generate.funnel import run as funnel_run
+
+    C, version = load_constructs()
+    ex_mod = str(body.get("exposure_module") or "3")
+    ex_pre = str(body.get("exposure_prefix") or "Q16.")
+    out_mod = str(body.get("outcome_module") or "2")
+    out_pre = str(body.get("outcome_prefix") or "Q5.")
+    limit = max(1, min(_int_arg(body, "limit", 25), 200))
+
+    exposures = sorted([c for c in C.values()
+                        if c.module == ex_mod and c.base_id.startswith(ex_pre)],
+                       key=lambda c: c.base_id)
+    outcomes = sorted([c for c in C.values()
+                       if c.module == out_mod and c.base_id.startswith(out_pre)],
+                      key=lambda c: c.base_id)
+    if not exposures or not outcomes:
+        raise ValueError(
+            f"nothing to enumerate: {len(exposures)} exposure(s) matching "
+            f"module {ex_mod} {ex_pre!r} and {len(outcomes)} outcome(s) matching "
+            f"module {out_mod} {out_pre!r}")
+
+    cands, counts = funnel_run(exposures, outcomes)
+    shown = cands[:limit]
+    return {
+        "dictionary_version": version,
+        "sets": {"exposures": len(exposures), "outcomes": len(outcomes),
+                 "exposure_module": ex_mod, "exposure_prefix": ex_pre,
+                 "outcome_module": out_mod, "outcome_prefix": out_pre},
+        "counts": counts,
+        "pairs": [
+            {"pair_id": c.pair_id,
+             "exposure": c.exposure.construct_key if state.show_instrument else None,
+             "outcome": c.outcome.construct_key if state.show_instrument else None,
+             "exposure_stem": c.exposure.stem_text,
+             "outcome_stem": c.outcome.stem_text}
+            for c in shown],
+        "shown": len(shown),
+        "note": ("The funnel enumerates and prunes with no model call. A pair "
+                 "run from here carries `enumerated_screen` and a real "
+                 "denominator, unlike a pair you type, which carries "
+                 "`externally_posed` and zero. Every run this endpoint makes is "
+                 "stamped `produced_by: serve-endpoint` either way."),
+    }
+
+
 def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
     """Propose BOTH anchors from one piece of prose. The human confirms.
 
@@ -1021,6 +1083,11 @@ def _specify_payload(res: Any, identity: Any, version: str, model: str,
             # the substitution problem: say what was changed and to what.
             "key_case_corrected": canonical or None,
             "allow_unresolvable": allow_unresolvable,
+            # Stamped on EVERY run, whatever its selection mode. A posed pair
+            # is kept out of a benchmark denominator by `screened_from = 0`; an
+            # enumerated one carries a real denominator and nothing else would
+            # distinguish a run made here from one the pipeline made.
+            "produced_by": "serve-endpoint",
             "model_requested": model,
             "is_pipeline_model": model == PIPELINE_MODEL,
         },
@@ -1261,7 +1328,8 @@ class Handler(BaseHTTPRequestHandler):
         routes = {"/api/retrieve": _retrieve, "/api/specify": _specify,
                   "/api/specify/status": _specify_status,
                   "/api/resolve": _resolve,
-                  "/api/pair": _pair}
+                  "/api/pair": _pair,
+                  "/api/enumerate": _enumerate}
         fn = routes.get(route)
         if fn is None:
             self._send(404, {"error": f"no route {route}"})
