@@ -1,0 +1,125 @@
+// Drive a slow endpoint run and navigate away mid-run, which neither committed
+// gate can do: site-check renders a page with COMPASS_ENDPOINT unset, and
+// render_endpoint.js drives one request to completion without touching the rail.
+//
+// The guarantee under test is `steer()`: a stage change decided AFTER an await
+// must be forfeited if the reader has picked a stage in the meantime. Panels
+// still fill -- the query has not changed and the answer was asked for -- but
+// the reader is not dragged off what they are reading. Before this, a Specifier
+// run that finished minutes later ended in `finally` with an unconditional
+// `sel="record"`.
+//
+// Not part of site-check: it asserts endpoint behaviour, and site-check must
+// stay runnable on a clone with no endpoint. Usage: node render_race.js <site dir>
+"use strict";
+const fs = require("fs"), path = require("path");
+const site = process.argv[2];
+const html = fs.readFileSync(path.join(site, "index.html"), "utf8");
+const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(m => m[1]);
+
+const nodes = {};
+function node(id) {
+  if (!nodes[id]) nodes[id] = { id, innerHTML: "", value: "", onclick: null, dataset: {}, style: {},
+    scrollHeight: 10, getBoundingClientRect: () => ({ width: 10, height: 10 }),
+    cloneNode: () => ({ setAttribute() {} }), textContent: "" };
+  return nodes[id];
+}
+const byData = [];
+global.document = {
+  querySelector: s => node(s),
+  querySelectorAll: s => {
+    if (s === "style") return [{ textContent: "" }];
+    const m = /\[data-(\w+)\]/.exec(s); if (!m) return [];
+    const attr = m[1], h = Object.values(nodes).map(n => n.innerHTML).join("");
+    const out = [];
+    for (const x of h.matchAll(new RegExp(`data-${attr}="([^"]+)"`, "g"))) {
+      const b = { dataset: { [attr]: x[1] }, onclick: null }; out.push(b); byData.push(b);
+    }
+    return out;
+  },
+  createElement: () => ({ click() {}, set href(v) {}, get href() { return ""; } }),
+  createElementNS: () => ({ setAttribute() {}, appendChild() {}, textContent: "" }),
+  documentElement: { outerHTML: "<html>" },
+  getElementById: () => null,
+};
+global.window = { devicePixelRatio: 1, COMPASS_ENDPOINT: true };
+global.alert = () => {};
+
+// The run is held open until the harness releases it, so "the reader navigates
+// mid-run" is a fact of the script rather than a race the test hopes to win.
+let release = null;
+const held = new Promise(r => { release = r; });
+const POLL = 1;              // ms; the page reads this from the reply, never its own
+// Opaque placeholders, NOT key-shaped: tier A forbids a variable key anywhere
+// under site/, and site-check greps this file like any other. The page treats an
+// anchor key as an opaque string, so nothing here needs a real one.
+const KEY = { exposure: "EXPOSURE-ANCHOR-STUB", outcome: "OUTCOME-ANCHOR-STUB" };
+let specifyStarted = false;
+
+global.fetch = async (rel, opt) => {
+  const body = opt && opt.body ? JSON.parse(opt.body) : {};
+  if (rel === "/api/pair") return { status: 200, json: async () => ({ ticket: "pair", poll_after_ms: POLL }) };
+  if (rel === "/api/specify") { specifyStarted = true; return { status: 200, json: async () => ({ ticket: "spec", poll_after_ms: POLL }) }; }
+  if (rel === "/api/specify/status") {
+    if (body.ticket === "pair") {
+      return { status: 200, json: async () => ({ status: "done", roles: {
+        exposure: { verdict: "pinned", pinned_key: KEY.exposure },
+        outcome:  { verdict: "pinned", pinned_key: KEY.outcome } } }) };
+    }
+    await held;                      // the Specifier run, held open
+    return { status: 200, json: async () => ({ status: "done",
+      selected: { estimability: "estimable", exposure: { key: KEY.exposure }, outcome: { key: KEY.outcome },
+                  blocked_on: [], sought_covariates: [] }, tool_log: [] }) };
+  }
+  return { json: async () => JSON.parse(fs.readFileSync(path.join(site, rel), "utf8")) };
+};
+
+const stageOf = () => { const m = /<h2>([^<]*)<\/h2>/.exec(node("#panel").innerHTML); return m ? m[1] : null; };
+const tick = (n) => new Promise(r => setTimeout(r, n));
+const fire = (attr, val) => {
+  document.querySelectorAll(`[data-${attr}]`);
+  const b = byData.filter(x => x.dataset[attr] === val && x.onclick).pop();
+  if (!b) throw new Error(`no handler for data-${attr}=${val}`);
+  b.onclick(); return b;
+};
+
+(async () => {
+  for (const s of scripts) new Function(s)();
+  await tick(300);
+  let failed = 0;
+  const fail = m => { console.error(m); failed++; };
+
+  const stages = [...node("#rail").innerHTML.matchAll(/data-s="([^"]+)"/g)].map(m => m[1]);
+  const away = stages.find(s => s === "score") || stages[stages.length - 1];
+  const nameOf = {};
+  for (const m of node("#rail").innerHTML.matchAll(/data-s="([^"]+)"[\s\S]*?<\/span>([^<]*)<span/g)) nameOf[m[1]] = m[2].trim();
+
+  node("#q").value = "a request that starts a slow run";
+  node("#ask").onclick();                       // resolver -> auto-chains to the Specifier
+  await tick(60);
+  if (!specifyStarted) { fail("the Specifier run never started; the harness drove nothing"); }
+
+  const during = stageOf();
+  fire("s", away);                              // the reader navigates mid-run
+  const chosen = stageOf();
+  if (chosen === during) fail(`navigating mid-run did not change the panel (still ${chosen})`);
+
+  release();                                    // the run lands, minutes later
+  await tick(80);
+
+  const after = stageOf();
+  if (after !== chosen) {
+    fail(`the completing run dragged the reader from ${JSON.stringify(chosen)} to ${JSON.stringify(after)}`);
+  }
+  // ...and the answer was kept, not thrown away: the record stage now has one.
+  // Assert the run's own anchor is present, not merely that the empty-panel
+  // marker is absent: "no PLACEHOLDER" also holds for a panel showing some other
+  // run, and it reads as passing when the stub string happens to contain the word.
+  fire("s", "record");
+  const rec = node("#panel").innerHTML;
+  if (!rec.includes(KEY.exposure)) fail("the run's own record was discarded, not merely un-steered");
+
+  console.log(failed ? `RED: ${failed} problem(s)`
+    : `GREEN: navigated to ${JSON.stringify(chosen)} mid-run, stayed there, record kept`);
+  process.exit(failed ? 1 : 0);
+})();

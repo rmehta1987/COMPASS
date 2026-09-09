@@ -155,14 +155,16 @@ function rail(){
     `<button data-s="${s.id}" aria-current="${s.id===sel}">
       <span class="n">${i+1}</span>${esc(s.name)}
       <span class="st ${esc(s.status)}">${esc(s.status_label)}</span></button>`).join("");
-  document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{sel=b.dataset.s;draw();});
+  /* Taking the ticket IS the reader saying where they want to be; see `steer`. */
+  document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{
+    navGen={}; sel=b.dataset.s; draw();});
 }
 
 function examples(){
   el("#examples").innerHTML=DATA.runs.examples.map((e,i)=>
     `<button class="g" data-ex="${i}">${esc(e.label)}</button>`).join("");
   document.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>{
-    cur=DATA.runs.examples[+b.dataset.ex]; typed=null; live=null; liveGen={};
+    cur=DATA.runs.examples[+b.dataset.ex]; typed=null; live=null; liveGen={}; navGen={};
     el("#q").value=cur.request.text; draw();});
 }
 
@@ -190,7 +192,7 @@ let live=null, ask=null;
 async function askResolver(){
   if(!window.COMPASS_ENDPOINT) return;
   const q=el("#q").value.trim(); if(!q) return;
-  const gen=(liveGen={});
+  const gen=(liveGen={}), nav=(navGen={});
   live=null; cur=null; typed=null; ask={running:true}; sel="retriever"; draw();
   try{
     const r=await fetch("/api/pair",{method:"POST",
@@ -211,7 +213,7 @@ async function askResolver(){
       ask=u; adoptProposals(u);
       /* Keys in, design out. Nothing was inferred, so there is nothing to
          confirm -- see adoptProposals for where that line is drawn. */
-      if(allPinned(u)){ draw(); runSpecifier(); return; }
+      if(allPinned(u)){ draw(); runSpecifier(nav); return; }
       return;
     }
   }catch(err){ ask={error:"the endpoint did not answer"}; }
@@ -298,10 +300,13 @@ function resolverPanel(){
 const anchors={exposure:null,outcome:null};
 let spec=null, specBusy=false;
 
-async function runSpecifier(){
+async function runSpecifier(nav){
   if(!window.COMPASS_ENDPOINT||specBusy) return;
   if(!anchors.exposure||!anchors.outcome) return;
-  specBusy=true; spec={running:true}; sel="specifier"; draw();
+  /* Clicked directly this is the reader's own intent, so it takes a fresh
+     ticket; chained from the resolver it inherits that request's. */
+  if(nav===undefined) nav=(navGen={});
+  specBusy=true; spec={running:true}; steer(nav,"specifier"); draw();
   try{
     const r=await fetch("/api/specify",{method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -333,7 +338,7 @@ async function runSpecifier(){
   }finally{
     specBusy=false;
     /* Land the reader on the object, not on the machinery that made it. */
-    if(spec&&(spec.selected||spec.refusal)) sel="record";
+    if(spec&&(spec.selected||spec.refusal)) steer(nav,"record");
     draw();
   }
 }
@@ -557,6 +562,19 @@ function specifierPanel(){
    suspends, and the reader keeps clicking: without this, a slow live
    reply lands after they picked an example and paints over it. */
 let liveGen=null;
+
+/* `liveGen` answers "is this reply still about the query on screen". It does not
+   answer "may this reply move the reader", and those come apart the moment a run
+   is slow. A Specifier run can outlast the reader's patience by minutes; they
+   spend that time reading other stages, and the `finally` below then drags them
+   to the record. Dropping the
+   reply instead would be worse -- the query has not changed and the answer they
+   asked for would be thrown away. So a second ticket: a rail or example click
+   takes it, and every stage change that happens AFTER an await must still hold
+   the one it was issued. Panels still fill; only the steering is forfeited. */
+let navGen=null;
+function steer(nav,stage){ if(nav===navGen) sel=stage; }
+
 async function liveRetrieve(q){
   /* INERT unless the endpoint said so. On GitHub Pages a root-relative
      "/api/retrieve" does NOT fail: it resolves against the Pages origin, the
@@ -1013,7 +1031,7 @@ function draw(){
 
 el("#run").onclick=async()=>{
   const q=el("#q").value.trim(); if(!q)return;
-  const gen=(liveGen={});
+  const gen=(liveGen={}), nav=(navGen={});
   live=null; ask=null; cur=match(q); typed=cur?null:q;
   /* Draw the committed answer first, so the page never blocks on a network
      call that will usually not be there, then upgrade if the endpoint replies. */
@@ -1024,7 +1042,7 @@ el("#run").onclick=async()=>{
   /* Only pull the reader to the retriever if they are not deliberately
      somewhere else: a reply arriving while they read another stage should not
      move them. */
-  if(j){ live=j; if(sel!=="specifier") sel="retriever"; draw(); }
+  if(j){ live=j; if(sel!=="specifier") steer(nav,"retriever"); draw(); }
 };
 el("#dl-src").onclick=()=>{
   /* One self-contained file: the live DOM as rendered, plus every loaded
