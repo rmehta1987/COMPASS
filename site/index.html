@@ -201,7 +201,24 @@ async function runSpecifier(){
     /* A refusal, a busy answer while another run holds the lock, and a
        bad-request for an unresolvable key are all ANSWERS, not failures:
        show what came back rather than collapsing them into "no endpoint". */
-    spec=(j&&typeof j==="object")?j:{error:`the endpoint answered ${r.status}`};
+    if(!j||typeof j!=="object"){ spec={error:`the endpoint answered ${r.status}`}; return; }
+    if(!j.ticket){ spec=j; return; }
+    /* A RUN OUTLIVES ANY ONE REQUEST. Held open, the POST hit Cloudflare's
+       proxy ceiling and died with a gateway timeout while the run itself
+       carried on happily to completion. So the POST hands back a ticket and
+       we ask again on the interval the server names: the page states no
+       number of its own. */
+    spec={running:true,ticket:j.ticket}; draw();
+    for(;;){
+      await new Promise(done=>setTimeout(done,j.poll_after_ms));
+      const q=await fetch("/api/specify/status",{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ticket:j.ticket})});
+      const u=await q.json().catch(()=>null);
+      if(!u||typeof u!=="object"){ spec={error:`the endpoint answered ${q.status}`}; return; }
+      if(u.status==="running"){ spec={running:true,ticket:j.ticket,elapsed_s:u.elapsed_s}; draw(); continue; }
+      spec=u; return;
+    }
   }catch(err){
     spec={error:"the endpoint did not answer"};
   }finally{ specBusy=false; draw(); }
@@ -210,9 +227,11 @@ async function runSpecifier(){
 function specifierPanel(){
   const j=spec;
   if(j.running) return `<p class="sec">running</p><div class="ph"><b>IN PROGRESS</b>`
+    +`${typeof j.elapsed_s==="number"?` &mdash; ${j.elapsed_s}s elapsed`:""}`
     +` &mdash; a real run: reasoning with MCP tools, then transduction, then the gate.`
-    +` Minutes, not seconds. Runs are serialised, so a second one is refused rather`
-    +` than queued.</div>`;
+    +` Minutes, not seconds. The run continues on the server whatever happens to`
+    +` this page; the ticket is how it is claimed. Runs are serialised, so a second`
+    +` one is refused rather than queued.</div>`;
   if(j.error) return `<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.error)}</div>`;
   const id=j.identity||{};
   let h=`<p class="sec">run &middot; not a measurement</p><dl>`
