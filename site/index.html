@@ -327,7 +327,12 @@ async function runSpecifier(){
     }
   }catch(err){
     spec={error:"the endpoint did not answer"};
-  }finally{ specBusy=false; draw(); }
+  }finally{
+    specBusy=false;
+    /* Land the reader on the object, not on the machinery that made it. */
+    if(spec&&(spec.selected||spec.refusal)) sel="record";
+    draw();
+  }
 }
 
 function anchorLine(a){
@@ -412,6 +417,36 @@ function readableRefusal(r){
   return h;
 }
 
+function recordPanel(){
+  const j=spec;
+  if(!j||j.running) return `<p class="sec">output</p><div class="ph"><b>NO RECORD YET</b>`
+    +` &mdash; run the Specifier; whatever it produces lands here.</div>`;
+  const rec=j.selected||j.refusal;
+  if(!rec) return `<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; `
+    +`${esc(j.reason||"the run produced neither a protocol nor a refusal")}. `
+    +`The Specifier tab has the run and the design the gate rejected.</div>`;
+  let h=`<p class="sec">${j.selected?"ProtocolSpecification":"NotSpecifiable"}`
+    +` &middot; agent/schema.py</p>`
+    +(j.selected?readableProtocol(rec):readableRefusal(rec))
+    +`<details><summary>the record as JSON &middot; provenance</summary>`
+    +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre></details>`;
+  /* This stage's copy describes a HypothesisRecord with a typed DAG and a
+     critique seam. No such type exists -- the pipeline produces the two above.
+     Saying so here is cheaper than letting the panel imply otherwise. */
+  h+=`<p class="sec">against what this stage describes</p><div class="tools">`
+    +`<div class="t gate pass"><span class="call">full wording per variable, never a bare key</span>`
+    +`<span class="ret">in the record</span></div>`
+    +`<div class="t gate pass"><span class="call">estimability stamped on the record</span>`
+    +`<span class="ret">in the record</span></div>`
+    +`<div class="t gate fail"><span class="call">causal structure as a typed DAG</span>`
+    +`<span class="ret">no such field</span></div>`
+    +`<div class="t gate fail"><span class="call">an empty critique seam</span>`
+    +`<span class="ret">no such field</span></div></div>`
+    +`<div class="none">The object above is a <code>ProtocolSpecification</code>. `
+    +`A <code>HypothesisRecord</code> is not built.</div>`;
+  return h;
+}
+
 function specifierPanel(){
   const j=spec;
   if(j.running) return `<p class="sec">running</p><div class="ph"><b>IN PROGRESS</b>`
@@ -439,10 +474,10 @@ function specifierPanel(){
   }
   const rec=j.selected||j.refusal;
   if(rec){
-    h+=`<p class="sec">${j.selected?"selected protocol":"refusal, upheld by the environment"}</p>`
-      +(j.selected?readableProtocol(rec):readableRefusal(rec))
-      +`<details><summary>the record as JSON &middot; provenance</summary>`
-      +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre></details>`;
+    /* The object lives in Record; this stage is the run that produced it. */
+    h+=`<p class="sec">outcome</p><div class="none">`
+      +`This run produced a <b>${j.selected?"protocol":"refusal the environment upheld"}</b>.`
+      +` The <b>Record</b> tab has it.</div>`;
   }else{
     h+=`<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.reason||"the run produced neither a protocol nor a refusal")}</div>`;
     /* A rejected design is still a design. The sample kept it, so show it: a
@@ -748,7 +783,8 @@ function draw(){
   const s=DATA.stages.stages.find(x=>x.id===sel);
   let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
          <ul class="does">${s.does.map(d=>`<li>${esc(d)}</li>`).join("")}</ul>`;
-  if(spec&&sel==="specifier") h+=specifierPanel();
+  if(spec&&sel==="record") h+=recordPanel();
+  else if(spec&&sel==="specifier") h+=specifierPanel();
   else if(ask&&sel==="retriever") h+=resolverPanel();
   else if(live&&sel==="retriever") h+=livePanel();
   else if((live||(ask&&ask.rendered_query))&&sel==="intake") h+=liveIntakePanel();
