@@ -112,8 +112,8 @@
 </div></header>
 
 <div class="bar"><div class="wrap">
-  <input id="q" value="" aria-label="request" placeholder="a construct you want to measure">
-  <button id="ask" class="g">Ask the model</button><button id="run">Run</button>
+  <input id="q" value="" aria-label="request" placeholder="a question, or a construct, or two keys">
+  <button id="ask" title="the pipeline: retrieve candidates, then reason about which serve as exposure and which as outcome">Ask the model</button><button id="run" class="g" title="the deployed retriever alone: cosine over the target vectors, no model call, no cost, and the way to load a committed example">Search only</button>
   <span class="ex" id="examples"></span>
 </div></div>
 
