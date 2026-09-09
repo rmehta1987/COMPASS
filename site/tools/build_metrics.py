@@ -21,8 +21,10 @@ the endpoint's `/api/metrics`, which is where the instrument is allowed to be.
 WHAT THE BIBLIOGRAPHY DOES NOT CARRY. Per paper there is a prose `design`
 ("exposure to outcome, plus the method where it is distinctive") but no exposure
 or outcome resolved against the instrument. Resolving those is task C12 and is
-not built, so nothing here can be matched to a scored artefact automatically.
-That gap is stated in the artefact rather than papered over.
+not built. Matching itself IS automatic -- `benchmark/baseline_score.py` scores
+every emitted artifact against the whole bibliography -- but it can only reach
+the papers whose outcome keys the held-out key records. That is what caps the
+ceiling, and it is stated in the artefact rather than papered over.
 """
 from __future__ import annotations
 
@@ -129,7 +131,7 @@ def main() -> int:
             "strata": summary["strata"],
             "artefact_files_on_disk": len(list(run_dir.glob("m2q*.json"))),
             "denominator_note": ("the scored set is the ledger's `emitted` rows. "
-                                 "More artefact files than that sit in the run "
+                                 "More artifact files than that sit in the run "
                                  "directory, because a discarded pair can still "
                                  "have written one; the extras are not scored and "
                                  "are not listed here"),
@@ -144,7 +146,7 @@ def main() -> int:
             for r in COHORT_PAPERS],
         "reads": {
             "establishes": ("that the harness runs end to end, refuses unstamped "
-                            "artefacts and emits clean verdicts"),
+                            "artifacts and emits clean verdicts"),
             "is_not": ("a measurement of hypothesis quality. The observed rate IS "
                        "the ceiling, so a pipeline that reasoned perfectly would "
                        "score exactly the same"),
@@ -160,13 +162,25 @@ def main() -> int:
             # asked what it meant. Plain nouns, one idea per clause, and the
             # consequence (no PMID) stated as a result rather than an aside.
             "how_the_two_populations_relate": (
-                "an artefact is a pair of questionnaire items that the pipeline "
+                "an artifact is a pair of questionnaire items that the pipeline "
                 "proposed by itself, by working through the instrument; a paper "
                 "is a published study about the same cohort. Neither list was "
-                "built from the other. Scoring COMPARES the two lists, it does "
-                "not look one up in the other -- which is why no artefact "
-                "carries a PMID, and why there is no reason for the two counts "
-                "to be equal"),
+                "built from the other, so there is no reason for the two counts "
+                "to match. Scoring compares them: every artifact below was "
+                "checked against all sixteen papers, and none matched one"),
+            # An earlier version of the page said the artifacts were "not
+            # joined" to the papers. That was wrong, and the operator caught it:
+            # `benchmark/baseline_score.py` scores every emitted artifact
+            # against the whole bibliography. What C12 has not built is the FULL
+            # per-paper key -- covariates, model form, tier -- not the join.
+            "what_the_paper_column_means": (
+                "every artifact here was scored against the bibliography. An "
+                "artifact matches a paper when the paper's outcome key is one "
+                "the artifact used, and the paper's exposure terms resolve "
+                "through the deployed retriever to the artifact's exposure. "
+                "None matched, so the column reads none: a scored result, not a "
+                "missing feature. It can only reach the papers that have an "
+                "outcome key on record, which is what caps the ceiling"),
             # Sourced from the run's own log line for item 15d, which records
             # why a matchable paper still yields a zero ceiling.
             "why_no_match_was_available": (
@@ -176,12 +190,20 @@ def main() -> int:
                 "scored the same"),
         },
         "not_built": [
-            {"what": "per-paper exposure and outcome keys",
-             "why": ("the bibliography carries a prose design but no anchors "
-                     "resolved against the instrument. Resolving them, with the "
-                     "covariate set, the model form and the tier, is task C12 and "
-                     "is not built, so no scored artefact can be matched to a "
-                     "paper automatically")},
+            # Rewritten 2026-09-09. The previous text said "no scored artefact
+            # can be matched to a paper automatically", which is wrong: that is
+            # exactly what `benchmark/baseline_score.py` does. What C12 has not
+            # built is the REST of the per-paper key.
+            {"what": "the full per-paper key",
+             "why": ("matching is already automatic -- every emitted artifact "
+                     "is scored against the whole bibliography, taking each "
+                     "paper's outcome keys from the held-out key and resolving "
+                     "its exposure terms through the deployed retriever. What "
+                     "is missing is the rest of that key: the covariate set, "
+                     "the model form and the tier, which is task C12. Until it "
+                     "exists the comparison reaches only the papers whose "
+                     "outcome keys are on record, and that is what caps the "
+                     "ceiling")},
             {"what": "scoring from this page",
              "why": ("scoring needs benchmark/prevalence_key.py and runs exactly "
                      "once, on a tag, before any tuning, so that it cannot become "
@@ -189,7 +211,7 @@ def main() -> int:
                      "break that, not complete it")},
         ],
         "pubmed_base": "https://pubmed.ncbi.nlm.nih.gov/",
-        "instrument_withheld_here": ("Each scored artefact is identified by its "
+        "instrument_withheld_here": ("Each scored artifact is identified by its "
                                      "record hash. The exposure and outcome keys "
                                      "and their wording are instrument content and "
                                      "are served only by the endpoint, to a "

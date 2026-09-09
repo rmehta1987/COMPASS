@@ -32,7 +32,7 @@
    "reproductive_hormonal"
   ],
   "artefact_files_on_disk": 39,
-  "denominator_note": "the scored set is the ledger's `emitted` rows. More artefact files than that sit in the run directory, because a discarded pair can still have written one; the extras are not scored and are not listed here"
+  "denominator_note": "the scored set is the ledger's `emitted` rows. More artifact files than that sit in the run directory, because a discarded pair can still have written one; the extras are not scored and are not listed here"
  },
  "verdicts": {
   "contamination_check": "ok",
@@ -618,16 +618,17 @@
   }
  ],
  "reads": {
-  "establishes": "that the harness runs end to end, refuses unstamped artefacts and emits clean verdicts",
+  "establishes": "that the harness runs end to end, refuses unstamped artifacts and emits clean verdicts",
   "is_not": "a measurement of hypothesis quality. The observed rate IS the ceiling, so a pipeline that reasoned perfectly would score exactly the same",
   "why_the_ceiling_is_low": "a paper is matchable only when its outcome key is on record and its exposure resolves against the instrument; one paper of sixteen clears both",
-  "how_the_two_populations_relate": "an artefact is a pair of questionnaire items that the pipeline proposed by itself, by working through the instrument; a paper is a published study about the same cohort. Neither list was built from the other. Scoring COMPARES the two lists, it does not look one up in the other -- which is why no artefact carries a PMID, and why there is no reason for the two counts to be equal",
+  "how_the_two_populations_relate": "an artifact is a pair of questionnaire items that the pipeline proposed by itself, by working through the instrument; a paper is a published study about the same cohort. Neither list was built from the other, so there is no reason for the two counts to match. Scoring compares them: every artifact below was checked against all sixteen papers, and none matched one",
+  "what_the_paper_column_means": "every artifact here was scored against the bibliography. An artifact matches a paper when the paper's outcome key is one the artifact used, and the paper's exposure terms resolve through the deployed retriever to the artifact's exposure. None matched, so the column reads none: a scored result, not a missing feature. It can only reach the papers that have an outcome key on record, which is what caps the ceiling",
   "why_no_match_was_available": "That paper is outside the frame this run drew from, so no match was available to find: none were possible, and none were found. A pipeline that reasoned perfectly would have scored the same"
  },
  "not_built": [
   {
-   "what": "per-paper exposure and outcome keys",
-   "why": "the bibliography carries a prose design but no anchors resolved against the instrument. Resolving them, with the covariate set, the model form and the tier, is task C12 and is not built, so no scored artefact can be matched to a paper automatically"
+   "what": "the full per-paper key",
+   "why": "matching is already automatic -- every emitted artifact is scored against the whole bibliography, taking each paper's outcome keys from the held-out key and resolving its exposure terms through the deployed retriever. What is missing is the rest of that key: the covariate set, the model form and the tier, which is task C12. Until it exists the comparison reaches only the papers whose outcome keys are on record, and that is what caps the ceiling"
   },
   {
    "what": "scoring from this page",
@@ -635,5 +636,5 @@
   }
  ],
  "pubmed_base": "https://pubmed.ncbi.nlm.nih.gov/",
- "instrument_withheld_here": "Each scored artefact is identified by its record hash. The exposure and outcome keys and their wording are instrument content and are served only by the endpoint, to a reviewer who already holds the dictionary."
+ "instrument_withheld_here": "Each scored artifact is identified by its record hash. The exposure and outcome keys and their wording are instrument content and are served only by the endpoint, to a reviewer who already holds the dictionary."
 }

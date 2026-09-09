@@ -214,7 +214,7 @@ function match(q){
 }
 
 function placeholder(s){
-  return `<p class="sec">output</p><div class="ph"><b>PLACEHOLDER</b> — no committed artefact yet. ${esc(s.placeholder)}`
+  return `<p class="sec">output</p><div class="ph"><b>PLACEHOLDER</b> — no committed artifact yet. ${esc(s.placeholder)}`
     +(s.waits_for?` Waits for ${esc(s.waits_for)}.`:"")+`</div>`;
 }
 /* Live retrieval, used only when this page is being SERVED BY serve/api.py.
@@ -882,7 +882,7 @@ function metricsPanel(){
     +row("by outcome",Object.entries(o.by_outcome)
         .map(([k,v])=>`${esc(k)} ${v}`).join(" &middot; "),true)
     +row("strata",esc(o.strata.join(" &middot; ")),true)
-    +row("artefact files on disk",String(o.artefact_files_on_disk),true)
+    +row("artifact files on disk",String(o.artefact_files_on_disk),true)
     +`</dl><div class="none">${esc(o.denominator_note)}.</div>`;
 
   h+=`<p class="sec">how to read that</p><ul class="does">`
@@ -916,15 +916,16 @@ function metricsPanel(){
      each artefact from. The second question's premise is the confusion, so the
      answer goes directly above the table rather than in a footnote. Every number
      is interpolated from the artefact; the page states none of its own. */
-  h+=`<p class="sec">how the artefacts and the papers relate</p>`
+  h+=`<p class="sec">how the artifacts and the papers relate</p>`
     +`<div class="none">${esc(m.reads.how_the_two_populations_relate)}.`
     +` The ledger generated ${o.ledger_denominator} pair(s) this run`
     +` (${Object.entries(o.by_outcome).map(([k,v])=>`${v} ${esc(k)}`).join(", ")});`
     +` the ${m.artefacts.length} scored below are the emitted ones, drawn from`
     +` ${o.strata.length} strata: ${o.strata.map(esc).join(", ")}.`
-    +` The bibliography holds ${m.papers.length} paper(s).</div>`;
+    +` The bibliography holds ${m.papers.length} paper(s).</div>`
+    +`<div class="none">${esc(m.reads.what_the_paper_column_means)}.</div>`;
 
-  h+=`<p class="sec">the scored artefacts &middot; ${m.artefacts.length}</p>`;
+  h+=`<p class="sec">the scored artifacts &middot; ${m.artefacts.length}</p>`;
   if(!keyed) h+=`<div class="none">${esc(m.instrument_withheld_here)}`
     +(window.COMPASS_ENDPOINT
       ?` <button class="g" id="met-keys">${metBusy?"asking the endpoint&hellip;"
@@ -932,7 +933,7 @@ function metricsPanel(){
       :``)+`</div>`;
   if(met&&met.error) h+=`<div class="ph"><b>NO KEYS</b> &mdash; ${esc(met.error)}.</div>`;
   launchable={};
-  h+=`<div class="tbl"><table><thead><tr><th>record</th><th>paper</th>`
+  h+=`<div class="tbl"><table><thead><tr><th>record</th><th>paper matched</th>`
     +(keyed?`<th>exposure</th><th>outcome</th>`:`<th>exposure stratum</th><th>outcome stratum</th>`)
     +`<th>estimability</th><th>adjusted</th><th>excluded</th><th>sought, not found</th>`
     +`<th>n source</th>`+(keyed?`<th></th>`:``)+`</tr></thead><tbody>`
@@ -940,17 +941,18 @@ function metricsPanel(){
       const k=keyed?keyed[a.record_hash]:null;
       const tok=`metrics:${ai}`;
       if(k) launchable[tok]={source:"metrics",
-        source_label:"a scored artefact on the Metrics tab",
+        source_label:"a scored artifact on the Metrics tab",
         id:a.record_hash, exposure:k.exposure, outcome:k.outcome,
         exposure_text:k.exposure_wording||"", outcome_text:k.outcome_wording||"",
         question:k.question||""};
-      /* The column a reader asks for, showing the only honest value it has.
-         Filling it would be the C12 join, which is not built -- and inventing
-         one is the single failure this table exists to avoid. An empty column
-         that says so is worth more than no column: it tells every later reader
-         the join is missing instead of leaving them to ask. */
+      /* NOT "not joined", which is what this said first and was wrong:
+         `benchmark/baseline_score.py` scores every emitted artifact against the
+         whole bibliography, and the answer for all of them is that no paper
+         matched. A scored zero, not an absent feature. Were one to match, its
+         PMID would belong here. */
       return `<tr><td class="m">${esc(a.record_hash)}</td>`
-        +`<td class="m" title="${att(gap.why)}"><span class="ret">not joined</span></td>`
+        +`<td class="m" title="${att(m.reads.what_the_paper_column_means)}">`
+        +`<span class="ret">none</span></td>`
         /* Three states, not two. The header is driven by whether the endpoint
            answered AT ALL; these cells by whether it answered for THIS artefact.
            Conflating them put a stratum under a column headed "exposure", and
@@ -1032,8 +1034,8 @@ function foot(){
   el("#foot").innerHTML=`<p>Retrieval is shipped: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, no model call. Hypothesis generation is not: the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} pairs without two survey-metadata exports, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>.</p>
   <p>Abstention on constructs the instrument does not measure is reliable on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(4)}, ${I.negatives_rejected} of ${I.n_negatives} negatives rejected). Detecting its own wrong pick is a different question, and the one figure for it is not on this page. Whether the fixture is a ceiling or a floor is unresolved.</p>
   <p>${panelLive
-      ? `The panel above was produced by this endpoint during this session. Its figures come from that run and are <b>not</b> committed &mdash; nothing on this page pins them, and a second run may differ. Every other figure here is loaded from <code>site/artefacts/</code> with its run id or commit.`
-      : `Every figure above is loaded from <code>site/artefacts/</code> with its run id or commit.`} Panels marked PLACEHOLDER have no committed artefact and show no numbers.</p>`;
+      ? `The panel above was produced by this endpoint during this session. Its figures come from that run and are <b>not</b> committed &mdash; nothing on this page pins them, and a second run may differ. Every other figure here is loaded from <code>site/artifacts/</code> with its run id or commit.`
+      : `Every figure above is loaded from <code>site/artifacts/</code> with its run id or commit.`} Panels marked PLACEHOLDER have no committed artifact and show no numbers.</p>`;
 }
 
 function panelPNG(){
@@ -1247,7 +1249,7 @@ el("#dl-src").onclick=()=>{
   a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
 
 load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); draw(); foot();}).catch(e=>{
-  el("#panel").innerHTML=`<h2>Artefacts did not load</h2><div class="ph"><b>NO DATA</b> — ${esc(e.message)}. Serve this directory over HTTP; a file:// open cannot fetch the artefacts.</div>`;
+  el("#panel").innerHTML=`<h2>Artifacts did not load</h2><div class="ph"><b>NO DATA</b> — ${esc(e.message)}. Serve this directory over HTTP; a file:// open cannot fetch the artefacts.</div>`;
 });
 </script>
 </body>

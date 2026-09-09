@@ -49,7 +49,7 @@
    "status_label": "blocked \u00b7 no run yet",
    "status": "blocked",
    "placeholder": "Will show a real reasoning-loop tool log beside the record it produced, keys pseudonymised the same way as the retriever runs.",
-   "waits_for": "the pipeline loop's baseline run (its item 15): the artefact code landed (items 11 and 13 there) but no run has produced one, and the earlier August runs are an older schema whose free text carries instrument wording and keys, which tier A cannot show"
+   "waits_for": "the pipeline loop's baseline run (its item 15): the artifact code landed (items 11 and 13 there) but no run has produced one, and the earlier August runs are an older schema whose free text carries instrument wording and keys, which tier A cannot show"
   },
   {
    "id": "record",
@@ -71,7 +71,7 @@
    "name": "Score",
    "sub": "match rate vs held-out published findings \u00b7 contamination verdicts",
    "does": [
-    "Scores committed artefacts against a key held on a branch the pipeline never sees",
+    "Scores committed artifacts against a key held on a branch the pipeline never sees",
     "Refuses to score anything generated where the key was reachable",
     "Reports match rate only beside contamination and leakage verdicts",
     "Runs exactly once, on a tag, before any tuning, so it cannot become a feedback signal"
@@ -99,11 +99,11 @@
   {
    "id": "metrics",
    "name": "Metrics",
-   "sub": "the one scored run \u00b7 its ceiling, its bibliography, its artefacts",
+   "sub": "the one scored run \u00b7 its ceiling, its bibliography, its artifacts",
    "does": [
     "States the ceiling before the score, because the score is unreadable without it",
     "Lists the cohort papers the run was scored against, and what each one is",
-    "Lists every scored artefact, and runs the Specifier on any of their pairs",
+    "Lists every scored artifact, and runs the Specifier on any of their pairs",
     "Carries the retrieval measurements that used to sit below every panel"
    ],
    "status_label": "scored \u00b7 ceiling reached",

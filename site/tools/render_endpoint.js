@@ -107,9 +107,14 @@ global.fetch = async (rel) => rel === "/api/metrics"
         console.error(`${label}: header has ${nth} cell(s), a row has ${ntd}`); failed++; return;
       }
     }
-    if (!/<th>paper<\/th>/.test(head)) { console.error(`${label}: no paper column`); failed++; }
+    if (!/<th>paper matched<\/th>/.test(head)) { console.error(`${label}: no paper column`); failed++; }
+    // "none" is a scored result -- every artifact WAS matched against the whole
+    // bibliography and hit nothing. It is not the same claim as "not joined",
+    // which is what this said before and was wrong, so assert the exact cell.
     for (const r of rows) {
-      if (!/not joined/.test(r)) { console.error(`${label}: a row omits the paper state`); failed++; return; }
+      if (!/<span class="ret">none<\/span>/.test(r)) {
+        console.error(`${label}: a row omits the scored paper result`); failed++; return;
+      }
     }
   };
   cols(before, "artefact table, keys withheld");
