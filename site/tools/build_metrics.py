@@ -156,18 +156,24 @@ def main() -> int:
             # more artefacts than papers, and which paper is each artefact from?
             # The premise is the confusion -- the two are not two counts of one
             # population, and an artefact is not FROM a paper at all.
+            # Rewritten 2026-09-09 after the operator read the first version and
+            # asked what it meant. Plain nouns, one idea per clause, and the
+            # consequence (no PMID) stated as a result rather than an aside.
             "how_the_two_populations_relate": (
-                "these are two populations, not two counts of one thing. The "
-                "artefacts are what the pipeline emitted this run, enumerated "
-                "from the INSTRUMENT; the papers are the bibliography, an "
-                "independent yardstick it is scored against. No artefact is "
-                "derived from a paper, so none carries a PMID"),
+                "an artefact is a pair of questionnaire items that the pipeline "
+                "proposed by itself, by working through the instrument; a paper "
+                "is a published study about the same cohort. Neither list was "
+                "built from the other. Scoring COMPARES the two lists, it does "
+                "not look one up in the other -- which is why no artefact "
+                "carries a PMID, and why there is no reason for the two counts "
+                "to be equal"),
             # Sourced from the run's own log line for item 15d, which records
             # why a matchable paper still yields a zero ceiling.
             "why_no_match_was_available": (
-                "the narrow frame these artefacts were drawn from does not "
-                "overlap the bibliography's subjects, so even the paper that "
-                "clears both anchor tests had no match available to find"),
+                "That paper is outside the frame this run drew from, so no "
+                "match was available to find: none were possible, and none "
+                "were found. A pipeline that reasoned perfectly would have "
+                "scored the same"),
         },
         "not_built": [
             {"what": "per-paper exposure and outcome keys",
