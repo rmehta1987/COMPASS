@@ -36,21 +36,6 @@
    "waits_for": null
   },
   {
-   "id": "funnel",
-   "name": "Funnel",
-   "sub": "S1 enumerate \u00b7 S2 prune \u00b7 S3 estimability \u00b7 S4 literature density",
-   "does": [
-    "S1 enumerates candidate exposure\u2013outcome pairs over distinct constructs",
-    "S2 prunes on construct identity, battery membership, free text",
-    "S3 screens estimability: blocked until two survey metadata exports arrive",
-    "S4 tags literature density; a tag, never a prune"
-   ],
-   "status_label": "S3 blocked \u00b7 real gate output",
-   "status": "blocked",
-   "placeholder": "Will show the gate's real output: how many pairs were live, passed and blocked, and which exports are missing.",
-   "waits_for": null
-  },
-  {
    "id": "specifier",
    "name": "Specifier",
    "sub": "adjudicate \u2192 reason \u2192 gate \u2192 transduce \u2192 authority \u2192 validate \u2192 rank",
@@ -94,6 +79,21 @@
    "status_label": "gated \u00b7 not run",
    "status": "blocked",
    "placeholder": "Will show the generation clone's GenerationEnv stamp and why scoring has not run.",
+   "waits_for": null
+  },
+  {
+   "id": "generate",
+   "name": "Generate",
+   "sub": "S1 enumerate \u00b7 S2 prune \u00b7 S3 estimability \u00b7 then the Specifier",
+   "does": [
+    "S1 enumerates candidate exposure\u2013outcome pairs over distinct constructs",
+    "S2 prunes on construct identity, battery membership, free text",
+    "S3 screens estimability: blocked until two survey metadata exports arrive",
+    "Runs the Specifier on a pair it produced, rather than one you typed"
+   ],
+   "status_label": "S3 blocked \u00b7 real gate output",
+   "status": "blocked",
+   "placeholder": "Will show the gate's real output: how many pairs were live, passed and blocked, and which exports are missing.",
    "waits_for": null
   }
  ]

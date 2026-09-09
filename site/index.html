@@ -417,6 +417,56 @@ function readableRefusal(r){
   return h;
 }
 
+let gen=null, genBusy=false;
+
+async function enumerate(){
+  if(!window.COMPASS_ENDPOINT||genBusy) return;
+  genBusy=true; gen={running:true}; sel="generate"; draw();
+  try{
+    const r=await fetch("/api/enumerate",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+    const j=await r.json().catch(()=>null);
+    gen=(j&&typeof j==="object")?j:{error:`the endpoint answered ${r.status}`};
+  }catch(err){ gen={error:"the endpoint did not answer"}; }
+  finally{ genBusy=false; draw(); }
+}
+
+function generatePanel(){
+  const committed=DATA.funnel.gate;
+  let h=`<p class="sec">the committed gate &middot; run ${esc(DATA.funnel.provenance.run_id||DATA.funnel.provenance.commit||"")}</p>`
+    +`<div class="tools"><div class="t gate ${committed.passed?"pass":"fail"}">`
+    +`<span class="call">live ${committed.live} &middot; passed ${committed.passed}`
+    +` &middot; blocked ${committed.blocked}</span>`
+    +`<span class="ret">${esc(committed.blocked_on.join(" &middot; "))}</span></div></div>`;
+  if(!window.COMPASS_ENDPOINT) return h+`<div class="none">Served statically, so the`
+    +` funnel cannot be run from here. The figures above are the committed run.</div>`;
+  if(!gen) return h+`<div class="after"><button class="g" id="go-gen">Run the funnel now</button></div>`;
+  if(gen.running) return h+`<div class="ph"><b>ENUMERATING</b> &mdash; S1 and S2 are`
+    +` deterministic and make no model call.</div>`;
+  if(gen.error) return h+`<div class="ph"><b>NO OUTPUT</b> &mdash; ${esc(gen.error)}</div>`;
+  const c=gen.counts;
+  h+=`<p class="sec">this run of the funnel</p><dl>`
+    +row("sets",`${gen.sets.exposures} exposure(s) &times; ${gen.sets.outcomes} outcome(s)`
+        +` &middot; module ${esc(gen.sets.exposure_module)} ${esc(gen.sets.exposure_prefix)}`
+        +` &rarr; module ${esc(gen.sets.outcome_module)} ${esc(gen.sets.outcome_prefix)}`,true)
+    +row("enumerated (S1)",String(c.enumerated),true)
+    +row("pruned (S2)",String(c.pruned_S2),true)
+    +row("live",String(c.live),true)
+    +row("estimable (S3)",`<span class="flag">${c.estimable}</span> &middot; unknown ${c.unknown}`,true)
+    +row("requires derivation",String(c.requires_derivation),true)
+    +`</dl>`;
+  h+=`<div class="none" style="color:var(--signal)">${esc(gen.note)}</div>`;
+  h+=`<p class="sec">pairs &middot; showing ${gen.shown} of ${c.enumerated}</p><div class="tools">`
+    +gen.pairs.map(pr=>
+      `<div class="t"><span class="call"><b>${esc(pr.pair_id)}</b></span>`
+      +(pr.exposure&&pr.outcome
+        ?`<button class="g pick" data-genex="${esc(pr.exposure)}" data-genout="${esc(pr.outcome)}">specify this pair</button>`
+        :`<span class="ret">keys withheld</span>`)+`</div>`
+      +`<div class="t"><span class="call">${esc(pr.exposure_stem||"")} &rarr; ${esc(pr.outcome_stem||"")}</span></div>`
+    ).join("")+`</div>`;
+  return h;
+}
+
 function recordPanel(){
   const j=spec;
   if(!j||j.running) return `<p class="sec">output</p><div class="ph"><b>NO RECORD YET</b>`
@@ -791,7 +841,7 @@ function draw(){
   else if(typed!==null&&!cur) h+=noRun();
   else if(sel==="retriever"&&cur) h+=retrieverPanel();
   else if(sel==="intake"&&cur) h+=intakePanel();
-  else if(sel==="funnel") h+=funnelPanel();
+  else if(sel==="generate") h+=generatePanel();
   else if(sel==="score") h+=scorePanel();
   else h+=placeholder(s);
   h+=`<div class="after"><button class="g" id="dl-json">Download this record as JSON</button><button class="g" id="png">Save panel as PNG</button></div>`;
@@ -800,6 +850,10 @@ function draw(){
     anchors[b.dataset.anchor]=b.dataset.key; draw();});
   const go=el("#go-spec"); if(go) go.onclick=runSpecifier;
   el("#ask").onclick=askResolver;
+  const gg=el("#go-gen"); if(gg) gg.onclick=enumerate;
+  document.querySelectorAll("[data-genex]").forEach(b=>b.onclick=()=>{
+    anchors.exposure=b.dataset.genex; anchors.outcome=b.dataset.genout;
+    runSpecifier();});
   el("#dl-json").onclick=()=>{
     const doc={stage:sel,example:cur,artefact_provenance:Object.fromEntries(Object.entries(DATA).filter(([k])=>k!=="index").map(([k,v])=>[k,v.provenance]))};
     const b=new Blob([JSON.stringify(doc,null,2)],{type:"application/json"});
