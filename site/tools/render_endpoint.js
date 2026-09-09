@@ -100,7 +100,30 @@ global.fetch = async (rel) => rel === "/api/metrics"
       }
     }
   }
+  // The footer closes by asserting every figure on the page traces to a
+  // committed artefact. Standing under a panel this endpoint just produced,
+  // that sentence is false, and it is the one a reviewer would quote back. Only
+  // this harness can see it: the static render never sets COMPASS_ENDPOINT.
+  const f = node("#foot").innerHTML;
+  if (!f.includes("<b>not</b> committed")) {
+    console.error("footer still claims every figure is committed, under a live panel"); failed++;
+  }
+  // ...and it must go back to the committed claim on a static stage.
+  document.querySelectorAll("[data-s]");
+  const stat = byData.filter(x => x.dataset.s === "score" && x.onclick).pop();
+  if (!stat) { console.error("no score tab handler"); failed++; }
+  else {
+    stat.onclick();
+    const f2 = node("#foot").innerHTML;
+    if (f2.includes("<b>not</b> committed")) {
+      console.error("footer still scoped to live figures on a committed panel"); failed++;
+    }
+    if (!f2.includes("Every figure above is loaded from")) {
+      console.error("footer dropped the committed-artefact claim on a static panel"); failed++;
+    }
+  }
+
   console.log(failed ? `RED: ${failed} problem(s)`
-    : `GREEN: enriched panel renders, ${runs} run button(s), ${titles} wording title(s)`);
+    : `GREEN: enriched panel renders, ${runs} run button(s), ${titles} wording title(s), footer scoped both ways`);
   process.exit(failed ? 1 : 0);
 })();

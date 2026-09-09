@@ -913,7 +913,9 @@ function foot(){
   const m=DATA.measurements, sh=m.shipped, I=sh.arms.I, lat=sh.latency;
   el("#foot").innerHTML=`<p>Retrieval is shipped: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, no model call. Hypothesis generation is not: the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} pairs without two survey-metadata exports, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>.</p>
   <p>Abstention on constructs the instrument does not measure is reliable on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(4)}, ${I.negatives_rejected} of ${I.n_negatives} negatives rejected). Detecting its own wrong pick is a different question, and the one figure for it is not on this page. Whether the fixture is a ceiling or a floor is unresolved.</p>
-  <p>Every figure above is loaded from <code>site/artefacts/</code> with its run id or commit. Panels marked PLACEHOLDER have no committed artefact and show no numbers.</p>`;
+  <p>${panelLive
+      ? `The panel above was produced by this endpoint during this session. Its figures come from that run and are <b>not</b> committed &mdash; nothing on this page pins them, and a second run may differ. Every other figure here is loaded from <code>site/artefacts/</code> with its run id or commit.`
+      : `Every figure above is loaded from <code>site/artefacts/</code> with its run id or commit.`} Panels marked PLACEHOLDER have no committed artefact and show no numbers.</p>`;
 }
 
 function panelPNG(){
@@ -944,12 +946,22 @@ function panelPNG(){
   img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(xml);
 }
 
+/* Which branch `stagePanel` took. The footer closes by asserting that every
+   figure on the page is loaded from a committed artefact; for a panel this
+   endpoint produced moments ago that is simply untrue, and it is the sentence a
+   reviewer would quote. Read only by `foot`. */
+let panelLive=false;
+
 function stagePanel(s){
+  panelLive=true;
   if(spec&&sel==="record") return recordPanel();
   if(spec&&sel==="specifier") return specifierPanel();
   if(ask&&sel==="retriever") return resolverPanel();
   if(live&&sel==="retriever") return livePanel();
   if((live||(ask&&ask.rendered_query))&&sel==="intake") return liveIntakePanel();
+  if(sel==="generate"&&gen) return generatePanel();
+  if(sel==="metrics"&&met) return metricsPanel();
+  panelLive=false;
   if(typed!==null&&!cur) return noRun();
   if(sel==="retriever"&&cur) return retrieverPanel();
   if(sel==="intake"&&cur) return intakePanel();
@@ -995,6 +1007,8 @@ function draw(){
     const a=document.createElement("a");a.href=URL.createObjectURL(b);
     a.download=`compass_${sel}_${cur?cur.id:"none"}.json`;a.click();URL.revokeObjectURL(a.href);};
   el("#png").onclick=panelPNG;
+  /* After the panel, not before: `foot` reads `panelLive`, which `stagePanel` set. */
+  foot();
 }
 
 el("#run").onclick=async()=>{
