@@ -190,7 +190,7 @@ async function askResolver(){
   const gen=(liveGen={});
   live=null; cur=null; typed=null; ask={running:true}; sel="retriever"; draw();
   try{
-    const r=await fetch("/api/resolve",{method:"POST",
+    const r=await fetch("/api/pair",{method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({request:q})});
     const j=await r.json().catch(()=>null);
@@ -211,6 +211,23 @@ async function askResolver(){
   finally{ draw(); }
 }
 
+function roleBlock(role,v){
+  let h=`<p class="sec">${role} &middot; <b>${esc(v.verdict)}</b></p>`;
+  if(v.verdict==="pinned") return h+`<div class="tools"><div class="t gate pass">`
+    +`<span class="call"><b>${esc(v.pinned_key||"")}</b> ${esc(v.pinned_wording||"")}</span>`
+    +`<span class="ret">named in the request &mdash; not inferred</span></div></div>`;
+  if(v.reason) h+=`<div class="none">${esc(v.reason)}</div>`;
+  if(v.missing_dimension) h+=`<div class="none" style="color:var(--signal)">`
+    +`what would settle it: ${esc(v.missing_dimension)}</div>`;
+  h+=`<div class="tools">`+v.candidates.map(c=>
+      `<div class="t${c.proposed?" gate pass":""}"><span class="call">`
+      +`${c.proposed?"&#10003; ":""}${c.index}. <b>${esc(c.key||"")}</b> ${esc(c.wording)}</span>`
+      +`<span class="ret">cos ${f4(c.cos)}</span>`
+      +(c.key?`<button class="g pick" data-anchor="${role}" data-key="${esc(c.key)}">use</button>`:"")
+      +`</div>`).join("")+`</div>`;
+  return h;
+}
+
 function resolverPanel(){
   const j=ask;
   if(j.running) return `<p class="sec">asking the model</p><div class="ph"><b>IN PROGRESS</b>`
@@ -220,20 +237,9 @@ function resolverPanel(){
   if(j.error) return `<p class="sec">output</p><div class="ph"><b>NO ANSWER</b> &mdash; ${esc(j.error)}</div>`;
   let h=`<p class="sec">prose resolver &middot; ${esc(j.model_id)} &middot; not a committed run</p><dl>`
     +row("request",esc(j.request))
-    +row("verdict",`<b>${esc(j.verdict)}</b>`,true)
-    +(j.reason?row("reason",esc(j.reason)):"")
-    +(j.missing_dimension?row("what would settle it",esc(j.missing_dimension)):"")
-    +(j.recipe?row("recipe",esc(j.recipe)):"")
+    +row("proposed by",esc(j.anchors_proposed_by),true)
     +`</dl>`;
-  h+=`<p class="sec">candidates &middot; the model proposed ${j.proposed_indices.length}</p><div class="tools">`
-    +j.candidates.map(c=>
-      `<div class="t${c.proposed?" gate pass":""}"><span class="call">`
-      +`${c.proposed?"&#10003; ":""}${c.index}. <b>${esc(c.key||"")}</b></span>`
-      +`<span class="ret">cos ${f4(c.cos)}</span></div>`
-      +`<div class="t"><span class="call">${esc(c.wording)}</span>`
-      +(c.key?`<button class="g pick" data-anchor="exposure" data-key="${esc(c.key)}">exposure</button>`
-             +`<button class="g pick" data-anchor="outcome" data-key="${esc(c.key)}">outcome</button>`:"")
-      +`</div>`).join("")+`</div>`;
+  for(const role of ["exposure","outcome"]) if(j.roles&&j.roles[role]) h+=roleBlock(role,j.roles[role]);
   h+=`<p class="sec">chosen pair</p><dl>`
     +row("exposure",anchors.exposure?esc(anchors.exposure):"<em>none picked</em>",true)
     +row("outcome",anchors.outcome?esc(anchors.outcome):"<em>none picked</em>",true)
