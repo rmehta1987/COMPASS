@@ -68,6 +68,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from serve.redact import (  # noqa: E402
+    KEY_RE,
     Pseudonymiser,
     Scrubber,
     pseudonymise_hit,
@@ -387,6 +388,209 @@ def _canonical_key(key: str, constructs: dict[str, Any], role: str,
         f"look like 'm3:Q16.1' (module, colon, capital Q, question id). "
         f"Nothing was spent: this is checked before the model runs. Pass "
         f'"allow_unresolvable": true to drive the refusal path deliberately.')
+
+
+def _pin_keys_from_prose(request: str, constructs: dict[str, Any]) -> dict[str, str]:
+    """Keys the caller wrote into the request, in the order they appear.
+
+    A key in the prose is not something to infer. `m3:Q4.2 and m2:Q5.8` has
+    already answered the question the model would be asked, so it is honoured
+    directly -- first key is the exposure, second the outcome, which is the
+    order the sentence puts them in.
+
+    Args:
+        request: The researcher's prose.
+        constructs: Construct keys to Construct, for validation.
+
+    Returns:
+        `{role: key}` for whichever roles the prose pinned.
+    """
+    seen: list[str] = []
+    for raw in KEY_RE.findall(request):
+        fixed = raw if raw in constructs else None
+        if fixed is None:
+            folded = {k.casefold(): k for k in constructs}
+            fixed = folded.get(raw.casefold())
+        if fixed and fixed not in seen:
+            seen.append(fixed)
+    roles = {}
+    for role, key in zip(("exposure", "outcome"), seen, strict=False):
+        roles[role] = key
+    return roles
+
+
+def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str, Any]:
+    """The pool for one role, and the surface that will be asked about it.
+
+    The request is framed by role because the same prose contains both, and the
+    retriever cannot tell which half it is being asked for. That framing is the
+    only project-authored text this route adds to a model-visible surface.
+
+    Args:
+        state: Shared handles.
+        request: The researcher's prose.
+        role: `exposure` or `outcome`.
+        k: Pool size.
+
+    Returns:
+        `{"surface": SelectionContract, "candidates": [...], "cos": {...}}`.
+
+    Raises:
+        ValueError: When no candidate can be bound to wording.
+    """
+    from agent import prompt_contract as PC
+    from env import labels
+
+    # `state.retriever()` is what extends sys.path to the deploy bundle, so the
+    # bundle's own modules import only AFTER it has run once. Import-sorting
+    # moved this above that call and the route died with ModuleNotFoundError on
+    # a cold server -- the ordering is load-bearing, not stylistic.
+    r = state.retriever()
+    from retriever import RetrievalRequest, VariableRole
+
+    req = RetrievalRequest(construct=request,
+                           role=VariableRole.EXPOSURE if role == "exposure"
+                           else VariableRole.OUTCOME)
+    hits = r.search(req.to_query(), k=k)
+
+    keys, facts, cos_by_key, skipped = [], {}, {}, []
+    for h in hits:
+        key = h["key"]
+        try:
+            labels.cite(key)
+        except Exception:
+            skipped.append(key)
+            continue
+        keys.append(key)
+        cos_by_key[key] = h["cos"]
+        facts[key] = {"module": h["module"], "roster_family_size": h["fold_size"]}
+    if not keys:
+        raise ValueError(f"no candidate for the {role} could be bound to wording")
+
+    cands = PC.candidates_from_keys(keys, facts)
+    framed = f"{request}\n\nWhich item serves as the {role.upper()} here?"
+    return {"surface": PC.retrieval_contract(framed, cands),
+            "cands": cands, "cos": cos_by_key, "skipped": skipped}
+
+
+def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
+    """Propose BOTH anchors from one piece of prose. The human confirms.
+
+    Args:
+        state: Shared handles.
+        body: The request, carrying `request` prose and optionally `k`, `model`.
+
+    Returns:
+        A ticket; the run is two model calls.
+
+    Raises:
+        ValueError: When `request` is missing or the model is not offered.
+        Busy: When another model run holds the lock.
+    """
+    request = str(body.get("request") or "").strip()
+    if not request:
+        raise ValueError("request is required: this route takes prose")
+    # Deeper than the single-construct route by default: a request naming two
+    # constructs has to carry candidates for both halves in one pool.
+    k = max(2, min(_int_arg(body, "k", 20), 40))
+    model = str(body.get("model") or PIPELINE_MODEL)
+    if model not in state.allowed_models:
+        raise ValueError(f"model {model!r} is not offered by this endpoint.")
+
+    from generate.funnel import load_constructs
+    constructs, version = load_constructs()
+    pinned = _pin_keys_from_prose(request, constructs)
+
+    # ONE POOL, OFFERED TO BOTH ROLES. `deploy/template.py:12` states it
+    # outright -- "`role` is never rendered" -- so a per-role request builds the
+    # IDENTICAL query and the identical pool; asking twice bought nothing and I
+    # had assumed otherwise. MEASURED on "does cigarette smoking raise the risk
+    # of high blood pressure": at k=8 every candidate was a hypertension item
+    # and the exposure came back `absent` -- correctly, because smoking was
+    # never offered. At k=20 the smoking items appear at ranks 19-20. So the
+    # pool is deepened and shared, and the model picks each role from it.
+    shared = None if len(pinned) == 2 else _role_candidates(state, request, "exposure", k)
+    roles = {r: shared for r in ("exposure", "outcome") if r not in pinned}
+
+    if not state.model_lock.acquire(blocking=False):
+        raise Busy("a model run is already in progress on this endpoint.")
+    ticket = f"{time.strftime('%H%M%S')}-{os.urandom(3).hex()}"
+    with state._jobs_lock:
+        state.jobs[ticket] = {"status": "running", "started": time.time()}
+
+    def _run() -> None:
+        try:
+            from agent import prompt_contract as PC
+            from agent.cli_backend import ClaudeCliBackend
+            from env import labels
+
+            backend = ClaudeCliBackend(model=model, mode="benchmark")
+            t0 = time.time()
+            out: dict[str, Any] = {}
+            for role in ("exposure", "outcome"):
+                if role in pinned:
+                    key = pinned[role]
+                    out[role] = {
+                        "verdict": "pinned",
+                        "reason": "the request named this key, so it was not inferred",
+                        "proposed_indices": [],
+                        "pinned_key": key if state.show_instrument else None,
+                        "pinned_wording": labels.cite(key).wording,
+                        "candidates": [],
+                    }
+                    continue
+                pool = roles[role]
+                # The role framing goes on the ASK, not the pool: one pool,
+                # two questions of it.
+                framed = PC.retrieval_contract(
+                    f"{request}\n\nWhich item serves as the {role.upper()} here?",
+                    pool["cands"])
+                chosen = PC.VariableSelection.model_validate_json(
+                    _first_json(str(backend.transduce(framed.render()).content)))
+                proposed = [i for i in chosen.indices if 1 <= i <= len(pool["cands"])]
+                out[role] = {
+                    "verdict": chosen.verdict,
+                    "reason": chosen.reason,
+                    "recipe": chosen.recipe or None,
+                    "missing_dimension": chosen.missing_dimension or None,
+                    "proposed_indices": proposed,
+                    "skipped_uncitable": pool["skipped"],
+                    "candidates": [
+                        {"index": c.index,
+                         "key": c.key if state.show_instrument else None,
+                         "wording": c.wording,
+                         "proposed": c.index in proposed,
+                         "cos": pool["cos"][c.key],
+                         **c.facts}
+                        for c in pool["cands"]],
+                }
+            done = {"status": "done", "run": {
+                "request": request,
+                "dictionary_version": version,
+                "model_id": backend.name,
+                "elapsed_s": round(time.time() - t0, 2),
+                "cost_usd": backend.last_cost,
+                "roles": out,
+                "anchors_proposed_by": "model",
+                "not_a_selection":
+                    "Proposals only. Nothing is committed: confirm each anchor "
+                    "before running the Specifier. A pair proposed by a model "
+                    "is still externally posed -- screened_from stays 0 and it "
+                    "never enters a benchmark denominator.",
+            }}
+        except Exception as exc:
+            done = {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
+        finally:
+            state.model_lock.release()
+        with state._jobs_lock:
+            state.jobs[ticket] = done
+
+    threading.Thread(target=_run, daemon=True).start()
+    return {"ticket": ticket, "status": "running", "poll_after_ms": POLL_MS,
+            "pinned": {r: (k if state.show_instrument else "pinned")
+                       for r, k in pinned.items()},
+            "note": "Both anchors are proposed, then you confirm. Ask "
+                    "/api/specify/status for this ticket."}
 
 
 def _resolve(state: State, body: dict[str, Any]) -> dict[str, Any]:
@@ -983,7 +1187,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         routes = {"/api/retrieve": _retrieve, "/api/specify": _specify,
                   "/api/specify/status": _specify_status,
-                  "/api/resolve": _resolve}
+                  "/api/resolve": _resolve,
+                  "/api/pair": _pair}
         fn = routes.get(route)
         if fn is None:
             self._send(404, {"error": f"no route {route}"})
