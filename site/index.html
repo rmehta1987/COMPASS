@@ -113,7 +113,7 @@
 
 <div class="bar"><div class="wrap">
   <input id="q" value="" aria-label="request" placeholder="a construct you want to measure">
-  <button id="run">Run</button>
+  <button id="ask" class="g">Ask the model</button><button id="run">Run</button>
   <span class="ex" id="examples"></span>
 </div></div>
 
@@ -182,7 +182,69 @@ function placeholder(s){
    endpoint answers with whatever IT was started with -- pseudonyms by default,
    wording under --show-instrument -- so this renders what it is given and
    claims nothing about which. */
-let live=null;
+let live=null, ask=null;
+
+async function askResolver(){
+  if(!window.COMPASS_ENDPOINT) return;
+  const q=el("#q").value.trim(); if(!q) return;
+  const gen=(liveGen={});
+  live=null; cur=null; typed=null; ask={running:true}; sel="retriever"; draw();
+  try{
+    const r=await fetch("/api/resolve",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({request:q})});
+    const j=await r.json().catch(()=>null);
+    if(!j||typeof j!=="object"){ ask={error:`the endpoint answered ${r.status}`}; return; }
+    if(!j.ticket){ ask=j; return; }
+    for(;;){
+      await new Promise(done=>setTimeout(done,j.poll_after_ms));
+      if(gen!==liveGen) return;
+      const s2=await fetch("/api/specify/status",{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ticket:j.ticket})});
+      const u=await s2.json().catch(()=>null);
+      if(!u||typeof u!=="object"){ ask={error:`the endpoint answered ${s2.status}`}; return; }
+      if(u.status==="running"){ ask={running:true,elapsed_s:u.elapsed_s}; draw(); continue; }
+      ask=u; return;
+    }
+  }catch(err){ ask={error:"the endpoint did not answer"}; }
+  finally{ draw(); }
+}
+
+function resolverPanel(){
+  const j=ask;
+  if(j.running) return `<p class="sec">asking the model</p><div class="ph"><b>IN PROGRESS</b>`
+    +`${typeof j.elapsed_s==="number"?` &mdash; ${j.elapsed_s}s`:""} &mdash; the model reads`
+    +` your request and the candidate list and selects by index. The harness resolves`
+    +` the index, so it never emits a key.</div>`;
+  if(j.error) return `<p class="sec">output</p><div class="ph"><b>NO ANSWER</b> &mdash; ${esc(j.error)}</div>`;
+  let h=`<p class="sec">prose resolver &middot; ${esc(j.model_id)} &middot; not a committed run</p><dl>`
+    +row("request",esc(j.request))
+    +row("verdict",`<b>${esc(j.verdict)}</b>`,true)
+    +(j.reason?row("reason",esc(j.reason)):"")
+    +(j.missing_dimension?row("what would settle it",esc(j.missing_dimension)):"")
+    +(j.recipe?row("recipe",esc(j.recipe)):"")
+    +`</dl>`;
+  h+=`<p class="sec">candidates &middot; the model proposed ${j.proposed_indices.length}</p><div class="tools">`
+    +j.candidates.map(c=>
+      `<div class="t${c.proposed?" gate pass":""}"><span class="call">`
+      +`${c.proposed?"&#10003; ":""}${c.index}. <b>${esc(c.key||"")}</b></span>`
+      +`<span class="ret">cos ${f4(c.cos)}</span></div>`
+      +`<div class="t"><span class="call">${esc(c.wording)}</span>`
+      +(c.key?`<button class="g pick" data-anchor="exposure" data-key="${esc(c.key)}">exposure</button>`
+             +`<button class="g pick" data-anchor="outcome" data-key="${esc(c.key)}">outcome</button>`:"")
+      +`</div>`).join("")+`</div>`;
+  h+=`<p class="sec">chosen pair</p><dl>`
+    +row("exposure",anchors.exposure?esc(anchors.exposure):"<em>none picked</em>",true)
+    +row("outcome",anchors.outcome?esc(anchors.outcome):"<em>none picked</em>",true)
+    +`</dl>`
+    +(anchors.exposure&&anchors.outcome
+      ?`<div class="after"><button class="g" id="go-spec">Run the Specifier on this pair</button></div>`
+      :"");
+  h+=`<div class="none" style="color:var(--signal)">${esc(j.not_a_selection)}</div>`;
+  return h;
+}
+
 /* The pair the reader assembled, and the last Specifier answer. Both live
    alongside `live` rather than inside it: a run outlives the retrieval that
    suggested its anchors. */
@@ -509,6 +571,7 @@ function draw(){
   let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
          <ul class="does">${s.does.map(d=>`<li>${esc(d)}</li>`).join("")}</ul>`;
   if(spec&&sel==="specifier") h+=specifierPanel();
+  else if(ask&&sel==="retriever") h+=resolverPanel();
   else if(live&&sel==="retriever") h+=livePanel();
   else if(live&&sel==="intake") h+=liveIntakePanel();
   else if(typed!==null&&!cur) h+=noRun();
@@ -522,6 +585,7 @@ function draw(){
   document.querySelectorAll("[data-anchor]").forEach(b=>b.onclick=()=>{
     anchors[b.dataset.anchor]=b.dataset.key; draw();});
   const go=el("#go-spec"); if(go) go.onclick=runSpecifier;
+  el("#ask").onclick=askResolver;
   el("#dl-json").onclick=()=>{
     const doc={stage:sel,example:cur,artefact_provenance:Object.fromEntries(Object.entries(DATA).filter(([k])=>k!=="index").map(([k,v])=>[k,v.provenance]))};
     const b=new Blob([JSON.stringify(doc,null,2)],{type:"application/json"});
@@ -533,7 +597,7 @@ function draw(){
 el("#run").onclick=async()=>{
   const q=el("#q").value.trim(); if(!q)return;
   const gen=(liveGen={});
-  live=null; cur=match(q); typed=cur?null:q;
+  live=null; ask=null; cur=match(q); typed=cur?null:q;
   /* Draw the committed answer first, so the page never blocks on a network
      call that will usually not be there, then upgrade if the endpoint replies. */
   draw();
