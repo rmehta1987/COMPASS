@@ -150,11 +150,50 @@ async function load(){
   }
 }
 
+/* What a stage is doing RIGHT NOW, or null to keep the committed chip.
+   `stages.json` describes the SHIPPED state of the pipeline, not this session,
+   so its chips read PLACEHOLDER for retriever and intake and "blocked, no run
+   yet" for specifier and record. `rail` ran once at load and never again, so
+   those stayed on screen through a completed run -- the page said no run had
+   happened while showing its record -- and `aria-current` never moved either,
+   so the rail did not even mark the stage being read.
+   Only the three classes that exist are used: shipped, built, blocked. */
+function liveStatus(id){
+  if(id==="retriever"){
+    if(posed) return {cls:"built",label:"posed &middot; not retrieved"};
+    if(ask) return ask.running?{cls:"built",label:"resolving&hellip;"}:{cls:"shipped",label:"resolver answered"};
+    if(live) return {cls:"shipped",label:"live retrieval"};
+    return null;
+  }
+  if(id==="intake"){
+    if(posed) return {cls:"built",label:"posed &middot; no query rendered"};
+    if(live||(ask&&ask.rendered_query)) return {cls:"shipped",label:"query rendered"};
+    return null;
+  }
+  if(id==="specifier"){
+    if(!spec) return null;
+    if(spec.running) return {cls:"built",label:"running&hellip;"};
+    if(spec.error) return {cls:"blocked",label:"the endpoint errored"};
+    return {cls:"shipped",label:"run complete"};
+  }
+  if(id==="record"){
+    if(!spec||spec.running||spec.error) return null;
+    if(spec.selected) return {cls:"shipped",label:"record present"};
+    if(spec.refusal) return {cls:"built",label:"refused, with a reason"};
+    return null;
+  }
+  if(id==="generate"&&gen&&!gen.running&&!gen.error) return {cls:"shipped",label:"enumerated this session"};
+  if(id==="metrics"&&met&&!met.error) return {cls:"shipped",label:"keys shown"};
+  return null;
+}
+
 function rail(){
-  el("#rail").innerHTML=DATA.stages.stages.map((s,i)=>
-    `<button data-s="${s.id}" aria-current="${s.id===sel}">
+  el("#rail").innerHTML=DATA.stages.stages.map((s,i)=>{
+    const ls=liveStatus(s.id);
+    return `<button data-s="${s.id}" aria-current="${s.id===sel}">
       <span class="n">${i+1}</span>${esc(s.name)}
-      <span class="st ${esc(s.status)}">${esc(s.status_label)}</span></button>`).join("");
+      <span class="st ${esc(ls?ls.cls:s.status)}">${ls?ls.label:esc(s.status_label)}</span></button>`;
+  }).join("");
   /* Taking the ticket IS the reader saying where they want to be; see `steer`. */
   document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{
     navGen={}; sel=b.dataset.s; draw();});
@@ -833,7 +872,8 @@ function metricsPanel(){
     +row("with an exposure the retriever resolved",String(c.with_exposure_resolved),true)
     +row("matchable, needing both",`<span class="flag">${c.matchable_papers}</span>`,true)
     +row("highest possible match count",`<span class="flag">${c.max_matched}</span>`,true)
-    +`</dl><div class="none">${esc(m.reads.why_the_ceiling_is_low)}.</div>`;
+    +`</dl><div class="none">${esc(m.reads.why_the_ceiling_is_low)}.`
+    +` ${esc(m.reads.why_no_match_was_available)}.</div>`;
 
   h+=`<p class="sec">observed</p><dl>`
     +row("matched",`<span class="flag">${o.matched}</span>`,true)
@@ -872,6 +912,18 @@ function metricsPanel(){
   h+=`<p class="sec">where the join would go</p>`
     +`<div class="ph"><b>NOT BUILT</b> &mdash; ${esc(gap.why)}.</div>`;
 
+  /* Asked twice by readers: why more artefacts than papers, and which paper is
+     each artefact from. The second question's premise is the confusion, so the
+     answer goes directly above the table rather than in a footnote. Every number
+     is interpolated from the artefact; the page states none of its own. */
+  h+=`<p class="sec">how the artefacts and the papers relate</p>`
+    +`<div class="none">${esc(m.reads.how_the_two_populations_relate)}.`
+    +` The ledger generated ${o.ledger_denominator} pair(s) this run`
+    +` (${Object.entries(o.by_outcome).map(([k,v])=>`${v} ${esc(k)}`).join(", ")});`
+    +` the ${m.artefacts.length} scored below are the emitted ones, drawn from`
+    +` ${o.strata.length} strata: ${o.strata.map(esc).join(", ")}.`
+    +` The bibliography holds ${m.papers.length} paper(s).</div>`;
+
   h+=`<p class="sec">the scored artefacts &middot; ${m.artefacts.length}</p>`;
   if(!keyed) h+=`<div class="none">${esc(m.instrument_withheld_here)}`
     +(window.COMPASS_ENDPOINT
@@ -880,7 +932,7 @@ function metricsPanel(){
       :``)+`</div>`;
   if(met&&met.error) h+=`<div class="ph"><b>NO KEYS</b> &mdash; ${esc(met.error)}.</div>`;
   launchable={};
-  h+=`<div class="tbl"><table><thead><tr><th>record</th>`
+  h+=`<div class="tbl"><table><thead><tr><th>record</th><th>paper</th>`
     +(keyed?`<th>exposure</th><th>outcome</th>`:`<th>exposure stratum</th><th>outcome stratum</th>`)
     +`<th>estimability</th><th>adjusted</th><th>excluded</th><th>sought, not found</th>`
     +`<th>n source</th>`+(keyed?`<th></th>`:``)+`</tr></thead><tbody>`
@@ -892,17 +944,34 @@ function metricsPanel(){
         id:a.record_hash, exposure:k.exposure, outcome:k.outcome,
         exposure_text:k.exposure_wording||"", outcome_text:k.outcome_wording||"",
         question:k.question||""};
+      /* The column a reader asks for, showing the only honest value it has.
+         Filling it would be the C12 join, which is not built -- and inventing
+         one is the single failure this table exists to avoid. An empty column
+         that says so is worth more than no column: it tells every later reader
+         the join is missing instead of leaving them to ask. */
       return `<tr><td class="m">${esc(a.record_hash)}</td>`
-        +(k?`<td class="m" title="${att(k.exposure_wording||k.exposure_wording_hash)}">`
-            +`${esc(k.exposure)}</td>`
-            +`<td class="m" title="${att(k.outcome_wording||k.outcome_wording_hash)}">`
-            +`${esc(k.outcome)}</td>`
+        +`<td class="m" title="${att(gap.why)}"><span class="ret">not joined</span></td>`
+        /* Three states, not two. The header is driven by whether the endpoint
+           answered AT ALL; these cells by whether it answered for THIS artefact.
+           Conflating them put a stratum under a column headed "exposure", and
+           dropped the trailing cell entirely, so every row the endpoint had no
+           pair for was one cell short of its own header. */
+        +(keyed
+          ?(k?`<td class="m" title="${att(k.exposure_wording||k.exposure_wording_hash)}">`
+              +`${esc(k.exposure)}</td>`
+              +`<td class="m" title="${att(k.outcome_wording||k.outcome_wording_hash)}">`
+              +`${esc(k.outcome)}</td>`
+            :`<td class="m"><span class="ret">not returned</span></td>`
+             +`<td class="m"><span class="ret">not returned</span></td>`)
           :`<td>${esc(a.exposure_stratum)}</td><td>${esc(a.outcome_stratum)}</td>`)
         +`<td><span class="flag">${esc(a.estimability)}</span></td>`
         +`<td>${a.n_adjusted}</td><td>${a.n_excluded}</td><td>${a.n_sought_not_found}</td>`
         +`<td>${esc(a.n_source)}</td>`
-        +(k?`<td><button class="g pick" data-genex="${esc(k.exposure)}" `
-           +`data-genout="${esc(k.outcome)}" data-launch="${att(tok)}">run the pipeline</button></td>`:``)
+        +(keyed
+          ?(k?`<td><button class="g pick" data-genex="${esc(k.exposure)}" `
+             +`data-genout="${esc(k.outcome)}" data-launch="${att(tok)}">run the pipeline</button></td>`
+            :`<td></td>`)
+          :``)
         +`</tr>`;}).join("")
     +`</tbody></table></div>`;
 
@@ -1142,6 +1211,9 @@ function draw(){
     a.download=`compass_${sel}_${cur?cur.id:(spec?"live_run":"live")}.json`;
     a.click();URL.revokeObjectURL(a.href);};
   el("#png").onclick=panelPNG;
+  /* The rail reports live state and marks the current stage, so it is rebuilt
+     with the panel rather than once at load. */
+  rail();
   /* After the panel, not before: `foot` reads `panelLive`, which `stagePanel` set. */
   foot();
 }

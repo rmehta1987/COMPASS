@@ -85,7 +85,37 @@ global.fetch = async (rel) => rel === "/api/metrics"
   if (!btn.onclick) { console.error("the key button has no handler"); failed++; }
   else { await btn.onclick(); }
 
+  // A new column is the classic way to desync a table: the header gains a cell
+  // and the rows do not, or one branch is updated and the other is not. Checked
+  // on BOTH renders -- `before` is the withheld-keys branch, `p` the keyed one.
+  const cols = (html, label) => {
+    // The panel holds TWO tables -- the bibliography (which has a real PMID
+    // column) and the artefacts. Taking the first <thead> checked the wrong one
+    // and passed while the artefact table had no paper column at all. Select by
+    // the artefact header's own first cell.
+    const tables = html.match(/<table>[\s\S]*?<\/table>/g) || [];
+    const tbl = tables.find(t => /<thead>[\s\S]*?<th>record<\/th>/.test(t));
+    if (!tbl) { console.error(`${label}: no artefact table found`); failed++; return; }
+    const head = (tbl.match(/<thead>[\s\S]*?<\/thead>/) || [""])[0];
+    const nth = (head.match(/<th\b/g) || []).length;
+    const body = (tbl.match(/<tbody>[\s\S]*?<\/tbody>/) || [""])[0];
+    const rows = body.match(/<tr>[\s\S]*?<\/tr>/g) || [];
+    if (!nth || !rows.length) { console.error(`${label}: no table to check`); failed++; return; }
+    for (const r of rows) {
+      const ntd = (r.match(/<td\b/g) || []).length;
+      if (ntd !== nth) {
+        console.error(`${label}: header has ${nth} cell(s), a row has ${ntd}`); failed++; return;
+      }
+    }
+    if (!/<th>paper<\/th>/.test(head)) { console.error(`${label}: no paper column`); failed++; }
+    for (const r of rows) {
+      if (!/not joined/.test(r)) { console.error(`${label}: a row omits the paper state`); failed++; return; }
+    }
+  };
+  cols(before, "artefact table, keys withheld");
+
   const p = node("#panel").innerHTML;
+  cols(p, "artefact table, keys shown");
   for (const bad of ["undefined", "NaN", "[object Object]"]) {
     if (p.includes(bad)) { console.error(`enriched panel contains "${bad}"`); failed++; }
   }
@@ -153,6 +183,20 @@ global.fetch = async (rel) => rel === "/api/metrics"
       }
       for (const bad of ["undefined", "NaN", "[object Object]"]) {
         if (panel.includes(bad)) { console.error(`${stage} contains "${bad}"`); failed++; }
+      }
+    }
+
+    // The chips for these two stages are PLACEHOLDER in stages.json, which
+    // describes the shipped pipeline, not this session.
+    const railHtml = node("#rail").innerHTML;
+    for (const id of ["retriever", "intake"]) {
+      const m = new RegExp(`data-s="${id}"[\\s\\S]*?<span class="st[^"]*">([^<]*)</span>`).exec(railHtml);
+      const txt = m ? m[1].trim() : "";
+      if (/PLACEHOLDER/i.test(txt)) {
+        console.error(`${id} chip still reads PLACEHOLDER after a posed launch`); failed++;
+      }
+      if (!/posed/i.test(txt)) {
+        console.error(`${id} chip does not say the pair was posed: ${JSON.stringify(txt)}`); failed++;
       }
     }
 

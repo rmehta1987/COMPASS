@@ -152,6 +152,22 @@ def main() -> int:
                                        "key is on record and its exposure resolves "
                                        "against the instrument; one paper of "
                                        "sixteen clears both"),
+            # The recurring question from readers, asked twice now: why are there
+            # more artefacts than papers, and which paper is each artefact from?
+            # The premise is the confusion -- the two are not two counts of one
+            # population, and an artefact is not FROM a paper at all.
+            "how_the_two_populations_relate": (
+                "these are two populations, not two counts of one thing. The "
+                "artefacts are what the pipeline emitted this run, enumerated "
+                "from the INSTRUMENT; the papers are the bibliography, an "
+                "independent yardstick it is scored against. No artefact is "
+                "derived from a paper, so none carries a PMID"),
+            # Sourced from the run's own log line for item 15d, which records
+            # why a matchable paper still yields a zero ceiling.
+            "why_no_match_was_available": (
+                "the narrow frame these artefacts were drawn from does not "
+                "overlap the bibliography's subjects, so even the paper that "
+                "clears both anchor tests had no match available to find"),
         },
         "not_built": [
             {"what": "per-paper exposure and outcome keys",

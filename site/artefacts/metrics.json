@@ -620,7 +620,9 @@
  "reads": {
   "establishes": "that the harness runs end to end, refuses unstamped artefacts and emits clean verdicts",
   "is_not": "a measurement of hypothesis quality. The observed rate IS the ceiling, so a pipeline that reasoned perfectly would score exactly the same",
-  "why_the_ceiling_is_low": "a paper is matchable only when its outcome key is on record and its exposure resolves against the instrument; one paper of sixteen clears both"
+  "why_the_ceiling_is_low": "a paper is matchable only when its outcome key is on record and its exposure resolves against the instrument; one paper of sixteen clears both",
+  "how_the_two_populations_relate": "these are two populations, not two counts of one thing. The artefacts are what the pipeline emitted this run, enumerated from the INSTRUMENT; the papers are the bibliography, an independent yardstick it is scored against. No artefact is derived from a paper, so none carries a PMID",
+  "why_no_match_was_available": "the narrow frame these artefacts were drawn from does not overlap the bibliography's subjects, so even the paper that clears both anchor tests had no match available to find"
  },
  "not_built": [
   {

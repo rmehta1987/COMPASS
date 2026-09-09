@@ -133,6 +133,25 @@ const fire = (attr, val) => {
   // The download must carry the run the reader just watched. It used to be
   // `{stage, example: cur, provenance}` unconditionally, and after a live run
   // `cur` is null -- so the file said `"example": null` and held none of it.
+  // The rail is baked from stages.json and used to be built once, at load, so a
+  // finished run sat under a chip still reading "blocked, no run yet" and the
+  // rail never marked the stage being read.
+  const railHtml = node("#rail").innerHTML;
+  const chip = id => {
+    const m = new RegExp(`data-s="${id}"[\\s\\S]*?<span class="st[^"]*">([^<]*)</span>`).exec(railHtml);
+    return m ? m[1].trim() : null;
+  };
+  if (/no run yet/.test(chip("specifier") || "")) {
+    fail(`the specifier chip still reads ${JSON.stringify(chip("specifier"))} after a finished run`);
+  }
+  if (!/complete|record|refused/i.test(chip("specifier") || "")) {
+    fail(`the specifier chip does not report the finished run: ${JSON.stringify(chip("specifier"))}`);
+  }
+  const marked = [...railHtml.matchAll(/data-s="([^"]+)" aria-current="true"/g)].map(m => m[1]);
+  if (marked.length !== Number(!!marked.length) || marked[Number()] !== "record") {
+    fail(`the rail marks ${JSON.stringify(marked)}; the reader is on "record"`);
+  }
+
   const dl = node("#dl-json");
   if (!dl || !dl.onclick) fail("no download offered after a completed run");
   else {
