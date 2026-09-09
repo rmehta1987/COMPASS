@@ -1549,6 +1549,12 @@ class Handler(BaseHTTPRequestHandler):
 WITHHELD_MARKERS = ("dictionary.json", "build", "targets.json", "raw",
                     "prevalence_key.py", "cohort_papers.py")
 
+#: Directories `_refuse_unsafe_site_dir` will visit before it gives up and
+#: refuses. A published page directory is tens of entries; needing thousands to
+#: describe one is itself the signal that this is a source tree, so the cap is a
+#: second check rather than only a budget.
+MAX_SITE_DIR_WALK = 2000
+
 
 def _refuse_unsafe_site_dir(site_dir: Path, run_dir: Path) -> str | None:
     """Refuse a `--site-dir` whose contents the static route must not publish.
@@ -1568,12 +1574,35 @@ def _refuse_unsafe_site_dir(site_dir: Path, run_dir: Path) -> str | None:
     Returns:
         The refusal message, or None when the directory is safe to serve.
     """
-    for marker in WITHHELD_MARKERS:
-        if (site_dir / marker).exists():
-            return (f"refusing to serve {site_dir}: it contains {marker!r}, which "
-                    f"is withheld (README.md §What is withheld). The static route "
-                    f"has no content filter -- point --site-dir at the published "
-                    f"page directory, not at a source tree.")
+    # DEPTH ONE WAS NOT ENOUGH. The old check tested `site_dir / marker` and
+    # nothing deeper, so a parent directory passed while the withheld material
+    # sat one level further down -- `--site-dir ~` with a clone inside it leaves
+    # `<clone>/build/dictionary.json` INSIDE site_dir, which is precisely what
+    # the static route's containment check certifies and then serves. Measured
+    # 2026-09-09: a tree holding `pages/deep/build/dictionary.json` was cleared.
+    #
+    # So walk it, and FAIL CLOSED. A tree too large to certify is refused rather
+    # than served: not finding a marker in the part we managed to look at is not
+    # the same as there being none, and this is the check that decides whether
+    # the instrument is downloadable.
+    seen = 0
+    for parent, dirnames, filenames in os.walk(site_dir):
+        seen += 1
+        if seen > MAX_SITE_DIR_WALK:
+            return (f"refusing to serve {site_dir}: it holds more than "
+                    f"{MAX_SITE_DIR_WALK} directories, so this check cannot "
+                    f"certify that nothing withheld is inside it. A published "
+                    f"page directory is far smaller -- point --site-dir at one, "
+                    f"not at a source tree or a home directory.")
+        for marker in WITHHELD_MARKERS:
+            # Symlinks are not followed by `os.walk`, but a symlink NAMED for a
+            # marker still appears here and is still served through it.
+            if marker in dirnames or marker in filenames:
+                where = Path(parent, marker).relative_to(site_dir)
+                return (f"refusing to serve {site_dir}: it contains {str(where)!r}, "
+                        f"which is withheld (README.md §What is withheld). The "
+                        f"static route has no content filter -- point --site-dir "
+                        f"at the published page directory, not at a source tree.")
     if run_dir == site_dir or run_dir.is_relative_to(site_dir):
         return (f"refusing to serve {site_dir}: the run directory {run_dir} is "
                 f"inside it, so pseudonyms.json would be downloadable and the "

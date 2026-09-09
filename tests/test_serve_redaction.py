@@ -876,3 +876,58 @@ def test_the_unresolvable_advice_names_no_key_of_its_own() -> None:
         advice = str(Unresolvable(role, "m3:1_q16.1"))
         assert sc.hits(advice) == [], (role, sc.hits(advice))
         assert not KEY_RE.search(advice), role
+
+
+def test_a_withheld_marker_below_the_top_level_is_refused(tmp_path: Path) -> None:
+    """`--site-dir` one level above a clone used to be cleared to serve it.
+
+    The check tested `site_dir / marker` and nothing deeper. The static route's
+    containment check is satisfied by exactly these paths -- they ARE inside
+    `site_dir` -- so a parent directory cleared here made every
+    `question_text` in the clone downloadable.
+    """
+    from serve.api import _refuse_unsafe_site_dir
+
+    site = tmp_path / "pages"
+    (site / "clone" / "build").mkdir(parents=True)
+    (site / "clone" / "build" / "dictionary.json").write_text("{}", encoding="utf-8")
+    msg = _refuse_unsafe_site_dir(site, tmp_path / "run")
+
+    assert msg is not None
+    # Named by path, not just by marker: the operator has to be able to find it.
+    assert "clone/build" in msg.replace(os.sep, "/")
+
+
+def test_a_clean_page_directory_is_still_served(tmp_path: Path) -> None:
+    """Anti-vacuity for the walk: it is a filter, not a wall.
+
+    A check that refused everything would pass the test above trivially, and
+    would take the published page down with it.
+    """
+    from serve.api import _refuse_unsafe_site_dir
+
+    site = tmp_path / "pages"
+    (site / "artefacts").mkdir(parents=True)
+    (site / "index.html").write_text("<h1>page</h1>", encoding="utf-8")
+    (site / "artefacts" / "runs.json").write_text("{}", encoding="utf-8")
+
+    assert _refuse_unsafe_site_dir(site, tmp_path / "run") is None
+
+
+def test_a_tree_too_large_to_certify_is_refused_not_served(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail closed. Finding no marker in the part we looked at is not "none"."""
+    import serve.api as api
+
+    site = tmp_path / "pages"
+    for i in range(4):
+        (site / f"d{i}").mkdir(parents=True)
+    monkeypatch.setattr(api, "MAX_SITE_DIR_WALK", 2)
+    msg = api._refuse_unsafe_site_dir(site, tmp_path / "run")
+
+    assert msg is not None
+    assert "cannot" in msg and "certify" in msg
+    # ...and the same tree is served once the walk can finish, so the refusal is
+    # the cap talking and not the directory being rejected for some other reason.
+    monkeypatch.setattr(api, "MAX_SITE_DIR_WALK", 100)
+    assert api._refuse_unsafe_site_dir(site, tmp_path / "run") is None
