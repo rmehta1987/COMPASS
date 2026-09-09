@@ -721,3 +721,43 @@ def test_a_non_ascii_authorization_header_is_a_401_not_a_crash() -> None:
     h = Capture()
     assert h._gate() is False
     assert h.codes == [401]
+
+
+# ------------------------------------------------- specify on a shared endpoint
+
+
+def test_a_second_run_is_refused_not_queued(tmp_path: Path) -> None:
+    """A run holds the lock for minutes; a queued caller just times out.
+
+    On a shared endpoint that reads as a broken page. `Busy` is answered 409 so
+    the caller is told to retry rather than left hanging.
+    """
+    from serve.api import Busy, State, _specify
+
+    st = State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    st.model_lock.acquire()
+    try:
+        with pytest.raises(Busy):
+            _specify(st, {"exposure": "m3:Q16.1", "outcome": "m2:Q5.8"})
+    finally:
+        st.model_lock.release()
+
+
+def test_a_caller_cannot_choose_what_the_seat_spends(tmp_path: Path) -> None:
+    """`model` was taken verbatim from the body on a password-shared endpoint."""
+    from serve.api import DEFAULT_MODELS, PIPELINE_MODEL, State, _specify
+
+    assert DEFAULT_MODELS == frozenset({PIPELINE_MODEL})
+    st = State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    with pytest.raises(ValueError, match="not offered by this endpoint"):
+        _specify(st, {"exposure": "m3:Q16.1", "outcome": "m2:Q5.8",
+                      "model": "claude-opus-5"})
+
+
+def test_the_operator_can_widen_the_model_list(tmp_path: Path) -> None:
+    """Anti-vacuity: the allowlist is a control, not a wall."""
+    from serve.api import PIPELINE_MODEL, State
+
+    st = State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run",
+               allowed_models=frozenset({PIPELINE_MODEL, "claude-sonnet-5"}))
+    assert "claude-sonnet-5" in st.allowed_models

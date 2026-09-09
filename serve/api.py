@@ -81,6 +81,16 @@ MAX_K = 5
 #: so `/api/specify` reports which one answered rather than assuming this one.
 PIPELINE_MODEL = "claude-haiku-4-5"
 
+#: Models a REQUEST may name. The body used to be taken verbatim, so anyone
+#: holding the shared password chose what the operator's seat spent -- and a
+#: larger model reads as a better result. The operator widens this with
+#: `--allow-model`; a caller cannot.
+DEFAULT_MODELS = frozenset({PIPELINE_MODEL})
+
+
+class Busy(RuntimeError):
+    """A serialised resource is in use. Answered as 409, not 500 or a hang."""
+
 #: Largest request body accepted. A `Content-Length` is attacker-supplied even
 #: on loopback, and `rfile.read(n)` would otherwise size an allocation from it.
 MAX_BODY_BYTES = 64 * 1024
@@ -127,7 +137,8 @@ class State:
 
     def __init__(self, deploy_root: Path, site_dir: Path, run_dir: Path,
                  show_instrument: bool = False, auth: str | None = None,
-                 enable_specify: bool = True) -> None:
+                 enable_specify: bool = True,
+                 allowed_models: frozenset[str] | None = None) -> None:
         """Prepare shared state and fail early on a missing instrument.
 
         Args:
@@ -139,8 +150,10 @@ class State:
                 only when `auth` is set.
             auth: `USER:PASS` for HTTP Basic, or None for no authentication.
                 `main` requires it for any non-loopback bind.
-            enable_specify: Allow `POST /api/specify`. `main` defaults it to
-                loopback-only, because each run spends the operator's seat.
+            enable_specify: Allow `POST /api/specify`. Off unless `main` is
+                asked for it, because each run spends the operator's seat.
+            allowed_models: Models a REQUEST may name. Defaults to the pipeline
+                proxy alone; the operator widens it, never the caller.
         """
         self.deploy_root = deploy_root
         self.site_dir = site_dir
@@ -148,6 +161,7 @@ class State:
         self.show_instrument = show_instrument
         self.auth = auth
         self.enable_specify = enable_specify
+        self.allowed_models = frozenset(allowed_models or DEFAULT_MODELS)
         # Per-client request times, for the rate limit. Keyed by source address,
         # which is all a shared endpoint has: this bounds volume, not identity.
         self._hits: dict[str, list[float]] = {}
@@ -375,6 +389,12 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
     # ran. A larger model reads as a better result unless something says it was
     # not the one the pipeline uses.
     model = str(body.get("model") or PIPELINE_MODEL)
+    if model not in state.allowed_models:
+        raise ValueError(
+            f"model {model!r} is not offered by this endpoint. Allowed: "
+            f"{', '.join(sorted(state.allowed_models))}. Every run spends the "
+            f"operator's Claude seat, so which model runs is the operator's "
+            f"choice (--allow-model), not the caller's.")
 
     from agent.cli_backend import ClaudeCliBackend
     from agent.specifier import specify
@@ -390,13 +410,23 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
     pair = Candidate(exposure=C.get(exposure) or stand_in(exposure),
                      outcome=C.get(outcome) or stand_in(outcome))
 
-    with state.model_lock:
+    # Refuse rather than queue. A run holds this lock for minutes, so a second
+    # caller used to block silently and then hit their own client timeout with
+    # no idea why -- on a shared endpoint that reads as a broken page. Saying
+    # "busy" immediately is the difference between a queue and a hang.
+    if not state.model_lock.acquire(blocking=False):
+        raise Busy("a Specifier run is already in progress on this endpoint. "
+                   "Runs are serialised because each one allocates a sealed "
+                   "worktree and an MCP server. Try again in a few minutes.")
+    try:
         backend = ClaudeCliBackend(model=model, mode="benchmark")
         identity = run_identity(pair, version, 0, backend.name, "externally_posed")
         t0 = time.time()
         res = specify(backend, pair, k=k, mode="benchmark",
                       parked_dir=ROOT / "parked", identity=identity)
         elapsed = round(time.time() - t0, 2)
+    finally:
+        state.model_lock.release()
 
     # `selected` and `refusal` are two fields on purpose: a refusal is not a
     # protocol that won, and `selected` is None whenever the environment ruled
@@ -662,6 +692,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             self._send(200, fn(self.state, body))
+        except Busy as exc:
+            # 409, not 500: nothing is broken and retrying is the right move.
+            self._send(409, self._scrubbed_error(exc))
         except ValueError as exc:
             self._send(400, self._scrubbed_error(exc))
         except Exception as exc:
@@ -766,6 +799,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                     help="serve with no password, stating that this socket is "
                          "unreachable. An explicit claim, because the process "
                          "cannot see what forwards to it.")
+    ap.add_argument("--allow-model", action="append", default=None,
+                    metavar="MODEL",
+                    help="a model a request may name; repeatable. Defaults to "
+                         f"{PIPELINE_MODEL} alone. The caller does not choose "
+                         "what the operator's seat spends.")
     ap.add_argument("--enable-specify", action="store_true",
                     help="allow POST /api/specify. OFF by default on every bind: "
                          "each run spends the operator's Claude seat, has no "
@@ -851,7 +889,8 @@ def main(argv: list[str]) -> int:
     enable_specify = bool(a.enable_specify)
     state = State(a.deploy_root.resolve(), a.site_dir.resolve(), a.run_dir.resolve(),
                   show_instrument=a.show_instrument, auth=auth,
-                  enable_specify=enable_specify)
+                  enable_specify=enable_specify,
+                  allowed_models=frozenset(a.allow_model or DEFAULT_MODELS))
     srv = build_server(a.host, a.port, state)
     print(f"COMPASS test endpoint   http://{a.host}:{a.port}/")
     print(f"  site        {state.site_dir}")
