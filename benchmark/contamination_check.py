@@ -594,6 +594,15 @@ def _catalogue_surface() -> dict[str, str]:
             catalogue=LB.render_catalogue(cat)),
         "arm_d_selection_schema": json.dumps(
             PC.VariableSelection.model_json_schema()),
+        # `serve/api.py::_resolve` renders THIS surface for a researcher's prose,
+        # so it is model-visible and joins the scan (`AGENTS.md`: a prose
+        # resolver's prompt and schema join `model_visible_surface`). The
+        # request itself is the caller's own words and varies per call; what is
+        # scanned is the standing text around it, which is what this project
+        # authors and can contaminate. A fixed placeholder stands in for the
+        # request so the surface is reproducible.
+        "retrieval_prompt": PC.retrieval_contract(
+            "<the researcher's request, supplied per call>", cands).render(),
     }
 
 

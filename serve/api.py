@@ -389,6 +389,169 @@ def _canonical_key(key: str, constructs: dict[str, Any], role: str,
         f'"allow_unresolvable": true to drive the refusal path deliberately.')
 
 
+def _resolve(state: State, body: dict[str, Any]) -> dict[str, Any]:
+    """Resolve prose to CANDIDATES with a model, by index. Never to one key.
+
+    The deployed retriever supplies the pool -- it is the thing that can rank
+    1,353 targets against prose cheaply -- and the model then reads the request
+    and that pool and says what KIND of answer the request has: one item, a
+    whole roster family, something to derive, genuinely ambiguous, or absent.
+    That verdict is the part cosine cannot produce, and it is why a compound
+    request like "environment and hypertension" can be called ambiguous here
+    instead of silently matching one side.
+
+    The model selects by index and never sees a key, so it cannot emit one
+    wrong (`agent/prompt_contract.py`). The harness resolves the index against
+    the pool it offered.
+
+    Args:
+        state: Shared handles.
+        body: The request, carrying `request` prose and optionally `k`.
+
+    Returns:
+        A ticket. The run is a model call, so it is a job like `/api/specify`.
+
+    Raises:
+        ValueError: When `request` is missing or `k` is out of range.
+        Busy: When another model run holds the lock.
+    """
+    request = str(body.get("request") or "").strip()
+    if not request:
+        raise ValueError("request is required: this route takes prose")
+    k = max(2, min(_int_arg(body, "k", 8), 20))
+    model = str(body.get("model") or PIPELINE_MODEL)
+    if model not in state.allowed_models:
+        raise ValueError(
+            f"model {model!r} is not offered by this endpoint. Allowed: "
+            f"{', '.join(sorted(state.allowed_models))}.")
+
+    r = state.retriever()
+    from retriever import RetrievalRequest, VariableRole
+    from template import covered  # noqa: F401  (kept beside the other import)
+
+    req = RetrievalRequest(construct=request, role=VariableRole.EXPOSURE)
+    rendered = req.to_query()
+    hits = r.search(rendered, k=k)
+
+    from agent import prompt_contract as PC
+    from env import labels
+
+    keys, facts, skipped, cos_by_key = [], {}, [], {}
+    for h in hits:
+        key = h["key"]
+        try:
+            labels.cite(key)          # the only maker of a bound citation
+        except Exception:
+            skipped.append(key)
+            continue
+        keys.append(key)
+        cos_by_key[key] = h["cos"]
+        facts[key] = {"module": h["module"], "roster_family_size": h["fold_size"]}
+    if not keys:
+        raise ValueError("no candidate in the pool could be bound to wording; "
+                         "nothing can be offered for selection")
+
+    cands = PC.candidates_from_keys(keys, facts)
+    surface = PC.retrieval_contract(request, cands)
+
+    if not state.model_lock.acquire(blocking=False):
+        raise Busy("a model run is already in progress on this endpoint. "
+                   "Runs are serialised. Try again in a moment.")
+    ticket = f"{time.strftime('%H%M%S')}-{os.urandom(3).hex()}"
+    with state._jobs_lock:
+        state.jobs[ticket] = {"status": "running", "started": time.time()}
+
+    def _run() -> None:
+        try:
+            from agent.cli_backend import ClaudeCliBackend
+            backend = ClaudeCliBackend(model=model, mode="benchmark")
+            t0 = time.time()
+            raw = str(backend.transduce(surface.render()).content)
+            chosen = PC.VariableSelection.model_validate_json(_first_json(raw))
+            proposed = [i for i in chosen.indices if 1 <= i <= len(cands)]
+            done = {"status": "done", "run": {
+                "request": request,
+                "rendered_query": rendered,
+                "model_id": backend.name,
+                "elapsed_s": round(time.time() - t0, 2),
+                "cost_usd": backend.last_cost,
+                "verdict": chosen.verdict,
+                "reason": chosen.reason,
+                "recipe": chosen.recipe or None,
+                "missing_dimension": chosen.missing_dimension or None,
+                "proposed_indices": proposed,
+                "skipped_uncitable": skipped,
+                # EVERY candidate, always. The rule is candidates with wording,
+                # never one key: a verdict of `resolved` is a PROPOSAL the
+                # reader confirms, not a selection this route makes for them.
+                "candidates": [
+                    {"index": c.index,
+                     "key": c.key if state.show_instrument else None,
+                     "wording": c.wording,
+                     "proposed": c.index in proposed,
+                     # Keyed, not zipped: `cands` is shorter than `hits`
+                     # whenever a key is skipped as uncitable, and zipping the
+                     # two would misalign every cosine after the skip.
+                     "cos": cos_by_key[c.key],
+                     **c.facts}
+                    for c in cands],
+                "not_a_selection":
+                    "Candidates only. This route never commits an anchor: pick "
+                    "one yourself, including when the verdict is `resolved`.",
+            }}
+        except Exception as exc:
+            done = {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
+        finally:
+            state.model_lock.release()
+        with state._jobs_lock:
+            state.jobs[ticket] = done
+
+    threading.Thread(target=_run, daemon=True).start()
+    return {"ticket": ticket, "status": "running", "poll_after_ms": POLL_MS,
+            "note": "A model reads the request and the candidate pool. Ask "
+                    "/api/specify/status for this ticket."}
+
+
+def _first_json(text: str) -> str:
+    """The first JSON object in a model reply.
+
+    There is no grammar enforcement through the CLI (`agent/cli_backend.py`
+    names that as an accepted, named degradation), so a reply can carry prose
+    or a fence around the object.
+
+    Args:
+        text: The raw reply.
+
+    Returns:
+        The substring from the first brace to its match.
+
+    Raises:
+        ValueError: When no balanced object is present.
+    """
+    start = text.find("{")
+    if start < 0:
+        raise ValueError("the model returned no JSON object")
+    depth, in_str, esc = 0, False, False
+    for i, ch in enumerate(text[start:], start):
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start:i + 1]
+    raise ValueError("the model returned an unbalanced JSON object")
+
+
 def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
     """Run the real Specifier against headless `claude -p` on a posed pair.
 
@@ -819,7 +982,8 @@ class Handler(BaseHTTPRequestHandler):
                                       "blocks every other caller while it runs."})
             return
         routes = {"/api/retrieve": _retrieve, "/api/specify": _specify,
-                  "/api/specify/status": _specify_status}
+                  "/api/specify/status": _specify_status,
+                  "/api/resolve": _resolve}
         fn = routes.get(route)
         if fn is None:
             self._send(404, {"error": f"no route {route}"})
