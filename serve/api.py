@@ -283,10 +283,37 @@ def _retrieve(state: State, body: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("query is required")
     k = max(1, min(_int_arg(body, "k", 5), 20))
     r = state.retriever()
-    hits = r.search(query, k=k)
+    # Build the request through the SHIPPED template rather than encoding the
+    # free text, so what is reported is what was actually encoded. `to_query`
+    # drops an instance whose content words the construct already carries, and
+    # that silent drop is exactly what the Intake panel exists to show.
+    from retriever import (  # after retriever() extends sys.path
+        RetrievalRequest,
+        VariableRole,
+    )
+    from template import covered
+    req = RetrievalRequest(construct=query, role=VariableRole.EXPOSURE,
+                           instances=list(body.get("instances") or []))
+    rendered = req.to_query()
+    hits = r.search(rendered, k=k)
     top = hits[0]["cos"] if hits else 0.0
     return {
         "query": query,
+        # What the encoder saw, and how it was assembled. Same fields the
+        # committed runs carry, so the panel renders a live query and a run
+        # through one code path.
+        "rendered_query": rendered,
+        "request": {"construct": query, "role": "exposure",
+                    "instances": list(body.get("instances") or []),
+                    "population": None},
+        # The TEMPLATE's own predicate, not a substring test. `breast cancer` is
+        # dropped from `how often siblings were diagnosed with breast cancer`
+        # because every content word is already there -- and it is also a
+        # substring of it, so `not in rendered` reported nothing dropped and the
+        # panel silently disagreed with the template it exists to explain.
+        "instances_dropped_as_covered": [
+            i for i in (body.get("instances") or [])
+            if i and covered(i, query)],
         "threshold": r.min_cos,
         "abstained": bool(top < r.min_cos),
         "margin_12": round(hits[0]["cos"] - hits[1]["cos"], 6) if len(hits) > 1 else None,
