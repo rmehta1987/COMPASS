@@ -205,10 +205,25 @@ async function askResolver(){
       const u=await s2.json().catch(()=>null);
       if(!u||typeof u!=="object"){ ask={error:`the endpoint answered ${s2.status}`}; return; }
       if(u.status==="running"){ ask={running:true,elapsed_s:u.elapsed_s}; draw(); continue; }
-      ask=u; return;
+      ask=u; adoptProposals(u); return;
     }
   }catch(err){ ask={error:"the endpoint did not answer"}; }
   finally{ draw(); }
+}
+
+function adoptProposals(j){
+  /* Carry over only what the model COMMITTED to. `resolved` and `pinned` are
+     answers; `ambiguous`, `absent`, `derive` and `family` are it declining, and
+     filling those would pick one to be helpful -- the exact move the retrieval
+     guidance forbids. The reader still presses Run, which is the confirmation. */
+  if(!j||!j.roles) return;
+  for(const role of ["exposure","outcome"]){
+    const v=j.roles[role]; if(!v) continue;
+    if(v.verdict==="pinned"&&v.pinned_key){ anchors[role]=v.pinned_key; continue; }
+    if(v.verdict!=="resolved") continue;
+    const pick=(v.candidates||[]).find(c=>c.proposed&&c.key);
+    if(pick) anchors[role]=pick.key;
+  }
 }
 
 function roleBlock(role,v){
@@ -240,7 +255,15 @@ function resolverPanel(){
     +row("proposed by",esc(j.anchors_proposed_by),true)
     +`</dl>`;
   for(const role of ["exposure","outcome"]) if(j.roles&&j.roles[role]) h+=roleBlock(role,j.roles[role]);
-  h+=`<p class="sec">chosen pair</p><dl>`
+  const declined=["exposure","outcome"].filter(r=>j.roles&&j.roles[r]
+    &&j.roles[r].verdict!=="resolved"&&j.roles[r].verdict!=="pinned");
+  h+=`<p class="sec">chosen pair</p>`
+    +(declined.length?`<div class="none" style="color:var(--signal)">`
+      +`The model declined to choose the ${esc(declined.join(" and "))}, so nothing`
+      +` was filled in there. Pick one yourself, or ask again more specifically.</div>`
+      :`<div class="none">Filled from what the model committed to. Change either`
+      +` before running.</div>`)
+    +`<dl>`
     +row("exposure",anchors.exposure?esc(anchors.exposure):"<em>none picked</em>",true)
     +row("outcome",anchors.outcome?esc(anchors.outcome):"<em>none picked</em>",true)
     +`</dl>`
