@@ -31,6 +31,7 @@ from serve.redact import (  # noqa: E402
     REDACTED,
     SAFE_HIT_FIELDS,
     WITHHELD_HIT_FIELDS,
+    WORDING_FIELDS,
     DictionaryUnavailable,
     Pseudonymiser,
     Scrubber,
@@ -931,3 +932,52 @@ def test_a_tree_too_large_to_certify_is_refused_not_served(
     # the cap talking and not the directory being rejected for some other reason.
     monkeypatch.setattr(api, "MAX_SITE_DIR_WALK", 100)
     assert api._refuse_unsafe_site_dir(site, tmp_path / "run") is None
+
+
+def test_every_withheld_hit_text_field_is_covered_structurally() -> None:
+    """The allowlist guards one path; the Scrubber has to guard the rest.
+
+    `pseudonymise_hit` keeps `stem`, `option` and `members` off `/api/retrieve`.
+    Every OTHER route, and the error path, is guarded by the Scrubber instead --
+    and the five-word rule does not reach these fields. MEASURED 2026-09-09 over
+    `deploy/targets.json`: `members` has ZERO five-word runs at all, so no
+    corpus could ever cover it, and 12 `stem` values carry 14 runs the corpus
+    does not hold, because the retriever's stem is a shortened form of
+    `stem_text` and the shortening manufactures runs no dictionary field has.
+
+    Asserted as a relationship between the two sets rather than as a field list,
+    so a newly withheld field cannot be added on one side alone.
+    """
+    key_fields = {"key", "construct_key"}
+    text_fields = WITHHELD_HIT_FIELDS - key_fields
+    assert text_fields <= WORDING_FIELDS, sorted(text_fields - WORDING_FIELDS)
+    # The two key fields are covered by the other mechanism, not this one.
+    for f in sorted(key_fields):
+        assert f not in WORDING_FIELDS
+
+
+def test_the_retrievers_text_fields_are_redacted_by_name(tmp_path: Path) -> None:
+    """By NAME, so content the five-word rule cannot see is still withheld.
+
+    The values here are synthetic: a roster member name short enough that the
+    textual rule is blind to it by construction, which is the case that made
+    the structural rule necessary. No instrument text belongs in this file.
+    """
+    sc = Scrubber()
+    body = {"stem": "a synthetic stem that no instrument contains anywhere",
+            "option": "Strongly agree",
+            "members": ["Alice", "Bob"],
+            "cos": 0.87,
+            "module": "m1",
+            "note": "a synthetic sentence carrying no instrument content at all"}
+    out, marks = sc.scrub(body)
+
+    assert out["stem"] == REDACTED
+    assert out["option"] == REDACTED
+    assert out["members"] == REDACTED
+    assert sorted(marks) == ["members", "option", "stem"]
+    # Anti-vacuity: a filter that redacted everything would pass the above and
+    # take the safe fields with it. `note` is prose the rule genuinely cleared.
+    assert out["cos"] == 0.87
+    assert out["module"] == "m1"
+    assert out["note"] == body["note"]

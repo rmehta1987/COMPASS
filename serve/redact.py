@@ -94,8 +94,25 @@ KEY_RE = re.compile(
 #: cannot see wording shorter than five words -- three dictionary rows are
 #: (MEASURED 2026-09-08). Naming the field closes that on the structural side
 #: instead of lowering the run length, which the pipeline rejected as too noisy.
+#:
+#: `stem`, `option` and `members` are the retriever's names for the same content
+#: (`deploy/retriever.py::_hit`). `pseudonymise_hit`'s allowlist keeps them off
+#: the retrieve path; this keeps them off EVERY OTHER path, which is what the
+#: Scrubber is for. The textual rule does not cover them, MEASURED 2026-09-09
+#: over the 1,353 rows of `deploy/targets.json`:
+#:   - `members` -- 2,761 strings, ZERO five-word runs. Roster member names are
+#:     shorter than the rule can see, so no corpus addition could ever help;
+#:     structural is the only kind of cover available.
+#:   - `stem` -- 12 rows carry 14 five-word runs the corpus does NOT hold. The
+#:     target stem is a normalised, slightly shortened form of `stem_text`
+#:     (96.5% similar on the first case), and the shortening joins words that
+#:     the original kept apart, manufacturing runs no dictionary field contains.
+#:   - `option` -- 440 runs, all of them already in the corpus today. It is
+#:     named here anyway: that is a fact about the current build, not a
+#:     guarantee, and it is the same field on the same code path as the other two.
 WORDING_FIELDS = frozenset({"wording", "question_text", "stem_text",
-                            "searchable_text", "quoted_wording", "subitem_text"})
+                            "searchable_text", "quoted_wording", "subitem_text",
+                            "stem", "option", "members"})
 
 #: Words per forbidden run. The pipeline's number, not a new one.
 RUN = 5
@@ -331,10 +348,19 @@ class Scrubber:
             marks: list[str] = []
             for i, (k, v) in enumerate(obj.items()):
                 here = f"{_path}.{k}" if _path else str(k)
-                if k in WORDING_FIELDS and isinstance(v, str) and v:
+                if k in WORDING_FIELDS and v:
                     # Structural, not textual: this field IS instrument text by
                     # construction, and the five-word rule cannot see wording
                     # shorter than five words.
+                    #
+                    # ANY non-empty value, not only a `str`. `members` is a LIST
+                    # of roster names, and the `isinstance(v, str)` this replaced
+                    # let it past the structural rule entirely -- whereupon the
+                    # walk cleared each name individually, because a name is far
+                    # shorter than five words. A list of wording is still
+                    # wording. Empty values are left alone: there is nothing to
+                    # withhold, and replacing them would report a redaction that
+                    # removed nothing.
                     out[k] = REDACTED
                     marks.append(here)
                     continue
