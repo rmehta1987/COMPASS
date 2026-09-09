@@ -56,6 +56,21 @@ class Candidate:
     state: str = "live"          # live | pruned | parked (parked: never set, see S3)
     stage: str | None = None     # S2 | S3
     reason: str | None = None
+    #: `estimable` | `unknown`. NOT "is this pair worth studying" and NOT "do we
+    #: know n" -- it is one question only: COULD a sample size ever be worked
+    #: out for this pair, given what the study has exported so far.
+    #:   estimable -- both items sit in the same module, so the same people were
+    #:               asked both and counting them needs only the lighter export.
+    #:               It is a statement about the DATA REQUIREMENT, not a count:
+    #:               no participant count of any kind exists in this project
+    #:               yet, so even an `estimable` pair still yields
+    #:               `analytic_n: null`.
+    #:   unknown   -- the items are in different modules, so you would need to
+    #:               know how many people completed both, and
+    #:               `module_co_completion_counts` does not exist.
+    #: `not_estimable` is declared in the type and NEVER assigned: nothing in a
+    #: codebook grounds a claim that a pair can never be measured, only that it
+    #: cannot be measured today. See `_s3` for why that distinction is kept.
     estimability: str | None = None   # estimable | unknown (not_estimable: never set)
     requires_derivation: bool = False
     tags: dict = field(default_factory=dict)

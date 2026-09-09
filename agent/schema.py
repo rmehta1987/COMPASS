@@ -508,6 +508,23 @@ class FalsifierThreshold(BaseModel):
 
 
 class NSource(str, Enum):
+    """Where an analytic n came from, or why there is none.
+
+    These four were bare values with nothing saying what they mean, and the
+    word "estimability" is used for two different things in this project: the
+    funnel tags a PAIR `estimable` or `unknown` -- asking whether a count could
+    ever be worked out -- while this says where a count that exists came FROM.
+    A reader who met both met one word and two vocabularies.
+
+    computed_from_counts -- derived from the study's own exported counts.
+    synthetic_cohort     -- from a simulated cohort, never from participants.
+    published_paper      -- carried over from a published figure, which is a
+                            claim about that paper and not about this study.
+    unknown              -- no count is available and none is invented. Paired
+                            with a null `analytic_n`, which the validator on
+                            `Estimability` enforces in both directions.
+    """
+
     computed_from_counts = "computed_from_counts"
     synthetic_cohort = "synthetic_cohort"
     published_paper = "published_paper"
