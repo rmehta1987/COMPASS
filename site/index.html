@@ -488,11 +488,52 @@ async function liveRetrieve(q){
   }catch(err){ return null; }
 }
 
+function anchorOf(v){
+  /* Whatever the pair route settled on for a role, however it got there. */
+  if(!v) return null;
+  if(v.verdict==="pinned"&&v.pinned_key)
+    return {key:v.pinned_key,wording:v.pinned_wording,how:"named in the request"};
+  const pick=(v.candidates||[]).find(c=>c.proposed&&c.key);
+  if(pick&&v.verdict==="resolved")
+    return {key:pick.key,wording:pick.wording,how:"chosen by the model"};
+  // No entity inside a string that `esc` will escape: it would render the
+  // entity's own source text. Plain words only in here.
+  return {key:null,wording:null,how:`not settled: ${v.verdict}`};
+}
+
+function pairIntakePanel(){
+  const j=ask;
+  let h=`<p class="sec">tool calls</p><div class="none">None for the query itself. `
+    +`The template is deterministic string concatenation: same fields, same query, `
+    +`every run. The model call comes after, to read the candidates.</div>`;
+  h+=`<p class="sec">what was encoded &middot; live, not a committed run</p><dl>`
+    +row("request",esc(j.request))
+    +row("rendered query",esc(j.rendered_query),true)
+    +`</dl>`;
+  h+=`<div class="none">ONE query served both roles. `
+    +`<code>deploy/template.py</code> never renders the role, so an exposure `
+    +`request and an outcome request build the identical string &mdash; the two `
+    +`anchors are separated by the model reading one shared candidate pool, not `
+    +`by two different searches.</div>`;
+  h+=`<p class="sec">anchors resolved from it</p><dl>`;
+  for(const role of ["exposure","outcome"]){
+    const a=anchorOf(j.roles&&j.roles[role]);
+    h+=row(role,a&&a.key
+      ? `<b>${esc(a.key)}</b> &middot; ${esc(a.how)}`
+        +(a.wording?`<br>${esc(a.wording)}`:"")
+      : `<em>${a?esc(a.how):"none"}</em>`,true);
+  }
+  h+=`</dl>`;
+  return h;
+}
+
 function liveIntakePanel(){
-  /* Either route can fill this. The pair route reports the pool query it
-     searched on under its own names, because its `request` is the researcher's
-     prose and its `pool_request` is what the template built from it. */
-  const j=live||ask, q=(live?live.request:(ask&&ask.pool_request))||{};
+  /* A pair is a different object from a single retrieval: one prose request,
+     one pool query, two anchors. Rendering it through the RetrievalRequest
+     shape claimed the whole sentence was one construct with one role, and the
+     role was an artifact of how the pool is built. */
+  if(!live&&ask&&ask.rendered_query) return pairIntakePanel();
+  const j=live, q=(live&&live.request)||{};
   const dropped=(live&&live.instances_dropped_as_covered)||[];
   let h=`<p class="sec">tool calls</p><div class="none">None. The template is `
     +`deterministic string concatenation: same fields, same query, every run. `
