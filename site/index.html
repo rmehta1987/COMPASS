@@ -183,6 +183,64 @@ function placeholder(s){
    wording under --show-instrument -- so this renders what it is given and
    claims nothing about which. */
 let live=null;
+/* The pair the reader assembled, and the last Specifier answer. Both live
+   alongside `live` rather than inside it: a run outlives the retrieval that
+   suggested its anchors. */
+const anchors={exposure:null,outcome:null};
+let spec=null, specBusy=false;
+
+async function runSpecifier(){
+  if(!window.COMPASS_ENDPOINT||specBusy) return;
+  if(!anchors.exposure||!anchors.outcome) return;
+  specBusy=true; spec={running:true}; sel="specifier"; draw();
+  try{
+    const r=await fetch("/api/specify",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({exposure:anchors.exposure,outcome:anchors.outcome})});
+    const j=await r.json().catch(()=>null);
+    /* A refusal, a busy answer while another run holds the lock, and a
+       bad-request for an unresolvable key are all ANSWERS, not failures:
+       show what came back rather than collapsing them into "no endpoint". */
+    spec=(j&&typeof j==="object")?j:{error:`the endpoint answered ${r.status}`};
+  }catch(err){
+    spec={error:"the endpoint did not answer"};
+  }finally{ specBusy=false; draw(); }
+}
+
+function specifierPanel(){
+  const j=spec;
+  if(j.running) return `<p class="sec">running</p><div class="ph"><b>IN PROGRESS</b>`
+    +` &mdash; a real run: reasoning with MCP tools, then transduction, then the gate.`
+    +` Minutes, not seconds. Runs are serialised, so a second one is refused rather`
+    +` than queued.</div>`;
+  if(j.error) return `<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.error)}</div>`;
+  const id=j.identity||{};
+  let h=`<p class="sec">run &middot; not a measurement</p><dl>`
+    +row("pair",esc(id.protocol_id),true)
+    +row("model",`${esc(id.model_id)}${id.is_pipeline_model?"":` <span class="flag">not the pipeline proxy</span>`}`,true)
+    +row("selection",`${esc(id.selection_mode)} &middot; screened_from ${id.screened_from}`,true)
+    +row("dictionary",esc(id.dictionary_version),true)
+    +(id.key_case_corrected?row("key case corrected",esc(JSON.stringify(id.key_case_corrected)),true):"")
+    +row("yield",esc(j.yield),true)
+    +`</dl>`;
+  if(Array.isArray(j.samples)&&j.samples.length){
+    h+=`<p class="sec">samples</p><div class="tools">`+j.samples.map(a=>
+      `<div class="t"><span class="call">seed ${a.seed} &middot; <b>${esc(a.gate)}</b></span>`
+      +`<span class="ret">${a.tool_calls} tool call(s), ${a.transductions} transduction(s)</span></div>`
+      +(Array.isArray(a.distinct_tools)?`<div class="t"><span class="call">${esc(a.distinct_tools.join(" &middot; "))}</span></div>`:"")
+    ).join("")+`</div>`;
+  }
+  const rec=j.selected||j.refusal;
+  if(rec){
+    h+=`<p class="sec">${j.selected?"selected protocol":"refusal, upheld by the environment"}</p>`
+      +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre>`;
+  }else{
+    h+=`<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.reason||"the run produced neither a protocol nor a refusal")}</div>`;
+  }
+  if(j.not_a_measurement) h+=`<div class="none" style="color:var(--signal)">${esc(j.not_a_measurement)}</div>`;
+  return h;
+}
+
 /* Every request that can change the panel takes a ticket. An await
    suspends, and the reader keeps clicking: without this, a slow live
    reply lands after they picked an example and paints over it. */
@@ -222,7 +280,22 @@ function livePanel(){
       +`<span class="ret">cos ${f4(c.cos)}`
       +`${c.cos<j.threshold?" &middot; below min_cos":""}</span></div>`
       +(c.stem?`<div class="t"><span class="call">${esc(c.stem)}</span></div>`:"")
+      /* The anchor is PICKED, never typed. The harness resolves the choice to
+         a key, which is why agent/prompt_contract.py hands the model an index
+         and resolves it itself: a key you never type is a key you cannot
+         mistype. A wrong-case one used to cost a whole run to discover. */
+      +(c.key?`<div class="t"><span class="call">use as</span>`
+        +`<button class="g pick" data-anchor="exposure" data-key="${esc(c.key)}">exposure</button>`
+        +`<button class="g pick" data-anchor="outcome" data-key="${esc(c.key)}">outcome</button>`
+        +`</div>`:"")
     ).join("")+`</div>`;
+  h+=`<p class="sec">chosen pair</p><dl>`
+    +row("exposure",anchors.exposure?esc(anchors.exposure):"<em>none picked</em>",true)
+    +row("outcome",anchors.outcome?esc(anchors.outcome):"<em>none picked</em>",true)
+    +`</dl>`
+    +(anchors.exposure&&anchors.outcome
+      ?`<div class="after"><button class="g" id="go-spec">Run the Specifier on this pair</button></div>`
+      :`<div class="none">Pick both anchors to run the Specifier. Search one construct, use it as exposure; search the other, use it as outcome.</div>`);
   if(j.note) h+=`<p class="sec">known limitation</p>`
     +`<div class="none" style="color:var(--signal)">${esc(j.note)}</div>`;
   return h;
@@ -384,7 +457,8 @@ function draw(){
   const s=DATA.stages.stages.find(x=>x.id===sel);
   let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
          <ul class="does">${s.does.map(d=>`<li>${esc(d)}</li>`).join("")}</ul>`;
-  if(live&&sel==="retriever") h+=livePanel();
+  if(spec&&sel==="specifier") h+=specifierPanel();
+  else if(live&&sel==="retriever") h+=livePanel();
   else if(typed!==null&&!cur) h+=noRun();
   else if(sel==="retriever"&&cur) h+=retrieverPanel();
   else if(sel==="intake"&&cur) h+=intakePanel();
@@ -393,6 +467,9 @@ function draw(){
   else h+=placeholder(s);
   h+=`<div class="after"><button class="g" id="dl-json">Download this record as JSON</button><button class="g" id="png">Save panel as PNG</button></div>`;
   el("#panel").innerHTML=h;
+  document.querySelectorAll("[data-anchor]").forEach(b=>b.onclick=()=>{
+    anchors[b.dataset.anchor]=b.dataset.key; draw();});
+  const go=el("#go-spec"); if(go) go.onclick=runSpecifier;
   el("#dl-json").onclick=()=>{
     const doc={stage:sel,example:cur,artefact_provenance:Object.fromEntries(Object.entries(DATA).filter(([k])=>k!=="index").map(([k,v])=>[k,v.provenance]))};
     const b=new Blob([JSON.stringify(doc,null,2)],{type:"application/json"});
@@ -411,7 +488,10 @@ el("#run").onclick=async()=>{
   if(cur) return;
   const j=await liveRetrieve(q);
   if(gen!==liveGen) return;
-  if(j){ live=j; sel="retriever"; draw(); }
+  /* Only pull the reader to the retriever if they are not deliberately
+     somewhere else: a reply arriving while they read another stage should not
+     move them. */
+  if(j){ live=j; if(sel!=="specifier") sel="retriever"; draw(); }
 };
 el("#dl-src").onclick=()=>{
   /* One self-contained file: the live DOM as rendered, plus every loaded
