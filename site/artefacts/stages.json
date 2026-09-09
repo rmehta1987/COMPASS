@@ -95,6 +95,21 @@
    "status": "blocked",
    "placeholder": "Will show the gate's real output: how many pairs were live, passed and blocked, and which exports are missing.",
    "waits_for": null
+  },
+  {
+   "id": "metrics",
+   "name": "Metrics",
+   "sub": "the one scored run \u00b7 its ceiling, its bibliography, its artefacts",
+   "does": [
+    "States the ceiling before the score, because the score is unreadable without it",
+    "Lists the cohort papers the run was scored against, and what each one is",
+    "Lists every scored artefact, and runs the Specifier on any of their pairs",
+    "Carries the retrieval measurements that used to sit below every panel"
+   ],
+   "status_label": "scored \u00b7 ceiling reached",
+   "status": "pass",
+   "placeholder": "",
+   "waits_for": null
   }
  ]
 }

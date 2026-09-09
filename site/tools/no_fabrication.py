@@ -13,7 +13,9 @@ Two halves, both hard failures:
    is a retyped number, not data: any string value outside ``provenance``
    that carries a decimal, a thousands-grouped or a three-plus-digit integer
    fails, except request text and names (a model, a column label), which
-   are words, not values.
+   are words, not values, and except the verbatim bibliographic fields named
+   in ``VERBATIM``, which are quoted out of a tracked source file rather than
+   computed for this page.
 """
 from __future__ import annotations
 
@@ -38,6 +40,15 @@ FIGURE_RE = re.compile(r"\d+\.\d+|\d{1,3}(?:,\d{3})+|(?<![\w.-])\d{3,}(?![\w.-])
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}(?:T[\d:]+Z?)?")
 # verbatim inputs and names: a request, a model name, a column label. Never a value.
 REQUEST_KEYS = {"request", "query", "rendered_query", "construct", "instances", "text", "label", "model", "name", "columns", "arm_columns"}
+# Verbatim rows copied out of a git-tracked source file, not figures computed
+# for this page. `metrics.json`'s `papers` list is `benchmark/cohort_papers.py`
+# transcribed by `build_metrics.py`: a paper's realised n reads as the paper
+# reports it, which is often not a bare number, and its design names the
+# exposure the paper used. Neither can be a JSON number, and rewriting either
+# into one would destroy the quotation. Scoped to those two leaves under that
+# one top-level list so a computed figure cannot hide here: widen it no
+# further, and never to a whole file.
+VERBATIM = {("papers", "design"), ("papers", "n")}
 
 
 def page_literals() -> list[str]:
@@ -64,6 +75,8 @@ def walk_strings(node, path: tuple[str, ...], out: list[str]) -> None:  # noqa: 
             walk_strings(v, path + (str(i),), out)
     elif isinstance(node, str):
         if path and path[-1] in REQUEST_KEYS or any(p in REQUEST_KEYS for p in path[-2:]):
+            return
+        if path and (path[0], path[-1]) in VERBATIM:
             return
         s = DATE_RE.sub("", node)
         if FIGURE_RE.search(s):

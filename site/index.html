@@ -122,7 +122,6 @@
     <nav class="rail" id="rail" aria-label="pipeline stage"></nav>
     <section class="panel" id="panel" aria-live="polite"></section>
   </div>
-  <section class="measure" id="measure" aria-label="measurements"></section>
   <footer id="foot"></footer>
 </main>
 
@@ -134,6 +133,10 @@ const DATA={};
 let sel="retriever", cur=null, typed=null;
 const el=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+/* Attribute context. `esc` leaves a double quote alone, which is harmless in
+   element text and in a variable key, and breaks out of title=" the moment the
+   value is question wording. */
+const att=s=>esc(s).replace(/"/g,"&quot;");
 const row=(k,v,m)=>`<dt>${k}</dt><dd class="${m?'m':''}">${v}</dd>`;
 const f4=x=>x.toFixed(4);
 
@@ -757,6 +760,114 @@ function funnelPanel(){
   return h;
 }
 
+let met=null, metBusy=false;
+
+/* The public artefact carries no key and no wording -- see build_metrics.py.
+   A reviewer on the endpoint can ask for them, because they hold the
+   dictionary already; that is a request, never the default. */
+async function loadMetricKeys(){
+  if(!window.COMPASS_ENDPOINT||metBusy) return;
+  metBusy=true; draw();
+  try{
+    const r=await fetch("/api/metrics",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+    const j=await r.json().catch(()=>null);
+    met=(j&&typeof j==="object")?j:{error:`the endpoint answered ${r.status}`};
+  }catch(err){ met={error:"the endpoint did not answer"}; }
+  finally{ metBusy=false; draw(); }
+}
+
+function metricsPanel(){
+  const m=DATA.metrics, c=m.ceiling, o=m.observed;
+  const keyed=(met&&met.pairs)?met.pairs:null;
+
+  let h=`<div class="ph"><b>READ THE CEILING FIRST</b> &mdash; ${esc(m.headline)}</div>`;
+  h+=`<p class="sec">the question this run answers</p>`
+    +`<div class="none">${esc(m.question_answered)}</div>`;
+
+  h+=`<p class="sec">ceiling &middot; the highest score that was available</p><dl>`
+    +row("papers in the table",String(c.papers_in_table),true)
+    +row("with an outcome key on record",String(c.with_outcome_key),true)
+    +row("with an exposure the retriever resolved",String(c.with_exposure_resolved),true)
+    +row("matchable, needing both",`<span class="flag">${c.matchable_papers}</span>`,true)
+    +row("highest possible match count",`<span class="flag">${c.max_matched}</span>`,true)
+    +`</dl><div class="none">${esc(m.reads.why_the_ceiling_is_low)}.</div>`;
+
+  h+=`<p class="sec">observed</p><dl>`
+    +row("matched",`<span class="flag">${o.matched}</span>`,true)
+    +row("scored, the ledger's emitted count",String(o.scored),true)
+    +row("ledger denominator",String(o.ledger_denominator),true)
+    +row("by outcome",Object.entries(o.by_outcome)
+        .map(([k,v])=>`${esc(k)} ${v}`).join(" &middot; "),true)
+    +row("strata",esc(o.strata.join(" &middot; ")),true)
+    +row("artefact files on disk",String(o.artefact_files_on_disk),true)
+    +`</dl><div class="none">${esc(o.denominator_note)}.</div>`;
+
+  h+=`<p class="sec">how to read that</p><ul class="does">`
+    +`<li><b>It establishes</b> ${esc(m.reads.establishes)}.</li>`
+    +`<li><b>It is not</b> ${esc(m.reads.is_not)}.</li></ul>`;
+
+  h+=`<p class="sec">verdicts</p><div class="tools">`
+    +Object.entries(m.verdicts).map(([k,v])=>
+      `<div class="t gate ${v==="ok"?"pass":"fail"}"><span class="call">${esc(k)}</span>`
+      +`<span class="ret">${esc(v)}</span></div>`).join("")+`</div>`;
+
+  h+=`<p class="sec">the papers this run was scored against &middot; `
+    +`${m.papers.length} indexed, and that is a floor</p>`
+    +`<div class="tbl"><table><thead><tr><th>PMID</th><th>year</th><th>venue</th>`
+    +`<th>design &middot; exposure to outcome</th><th>n</th><th>terms that abstained</th>`
+    +`</tr></thead><tbody>`
+    +m.papers.map(r=>`<tr><td><a href="${esc(m.pubmed_base)}${esc(r.pmid)}/">`
+      +`${esc(r.pmid)}</a>${r.inventoried_before_2026_08_27?"":" <span class=\"flag\">late</span>"}`
+      +`</td><td>${r.year}</td><td>${esc(r.venue)}</td><td>${esc(r.design)}</td>`
+      +`<td>${esc(r.n)}</td><td>${r.exposure_terms_abstained}</td></tr>`).join("")
+    +`</tbody></table></div>`
+    +`<div class="none">Rows marked <span class="flag">late</span> were not in any `
+    +`exclusion list before the bibliography was rebuilt, which is why every tier `
+    +`assignment made before then is wrong.</div>`;
+
+  const gap=m.not_built.find(x=>x.what.indexOf("per-paper")>-1);
+  h+=`<p class="sec">where the join would go</p>`
+    +`<div class="ph"><b>NOT BUILT</b> &mdash; ${esc(gap.why)}.</div>`;
+
+  h+=`<p class="sec">the scored artefacts &middot; ${m.artefacts.length}</p>`;
+  if(!keyed) h+=`<div class="none">${esc(m.instrument_withheld_here)}`
+    +(window.COMPASS_ENDPOINT
+      ?` <button class="g" id="met-keys">${metBusy?"asking the endpoint&hellip;"
+        :"Show the keys and wording"}</button>`
+      :``)+`</div>`;
+  if(met&&met.error) h+=`<div class="ph"><b>NO KEYS</b> &mdash; ${esc(met.error)}.</div>`;
+  h+=`<div class="tbl"><table><thead><tr><th>record</th>`
+    +(keyed?`<th>exposure</th><th>outcome</th>`:`<th>exposure stratum</th><th>outcome stratum</th>`)
+    +`<th>estimability</th><th>adjusted</th><th>excluded</th><th>sought, not found</th>`
+    +`<th>n source</th>`+(keyed?`<th></th>`:``)+`</tr></thead><tbody>`
+    +m.artefacts.map(a=>{
+      const k=keyed?keyed[a.record_hash]:null;
+      return `<tr><td class="m">${esc(a.record_hash)}</td>`
+        +(k?`<td class="m" title="${att(k.exposure_wording||k.exposure_wording_hash)}">`
+            +`${esc(k.exposure)}</td>`
+            +`<td class="m" title="${att(k.outcome_wording||k.outcome_wording_hash)}">`
+            +`${esc(k.outcome)}</td>`
+          :`<td>${esc(a.exposure_stratum)}</td><td>${esc(a.outcome_stratum)}</td>`)
+        +`<td><span class="flag">${esc(a.estimability)}</span></td>`
+        +`<td>${a.n_adjusted}</td><td>${a.n_excluded}</td><td>${a.n_sought_not_found}</td>`
+        +`<td>${esc(a.n_source)}</td>`
+        +(k?`<td><button class="g pick" data-genex="${esc(k.exposure)}" `
+           +`data-genout="${esc(k.outcome)}">run the pipeline</button></td>`:``)
+        +`</tr>`;}).join("")
+    +`</tbody></table></div>`;
+
+  const nos=m.not_built.find(x=>x.what.indexOf("scoring")>-1);
+  h+=`<div class="none">Running one of these re-drives the Specifier on that pair `
+    +`and lands in <b>Record</b>. It does not re-score: ${esc(nos.why)}.</div>`;
+  h+=`<p class="prov">${esc(m.provenance.run_id)} &middot; dictionary `
+    +`${esc(m.provenance.dictionary_version_hash)} &middot; tree `
+    +`${esc(m.provenance.tree_sha)} &middot; ${esc(m.provenance.source)}</p>`;
+
+  h+=measureHTML();
+  return h;
+}
+
 function scorePanel(){
   const sc=DATA.score, e=sc.generation_env;
   const b=v=>v?`<span class="flag">true</span>`:`false <span class="good">required</span>`;
@@ -775,7 +886,7 @@ function scorePanel(){
   return h;
 }
 
-function measure(){
+function measureHTML(){
   const m=DATA.measurements, sh=m.shipped, S=sh.arms.S, I=sh.arms.I, th=sh.threshold, lat=sh.latency;
   const best=Math.max(...m.sweep.rows.map(r=>r.recall_at_1));
   const cell=(k,v)=>k.startsWith("recall_at")?v.toFixed(3):k==="params_m"?`${v}M`:k==="model"?esc(v):String(v);
@@ -795,7 +906,11 @@ function measure(){
   </tbody></table></div>
   <p class="prov">${esc(m.provenance.commit)} · ${esc(lat.note)}</p>`;
   h+=`<div class="none">${esc(sh.wrong_pick_detection.note)}.</div>`;
-  el("#measure").innerHTML=h;
+  return h;
+}
+
+function foot(){
+  const m=DATA.measurements, sh=m.shipped, I=sh.arms.I, lat=sh.latency;
   el("#foot").innerHTML=`<p>Retrieval is shipped: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, no model call. Hypothesis generation is not: the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} pairs without two survey-metadata exports, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>.</p>
   <p>Abstention on constructs the instrument does not measure is reliable on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(4)}, ${I.negatives_rejected} of ${I.n_negatives} negatives rejected). Detecting its own wrong pick is a different question, and the one figure for it is not on this page. Whether the fixture is a ceiling or a floor is unresolved.</p>
   <p>Every figure above is loaded from <code>site/artefacts/</code> with its run id or commit. Panels marked PLACEHOLDER have no committed artefact and show no numbers.</p>`;
@@ -843,6 +958,7 @@ function draw(){
   else if(sel==="intake"&&cur) h+=intakePanel();
   else if(sel==="generate") h+=generatePanel();
   else if(sel==="score") h+=scorePanel();
+  else if(sel==="metrics") h+=metricsPanel();
   else h+=placeholder(s);
   h+=`<div class="after"><button class="g" id="dl-json">Download this record as JSON</button><button class="g" id="png">Save panel as PNG</button></div>`;
   el("#panel").innerHTML=h;
@@ -851,6 +967,7 @@ function draw(){
   const go=el("#go-spec"); if(go) go.onclick=runSpecifier;
   el("#ask").onclick=askResolver;
   const gg=el("#go-gen"); if(gg) gg.onclick=enumerate;
+  const mk=el("#met-keys"); if(mk) mk.onclick=loadMetricKeys;
   document.querySelectorAll("[data-genex]").forEach(b=>b.onclick=()=>{
     anchors.exposure=b.dataset.genex; anchors.outcome=b.dataset.genout;
     runSpecifier();});
@@ -890,7 +1007,7 @@ el("#dl-src").onclick=()=>{
   const a=document.createElement("a");a.href=URL.createObjectURL(b);
   a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
 
-load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); draw(); measure();}).catch(e=>{
+load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); draw(); foot();}).catch(e=>{
   el("#panel").innerHTML=`<h2>Artefacts did not load</h2><div class="ph"><b>NO DATA</b> — ${esc(e.message)}. Serve this directory over HTTP; a file:// open cannot fetch the artefacts.</div>`;
 });
 </script>
