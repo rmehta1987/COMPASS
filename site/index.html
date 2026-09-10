@@ -168,14 +168,22 @@ async function load(){
 }
 
 /* What a stage is doing RIGHT NOW, or null to keep the committed chip.
-   ONE VOCABULARY, five states, and a chip says nothing else. It answers the
-   only question a chip can answer from outside the panel: is there output on
-   this tab, is it coming, is it on the reader, or is there none.
-     ran               there is output on this tab
+   ONE VOCABULARY, and a chip says nothing else. It answers the only question a
+   chip can answer from outside the panel: whose run is on this tab, is one
+   coming, is it on the reader, or is there none.
+     example           a worked example, chosen for you; you ran nothing
+     past run          a recorded run of the project; no query changes it
+     ran               a live run YOU started put this here
      running&hellip;   a run is in flight
-     waiting for you   press something and there will be
+     waiting for you   press something and there will be one
      nothing to show   none on this page, and the reader cannot make one
      failed            the run errored; the panel says how
+   `ran` is the reader's own run and nothing else. A fresh load auto-selects the
+   first committed example and pre-fills the search box, so five of the seven
+   chips used to say `ran` before the reader had typed anything -- the rail was
+   describing the artifacts, which the reader cannot tell apart from a claim
+   about their own session. An example says `example` however it was reached:
+   clicking one is the reader acting, but it is still not their query.
    The chips used to carry provenance -- which gate was off, what was withheld,
    which other tab held the result -- and read as a caption to a tab nobody had
    opened yet. Every one of those facts is stated in the body of the tab it
@@ -198,15 +206,20 @@ function liveStatus(id){
      chip says "nothing to show", which is true of the static page and wrong
      here -- the button beside it works. */
   const served=!!window.COMPASS_ENDPOINT;
+  /* Mirrors `stagePanel`'s own `noRun` test. Drift here and the chip describes
+     a panel the reader is not looking at. */
+  const noRun=typed!==null&&!cur;
   if(id==="retriever"){
     if(posed) return {cls:"built",label:"nothing to show"};
     if(ask) return ask.running?{cls:"built",label:"running&hellip;"}:{cls:"built",label:"ran"};
     if(live) return {cls:"built",label:"ran"};
+    if(noRun) return {cls:"built",label:"nothing to show"};
     return null;
   }
   if(id==="intake"){
     if(posed) return {cls:"built",label:"nothing to show"};
     if(live||(ask&&ask.rendered_query)) return {cls:"built",label:"ran"};
+    if(noRun) return {cls:"built",label:"nothing to show"};
     return null;
   }
   if(id==="specifier"){

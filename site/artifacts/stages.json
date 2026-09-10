@@ -1,7 +1,7 @@
 {
  "schema": "compass_site/stages/1",
  "provenance": {
-  "source": "authored 2026-09-04 from generate/funnel.py, pipeline/gate.py, pipeline/generation_env.py, agent/specifier.py docstrings and deploy/manifest.json prose; carries no figures; rewritten 2026-09-09 against agent/schema.py (no typed DAG, no critique seam, no study-design field) and the scored run on the Metrics tab (the Specifier, Record and Score stages ran once, with the estimability gate switched off); stage order is the pipeline's, not the order the page was built in; status chips rewritten 2026-09-10 to say only whether a tab has output, is running, is waiting on the reader or has none -- the provenance they used to carry (gate off, output withheld, result under Metrics, nothing matchable) is stated in each tab's own body; every committed status is now `built`, the neutral chip colour: the rail label states the tab's state and colour is reserved for a failed live run, so no chip can typeset a zero-match run as a green pass",
+  "source": "authored 2026-09-04 from generate/funnel.py, pipeline/gate.py, pipeline/generation_env.py, agent/specifier.py docstrings and deploy/manifest.json prose; carries no figures; rewritten 2026-09-09 against agent/schema.py (no typed DAG, no critique seam, no study-design field) and the scored run on the Metrics tab (the Specifier, Record and Score stages ran once, with the estimability gate switched off); stage order is the pipeline's, not the order the page was built in; status chips rewritten 2026-09-10 to say only whether a tab has output, is running, is waiting on the reader or has none -- the provenance they used to carry (gate off, output withheld, result under Metrics, nothing matchable) is stated in each tab's own body; every committed status is now `built`, the neutral chip colour: the rail label states the tab's state and colour is reserved for a failed live run, so no chip can typeset a zero-match run as a green pass; 2026-09-10 second pass: a fresh load auto-selects the first committed example, so Intake and Retriever were claiming a run the reader had not made. `example` is a worked example, `past run` a recorded capture no query changes, and `ran` is now reserved for a live run the reader started",
   "commit": "COMPASS main 265241d; generation clone ralph-loop 7ef75fa; scored run b3-20260904",
   "tier": "A"
  },
@@ -15,7 +15,7 @@
     "Never renders the role; leaves population unset by contract",
     "Renders one deterministic query string: no paraphrase, no randomness, no language model"
    ],
-   "status_label": "ran",
+   "status_label": "example",
    "status": "built",
    "placeholder": "Will show the real RetrievalRequest and the string the shipped template rendered for it.",
    "waits_for": null
@@ -30,7 +30,7 @@
     "Abstains when the top cosine falls below the shipped threshold",
     "Refuses to serve at all if the dictionary hash does not match"
    ],
-   "status_label": "ran",
+   "status_label": "example",
    "status": "built",
    "placeholder": "Will show a real run: cosine, rank, margin, threshold, abstention and roster fold size, with the target pseudonymised.",
    "waits_for": null
@@ -45,7 +45,7 @@
     "S3 screens estimability: blocked until two survey metadata exports arrive",
     "Runs the Specifier on a pair it produced, rather than one you typed"
    ],
-   "status_label": "ran",
+   "status_label": "past run",
    "status": "built",
    "placeholder": "Will show the gate's real output: how many pairs were live, passed and blocked, and which exports are missing.",
    "waits_for": null
@@ -92,7 +92,7 @@
     "Reports match rate only beside contamination and leakage verdicts",
     "Runs exactly once, on a tag, before any tuning, so it cannot become a feedback signal"
    ],
-   "status_label": "ran",
+   "status_label": "past run",
    "status": "built",
    "placeholder": "Will show the generation clone's GenerationEnv stamp and the one scored run.",
    "waits_for": null
@@ -108,7 +108,7 @@
     "Lists every scored record, and runs the Specifier on any of their pairs",
     "Carries the retrieval measurements and their known limitations"
    ],
-   "status_label": "ran",
+   "status_label": "past run",
    "status": "built",
    "placeholder": "",
    "waits_for": null
