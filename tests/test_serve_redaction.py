@@ -981,3 +981,32 @@ def test_the_retrievers_text_fields_are_redacted_by_name(tmp_path: Path) -> None
     assert out["cos"] == 0.87
     assert out["module"] == "m1"
     assert out["note"] == body["note"]
+
+
+def test_the_role_never_reaches_the_encoder() -> None:
+    """`role` changes nothing about the query, so one pool serves both roles.
+
+    `serve/api.py::_role_candidates` passes `role` into `RetrievalRequest`, and
+    `deploy/template.py::to_query` never renders it. `_pair` relies on that: it
+    builds ONE pool with `role="exposure"` and offers it to both roles. If a
+    future `to_query` renders `role`, that pool silently becomes exposure-biased
+    while still being served as the outcome pool, and nothing else would catch
+    it — `_pair` has no test. This is that test.
+    """
+    # `deploy/template.py` is tracked and stdlib-only, so this needs none of
+    # the withheld bundle artifacts -- no model, no vectors, no targets.json.
+    sys.path.insert(0, str(ROOT / "deploy"))
+    from template import RetrievalRequest, VariableRole
+
+    for construct in ("blood pressure", "does smoking cause hypertension",
+                      "walking while shopping or doing errands"):
+        exposure = RetrievalRequest(construct=construct,
+                                    role=VariableRole.EXPOSURE).to_query()
+        outcome = RetrievalRequest(construct=construct,
+                                   role=VariableRole.OUTCOME).to_query()
+        assert exposure == outcome, (
+            f"to_query rendered `role` for {construct!r}: exposure gave "
+            f"{exposure!r} and outcome gave {outcome!r}. serve/api.py::_pair "
+            f"offers ONE pool, built with role='exposure', to both roles — that "
+            f"pool is now exposure-biased. Either stop rendering role, or give "
+            f"_pair a pool per role.")

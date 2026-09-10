@@ -457,11 +457,25 @@ def _pin_keys_from_prose(request: str, constructs: dict[str, Any]) -> dict[str, 
 
 
 def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str, Any]:
-    """The pool for one role, and the surface that will be asked about it.
+    """The pool offered for one role, and the surface that will be asked about it.
 
-    The request is framed by role because the same prose contains both, and the
-    retriever cannot tell which half it is being asked for. That framing is the
-    only project-authored text this route adds to a model-visible surface.
+    `role` DOES NOT REACH THE ENCODER. It is passed to `RetrievalRequest` and
+    `deploy/template.py::to_query` never renders it — the template's own module
+    docstring says so outright — so the query built here is a pure function of
+    `request`, and the pool is byte-identical whichever role is named. What is
+    framed by role is the ASK, not the retrieval: `_pair` puts
+    "Which item serves as the EXPOSURE here?" on the prompt built from this
+    pool. That framing is the only project-authored text this route adds to a
+    model-visible surface.
+
+    The corrected wording matters because the previous one claimed the retrieval
+    was role-aware, which made `_pair`'s one shared pool look like an
+    optimisation rather than the only thing this function can produce.
+    `role` is still a live field on `RetrievalRequest`; if a future `to_query`
+    renders it, `_pair`'s single pool — built with `role="exposure"` — becomes
+    exposure-biased while still being served as the outcome pool.
+    `tests/test_serve_redaction.py::test_the_role_never_reaches_the_encoder`
+    turns red first.
 
     Args:
         state: Shared handles.
