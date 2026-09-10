@@ -29,7 +29,12 @@ case "$BUILT" in *"$PIN"*) ;; *) fail 1 "dictionary hash moved off $PIN" ;; esac
 
 # 2. tests, never piped (a pipe would return tail's exit code).
 #    --ignore: one path per file that imports a scorer at module level.
-#    --deselect: one node id per test that imports the key inside its body.
+#    --deselect: one node id per test that reaches the key TRANSITIVELY. None
+#    imports it; they import benchmark.contamination_check, whose only
+#    module-level path to it is `from benchmark.input_leakage import ...`
+#    (verified 2026-09-09: stubbing input_leakage alone makes the module
+#    import with prevalence_key never touched). Deferring that one import
+#    into main() would make these runnable here -- see TASKS.md S0/C37-C39.
 #    Never --continue-on-collection-errors: it would hide a real import break.
 $PY -m pytest tests/ -q -p no:cacheprovider \
     --ignore=tests/test_contamination_surface.py \

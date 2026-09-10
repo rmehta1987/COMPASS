@@ -8,8 +8,10 @@ note: check.sh omits 4 contamination checks by construction (contamination_check
       which lives on scoring-key. They run in item 15 phase 2 only. A green
       check.sh does NOT mean contamination is covered.
       unearned_assertions.py is NOT among them and runs normally.
-note: the brief's "four test FILES" is incomplete. Four further TESTS import the
-      key inside their bodies and fail on any single-branch clone; check.sh
+note: the brief's "four test FILES" is incomplete. Four further TESTS reach the
+      key TRANSITIVELY and fail on any single-branch clone -- none imports it;
+      they import benchmark.contamination_check, whose sole module-level path
+      to it is benchmark/input_leakage.py (verified 2026-09-09). check.sh
       --deselects them by explicit node id (same spirit as one-path-per-file):
         tests/test_catalogue.py::test_no_index_position_reads_as_a_withheld_figure
         tests/test_specifier.py::test_contamination_check_passes_offline

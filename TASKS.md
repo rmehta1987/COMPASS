@@ -181,6 +181,30 @@ the first review's most severe finding was lost in transit and is NOT among thes
 claim below was exercised either by lifting the rule's source by AST or by stubbing
 `benchmark.prevalence_key` in memory — never by running the check.
 
+- **C40 — one deferred import would make `contamination_check` runnable in this clone.
+  GATES C37-C39 and is the highest-leverage item in this section.** (Lane B.) The
+  unimportability has exactly ONE cause and it is one import wide:
+  `benchmark/contamination_check.py` -> `benchmark/input_leakage.py` ->
+  `benchmark.prevalence_key`. It imports exactly one name from `input_leakage`,
+  `check_input_does_not_contain_the_answer`, used in exactly one place — `main`'s
+  `sections` dict. VERIFIED 2026-09-09 by stubbing ONLY `benchmark.input_leakage` in
+  `sys.modules` (in memory, no file): `contamination_check` imported, `prevalence_key`
+  never entered `sys.modules`, and `check_provenance()` returned `[]` on the real tree.
+  Deferring that one import into `main()` makes the module importable here, which would
+  let the three provenance tests — deselected unconditionally since `1b41cb8` and run by
+  NO committed runner — execute in `check.sh`. Constraints: `main()` must still call the
+  input-side check UNCONDITIONALLY; wrapping it in `try/except` would be a silent skip and
+  a fresh C37. `ruff`'s selected set does not forbid in-body imports and `main()` already
+  does one (`from agent.sealed import ...`). SECOND STEP, needing the orchestrator's
+  sanction because it deletes from a Lane-A file: move `_provenance_root` and the three
+  provenance tests out of `tests/test_specifier.py` into a new
+  `tests/test_contamination_check.py` (`tests/test_env_tools.py` is the precedent for
+  exactly this straddle). UNVERIFIED and out of scope until shown green one commit at a
+  time: whether `test_contamination_check_passes_offline`,
+  `test_the_check_actually_catches_a_planted_leak`,
+  `test_the_refusal_prompt_and_schema_carry_no_study_content` and
+  `tests/test_catalogue.py::test_no_index_position_reads_as_a_withheld_figure` also become
+  runnable here — `model_visible_surface()` was never exercised under the stub.
 - **C30 — `signed` is a word three code paths use and none reads** (Lane B AND Lane A,
   together; neither alone is a fix). `env/tools.py::list_derivations` returns
   `f"{len(d)} signed derivations exist"` from a bare glob, and
@@ -255,7 +279,8 @@ claim below was exercised either by lifting the rule's source by AST or by stubb
   block. The comment beside `ALLOWED_SOURCES` says widening it "is a user amendment, never
   a lane's" and nothing enforces that. A legal vocabulary is a RULE, so set equality is the
   honest pin and "never pin today's corpus" does not cover it.
-- **C39 — four branches of `check_provenance` are seeded by no test** (Lane B, tests).
+- **C39 — three branches of `check_provenance` are seeded by no test, and the fixture
+  has a shape no real derivation has** (Lane B, tests).
   Measured green under mutation: gutting the conventions `if not m:` branch (no
   `**Source:**` line at all — `_provenance_root::write_convention` cannot express a
   convention without one); dropping `.lower()` from the conventions `elif`, which a test
