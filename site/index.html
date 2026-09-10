@@ -45,6 +45,10 @@
   .rail button:hover{background:#fff}
   .rail button[aria-current="true"]{background:#fff;box-shadow:inset 3px 0 0 var(--ink);font-weight:600}
   .rail .st{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;margin-top:3px}
+  /* Neutral is the rail's normal state; `blocked` is the only colour a chip
+     earns, and only when a live run failed. `shipped` and `pass` stay defined
+     because `stages.json` is operator-edited data that may name them and
+     `parse.py` fails on a status with no rule -- nothing emits them today. */
   .st.shipped{color:var(--ok)} .st.built{color:var(--ink-3)} .st.blocked{color:var(--signal)}
   .st.pass{color:var(--ok)}
 
@@ -164,43 +168,64 @@ async function load(){
 }
 
 /* What a stage is doing RIGHT NOW, or null to keep the committed chip.
+   ONE VOCABULARY, five states, and a chip says nothing else. It answers the
+   only question a chip can answer from outside the panel: is there output on
+   this tab, is it coming, is it on the reader, or is there none.
+     ran               there is output on this tab
+     running&hellip;   a run is in flight
+     waiting for you   press something and there will be
+     nothing to show   none on this page, and the reader cannot make one
+     failed            the run errored; the panel says how
+   The chips used to carry provenance -- which gate was off, what was withheld,
+   which other tab held the result -- and read as a caption to a tab nobody had
+   opened yet. Every one of those facts is stated in the body of the tab it
+   belongs to, so the chip drops it rather than losing it.
    `stages.json` describes the SHIPPED state of the pipeline, not this session,
-   so its chips describe the shipped pipeline: a committed run for retriever and
-   intake, "not yet run" for specifier and record. `rail` ran once at load and never again, so
-   those stayed on screen through a completed run -- the page said no run had
-   happened while showing its record -- and `aria-current` never moved either,
-   so the rail did not even mark the stage being read.
-   Returns one of the classes the stylesheet defines. `stages.json` also uses
-   `pass`, on Metrics, which `rail` interpolates straight into the class -- so
-   the stylesheet defines that one too. An earlier note here claimed only three
-   classes existed, which was true of this function's own returns and false of
-   the committed data it falls back to. */
+   so its chips describe the shipped pipeline. `rail` ran once at load and never
+   again, so those stayed on screen through a completed run -- the page said no
+   run had happened while showing its record -- and `aria-current` never moved
+   either, so the rail did not even mark the stage being read.
+   COLOUR MEANS ONE THING: a run failed. Everything settled is neutral. A green
+   chip on the one scored run read as an achievement when what it denoted was
+   zero matched against a ceiling of zero, so no chip claims a pass any more --
+   the label states the tab's state and the panel states the result. `rail`
+   interpolates a stage's own `status` straight into the class, so `stages.json`
+   may only use a class the stylesheet defines; `parse.py` fails if it does not.
+   An earlier note here claimed only three classes existed, which was true of
+   this function's own returns and false of the committed data it falls back to. */
 function liveStatus(id){
+  /* Served, nothing run yet: it is on the reader, not withheld. The committed
+     chip says "nothing to show", which is true of the static page and wrong
+     here -- the button beside it works. */
+  const served=!!window.COMPASS_ENDPOINT;
   if(id==="retriever"){
-    if(posed) return {cls:"built",label:"posed &middot; not retrieved"};
-    if(ask) return ask.running?{cls:"built",label:"resolving&hellip;"}:{cls:"shipped",label:"request read"};
-    if(live) return {cls:"shipped",label:"live retrieval"};
+    if(posed) return {cls:"built",label:"nothing to show"};
+    if(ask) return ask.running?{cls:"built",label:"running&hellip;"}:{cls:"built",label:"ran"};
+    if(live) return {cls:"built",label:"ran"};
     return null;
   }
   if(id==="intake"){
-    if(posed) return {cls:"built",label:"posed &middot; no query rendered"};
-    if(live||(ask&&ask.rendered_query)) return {cls:"shipped",label:"query rendered"};
+    if(posed) return {cls:"built",label:"nothing to show"};
+    if(live||(ask&&ask.rendered_query)) return {cls:"built",label:"ran"};
     return null;
   }
   if(id==="specifier"){
-    if(!spec) return null;
+    if(!spec) return served?{cls:"built",label:"waiting for you"}:null;
     if(spec.running) return {cls:"built",label:"running&hellip;"};
-    if(spec.error) return {cls:"blocked",label:"the server errored"};
-    return {cls:"shipped",label:"run complete"};
+    if(spec.error) return {cls:"blocked",label:"failed"};
+    return {cls:"built",label:"ran"};
   }
   if(id==="record"){
-    if(!spec||spec.running||spec.error) return null;
-    if(spec.selected) return {cls:"shipped",label:"record present"};
-    if(spec.refusal) return {cls:"built",label:"refused, with a reason"};
+    if(!spec) return served?{cls:"built",label:"waiting for you"}:null;
+    /* The reader cannot run this stage; the Specifier fills it. So it mirrors
+       that run rather than sitting on "nothing to show" while one is in flight. */
+    if(spec.running) return {cls:"built",label:"running&hellip;"};
+    if(spec.error) return null;
+    if(spec.selected||spec.refusal) return {cls:"built",label:"ran"};
     return null;
   }
-  if(id==="generate"&&gen&&!gen.running&&!gen.error) return {cls:"shipped",label:"enumerated this session"};
-  if(id==="metrics"&&met&&!met.error) return {cls:"shipped",label:"keys shown"};
+  if(id==="generate"&&gen&&!gen.running&&!gen.error) return {cls:"built",label:"ran"};
+  if(id==="metrics"&&met&&!met.error) return {cls:"built",label:"ran"};
   return null;
 }
 

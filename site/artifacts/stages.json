@@ -1,7 +1,7 @@
 {
  "schema": "compass_site/stages/1",
  "provenance": {
-  "source": "authored 2026-09-04 from generate/funnel.py, pipeline/gate.py, pipeline/generation_env.py, agent/specifier.py docstrings and deploy/manifest.json prose; carries no figures; rewritten 2026-09-09 against agent/schema.py (no typed DAG, no critique seam, no study-design field) and the scored run on the Metrics tab (the Specifier, Record and Score stages ran once, with the estimability gate switched off); stage order is the pipeline's, not the order the page was built in",
+  "source": "authored 2026-09-04 from generate/funnel.py, pipeline/gate.py, pipeline/generation_env.py, agent/specifier.py docstrings and deploy/manifest.json prose; carries no figures; rewritten 2026-09-09 against agent/schema.py (no typed DAG, no critique seam, no study-design field) and the scored run on the Metrics tab (the Specifier, Record and Score stages ran once, with the estimability gate switched off); stage order is the pipeline's, not the order the page was built in; status chips rewritten 2026-09-10 to say only whether a tab has output, is running, is waiting on the reader or has none -- the provenance they used to carry (gate off, output withheld, result under Metrics, nothing matchable) is stated in each tab's own body; every committed status is now `built`, the neutral chip colour: the rail label states the tab's state and colour is reserved for a failed live run, so no chip can typeset a zero-match run as a green pass",
   "commit": "COMPASS main 265241d; generation clone ralph-loop 7ef75fa; scored run b3-20260904",
   "tier": "A"
  },
@@ -15,7 +15,7 @@
     "Never renders the role; leaves population unset by contract",
     "Renders one deterministic query string: no paraphrase, no randomness, no language model"
    ],
-   "status_label": "in use · committed run",
+   "status_label": "ran",
    "status": "built",
    "placeholder": "Will show the real RetrievalRequest and the string the shipped template rendered for it.",
    "waits_for": null
@@ -30,8 +30,8 @@
     "Abstains when the top cosine falls below the shipped threshold",
     "Refuses to serve at all if the dictionary hash does not match"
    ],
-   "status_label": "in use · committed run",
-   "status": "shipped",
+   "status_label": "ran",
+   "status": "built",
    "placeholder": "Will show a real run: cosine, rank, margin, threshold, abstention and roster fold size, with the target pseudonymised.",
    "waits_for": null
   },
@@ -45,8 +45,8 @@
     "S3 screens estimability: blocked until two survey metadata exports arrive",
     "Runs the Specifier on a pair it produced, rather than one you typed"
    ],
-   "status_label": "gate blocks every pair · real gate output",
-   "status": "blocked",
+   "status_label": "ran",
+   "status": "built",
    "placeholder": "Will show the gate's real output: how many pairs were live, passed and blocked, and which exports are missing.",
    "waits_for": null
   },
@@ -61,9 +61,9 @@
     "Every field the dictionary can compute is overwritten from the dictionary, and stale rationales are dropped",
     "Ranking is a fixed function of the record: no judge, no self-rating"
    ],
-   "status_label": "ran once, gate off · output withheld here",
+   "status_label": "nothing to show",
    "status": "built",
-   "placeholder": "Will show a real reasoning log beside the record it produced, keys pseudonymised the same way as the retriever runs.",
+   "placeholder": "The stage itself ran once, with the estimability gate switched off. Its reasoning log and the record it produced are not on this page. Will show a real reasoning log beside the record it produced, keys pseudonymised the same way as the retriever runs.",
    "waits_for": "a redacted copy of the scored run's records: they carry instrument wording and variable keys, which this page cannot show. The Metrics tab lists every one of them by record hash"
   },
   {
@@ -77,9 +77,9 @@
     "Rejects a mediator placed in the adjusted list by the role it was given, not by any causal graph: no typed DAG exists",
     "Has no critique seam; a refusal is a separate record carrying its reason and what would unblock it"
    ],
-   "status_label": "emitted once · listed by hash under Metrics",
+   "status_label": "nothing to show",
    "status": "built",
-   "placeholder": "Will show a real record: full wording per variable, the estimability stamp, and the covariates adjusted, excluded and sought.",
+   "placeholder": "The stage itself emitted records once, with the estimability gate switched off, and the Metrics tab lists every one of them by record hash. Will show a real record: full wording per variable, the estimability stamp, and the covariates adjusted, excluded and sought.",
    "waits_for": "the same redacted copy; the records exist and are counted on the Metrics tab"
   },
   {
@@ -92,7 +92,7 @@
     "Reports match rate only beside contamination and leakage verdicts",
     "Runs exactly once, on a tag, before any tuning, so it cannot become a feedback signal"
    ],
-   "status_label": "scored once, gate off · result under Metrics",
+   "status_label": "ran",
    "status": "built",
    "placeholder": "Will show the generation clone's GenerationEnv stamp and the one scored run.",
    "waits_for": null
@@ -108,7 +108,7 @@
     "Lists every scored record, and runs the Specifier on any of their pairs",
     "Carries the retrieval measurements and their known limitations"
    ],
-   "status_label": "scored once · nothing was matchable",
+   "status_label": "ran",
    "status": "built",
    "placeholder": "",
    "waits_for": null
