@@ -371,6 +371,39 @@ def test_the_withholding_probe_asks_for_a_tool_call_and_nothing_else():
     assert not any(v.elements.values()), v.elements
 
 
+def test_a_reported_cli_error_keeps_is_error_and_cost_in_both_log_lines(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """A CLI error keeps `is_error` and its cost in both control log lines.
+
+    `SealedWorktree.run` raises on `is_error` since C27, and both arms here
+    persist a failed call rather than raise. Each log line must still say the
+    CLI reported an error and keep what the call cost, not an exception beside
+    an empty reply that reads like a model that said nothing.
+    """
+    import subprocess
+
+    from agent import sealed
+    from benchmark.unaided_specifiability import verify_withholding
+    payload = json.dumps({"type": "result", "is_error": True,
+                          "result": "Not logged in · Please run /login",
+                          "num_turns": 1, "total_cost_usd": 0.25})
+    monkeypatch.setattr(sealed.subprocess, "run", lambda argv, **k:
+                        subprocess.CompletedProcess(argv, 0, payload, ""))
+    # verify_withholding exports the log path on os.environ; this restores it.
+    monkeypatch.setenv("COMPASS_TOOL_LOG", str(tmp_path / "unused.jsonl"))
+    with sealed.SealedWorktree(mode="benchmark") as wt:
+        r = verify_withholding(wt, "claude-haiku-4-5", tmp_path)
+    calls = [rec for rec in (json.loads(ln) for ln in
+                             Path(r["tool_log_path"]).read_text().splitlines()
+                             if ln.strip())
+             if rec.get("record") == "invocation"]
+    assert [c["instrument"] for c in calls] == ["withheld", "attached"]
+    for c in calls:
+        assert c["is_error"] is True, c
+        assert c["total_cost_usd"] == 0.25 and c["num_turns"] == 1, c
+        assert "SealedRunError" in c["error"], c
+
+
 def test_unaided_argv_refuses_an_argv_that_reattaches_the_instrument():
     """If the seal ever starts attaching a server, every verdict is void."""
     wt = _FakeWorktree(["claude", "-p", "--mcp-config", "/tmp/x.json"])

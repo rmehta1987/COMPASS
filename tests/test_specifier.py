@@ -710,6 +710,64 @@ def test_seal_probe_reads_the_answer_not_the_formatting():
         assert _answered_yes(t), f"missed leak in {t!r}"
 
 
+#: C27. `result` strings a `claude -p` can carry on exit 0 with `is_error` set.
+#: Each opens with a denial, so each used to score `clean` and vouch for a seal
+#: that no probe had actually tested.
+_CLI_ERROR_RESULTS = ["I cannot answer that.",
+                      "Not logged in · Please run /login",
+                      "No response from the API: the request timed out"]
+
+
+def _cli_exits_zero_with(monkeypatch: pytest.MonkeyPatch, result: str) -> None:
+    import subprocess
+
+    from agent import sealed
+    payload = json.dumps({"type": "result", "subtype": "success", "is_error": True,
+                          "result": result, "num_turns": 1, "total_cost_usd": 0.0})
+    monkeypatch.setattr(sealed.subprocess, "run", lambda argv, **k:
+                        subprocess.CompletedProcess(argv, 0, payload, ""))
+
+
+@pytest.mark.parametrize("result", _CLI_ERROR_RESULTS)
+def test_a_cli_error_on_exit_zero_raises_with_its_payload(
+        monkeypatch: pytest.MonkeyPatch, result: str) -> None:
+    """Exit 0 is not success: `run` checks `is_error` as `cli_backend._run` does."""
+    from agent.sealed import SealedRunError, SealedWorktree
+    _cli_exits_zero_with(monkeypatch, result)
+    with SealedWorktree() as w, pytest.raises(SealedRunError) as e:
+        w.run([*w.base_argv("claude-haiku-4-5"), "probe"])
+    assert e.value.payload["result"] == result, "the reply must survive the raise"
+
+
+@pytest.mark.parametrize("result", _CLI_ERROR_RESULTS)
+def test_an_errored_seal_probe_never_scores_clean(
+        monkeypatch: pytest.MonkeyPatch, result: str) -> None:
+    """An errored probe never scores `clean`, the precondition every run asserts.
+
+    A probe that never reached a model has established nothing about the seal.
+    """
+    import types
+
+    from agent import sealed
+    assert sealed._answered_no(result), (
+        f"{result!r} does not open with a denial, so it could never have scored "
+        "clean and this case cannot show the hole")
+    # The held-out fact list is withheld from most clones. An empty stand-in
+    # lets `score` run everywhere, and these strings name no fact in any clone.
+    facts = types.ModuleType("benchmark.leak_facts")
+    facts.LEAK_CHANNELS = frozenset()  # type: ignore[attr-defined]
+    facts.facts_in = lambda text, echoed_from="": []  # type: ignore[attr-defined]
+    facts.platforms_in = lambda text, echoed_from="": []  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "benchmark.leak_facts", facts)
+    _cli_exits_zero_with(monkeypatch, result)
+    with sealed.SealedWorktree() as w:
+        try:
+            r = w.verify()
+        except sealed.SealedRunError:
+            return
+    assert not r["clean"], f"an errored probe scored clean: {r['probes']}"
+
+
 # --------------------------------------------------------------------------- #
 # contamination tripwire — tests what the model RECEIVES, not what files say
 # --------------------------------------------------------------------------- #

@@ -715,6 +715,7 @@ def verify_withholding(worktree: Any, model: str = MODEL,
         out = worktree.run(argv, timeout=300)
     except Exception as exc:
         error = f"{type(exc).__name__}: {exc}"[:800]
+        out = getattr(exc, "payload", out)
     attached_calls = _server_lines(log) - before
     attached_line = {
         "record": "invocation", "response_index": 1,
@@ -800,8 +801,10 @@ def probe_once(worktree: Any, model: str, prompt: str,
         out = worktree.run(argv, timeout=300)
     except Exception as exc:
         # Persisted rather than raised: a live run costs a model call, and
-        # diagnosing why one failed must not cost a second one.
+        # diagnosing why one failed must not cost a second one. A reported
+        # error carries the CLI's reply, so `is_error`, turns and cost survive.
         error = f"{type(exc).__name__}: {exc}"[:800]
+        out = getattr(exc, "payload", out)
     text = str(out.get("result", "")).strip()
     line = {
         "record": "invocation",
