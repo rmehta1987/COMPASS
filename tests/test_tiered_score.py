@@ -1156,9 +1156,44 @@ def test_a_schema_that_is_present_and_matching_is_recorded_as_verified(tmp_path)
     assert h.schema_verified is True
 
 
-def test_the_tree_holds_the_schema_the_handoff_names():
-    """The live pin, against the live file. Red means one of them moved."""
-    assert load_handoff().schema_version == schema_version_of()
+def test_the_tree_holds_the_schema_the_handoff_names(tmp_path):
+    """The live pin, against the live file. Red means one of them moved.
+
+    Guarded on which clone this is, because only ONE branch can ever run in a
+    given tree and an unguarded comparison is red in half of them. `f80a2f9`
+    asserted equality unconditionally and was red in every generation clone from
+    the moment it landed: `schema_version_of` returns None there, by design and
+    by its own docstring ("None means UNVERIFIABLE HERE, never 'matches'"),
+    because `inventory/` is barred from this clone -- `check.sh` step 11 says so.
+    The commit's message already stated the intended behaviour, "a clone with no
+    inventory/ records schema_verified=False rather than passing"; this asserts
+    that instead of comparing a pin against None.
+
+    UNVERIFIABLE is not the same as absent, so the no-inventory branch still
+    demands the handoff NAME a schema and record that it was not verified. A
+    handoff that quietly dropped the field would be red here too.
+    """
+    live = schema_version_of()
+    handoff = load_handoff()
+    if live is not None:
+        assert handoff.schema_version == live
+        assert handoff.schema_verified
+    else:
+        assert handoff.schema_version, (
+            "the handoff must still name the schema it was built against, even "
+            "where this tree cannot check it")
+        assert not handoff.schema_verified, (
+            "no inventory/ in this tree, so nothing verified the pin; recording "
+            "schema_verified=True here would be a pin that checked nothing")
+
+    # Runs in EVERY clone, so the branch that cannot execute above is still
+    # exercised: the computation itself, over a file this test owns.
+    f = tmp_path / "schema.py"
+    f.write_text("x = 1\n")
+    assert schema_version_of(f) == f"{f.as_posix()}@{git_blob_hash(f.read_bytes())[:12]}"
+    f.write_text("x = 2\n")
+    assert schema_version_of(f).endswith(f"@{git_blob_hash(f.read_bytes())[:12]}")
+    assert schema_version_of(tmp_path / "absent.py") is None
 
 
 def test_there_is_no_second_recorded_copy_of_the_schema_pin():
