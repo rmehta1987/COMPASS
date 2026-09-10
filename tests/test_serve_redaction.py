@@ -1010,3 +1010,79 @@ def test_the_role_never_reaches_the_encoder() -> None:
             f"offers ONE pool, built with role='exposure', to both roles — that "
             f"pool is now exposure-biased. Either stop rendering role, or give "
             f"_pair a pool per role.")
+
+
+def test_pinned_roles_come_from_position_not_from_the_sentence() -> None:
+    """C31(a): a pinned key's role is its position, as `_pin_keys_from_prose` says.
+
+    "is X predicted by Y" names the outcome first, and position pins it as the
+    exposure. The rule is stated rather than fixed because reading direction from
+    grammar is a heuristic nothing checks; this holds the code to the statement,
+    so a change to either has to change both.
+    """
+    from serve.api import _pin_keys_from_prose
+
+    constructs = {"m3:Q4.2": None, "m2:Q5.8": None}
+    assert _pin_keys_from_prose("is m3:Q4.2 predicted by m2:Q5.8", constructs) == {
+        "exposure": "m3:Q4.2", "outcome": "m2:Q5.8"}
+    assert _pin_keys_from_prose("does m2:Q5.8 predict m3:Q4.2", constructs) == {
+        "exposure": "m2:Q5.8", "outcome": "m3:Q4.2"}
+
+
+def test_a_third_named_key_is_refused_not_dropped() -> None:
+    """C31(b): `zip(..., strict=False)` dropped a third key without a word."""
+    from serve.api import _pin_keys_from_prose
+
+    constructs = {"m3:Q4.2": None, "m2:Q5.8": None, "m1:Q1.1": None}
+    with pytest.raises(ValueError, match="names 3 distinct keys"):
+        _pin_keys_from_prose("m3:Q4.2 and m1:Q1.1 against m2:Q5.8", constructs)
+    # Anti-vacuity: a repeated key, in either case, is one key and not a third.
+    assert _pin_keys_from_prose("m3:Q4.2, M3:q4.2 and m2:Q5.8", constructs) == {
+        "exposure": "m3:Q4.2", "outcome": "m2:Q5.8"}
+
+
+def test_a_pair_named_in_prose_spends_nothing_and_says_the_role_was_positional(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`_pair`'s first test: two named keys are honoured, and the human is told how.
+
+    With both keys pinned the route must retrieve nothing and call no model, and
+    each anchor's `reason` must say its role came from position. The old reason,
+    "the request named this key, so it was not inferred", sat beside an outcome
+    labelled exposure for "is X predicted by Y".
+    """
+    import time
+
+    from agent import cli_backend
+    from serve import api
+
+    class _NoModel:
+        """Stands in for the backend; any model call fails the run."""
+
+        name = "no-model"
+        last_cost = None
+
+        def __init__(self, **_: object) -> None:
+            pass
+
+        def transduce(self, *_: object) -> None:
+            raise AssertionError("a pair the request pinned must make no model call")
+
+    def _no_retrieval(*_: object) -> None:
+        pytest.fail("a pair the request pinned must not retrieve")
+
+    monkeypatch.setattr(cli_backend, "ClaudeCliBackend", _NoModel)
+    monkeypatch.setattr(api, "_role_candidates", _no_retrieval)
+    st = api.State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    # TASKS.md's C31 example. Both keys must be citable as well as constructs:
+    # a pinned anchor quotes its wording, and `labels.cite` refuses a construct
+    # key that is in no registry (`m3:Q16.1` is one).
+    ticket = api._pair(st, {"request": "is m3:Q4.2 predicted by m2:Q5.8"})["ticket"]
+    deadline = time.time() + 30
+    while st.jobs[ticket]["status"] == "running" and time.time() < deadline:
+        time.sleep(0.05)
+    done = st.jobs[ticket]
+    assert done["status"] == "done", done
+    roles = done["run"]["roles"]
+    for role in ("exposure", "outcome"):
+        assert roles[role]["verdict"] == "pinned", roles[role]
+        assert "by position" in roles[role]["reason"], roles[role]["reason"]

@@ -427,20 +427,41 @@ def _canonical_key(key: str, constructs: dict[str, Any], role: str,
     raise Unresolvable(role, key)
 
 
-def _pin_keys_from_prose(request: str, constructs: dict[str, Any]) -> dict[str, str]:
-    """Keys the caller wrote into the request, in the order they appear.
+#: What a pinned anchor tells the human who confirms it. The KEY was named, so
+#: it was not inferred; the ROLE was, from position alone. This used to read
+#: "the request named this key, so it was not inferred" beside an outcome
+#: labelled exposure, which asks the confirmation step to trust a false claim.
+PINNED_REASON = ("the request named this key, so the key was not inferred. Its "
+                 "role was assigned by position -- the first key named is the "
+                 "exposure, the second the outcome -- not read from the "
+                 "sentence. Check the direction before confirming.")
 
-    A key in the prose is not something to infer. `m3:Q4.2 and m2:Q5.8` has
-    already answered the question the model would be asked, so it is honoured
-    directly -- first key is the exposure, second the outcome, which is the
-    order the sentence puts them in.
+
+def _pin_keys_from_prose(request: str, constructs: dict[str, Any]) -> dict[str, str]:
+    """Keys the caller wrote into the request, given roles BY POSITION.
+
+    A key in the prose is not something to infer: `m3:Q4.2 and m2:Q5.8` has
+    already said which constructs, so they are honoured directly, with no
+    retrieval and no model call. Which ROLE each fills is not read from the
+    sentence. The first key named becomes the exposure and the second the
+    outcome, whatever the grammar says: "is `m3:Q4.2` predicted by `m2:Q5.8`"
+    names the outcome first and pins it as the exposure. Reading direction from
+    grammar would be a heuristic nothing checks, so the rule is stated instead,
+    here and in `PINNED_REASON`, which every pinned anchor carries to the human
+    who confirms it.
+
+    More than two keys is refused, not truncated. A third key used to be dropped
+    without a word, and the route then answered a request the caller never made.
 
     Args:
         request: The researcher's prose.
         constructs: Construct keys to Construct, for validation.
 
     Returns:
-        `{role: key}` for whichever roles the prose pinned.
+        `{role: key}` for whichever roles the prose pinned, by position.
+
+    Raises:
+        ValueError: When the prose names more than two distinct keys.
     """
     seen: list[str] = []
     for raw in KEY_RE.findall(request):
@@ -450,10 +471,12 @@ def _pin_keys_from_prose(request: str, constructs: dict[str, Any]) -> dict[str, 
             fixed = folded.get(raw.casefold())
         if fixed and fixed not in seen:
             seen.append(fixed)
-    roles = {}
-    for role, key in zip(("exposure", "outcome"), seen, strict=False):
-        roles[role] = key
-    return roles
+    if len(seen) > 2:
+        raise ValueError(
+            f"the request names {len(seen)} distinct keys and this route pins at "
+            f"most two, by position: the first is the exposure, the second the "
+            f"outcome. Name two, or send exposure and outcome to /api/specify.")
+    return dict(zip(("exposure", "outcome"), seen, strict=False))
 
 
 def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str, Any]:
@@ -758,7 +781,7 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                     key = pinned[role]
                     out[role] = {
                         "verdict": "pinned",
-                        "reason": "the request named this key, so it was not inferred",
+                        "reason": PINNED_REASON,
                         "proposed_indices": [],
                         "pinned_key": key if state.show_instrument else None,
                         "pinned_wording": labels.cite(key).wording,
