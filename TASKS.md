@@ -172,6 +172,105 @@ publishes or blocks a downstream stage.
   `benchmark/unearned_assertions.py::PROVENANCE_TIERS` tier or `origin` value fits
   (`DESIGN.md` §5.2). Bring a measured benefit and a re-runnable benchmark.
 
+## Open — curated provenance and the tool-path seal (2026-09-08 cold-critic pass)
+
+All ten reproduced by execution in the generation clone on 2026-09-08, against
+`df87041`/`1b41cb8`/`359319a`. Found by two hostile reviews on the enterprise account;
+the first review's most severe finding was lost in transit and is NOT among these.
+`benchmark/contamination_check.py` cannot be imported in the generation clone, so every
+claim below was exercised either by lifting the rule's source by AST or by stubbing
+`benchmark.prevalence_key` in memory — never by running the check.
+
+- **C30 — `signed` is a word three code paths use and none reads** (Lane B AND Lane A,
+  together; neither alone is a fix). `env/tools.py::list_derivations` returns
+  `f"{len(d)} signed derivations exist"` from a bare glob, and
+  `agent/schema.py::_signed_derivations` loads every `*.json` regardless of the flag.
+  Measured: the only reader of the flag anywhere in `agent/ env/ benchmark/` is
+  `tests/test_contamination_surface.py`. A file with `"signed": false` is announced to the
+  model as signed, served by `get_derivation`, and accepted by `DerivationRef`. This is
+  what removed the BMI derivation of 2026-09-08 (`BRIEF_derivation_source_gen.md` §3) and
+  it is still open; a `signed is True` rule in `check_provenance` would be a benchmark-side
+  alarm for a serving-path defect.
+- **C31 — `recipe` reaches transduction; every field qualifying it does not** (Lane A).
+  `agent/specifier.py::_RESULT_BEARING["get_derivation"]` projects
+  `(derivation_id, unit, component_keys, recipe, fitted_to_outcome)`. `caveat`,
+  `construct_validity_basis`, `construct_source` and `binding_source` are all dropped by
+  `_render_log`. So `social_cohesion_scale`'s "after reverse-coding items 4 and 5" reaches
+  the prompt while "direction of the Likert scale must be confirmed by the study team"
+  does not, and `met_hours_week`'s "Compendium v2011" reaches it while "response coding
+  absent from the public codebook" does not. Citation in, provenance out. Pre-existing;
+  `1b41cb8` widened it by adding two more projected-out fields.
+- **C32 — `check_holdout_not_reachable` is a source-text grep and cannot see a composed
+  path** (Lane B). It scans `env/tools.py`'s TEXT for the literals `"benchmark"` and
+  `"references"`. It reported `ok  held-out registry unreachable` for the entire period in
+  which `get_derivation("../../benchmark/fixtures/retrieval_queries")` returned
+  `outcome: ok` (fixed at `359319a`, pinned by
+  `tests/test_env_tools.py::test_get_derivation_cannot_escape_the_derivations_directory`).
+  The traversal is closed; the BLINDNESS is not. Any future tool composing a path from a
+  model-supplied string reopens it silently. A source-text scan cannot make this
+  guarantee — the check needs to call the tools.
+- **C33 — `SOURCE_RE` prefix-matches, so the declared source is not the checked token**
+  (Lane B). `benchmark/contamination_check.py::SOURCE_RE` is unanchored on the right.
+  Measured: a Source line reading ``**Source:** `study-team` 2026-09-01 (verbal)``
+  captures `study-team` and
+  passes, three lines below a docstring saying study-team may be named only after written
+  confirmation; `**Source:** authored-unconfirmed / prior-art (Sampson 1997)` captures
+  `authored-unconfirmed` and passes. `1b41cb8` made `ALLOWED_SOURCES`' narrowness the only
+  mechanical enforcement of the conventions Hard Constraint without checking that the
+  token feeding the membership test is the whole declared value.
+- **C34 — `construct_source` is never compared to `construct_validity_basis`** (Lane B).
+  `check_provenance` tests one for set membership and the other for truthiness, and never
+  relates them. Measured: a derivation carrying
+  `construct_validity_basis: "Ainsworth compendium of physical activities, 2011 update"`
+  and `construct_source: "authored-unconfirmed"` returns `[]`. The file names an external
+  work, in prose `get_derivation` hands the model whole, and declares it took nothing from
+  one — which is the hole `df87041` opened by describing.
+- **C35 — one malformed derivation aborts the whole contamination command** (Lane B).
+  `check_provenance`'s `json.loads(p.read_text())` is unguarded and is evaluated inside
+  `benchmark/contamination_check.py::main`'s `sections` DICT LITERAL, so a single
+  non-object or truncated `curated/derivations/*.json` raises before any section prints —
+  including the marker, seal and holdout sections already computed. Pre-existing;
+  `1b41cb8` added two more `d.get` calls to the same unguarded body.
+- **C36 — the provenance floors fire only at zero, over a denominator nothing ties to the
+  served set** (Lane B). `1b41cb8` added `if not conventions` / `if not derivations`.
+  Measured: making them fire only when BOTH partitions are empty leaves all three
+  provenance tests green. A 1-of-6 partial corpus passes while
+  `env/tools.py::get_design_convention` raises `FileNotFoundError` for the other five
+  topics in `CONVENTION_FILES`. `AGENTS.md` §Testing Patterns asks for "a floor per
+  partition" and "floors only rise" — a count floor is one-sided and cannot pin a corpus,
+  and the commit's "presence check, not a count" reasoning conflates *count* with *pinned*.
+- **C37 — nothing pins `check_provenance` into `main()`** (Lane B, tests).
+  `tests/test_contamination_surface.py::test_the_instrument_audit_is_wired_into_the_command`
+  AST-walks `main` and asserts exactly one name,
+  `check_markers_are_not_instrument_content`. Deleting `"curated provenance":
+  check_provenance(),` from the `sections` dict leaves every test green and `check.sh`
+  green — it never runs `contamination_check` at all. `1b41cb8` edited that exact dict
+  entry and added no pin. `AGENTS.md` §Testing Patterns: "Assert wiring with an AST `Call`
+  node."
+- **C38 — the three source vocabularies are pinned one token wide** (Lane B, tests).
+  `tests/test_specifier.py::test_a_convention_may_not_declare_a_derivation_only_source`
+  asserts only about the string `prior-art`. Measured, all tests green: adding
+  `"published-scale"` to `ALLOWED_SOURCES` reproduces `df87041`'s defect verbatim with a
+  different string, and adding `"compendium"` to `BINDING_SOURCES` removes the laundering
+  block. The comment beside `ALLOWED_SOURCES` says widening it "is a user amendment, never
+  a lane's" and nothing enforces that. A legal vocabulary is a RULE, so set equality is the
+  honest pin and "never pin today's corpus" does not cover it.
+- **C39 — four branches of `check_provenance` are seeded by no test** (Lane B, tests).
+  Measured green under mutation: gutting the conventions `if not m:` branch (no
+  `**Source:**` line at all — `_provenance_root::write_convention` cannot express a
+  convention without one); dropping `.lower()` from the conventions `elif`, which a test
+  comment claims to have checked; and dropping the whitespace-only clause, restoring the
+  cry-wolf message `1b41cb8` added `.strip()` to remove. The fixture derivation also
+  carries no `unit`, `component_keys`, `recipe`, `caveat` or `signed`, so the green control
+  asserts cleanliness over a shape no real derivation has.
+
+- Standing, not a task: the three provenance tests are DESELECTED by `check.sh`
+  unconditionally and no committed runner executes them anywhere; only the scoring clone
+  does. `tests/test_specifier.py` now carries Lane-B tests for
+  `benchmark/contamination_check.py`, a straddle `1b41cb8` added to rather than created.
+  `check_provenance`'s `Returns:` still says "One string per document" while one derivation
+  can emit four.
+
 ## Deferred by the user, 2026-08-28
 - C8 offline literature corpus; C9 retrieval tools as post-generation annotation; C10
   define or drop `judge_predicate`. Read `references/PRIOR_ART_CONTAMINATION.md` before
