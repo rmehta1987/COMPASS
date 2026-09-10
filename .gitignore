@@ -42,10 +42,14 @@ deploy/model/
 *.bin
 !.claude/**/*.json
 !curated/**/*.json
-# the tool page's data lives in site/artefacts as JSON. Without this line a
-# site branch cut from main silently drops every artefact the page loads;
-# site-check.sh step 6 asserts each one is tracked.
-!site/artefacts/*.json
+# the tool page's data lives in site/artifacts as JSON. Without this line a
+# site branch cut from main silently drops every artifact the page loads;
+# site-check.sh step 6 asserts each one is tracked. The directory was renamed
+# from site/artefacts and this line was NOT: the files already tracked stayed
+# tracked, so nothing broke and nothing showed, while any NEW artifact was
+# silently ignored -- step 6 would have caught it, but only once someone added
+# one and wondered why the page could not load it.
+!site/artifacts/*.json
 # the small, wording-free half of the deploy bundle travels in git so a clone
 # can self-verify (deploy/smoke_test.py step 0)
 !deploy/manifest.json
