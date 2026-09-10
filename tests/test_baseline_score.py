@@ -368,6 +368,25 @@ def test_a_paper_outside_the_frame_gives_a_ceiling_of_zero_records(tmp_path):
     assert c is not None
     assert c.papers_matchable == 1, "the inventory still keys it"
     assert c.in_frame == 0 and c.records_could_match == 0
+
+
+def test_an_empty_frame_reads_as_zero_by_construction_only_when_nothing_matched(
+        tmp_path):
+    """The sentence is a claim about the run, so it must be true of the run.
+
+    An earlier draft printed "the observed rate is zero by construction"
+    whenever the frame was empty, including on a run where a record HAD
+    matched and the rate was 1.0. The frame being empty is not on its own
+    evidence that nothing was found.
+    """
+    d = _run_dir(tmp_path, _record())
+    unmatchable = (B.PaperKey("36702470", (), ("m2:Q5.9",), ("m1:Q5.4",)),)
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12],
+                inventory=B.InventoryInput(table=unmatchable, in_frame=frozenset(),
+                                           excluded_sides=SIDES, analogue_only=0))
+    c = b.inventory_ceiling
+    assert c is not None and c.matched == 0 and c.in_frame == 0
     text = B.render(b)
     assert "zero by construction" in text
     assert "Widening or re-choosing the frame" in text
@@ -489,3 +508,24 @@ def test_a_json_report_path_is_refused_rather_than_overwritten(tmp_path, capsys)
     with pytest.raises(SystemExit) as e:
         B.main([str(tmp_path / "a.json"), "--sha", "x", "--nonexistent-flag"])
     assert e.value.code == 2
+
+
+def test_an_observed_count_above_its_own_ceiling_is_named_a_frame_defect(tmp_path):
+    """Reachable, because matches are not frame-gated and the ceiling is.
+
+    A record can meet a paper through a folded member without the exact
+    construct pair appearing in the frame. Printing "the gap below this
+    ceiling is the pipeline's" would then describe a NEGATIVE gap as an
+    achievement, so the sentence names the frame test as the thing at fault
+    and refuses to let either number be quoted.
+    """
+    d = _run_dir(tmp_path, _record())
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12], inventory=_inventory(frozenset()))
+    c = b.inventory_ceiling
+    assert c is not None
+    assert c.matched == 1 and c.records_could_match == 0, "the shape under test"
+    text = " ".join(B.render(b).split())
+    assert "The observed count EXCEEDS this ceiling" in text
+    assert "the frame test has missed a pair the run demonstrably produced" in text
+    assert "gap below this ceiling is the pipeline's" not in text

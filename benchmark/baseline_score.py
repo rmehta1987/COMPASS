@@ -239,7 +239,10 @@ class InventoryCeiling(BaseModel):
             both sides. An upper bound on `matched`.
         records_could_match_under_prevalence_key: `Ceiling.max_matched`,
             restated on its own line for comparison only.
-        matched: Artefacts matching some matchable paper under rule 2.
+        matched: Artefacts matching some matchable paper under rule 2,
+            IN FRAME OR NOT. Observed matches are never gated on the frame:
+            gating them would hide a real match behind a frame test, and the
+            frame test is the newer and less trustworthy of the two.
         rate: `matched / scored`; None when nothing was scored.
         at_ceiling: `matched == records_could_match`.
         excluded_sides: Per side, every row and paper-side the rule excluded.
@@ -280,6 +283,19 @@ class InventoryCeiling(BaseModel):
                 f"of {self.scored} artefacts could match "
                 f"({self.papers_matchable} of {self.papers} papers matchable, "
                 f"{frame} of those in the run's frame); observed {self.matched}.")
+        if self.matched > self.records_could_match:
+            # Observed matches are not gated on the frame and the ceiling is,
+            # so this is reachable: a record can meet a paper through a folded
+            # member without the exact construct pair appearing in the frame.
+            # It is a defect in the FRAME TEST, not a pipeline result, and
+            # saying "the gap below this ceiling is the pipeline's" here would
+            # describe a negative gap as an achievement.
+            return (head + " The observed count EXCEEDS this ceiling, which "
+                    "cannot happen if both are right. Matches are not gated "
+                    "on the frame and the ceiling is, so the frame test has "
+                    "missed a pair the run demonstrably produced. Treat the "
+                    "ceiling as wrong and re-derive it before quoting either "
+                    "number.")
         if self.in_frame == 0:
             return (head + " No matchable paper was in the frame the run was "
                     "generated from, so the observed rate is zero by "
