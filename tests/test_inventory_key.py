@@ -17,9 +17,11 @@ import pytest
 from benchmark import baseline_score as B
 from benchmark.cohort_papers import COHORT_PAPERS
 from benchmark.inventory_key import (
+    InventoryShape,
     SideAgreement,
     SideCounts,
     agreement,
+    analogue_only,
     fold,
     in_frame,
     inventory_input,
@@ -242,7 +244,7 @@ def test_every_row_is_counted_in_exactly_one_partition_cell(index):
     """No row may leave uncounted; that is what makes rule 3 checkable."""
     counts = side_exclusions(FAKE["papers"], index)
     for side in ("exposures", "outcomes"):
-        rows = sum(len(p.get(side, [])) for p in FAKE["papers"])
+        rows = sum(len(p[side]) for p in FAKE["papers"])
         assert counts[side].rows_sum == rows, side
         assert counts[side].papers == len(FAKE["papers"])
         assert (counts[side].matchable_sides
@@ -422,8 +424,8 @@ def test_the_cli_needs_the_harness_whenever_it_is_given_an_inventory():
 # touches a real paper.
 
 
-def _row(label, status="present", key=None, confident=True) -> dict:
-    return {"label": label, "status": status, "key": key, "analogue_key": None,
+def _row(label, status="present", key=None, confident=True, field="label") -> dict:
+    return {field: label, "status": status, "key": key, "analogue_key": None,
             "confident": confident}
 
 
@@ -434,11 +436,10 @@ def _paper(pid, exposures, outcomes) -> dict:
 def test_two_identical_readings_agree_on_every_shared_row(index):
     a = [_paper("fA", [_row("smoking", key=FA_KEY)], [_row("bp", key="m2:Q5.19")])]
     got = agreement(a, [dict(p) for p in a], index)
-    side = got["fA"]["exposures"]
-    assert side == SideAgreement(labels_both=1, labels_a_only=0, labels_b_only=0,
-                                 status_agree=1, status_compared=1,
-                                 key_agree=1, key_compared=1)
-    assert got["__pooled__"]["outcomes"].status_agree == 1
+    assert got.per_paper["fA"]["exposures"] == SideAgreement(
+        labels_both=1, labels_a_only=0, labels_b_only=0, labels_repeated=0,
+        status_agree=1, status_compared=1, key_agree=1, key_compared=1)
+    assert got.pooled["outcomes"].status_agree == 1
 
 
 def test_a_member_and_its_construct_are_not_a_disagreement(index):
@@ -450,14 +451,28 @@ def test_a_member_and_its_construct_are_not_a_disagreement(index):
     construct = index[FA_KEY].construct_key
     a = [_paper("fA", [_row("smoking", key=FA_KEY)], [])]
     b = [_paper("fA", [_row("smoking", key=construct)], [])]
-    side = agreement(a, b, index)["fA"]["exposures"]
+    side = agreement(a, b, index).per_paper["fA"]["exposures"]
+    assert side.key_agree == 1 and side.key_compared == 1
+
+
+def test_two_readers_who_typed_the_same_unheld_key_agree(index):
+    """String identity first, folding second.
+
+    Both readers typed the same key and the build no longer holds it -- an
+    older build, a superseded item, a typo copied from one source. Folding
+    alone gives two empty sets, whose intersection is empty, so two readers
+    who literally agree would be counted as disagreeing.
+    """
+    a = [_paper("fA", [_row("smoking", key="m9:Q99.9")], [])]
+    b = [_paper("fA", [_row("smoking", key="m9:Q99.9")], [])]
+    side = agreement(a, b, index).per_paper["fA"]["exposures"]
     assert side.key_agree == 1 and side.key_compared == 1
 
 
 def test_a_real_key_disagreement_is_counted_as_one(index):
     a = [_paper("fA", [_row("smoking", key=FA_KEY)], [])]
     b = [_paper("fA", [_row("smoking", key="m2:Q5.19")], [])]
-    side = agreement(a, b, index)["fA"]["exposures"]
+    side = agreement(a, b, index).per_paper["fA"]["exposures"]
     assert side.status_agree == 1, "both still called it present"
     assert side.key_agree == 0 and side.key_compared == 1
 
@@ -470,33 +485,207 @@ def test_a_status_disagreement_is_not_compared_on_keys(index):
     """
     a = [_paper("fA", [_row("smoking", key=FA_KEY)], [])]
     b = [_paper("fA", [_row("smoking", status="absent")], [])]
-    side = agreement(a, b, index)["fA"]["exposures"]
+    side = agreement(a, b, index).per_paper["fA"]["exposures"]
     assert side.status_agree == 0 and side.status_compared == 1
     assert side.key_compared == 0, "no shared present row, so no key denominator"
+
+
+def test_a_missing_status_on_both_sides_is_not_agreement(index):
+    """`None == None` would report a renamed field as a perfect reading."""
+    a = [_paper("fA", [{"label": "smoking", "key": FA_KEY}], [])]
+    b = [_paper("fA", [{"label": "smoking", "key": FA_KEY}], [])]
+    side = agreement(a, b, index).per_paper["fA"]["exposures"]
+    assert side.labels_both == 1, "the row is still joined"
+    assert side.status_compared == 0, "nothing carried a status to compare"
+    assert side.status_agree == 0
+
+
+def test_rows_named_term_rather_than_label_are_joined(index):
+    """The real inventory's anchor rows are read as `term`.
+
+    tiered_score::attach_pairs, the only code here that touches the real
+    rows, reads paper["exposures"][i]["term"]; the fixture spells it `label`
+    and carries no `term` at all. Reading one and not the other returns a
+    clean table of zeros, which looks like a finished comparison.
+    """
+    a = [_paper("fA", [_row("smoking", key=FA_KEY, field="term")], [])]
+    b = [_paper("fA", [_row("smoking", key=FA_KEY, field="label")], [])]
+    side = agreement(a, b, index).per_paper["fA"]["exposures"]
+    assert side.labels_both == 1 and side.key_agree == 1
+
+
+def test_a_side_whose_rows_carry_no_name_is_refused_not_scored_zero(index):
+    a = [_paper("fA", [{"status": "present", "key": FA_KEY}], [])]
+    b = [_paper("fA", [_row("smoking", key=FA_KEY)], [])]
+    with pytest.raises(InventoryShape, match="not one carries a name"):
+        agreement(a, b, index)
+
+
+def test_a_label_a_reader_listed_twice_is_counted_not_merged(index):
+    a = [_paper("fA", [_row("smoking", key=FA_KEY),
+                       _row("smoking", status="absent")], [])]
+    b = [_paper("fA", [_row("smoking", key=FA_KEY)], [])]
+    side = agreement(a, b, index).per_paper["fA"]["exposures"]
+    assert side.labels_repeated == 1, "the second row is an adjudication item"
+    assert side.labels_both == 1
 
 
 def test_a_variable_only_one_reader_listed_has_no_denominator(index):
     a = [_paper("fA", [_row("smoking", key=FA_KEY), _row("alcohol", key="m2:Q5.19")],
                 [])]
     b = [_paper("fA", [_row("smoking", key=FA_KEY)], [])]
-    side = agreement(a, b, index)["fA"]["exposures"]
+    side = agreement(a, b, index).per_paper["fA"]["exposures"]
     assert (side.labels_both, side.labels_a_only, side.labels_b_only) == (1, 1, 0)
     assert side.status_compared == 1, "the unshared row is not a comparison"
 
 
-def test_a_paper_only_one_reader_covered_is_absent_not_a_disagreement(index):
+def test_a_paper_only_one_reader_covered_is_counted_apart_not_scored(index):
     a = [_paper("fA", [_row("smoking", key=FA_KEY)], []),
          _paper("fB", [_row("x", key=FA_KEY)], [])]
     b = [_paper("fA", [_row("smoking", key=FA_KEY)], [])]
     got = agreement(a, b, index)
-    assert set(got) == {"fA", "__pooled__"}, "coverage is not reliability"
+    assert set(got.per_paper) == {"fA"}, "coverage is not reliability"
+    assert got.papers_a_only == 1 and got.papers_b_only == 0
 
 
-def test_the_pooled_row_is_the_papers_summed_never_a_single_percentage(index):
+def test_the_pooled_figures_are_the_papers_summed_and_kept_apart(index):
     one = _paper("fA", [_row("smoking", key=FA_KEY)], [])
     two = _paper("fB", [_row("smoking", key=FA_KEY)], [])
     got = agreement([one, two], [dict(one), dict(two)], index)
-    pooled = got["__pooled__"]["exposures"]
-    assert pooled.status_compared == 2 and pooled.key_compared == 2
-    # every field is a count with its own denominator; none is a ratio
-    assert all(isinstance(v, int) for v in pooled)
+    assert got.pooled["exposures"].status_compared == 2
+    assert got.pooled["exposures"].key_compared == 2
+    # the pooled row does not share a namespace with the paper ids
+    assert "__pooled__" not in got.per_paper
+    assert len(got.per_paper) == 2, "len() is the papers compared, exactly"
+    assert all(isinstance(v, int) for v in got.pooled["exposures"])
+
+
+def test_one_reader_carrying_a_paper_twice_is_refused(index):
+    one = _paper("fA", [_row("smoking", key=FA_KEY)], [])
+    with pytest.raises(InventoryShape, match="carries fA twice"):
+        agreement([one, dict(one)], [dict(one)], index)
+
+
+def test_agreement_pins_the_schema_when_it_is_given_a_harness(tmp_path, index):
+    f, pin = _schema(tmp_path)
+    one = _paper("fA", [_row("smoking", key=FA_KEY)], [])
+    moved = pin[:-1] + ("0" if pin[-1] != "0" else "1")
+    with pytest.raises(HandoffMismatch, match="schema_version"):
+        agreement([one], [dict(one)], index, {**HARNESS, "schema_version": moved},
+                  schema_path=f)
+
+
+# --- the shapes that used to be published as findings about the instrument ---
+
+
+def test_a_missing_anchor_side_is_refused_not_read_as_an_instrument_gap(index):
+    """An absent side is not an empty one.
+
+    `paper.get(side, [])` counted a side the document does not carry as an
+    excluded side, indistinguishable from a variable the instrument lacks.
+    """
+    paper = {"paper": "fX", "exposures": [_row("smoking", key=FA_KEY)]}
+    with pytest.raises(InventoryShape, match="no 'outcomes' in this paper"):
+        key_table_from_inventory([paper], HARNESS, index=index)
+    with pytest.raises(InventoryShape, match="no 'outcomes' in this paper"):
+        side_exclusions([paper], index)
+
+
+def test_an_unrecognised_status_is_refused_not_binned_as_absent(index):
+    """An unrecognised status must not become an instrument claim.
+
+    `rows_absent` is a catch-all `else` and its documented meaning is a claim
+    about the INSTRUMENT. A respelling of `present` would empty every side and
+    the report would print that as a finding.
+    """
+    paper = _paper("fX", [_row("smoking", "Present", key=FA_KEY)],
+                   [_row("bp", key="m2:Q5.19")])
+    with pytest.raises(InventoryShape, match="status 'Present' is not one of"):
+        key_table_from_inventory([paper], HARNESS, index=index)
+
+
+def test_a_harness_whose_vocabulary_lacks_present_is_refused(index):
+    paper = _paper("fX", [_row("smoking", key=FA_KEY)], [])
+    bad = {**HARNESS, "status_values": ["seen", "modality", "absent"]}
+    with pytest.raises(HandoffMismatch, match="do not contain 'present'"):
+        key_table_from_inventory([paper], bad, index=index)
+
+
+def test_a_paper_id_appearing_twice_is_refused(index):
+    paper = _paper("fA", [_row("smoking", key=FA_KEY)], [])
+    with pytest.raises(InventoryShape, match="fA appears twice"):
+        key_table_from_inventory([paper, dict(paper)], HARNESS, index=index)
+
+
+def test_a_paper_with_no_id_at_all_is_refused_by_name(index):
+    paper = {"exposures": [], "outcomes": []}
+    with pytest.raises(InventoryShape, match="neither `paper` nor `pmid`"):
+        key_table_from_inventory([paper], HARNESS, index=index)
+
+
+def test_the_rows_own_schema_version_is_pinned_against_the_harness(index):
+    """The rows are pinned too, not just the harness.
+
+    The pin used to check the harness against the tree and the rows against
+    nothing. The fixture in this repository declares an OLDER schema than the
+    harness does, and that went unnoticed until a hostile review said so.
+    """
+    assert FAKE["schema_version"] != HARNESS["schema_version"], "the premise"
+    with pytest.raises(HandoffMismatch, match="rows were written under"):
+        key_table_from_inventory(FAKE["papers"], HARNESS, index=index,
+                                 rows_schema_version=FAKE["schema_version"])
+    # matching versions read normally
+    got = key_table_from_inventory(
+        FAKE["papers"], {**HARNESS, "schema_version": FAKE["schema_version"]},
+        index=index, rows_schema_version=FAKE["schema_version"])
+    assert len(got) == len(FAKE["papers"])
+
+
+def test_an_analogue_key_the_build_does_not_hold_is_not_reachable(index):
+    """A key naming nothing is not a measurement.
+
+    `analogue_only` asserts the instrument carries another measurement, so the
+    analogue key is resolved exactly as a present key is.
+    """
+    real = _paper("fX", [_row("e", "modality", key=None)],
+                  [_row("o", "modality", key=None)])
+    for side in ("exposures", "outcomes"):
+        real[side][0]["analogue_key"] = "m2:Q5.19"
+    assert analogue_only(real, index)
+    stale = _paper("fY", [_row("e", "modality", key=None)],
+                   [_row("o", "modality", key=None)])
+    for side in ("exposures", "outcomes"):
+        stale[side][0]["analogue_key"] = "m9:Q99.9"
+    assert not analogue_only(stale, index), "a key naming nothing is not a measurement"
+
+
+def test_in_frame_does_not_consume_the_pairs_it_is_given(index):
+    """A one-shot iterator is refused rather than quietly half-read.
+
+    in_frame is called once per paper and `any` short-circuits, so a shared
+    generator would be consumed by the first paper and every later one would
+    read as out of frame -- and if that lands on zero the report prints "no
+    matchable paper was in the frame", a false structural conclusion.
+    Materialising inside the function does NOT fix this: the generator is
+    already exhausted by the time the second call arrives.
+    """
+    exposure = index[FA_KEY].construct_key
+    outcome = index[PAPER["fA"]["outcomes"][0]["key"]].construct_key
+    table = _table(FAKE["papers"], index)
+    pairs = ((e, o) for e, o in [(exposure, outcome)])
+    with pytest.raises(InventoryShape, match="one-shot"):
+        in_frame(table["fA"], pairs, index)
+    # the same pairs as a list answer the same way for every paper, twice over
+    materialised = [(exposure, outcome)]
+    assert in_frame(table["fA"], materialised, index)
+    assert in_frame(table["fA"], materialised, index)
+
+
+def test_the_partition_is_checked_against_an_independently_counted_total(index):
+    """rows_seen is counted at the top of the loop, before any branch."""
+    counts = side_exclusions(FAKE["papers"], index, HARNESS["status_values"])
+    for side in ("exposures", "outcomes"):
+        rows = sum(len(p[side]) for p in FAKE["papers"])
+        assert counts[side].rows_seen == rows, side
+        assert counts[side].partition_holds, side
+        assert counts[side].rows_sum == rows

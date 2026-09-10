@@ -62,8 +62,15 @@ Both sides are folded to the CONSTRUCT before they are compared, through the
 index in §Rule 4. The inventory names a VARIABLE key and a run resolves a term
 to a CONSTRUCT, so comparing the two as strings scores a correct resolution as
 a miss: the fixture's own note records that trap. Folding means a paper's
-member key meets a record that resolved to the construct holding it, and a
-paper's construct key meets a record that resolved to a member of it. A key the
+member key meets a record that resolved to the construct holding it, a paper's
+construct key meets a record that resolved to a member of it, and a paper's
+member key meets a record that resolved to a DIFFERENT member of the same
+construct. The third follows from the first two and is stated because it does
+not read as obvious: the comparison is construct equality, and the pipeline
+generates at construct level throughout — `generate/funnel.py` enumerates
+construct pairs, and `baseline_score.keys_of` already folds a record's target
+to its whole member set. Matching at any finer grain would compare a
+construct-level hypothesis against a variable-level key. A key the
 built dictionary does not hold folds to nothing, matches nothing, and is
 COUNTED as unresolvable rather than passed over.
 

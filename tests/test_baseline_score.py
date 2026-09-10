@@ -331,10 +331,12 @@ INV_TABLE = (
     B.PaperKey("22222222", (), ("m2:Q5.2",), ()),              # exposure absent
 )
 SIDES = {"exposures": {"papers": 3, "matchable_sides": 2, "excluded_sides": 1,
+                       "rows_seen": 3,
                        "rows_present_confident": 2, "rows_present_not_confident": 0,
                        "rows_modality": 0, "rows_absent": 1, "rows_unresolvable": 0,
                        "rows_not_confident_any_status": 0},
          "outcomes": {"papers": 3, "matchable_sides": 2, "excluded_sides": 1,
+                      "rows_seen": 3,
                       "rows_present_confident": 2, "rows_present_not_confident": 1,
                       "rows_modality": 0, "rows_absent": 0, "rows_unresolvable": 0,
                       "rows_not_confident_any_status": 1}}
@@ -529,3 +531,20 @@ def test_an_observed_count_above_its_own_ceiling_is_named_a_frame_defect(tmp_pat
     assert "The observed count EXCEEDS this ceiling" in text
     assert "the frame test has missed a pair the run demonstrably produced" in text
     assert "gap below this ceiling is the pipeline's" not in text
+
+
+def test_a_broken_partition_is_printed_as_a_stop_not_as_a_claim(tmp_path):
+    """The report used to assert the partition unconditionally.
+
+    A sentence a reader acts on must be computed. When the categories do not
+    sum to the rows read, some row left the counter through no category or
+    through two, and every count in the section is unreliable.
+    """
+    d = _run_dir(tmp_path, _record())
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12],
+                inventory=_inventory(frozenset({"36702470"}), partition_holds=False))
+    text = " ".join(B.render(b).split())
+    assert "THE PARTITION DOES NOT HOLD" in text
+    assert "no rate above it may be quoted" in text
+    assert "checked, not asserted" not in text

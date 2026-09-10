@@ -201,6 +201,9 @@ class InventoryInput(NamedTuple):
         analogue_only: Papers reachable on both sides only through an
             analogue, hence unmatchable under rule 2 and named rather than
             binned.
+        partition_holds: Whether every row read left the counter through
+            exactly one category. COMPUTED by the caller, so the report prints
+            the claim only when it is true instead of asserting it.
         synthetic: Whether the source declared itself a rehearsal. True only
             when it said so, so a real run cannot be labelled synthetic by
             accident and a rehearsal cannot lose the label by omission.
@@ -210,6 +213,7 @@ class InventoryInput(NamedTuple):
     in_frame: frozenset[str] | None
     excluded_sides: dict[str, dict[str, int]]
     analogue_only: int
+    partition_holds: bool = True
     synthetic: bool = False
 
 
@@ -247,6 +251,7 @@ class InventoryCeiling(BaseModel):
         at_ceiling: `matched == records_could_match`.
         excluded_sides: Per side, every row and paper-side the rule excluded.
         analogue_only: Papers reachable on both sides only through an analogue.
+        partition_holds: See `InventoryInput`.
         synthetic: The inventory declared itself a rehearsal; see
             `InventoryInput`.
     """
@@ -266,6 +271,7 @@ class InventoryCeiling(BaseModel):
     at_ceiling: bool
     excluded_sides: dict[str, dict[str, int]]
     analogue_only: int = Field(ge=0)
+    partition_holds: bool = True
     synthetic: bool = False
 
     def sentence(self) -> str:
@@ -624,7 +630,8 @@ def inventory_ceiling(loaded: Sequence[Loaded], inventory: InventoryInput,
         matched=len(matched), at_ceiling=len(matched) == could,
         rate=None if scored == 0 else len(matched) / scored,
         excluded_sides=inventory.excluded_sides,
-        analogue_only=inventory.analogue_only, synthetic=inventory.synthetic)
+        analogue_only=inventory.analogue_only, synthetic=inventory.synthetic,
+        partition_holds=inventory.partition_holds)
 
 
 def score(paths: Sequence[Path], *, table: Sequence[PaperKey],
@@ -805,10 +812,16 @@ def _inventory_section(c: InventoryCeiling) -> list[str]:
         cells = " | ".join(str(counts.get(k, 0)) for k in _EXCLUSION_COLUMNS)
         lines.append(f"| {side} | {cells} |")
     lines += ["", "A `confident == false` row is excluded from matching and "
-              "counted here, never silently dropped. The five row columns are "
-              "a partition and sum to the rows read; the last column overlaps "
-              "them, because a non-confident row can also be a modality or "
-              "absent row."]
+              "counted here, never silently dropped. The last column overlaps "
+              "the five before it, because a non-confident row can also be a "
+              "modality or an absent row."]
+    lines.append(
+        "The five row columns are a partition and sum to the rows read: "
+        "checked, not asserted." if c.partition_holds else
+        "🛑 THE PARTITION DOES NOT HOLD: the row categories do not sum to the "
+        "rows read, so some row left the counter through no category or "
+        "through two. Every count in this section is unreliable and no rate "
+        "above it may be quoted.")
     return lines
 
 
