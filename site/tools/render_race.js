@@ -159,7 +159,7 @@ const fire = (attr, val) => {
   if (!/<b>not<\/b> committed/.test(foot)) {
     fail(`the footer does not mark a live panel's figures as uncommitted: ${JSON.stringify(foot.slice(0, 80))}`);
   }
-  if (/Retrieval is shipped/.test(foot)) {
+  if (/Retrieval is (?:shipped|in use)/.test(foot)) {
     fail("the shipped summary is still in the footer; it belongs to the Metrics tab");
   }
 

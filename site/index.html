@@ -34,6 +34,8 @@
   button:hover{opacity:.87} button:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
   .bar .ex{display:flex;gap:6px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px}
   .bar .ex button{padding:6px 9px;font-family:var(--mono);font-size:11.5px}
+  .bar .served{flex-basis:100%;font-family:var(--mono);font-size:11px;color:var(--ink-2)}
+  button[disabled]{opacity:.45;cursor:not-allowed}
 
   .stage{display:grid;grid-template-columns:236px minmax(0,1fr);border:1px solid var(--rule);
     background:var(--paper);margin:28px 0 0}
@@ -42,7 +44,6 @@
     border:0;border-bottom:1px solid var(--rule-2);padding:13px 16px;cursor:pointer;font:400 14px var(--sans)}
   .rail button:hover{background:#fff}
   .rail button[aria-current="true"]{background:#fff;box-shadow:inset 3px 0 0 var(--ink);font-weight:600}
-  .rail .n{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-right:8px}
   .rail .st{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;margin-top:3px}
   .st.shipped{color:var(--ok)} .st.built{color:var(--ink-3)} .st.blocked{color:var(--signal)}
   .st.pass{color:var(--ok)}
@@ -78,6 +79,11 @@
   .ph{border:1px dashed var(--signal);padding:14px 12px;margin:0 0 26px;
     font-family:var(--mono);font-size:12.5px;color:var(--signal)}
   .ph b{letter-spacing:.06em}
+  /* The one box that is NOT an absence: solid ink, not the dashed orange that
+     marks NOT YET RUN and NO RECORD. Orange used to mean both. */
+  .key{border:1px solid var(--ink);border-left:5px solid var(--ink);padding:14px 12px;margin:0 0 26px;
+    font-size:14px;color:var(--ink);background:var(--paper)}
+  .key b{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em}
 
   dl{margin:0 0 26px;display:grid;grid-template-columns:150px minmax(0,1fr);border:1px solid var(--rule)}
   dt,dd{margin:0;padding:8px 12px;border-bottom:1px solid var(--rule-2);font-size:14px}
@@ -113,14 +119,15 @@
 </head>
 <body>
 <header><div class="wrap mast">
-  <h1>COMPASS<span>Type what you want to measure. Watch each stage retrieve, refuse, or block — with the tool calls it made.</span></h1>
+  <h1>COMPASS<span>Type what you want to measure. Watch each stage retrieve, refuse, or block — with the dictionary lookups it made.</span></h1>
   <nav class="links"><button class="g" id="dl-src">Download this page</button><a href="https://github.com/rmehta1987/COMPASS">Repo</a></nav>
 </div></header>
 
 <div class="bar"><div class="wrap">
   <input id="q" value="" aria-label="request" placeholder="a question, or a construct, or two keys">
-  <button id="ask" title="the pipeline: retrieve candidates, then reason about which serve as exposure and which as outcome">Ask the model</button><button id="run" class="g" title="the deployed retriever alone: cosine over the target vectors, no model call, no cost, and the way to load a committed example">Search only</button>
+  <button id="ask" title="the pipeline: retrieve candidates, then the language model reasons about which serve as exposure and which as outcome. Needs the live server">Ask the pipeline</button><button id="run" class="g" title="the deployed retriever alone: cosine over the target vectors, no language-model call, no cost, and the way to load a committed example">Search only</button>
   <span class="ex" id="examples"></span>
+  <span class="served" id="served"></span>
 </div></div>
 
 <main class="wrap">
@@ -171,7 +178,7 @@ async function load(){
 function liveStatus(id){
   if(id==="retriever"){
     if(posed) return {cls:"built",label:"posed &middot; not retrieved"};
-    if(ask) return ask.running?{cls:"built",label:"resolving&hellip;"}:{cls:"shipped",label:"resolver answered"};
+    if(ask) return ask.running?{cls:"built",label:"resolving&hellip;"}:{cls:"shipped",label:"request read"};
     if(live) return {cls:"shipped",label:"live retrieval"};
     return null;
   }
@@ -183,7 +190,7 @@ function liveStatus(id){
   if(id==="specifier"){
     if(!spec) return null;
     if(spec.running) return {cls:"built",label:"running&hellip;"};
-    if(spec.error) return {cls:"blocked",label:"the endpoint errored"};
+    if(spec.error) return {cls:"blocked",label:"the server errored"};
     return {cls:"shipped",label:"run complete"};
   }
   if(id==="record"){
@@ -198,10 +205,12 @@ function liveStatus(id){
 }
 
 function rail(){
-  el("#rail").innerHTML=DATA.stages.stages.map((s,i)=>{
+  /* No sequence number: the rail is the pipeline's order, but a printed count
+     read as a strict sequence and two of the seven stages were not in one. */
+  el("#rail").innerHTML=DATA.stages.stages.map(s=>{
     const ls=liveStatus(s.id);
     return `<button data-s="${s.id}" aria-current="${s.id===sel}">
-      <span class="n">${i+1}</span>${esc(s.name)}
+      ${esc(s.name)}
       <span class="st ${esc(ls?ls.cls:s.status)}">${ls?ls.label:esc(s.status_label)}</span></button>`;
   }).join("");
   /* Taking the ticket IS the reader saying where they want to be; see `steer`. */
@@ -224,7 +233,7 @@ function match(q){
 }
 
 function placeholder(s){
-  return `<p class="sec">output</p><div class="ph"><b>NOT YET RUN</b> — no committed artifact yet. ${esc(s.placeholder)}`
+  return `<p class="sec">output</p><div class="ph"><b>NO RECORD ON THIS PAGE</b> — ${esc(s.placeholder)}`
     +(s.waits_for?` Waits for ${esc(s.waits_for)}.`:"")+`</div>`;
 }
 /* Live retrieval, used only when this page is being SERVED BY serve/api.py.
@@ -239,7 +248,9 @@ function placeholder(s){
 let live=null, ask=null;
 
 async function askResolver(){
-  if(!window.COMPASS_ENDPOINT) return;
+  /* The button is disabled on the static page (see `draw`), so this branch is
+     a keyboard or scripted reach; it still says something rather than nothing. */
+  if(!window.COMPASS_ENDPOINT){ el("#served").textContent=servedNote(); return; }
   const q=el("#q").value.trim(); if(!q) return;
   const gen=(liveGen={}), nav=(navGen={});
   live=null; posed=null; cur=null; typed=null; ask={running:true}; sel="retriever"; draw();
@@ -248,7 +259,7 @@ async function askResolver(){
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({request:q})});
     const j=await r.json().catch(()=>null);
-    if(!j||typeof j!=="object"){ ask={error:`the endpoint answered ${r.status}`}; return; }
+    if(!j||typeof j!=="object"){ ask={error:`the server answered ${r.status}`}; return; }
     if(!j.ticket){ ask=j; return; }
     for(;;){
       await new Promise(done=>setTimeout(done,j.poll_after_ms));
@@ -257,7 +268,7 @@ async function askResolver(){
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ticket:j.ticket})});
       const u=await s2.json().catch(()=>null);
-      if(!u||typeof u!=="object"){ ask={error:`the endpoint answered ${s2.status}`}; return; }
+      if(!u||typeof u!=="object"){ ask={error:`the server answered ${s2.status}`}; return; }
       if(u.status==="running"){ ask={running:true,elapsed_s:u.elapsed_s}; draw(); continue; }
       ask=u; adoptProposals(u);
       /* Keys in, design out. Nothing was inferred, so there is nothing to
@@ -265,7 +276,7 @@ async function askResolver(){
       if(allPinned(u)){ draw(); runSpecifier(nav); return; }
       return;
     }
-  }catch(err){ ask={error:"the endpoint did not answer"}; }
+  }catch(err){ ask={error:"the server did not answer"}; }
   finally{ draw(); }
 }
 
@@ -311,12 +322,12 @@ function roleBlock(role,v){
 
 function resolverPanel(){
   const j=ask;
-  if(j.running) return `<p class="sec">asking the model</p><div class="ph"><b>IN PROGRESS</b>`
-    +`${typeof j.elapsed_s==="number"?` &mdash; ${j.elapsed_s}s`:""} &mdash; the model reads`
-    +` your request and the candidate list and selects by index. The harness resolves`
-    +` the index, so it never emits a key.</div>`;
+  if(j.running) return `<p class="sec">reading the request</p><div class="ph"><b>IN PROGRESS</b>`
+    +`${typeof j.elapsed_s==="number"?` &mdash; ${j.elapsed_s}s`:""} &mdash; the language model reads`
+    +` your request and the candidate list and selects by index. The server resolves`
+    +` the index, so the model never writes a key.</div>`;
   if(j.error) return `<p class="sec">output</p><div class="ph"><b>NO ANSWER</b> &mdash; ${esc(j.error)}</div>`;
-  let h=`<p class="sec">prose resolver &middot; ${esc(j.model_id)} &middot; not a committed run</p><dl>`
+  let h=`<p class="sec">request read by ${esc(j.model_id)} &middot; not a committed run</p><dl>`
     +row("request",esc(j.request))
     +row("proposed by",esc(j.anchors_proposed_by),true)
     +`</dl>`;
@@ -328,9 +339,9 @@ function resolverPanel(){
       +`Both anchors were named in the request, so nothing was inferred and the`
       +` Specifier started automatically.</div>`:"")
     +(declined.length?`<div class="none" style="color:var(--signal)">`
-      +`The model declined to choose the ${esc(declined.join(" and "))}, so nothing`
+      +`The language model declined to choose the ${esc(declined.join(" and "))}, so nothing`
       +` was filled in there. Pick one yourself, or ask again more specifically.</div>`
-      :`<div class="none">Filled from what the model committed to. Change either`
+      :`<div class="none">Filled from what the language model committed to. Change either`
       +` before running.</div>`)
     +`<dl>`
     +row("exposure",anchors.exposure?esc(anchors.exposure):"<em>none picked</em>",true)
@@ -364,7 +375,7 @@ async function runSpecifier(nav){
     /* A refusal, a busy answer while another run holds the lock, and a
        bad-request for an unresolvable key are all ANSWERS, not failures:
        show what came back rather than collapsing them into "no endpoint". */
-    if(!j||typeof j!=="object"){ spec={error:`the endpoint answered ${r.status}`}; return; }
+    if(!j||typeof j!=="object"){ spec={error:`the server answered ${r.status}`}; return; }
     if(!j.ticket){ spec=j; return; }
     /* A RUN OUTLIVES ANY ONE REQUEST. Held open, the POST hit Cloudflare's
        proxy ceiling and died with a gateway timeout while the run itself
@@ -378,12 +389,12 @@ async function runSpecifier(nav){
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ticket:j.ticket})});
       const u=await q.json().catch(()=>null);
-      if(!u||typeof u!=="object"){ spec={error:`the endpoint answered ${q.status}`}; return; }
+      if(!u||typeof u!=="object"){ spec={error:`the server answered ${q.status}`}; return; }
       if(u.status==="running"){ spec={running:true,ticket:j.ticket,elapsed_s:u.elapsed_s}; draw(); continue; }
       spec=u; return;
     }
   }catch(err){
-    spec={error:"the endpoint did not answer"};
+    spec={error:"the server did not answer"};
   }finally{
     specBusy=false;
     /* Land the reader on the object, not on the machinery that made it. */
@@ -425,7 +436,7 @@ function readableProtocol(r){
       })(r.expected_direction),true)
     +row("exposure",anchorLine(r.exposure),true)
     +row("outcome",anchorLine(r.outcome),true)
-    +row("model",`${esc(m.form||"")} &middot; per ${esc(m.unit_of_analysis||"")}`
+    +row("analysis model",`${esc(m.form||"")} &middot; per ${esc(m.unit_of_analysis||"")}`
         +(m.clustering?` &middot; clustered on ${esc(m.clustering)}`:""),true)
     +row("falsifier",esc(r.falsifier))
     +(ft?row("threshold",`${esc(String(ft.comparator||""))} ${esc(String(ft.value))} `
@@ -433,7 +444,7 @@ function readableProtocol(r){
     +`</dl>`;
   h+=covBlock("adjusted",r.adjusted_covariates,"none");
   h+=covBlock("excluded on purpose",r.excluded_variables,
-              "none &mdash; an empty exclusion list is rejected by the schema");
+              "none &mdash; an empty exclusion list is rejected by the schema, so one entry is a floor, not a finding");
   h+=covBlock("undetermined",r.undetermined_covariates,"none");
   if(r.sought_covariates&&r.sought_covariates.length)
     h+=`<p class="sec">looked for and not found &middot; ${r.sought_covariates.length}</p>`
@@ -466,7 +477,7 @@ function readableRefusal(r){
     +row("statement",esc(r.statement))
     +row("what would unblock it",esc(r.what_would_unblock))
     +`</dl>`;
-  if(r.evidence&&r.evidence.length) h+=`<p class="sec">evidence &middot; the environment's own lookups</p>`
+  if(r.evidence&&r.evidence.length) h+=`<p class="sec">evidence &middot; the dictionary lookups the server made</p>`
     +`<div class="tools">`+r.evidence.map(v=>
       `<div class="t"><span class="call"><b>${esc(v.tool||"")}</b>(${esc(v.argument||"")})</span>`
       +`<span class="ret">&rarr; ${esc(v.outcome||"")}</span></div>`).join("")+`</div>`;
@@ -483,8 +494,8 @@ async function enumerate(){
     const r=await fetch("/api/enumerate",{method:"POST",
       headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
     const j=await r.json().catch(()=>null);
-    gen=(j&&typeof j==="object")?j:{error:`the endpoint answered ${r.status}`};
-  }catch(err){ gen={error:"the endpoint did not answer"}; }
+    gen=(j&&typeof j==="object")?j:{error:`the server answered ${r.status}`};
+  }catch(err){ gen={error:"the server did not answer"}; }
   finally{ genBusy=false; draw(); }
 }
 
@@ -495,11 +506,21 @@ function generatePanel(){
     +`<span class="call">live ${committed.live} &middot; passed ${committed.passed}`
     +` &middot; blocked ${committed.blocked}</span>`
     +`<span class="ret">${committed.blocked_on.map(esc).join(" &middot; ")}</span></div></div>`;
+  /* Same page, two trees. This gate output is the worked frame in the
+     generation clone; the scored run on Metrics used a different frame, a
+     different tree, and the gate switched off. Left unsaid, the two read as
+     one run that both did and did not happen. */
+  const mp=DATA.metrics.provenance;
+  h+=`<div class="none">This is the gate as captured at `
+    +`${esc(DATA.funnel.provenance.commit)}. The run scored on the <b>Metrics</b> tab `
+    +`(${esc(mp.run_id)}, tree ${esc(mp.tree_sha)}) was produced from a different frame with this gate `
+    +`switched off, which is the only way any pair reaches the Specifier today: its `
+    +`${DATA.metrics.observed.scored} records all carry the mark above.</div>`;
   if(!window.COMPASS_ENDPOINT) return h+`<div class="none">Served statically, so the`
     +` funnel cannot be run from here. The figures above are the committed run.</div>`;
   if(!gen) return h+`<div class="after"><button class="g" id="go-gen">Run the funnel now</button></div>`;
   if(gen.running) return h+`<div class="ph"><b>ENUMERATING</b> &mdash; S1 and S2 are`
-    +` deterministic and make no model call.</div>`;
+    +` deterministic and make no language-model call.</div>`;
   if(gen.error) return h+`<div class="ph"><b>NO OUTPUT</b> &mdash; ${esc(gen.error)}</div>`;
   const c=gen.counts;
   h+=`<p class="sec">this run of the funnel</p><dl>`
@@ -540,24 +561,27 @@ function recordPanel(){
     +`${esc(j.reason||"the run produced neither a protocol nor a refusal")}. `
     +`The Specifier tab has the run and the design the gate rejected.</div>`;
   let h=`<p class="sec">${j.selected?"ProtocolSpecification":"NotSpecifiable"}`
-    +` &middot; agent/schema.py</p>`
+    +` &middot; the record's type</p>`
     +(j.selected?readableProtocol(rec):readableRefusal(rec))
     +`<details><summary>the record as JSON &middot; provenance</summary>`
     +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre></details>`;
-  /* This stage's copy describes a HypothesisRecord with a typed DAG and a
-     critique seam. No such type exists -- the pipeline produces the two above.
-     Saying so here is cheaper than letting the panel imply otherwise. */
-  h+=`<p class="sec">against what this stage describes</p><div class="tools">`
+  /* What the type carries and what it does not. An earlier stage description
+     advertised a HypothesisRecord with a typed DAG and a critique seam, and
+     this block was its retraction, shown only to readers with a live record;
+     the description now says the same thing as this block, to every reader. */
+  h+=`<p class="sec">what the record carries, and what it cannot</p><div class="tools">`
     +`<div class="t gate pass"><span class="call">full wording per variable, never a bare key</span>`
     +`<span class="ret">in the record</span></div>`
     +`<div class="t gate pass"><span class="call">estimability stamped on the record</span>`
     +`<span class="ret">in the record</span></div>`
-    +`<div class="t gate fail"><span class="call">causal structure as a typed DAG</span>`
+    +`<div class="t gate pass"><span class="call">analysis model, unit of analysis, clustering</span>`
+    +`<span class="ret">in the record</span></div>`
+    +`<div class="t gate fail"><span class="call">a study-design field: cross-sectional, cohort, case-control</span>`
     +`<span class="ret">no such field</span></div>`
-    +`<div class="t gate fail"><span class="call">an empty critique seam</span>`
-    +`<span class="ret">no such field</span></div></div>`
-    +`<div class="none">The object above is a <code>ProtocolSpecification</code>. `
-    +`A <code>HypothesisRecord</code> is not built.</div>`;
+    +`<div class="t gate fail"><span class="call">causal structure as a typed DAG</span>`
+    +`<span class="ret">no such field; a mediator is rejected by the role it was given in a list</span></div></div>`
+    +`<div class="none">The object above is a <code>ProtocolSpecification</code> or a `
+    +`<code>NotSpecifiable</code> refusal. Nothing else is built.</div>`;
   return h;
 }
 
@@ -565,24 +589,24 @@ function specifierPanel(){
   const j=spec;
   if(j.running) return `<p class="sec">running</p><div class="ph"><b>IN PROGRESS</b>`
     +`${typeof j.elapsed_s==="number"?` &mdash; ${j.elapsed_s}s elapsed`:""}`
-    +` &mdash; a real run: reasoning with MCP tools, then transduction, then the gate.`
+    +` &mdash; a real run: the language model reasons, looking things up in the`
+    +` dictionary as it goes, then writes the record, then the gate checks it.`
     +` Minutes, not seconds. The run continues on the server whatever happens to`
-    +` this page; the ticket is how it is claimed. Runs are serialised, so a second`
-    +` one is refused rather than queued.</div>`;
+    +` this page. One run at a time: a second is refused rather than queued.</div>`;
   if(j.error) return `<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.error)}</div>`;
   const id=j.identity||{};
   let h=`<p class="sec">run &middot; not a measurement</p><dl>`
     +row("pair",esc(id.protocol_id),true)
-    +row("model",`${esc(id.model_id)}${id.is_pipeline_model?"":` <span class="flag">not the pipeline proxy</span>`}`,true)
+    +row("language model",`${esc(id.model_id)}${id.is_pipeline_model?"":` <span class="flag">not the pipeline proxy</span>`}`,true)
     +row("selection",`${esc(id.selection_mode)} &middot; screened_from ${id.screened_from}`,true)
     +row("dictionary",esc(id.dictionary_version),true)
     +(id.key_case_corrected?row("key case corrected",esc(JSON.stringify(id.key_case_corrected)),true):"")
-    +row("yield",esc(j.yield),true)
+    +row("records produced",esc(j.yield),true)
     +`</dl>`;
   if(Array.isArray(j.samples)&&j.samples.length){
-    h+=`<p class="sec">samples</p><div class="tools">`+j.samples.map(a=>
+    h+=`<p class="sec">attempts &middot; one per seed</p><div class="tools">`+j.samples.map(a=>
       `<div class="t"><span class="call">seed ${a.seed} &middot; <b>${esc(a.gate)}</b></span>`
-      +`<span class="ret">${a.tool_calls} tool call(s), ${a.transductions} transduction(s)</span></div>`
+      +`<span class="ret">${a.tool_calls} lookup(s), ${a.transductions} structuring pass(es)</span></div>`
       +(Array.isArray(a.distinct_tools)?`<div class="t"><span class="call">${esc(a.distinct_tools.join(" &middot; "))}</span></div>`:"")
     ).join("")+`</div>`;
   }
@@ -605,7 +629,7 @@ function specifierPanel(){
         +`<details><summary>as JSON &middot; provenance</summary><pre class="rec">`
         +`${esc(typeof a.rejected_record==="string"?a.rejected_record:JSON.stringify(a.rejected_record,null,2))}`
         +`</pre></details>`;
-      if(a.analysis) h+=`<p class="sec">what the model established &middot; seed ${a.seed}</p>`
+      if(a.analysis) h+=`<p class="sec">what the language model established &middot; seed ${a.seed}</p>`
         +`<details><summary>the reasoning, in full</summary>`
         +`<pre class="rec">${esc(a.analysis)}</pre></details>`;
     }
@@ -682,9 +706,9 @@ function anchorOf(v){
 
 function pairIntakePanel(){
   const j=ask;
-  let h=`<p class="sec">tool calls</p><div class="none">None for the query itself. `
+  let h=`<p class="sec">lookups</p><div class="none">None for the query itself. `
     +`The template is deterministic string concatenation: same fields, same query, `
-    +`every run. The model call comes after, to read the candidates.</div>`;
+    +`every run. The language-model call comes after, to read the candidates.</div>`;
   h+=`<p class="sec">what was encoded &middot; live, not a committed run</p><dl>`
     +row("request",esc(j.request))
     +row("rendered query",esc(j.rendered_query),true)
@@ -692,7 +716,7 @@ function pairIntakePanel(){
   h+=`<div class="none">ONE query served both roles. `
     +`<code>deploy/template.py</code> never renders the role, so an exposure `
     +`request and an outcome request build the identical string &mdash; the two `
-    +`anchors are separated by the model reading one shared candidate pool, not `
+    +`anchors are separated by the language model reading one shared candidate pool, not `
     +`by two different searches.</div>`;
   h+=`<p class="sec">anchors resolved from it</p><dl>`;
   for(const role of ["exposure","outcome"]){
@@ -714,9 +738,9 @@ function liveIntakePanel(){
   if(!live&&ask&&ask.rendered_query) return pairIntakePanel();
   const j=live, q=(live&&live.request)||{};
   const dropped=(live&&live.instances_dropped_as_covered)||[];
-  let h=`<p class="sec">tool calls</p><div class="none">None. The template is `
+  let h=`<p class="sec">lookups</p><div class="none">None. The template is `
     +`deterministic string concatenation: same fields, same query, every run. `
-    +`No model call, no network.</div>`;
+    +`No language-model call, no network.</div>`;
   h+=`<p class="sec">RetrievalRequest &middot; live, not a committed run</p><dl>`
     +row("request",esc(j.query||j.request))
     +row("construct",esc(q.construct),true)
@@ -736,7 +760,7 @@ function liveIntakePanel(){
 
 function livePanel(){
   const j=live, [top]=j.hits;
-  let h=`<p class="sec">live retrieval &middot; served by the endpoint, not a committed run</p>`;
+  let h=`<p class="sec">live retrieval &middot; served by this server, not a committed run</p>`;
   h+=`<dl>`
     +row("query",esc(j.query),true)
     +row("top cosine",f4(top.cos),true)
@@ -772,7 +796,7 @@ function livePanel(){
 }
 
 function noRun(){
-  return `<p class="sec">output</p><div class="ph"><b>NO COMMITTED RUN</b> — this page has no encoder and never invents a score. The request is shown verbatim and nothing else: <em>${esc(typed)}</em>. The example buttons load the runs that were committed with this page.</div>`;
+  return `<p class="sec">output</p><div class="ph"><b>NO COMMITTED RUN</b> — this page has no encoder and never invents a score. The request is shown verbatim and nothing else: <em>${esc(typed)}</em>. The example buttons above load the runs that were committed with this page; the Generate, Score and Metrics stages do not depend on what you typed and still show their committed runs.</div>`;
 }
 
 function toolLog(log){
@@ -789,9 +813,12 @@ function toolLog(log){
 
 function retrieverPanel(){
   const r=cur.record, p=DATA.runs.provenance, t=r.target||r.nearest_if_abstained;
-  let h=`<p class="sec">tool calls · run ${esc(p.run_id)}</p>`+toolLog(cur.tool_log);
+  let h=`<p class="sec">lookups · run ${esc(p.run_id)}</p>`+toolLog(cur.tool_log);
+  /* Say what the name IS where it is first met. The withholding policy used to
+     be stated only on the Metrics tab, six clicks from here. */
+  const pseud=`<b>${esc(t.pseudonym)}</b> · a pseudonym: the matched variable's key and wording are withheld on this page`;
   h+=`<p class="sec">RetrievalRecord</p><dl>`
-    +row("target",r.abstained?`<span class="flag">none — abstained</span> · nearest ${esc(t.pseudonym)}`:esc(t.pseudonym),true)
+    +row("target",r.abstained?`<span class="flag">none — abstained</span> · nearest ${pseud}`:pseud,true)
     +row("domain",esc(t.domain),true)
     +row("level",esc(t.level),true)
     +row("top cosine",f4(r.top_cos),true)
@@ -801,7 +828,7 @@ function retrieverPanel(){
     +row("roster fold",`${t.fold_size} roster row(s) folded into this target`,true)
     +row("option",t.option_position?`option ${t.option_position} of ${t.option_count}`:"stem-level target, no option",true)
     +row("query time",`${r.query_ms_median} ms median, isolated, this machine (${esc(p.machine.machine)}, ${p.machine.threads} threads)`,true)
-    +row("targets scored",`${DATA.runs.corpus.n_targets.toLocaleString()} vectors · dictionary ${esc(p.bundle.dictionary_version_hash)}`,true)
+    +row("targets scored",`${DATA.runs.corpus.n_targets.toLocaleString()} targets, one vector each · dictionary ${esc(p.bundle.dictionary_version_hash)}`,true)
     +`</dl>`;
   h+=`<p class="sec">next candidates</p><div class="tools">`+cur.candidates.map(c=>
     `<div class="t"><span class="call">${c.rank}. <b>${esc(c.pseudonym)}</b> · ${esc(c.domain)}</span><span class="ret">cos ${f4(c.cos)}${c.cos<DATA.runs.threshold.min_cos?" · below min_cos":""}</span></div>`).join("")+`</div>`;
@@ -817,7 +844,7 @@ function retrieverPanel(){
 
 function intakePanel(){
   const q=cur.request, p=DATA.runs.provenance;
-  let h=`<p class="sec">tool calls</p><div class="none">None. The template is deterministic string concatenation: same fields, same query, every run. No model call, no network.</div>`;
+  let h=`<p class="sec">lookups</p><div class="none">None. The template is deterministic string concatenation: same fields, same query, every run. No language-model call, no network.</div>`;
   h+=`<p class="sec">RetrievalRequest · run ${esc(p.run_id)}</p><dl>`
     +row("request",esc(q.text))
     +row("construct",esc(q.construct),true)
@@ -834,7 +861,7 @@ function intakePanel(){
 
 function funnelPanel(){
   const f=DATA.funnel, st=f.stages, g=f.gate;
-  let h=`<p class="sec">tool calls</p><div class="none">None. S1–S4 and the gate are deterministic: no model, no network.</div>`;
+  let h=`<p class="sec">lookups</p><div class="none">None. S1–S4 and the gate are deterministic: no language model, no network.</div>`;
   h+=`<p class="sec">screen · captured ${esc(f.provenance.run_id)} · ${esc(f.provenance.commit)}</p><dl>`
     +row("S1 enumerate",`${st.S1_enumerated} candidate pairs over distinct constructs`,true)
     +row("S2 prune",`${st.S2_pruned} removed · construct identity, battery, free text, scale`,true)
@@ -863,8 +890,8 @@ async function loadMetricKeys(){
     const r=await fetch("/api/metrics",{method:"POST",
       headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
     const j=await r.json().catch(()=>null);
-    met=(j&&typeof j==="object")?j:{error:`the endpoint answered ${r.status}`};
-  }catch(err){ met={error:"the endpoint did not answer"}; }
+    met=(j&&typeof j==="object")?j:{error:`the server answered ${r.status}`};
+  }catch(err){ met={error:"the server did not answer"}; }
   finally{ metBusy=false; draw(); }
 }
 
@@ -872,37 +899,49 @@ function metricsPanel(){
   const m=DATA.metrics, c=m.ceiling, o=m.observed;
   const keyed=(met&&met.pairs)?met.pairs:null;
 
-  let h=`<div class="ph"><b>READ THE CEILING FIRST</b> &mdash; ${esc(m.headline)}</div>`;
+  let h=`<div class="key"><b>READ THE CEILING FIRST</b> &mdash; ${esc(m.headline)}</div>`
+    +`<p class="prov">${esc(m.headline_source)}</p>`;
   h+=`<p class="sec">the question this run answers</p>`
     +`<div class="none">${esc(m.question_answered)}</div>`;
+  h+=`<p class="sec">how the scored set was produced</p><ul class="does">`
+    +m.how_produced.map(x=>`<li>${esc(x)}</li>`).join("")+`</ul>`;
 
   h+=`<p class="sec">ceiling &middot; the highest score that was available</p><dl>`
     +row("papers in the table",String(c.papers_in_table),true)
     +row("with an outcome key on record",String(c.with_outcome_key),true)
     +row("with an exposure the retriever resolved",String(c.with_exposure_resolved),true)
-    +row("matchable, needing both",`<span class="flag">${c.matchable_papers}</span>`,true)
-    +row("highest possible match count",`<span class="flag">${c.max_matched}</span>`,true)
-    +`</dl><div class="none">${esc(m.reads.why_the_ceiling_is_low)}.`
-    +` ${esc(m.reads.why_no_match_was_available)}.</div>`;
+    +row("papers matchable, needing both",`<span class="flag">${c.matchable_papers}</span> of ${c.papers_in_table}`,true)
+    +row("records that could have matched",`<span class="flag">${c.max_matched}</span> of ${o.scored}`,true)
+    +`</dl><div class="none">${esc(m.reads.unit_of_analysis)}.</div>`
+    +`<div class="none">${esc(m.reads.why_the_ceiling_is_low)}.</div>`
+    +`<div class="none">${esc(m.reads.the_frame)}. ${esc(m.reads.why_no_match_was_available)}.</div>`;
 
   /* TWO SECTIONS, NOT ONE TABLE AFTER ANOTHER. Met back to back, the second
      table reads as a continuation of the first and the reader starts hunting for
      the row that ties them -- which is the question that keeps arriving. Each
      now says whose output it is, above a rule. */
-  h+=`<p class="sec major">Cohort bibliography &middot; ${m.papers.length} indexed,`
-    +` and that is a floor`
-    +`<em>What the literature published. Nothing here came from the pipeline.</em></p>`
-    +`<div class="tbl"><table><thead><tr><th>PMID</th><th>year</th><th>venue</th>`
-    +`<th>design &middot; exposure to outcome</th><th>n</th><th>terms that abstained</th>`
+  /* Both halves are true and the reader needs both: the count is a floor on
+     what the literature holds, and it is the fixed denominator the ceiling
+     above was computed over. */
+  const late=m.papers.filter(r=>!r.inventoried_before_2026_08_27).length;
+  const noVenue=m.papers.filter(r=>/not recorded/.test(r.venue)).length;
+  h+=`<p class="sec major">Cohort bibliography &middot; ${m.papers.length} indexed`
+    +`<em>What the literature published. Nothing here came from the pipeline. The count is a floor on `
+    +`the literature, and the fixed denominator of the ceiling above.</em></p>`
+    +`<div class="tbl"><table><thead><tr><th>PMID</th><th>year</th><th>venue, as recorded</th>`
+    +`<th>design, as the bibliography records it</th><th>n, as the paper reports it</th>`
+    +`<th>exposure terms the retriever abstained on</th>`
     +`</tr></thead><tbody>`
     +m.papers.map(r=>`<tr><td><a href="${esc(m.pubmed_base)}${esc(r.pmid)}/">`
       +`${esc(r.pmid)}</a>${r.inventoried_before_2026_08_27?"":" <span class=\"flag\">late</span>"}`
       +`</td><td>${r.year}</td><td>${esc(r.venue)}</td><td>${esc(r.design)}</td>`
-      +`<td>${esc(r.n)}</td><td>${r.exposure_terms_abstained}</td></tr>`).join("")
+      +`<td>${esc(r.n)}</td><td>${r.exposure_terms_abstained===null?`<span class="ret">none listed</span>`:r.exposure_terms_abstained}</td></tr>`).join("")
     +`</tbody></table></div>`
-    +`<div class="none">Rows marked <span class="flag">late</span> were not in any `
-    +`exclusion list before the bibliography was rebuilt, which is why every tier `
-    +`assignment made before then is wrong.</div>`;
+    +`<div class="none">${late} of ${m.papers.length} rows are marked <span class="flag">late</span>: they entered `
+    +`the bibliography when it was rebuilt, shortly before this run. The ceiling above counts all `
+    +`${m.papers.length}, late rows included. ${noVenue} rows carry no venue in the bibliography and read as `
+    +`such. The design column is the bibliography's own prose, exposure to outcome as it wrote it, `
+    +`and the n column is each paper's own unit. ${esc(m.abstained_note)}.</div>`;
 
   const gap=m.not_built.find(x=>x.what.indexOf("per-paper")>-1);
   h+=`<p class="sec">what is still missing from the key</p>`
@@ -914,7 +953,8 @@ function metricsPanel(){
   h+=`<p class="sec">verdicts on this scoring run</p><div class="tools">`
     +Object.entries(m.verdicts).map(([k,v])=>
       `<div class="t gate ${v==="ok"?"pass":"fail"}"><span class="call">${esc(k)}</span>`
-      +`<span class="ret">${esc(v)}</span></div>`).join("")+`</div>`;
+      +`<span class="ret">${esc(v)}</span></div>`).join("")+`</div>`
+    +`<div class="none">${esc(m.verdicts_note)}.</div>`;
 
   /* "Artifact" is what the pipeline calls its output file; it tells a reader
      nothing about what the row IS. Each row is one pair of questionnaire
@@ -928,8 +968,12 @@ function metricsPanel(){
     +` exposure and an outcome, that the pipeline enumerated and then specified.`
     +` The ledger generated ${o.ledger_denominator} pair(s) this run`
     +` (${Object.entries(o.by_outcome).map(([k,v])=>`${v} ${esc(k)}`).join(", ")});`
-    +` these are the emitted ones, drawn from`
-    +` ${o.strata.length} strata: ${o.strata.map(esc).join(", ")}.</div>`
+    +` these are the emitted ones. By side: ${sideCounts(m.artifacts,"exposure_stratum")} as exposure;`
+    +` ${sideCounts(m.artifacts,"outcome_stratum")} as outcome.</div>`
+    +`<div class="none">${esc(m.reads.one_cell)}.</div>`
+    +`<div class="none">${esc(m.reads.attrition)}: ${o.by_outcome.backend_error||"none"} of`
+    +` ${o.ledger_denominator} generated pairs ended in a backend error and are not in the scored`
+    +` ${o.scored}.</div>`
     +`<div class="none">${esc(m.reads.how_the_two_populations_relate)}.</div>`
     +`<div class="none">${esc(m.reads.what_the_paper_column_means)}.</div>`;
 
@@ -944,8 +988,8 @@ function metricsPanel(){
     +row("ledger denominator",String(o.ledger_denominator),true)
     +row("by outcome",Object.entries(o.by_outcome)
         .map(([k,v])=>`${esc(k)} ${v}`).join(" &middot; "),true)
-    +row("strata",o.strata.map(esc).join(" &middot; "),true)
-    +row("artifact files on disk",String(o.artifact_files_on_disk),true)
+    +row("strata, both sides",o.strata.map(esc).join(" &middot; "),true)
+    +row("record files on disk",String(o.artifact_files_on_disk),true)
     +`</dl><div class="none">${esc(o.denominator_note)}.</div>`;
 
   h+=`<p class="sec">how to read that</p><ul class="does">`
@@ -954,15 +998,25 @@ function metricsPanel(){
 
   if(!keyed) h+=`<div class="none">${esc(m.instrument_withheld_here)}`
     +(window.COMPASS_ENDPOINT
-      ?` <button class="g" id="met-keys">${metBusy?"asking the endpoint&hellip;"
+      ?` <button class="g" id="met-keys">${metBusy?"asking the server&hellip;"
         :"Show the keys and wording"}</button>`
       :``)+`</div>`;
   if(met&&met.error) h+=`<div class="ph"><b>NO KEYS</b> &mdash; ${esc(met.error)}.</div>`;
   launchable={};
+  /* A column every row fills identically carries nothing per row. Say the
+     shared value once, above, and drop the column; keep it only when rows
+     differ. Same for n source. */
+  const shared=k=>{const [first,...rest]=new Set(m.artifacts.map(a=>a[k]));return rest.length?null:first;};
+  const estAll=shared("estimability"), nsAll=shared("n_source");
+  if(estAll!==null||nsAll!==null) h+=`<div class="none">Every row below`
+    +(estAll!==null?` carries estimability <span class="flag">${esc(estAll)}</span>`:``)
+    +(estAll!==null&&nsAll!==null?` and`:``)
+    +(nsAll!==null?` has n source <span class="flag">${esc(nsAll)}</span>`:``)
+    +`, so neither is repeated per row. ${esc(m.reads.excluded_floor)}.</div>`;
   h+=`<div class="tbl"><table><thead><tr><th>record</th><th>paper matched</th>`
     +(keyed?`<th>exposure</th><th>outcome</th>`:`<th>exposure stratum</th><th>outcome stratum</th>`)
-    +`<th>estimability</th><th>adjusted</th><th>excluded</th><th>sought, not found</th>`
-    +`<th>n source</th>`+(keyed?`<th></th>`:``)+`</tr></thead><tbody>`
+    +(estAll===null?`<th>estimability</th>`:``)+`<th>adjusted</th><th>excluded</th><th>sought, not found</th>`
+    +(nsAll===null?`<th>n source</th>`:``)+(keyed?`<th></th>`:``)+`</tr></thead><tbody>`
     +m.artifacts.map((a,ai)=>{
       const k=keyed?keyed[a.record_hash]:null;
       const tok=`metrics:${ai}`;
@@ -992,9 +1046,9 @@ function metricsPanel(){
             :`<td class="m"><span class="ret">not returned</span></td>`
              +`<td class="m"><span class="ret">not returned</span></td>`)
           :`<td>${esc(a.exposure_stratum)}</td><td>${esc(a.outcome_stratum)}</td>`)
-        +`<td><span class="flag">${esc(a.estimability)}</span></td>`
+        +(estAll===null?`<td><span class="flag">${esc(a.estimability)}</span></td>`:``)
         +`<td>${a.n_adjusted}</td><td>${a.n_excluded}</td><td>${a.n_sought_not_found}</td>`
-        +`<td>${esc(a.n_source)}</td>`
+        +(nsAll===null?`<td>${esc(a.n_source)}</td>`:``)
         +(keyed
           ?(k?`<td><button class="g pick" data-genex="${esc(k.exposure)}" `
              +`data-genout="${esc(k.outcome)}" data-launch="${att(tok)}">run the pipeline</button></td>`
@@ -1021,7 +1075,8 @@ function metricsPanel(){
 function scorePanel(){
   const sc=DATA.score, e=sc.generation_env;
   const b=v=>v?`<span class="flag">true</span>`:`false <span class="good">required</span>`;
-  let h=`<p class="sec">tool calls</p><div class="none">None in the generation clone. Scoring runs in a separate clone that holds the key, and has not run.</div>`;
+  const mp=DATA.metrics.provenance;
+  let h=`<p class="sec">lookups</p><div class="none">None in the generation clone. Scoring runs in a separate clone that holds the key; it has run once, on ${esc(mp.run_id)}, and the <b>Metrics</b> tab carries the result.</div>`;
   h+=`<p class="sec">GenerationEnv · stamped ${esc(sc.provenance.run_id)}</p><dl>`
     +row("key_present",b(e.key_present),true)
     +row("key_fetchable",b(e.key_fetchable),true)
@@ -1030,33 +1085,63 @@ function scorePanel(){
     +row("tree_clean",String(e.tree_clean),true)
     +row("clean_for_scoring",e.clean_for_scoring?`<span class="good">true</span>`:`<span class="flag">false</span>`,true)
     +row("estimable denominator",`<span class="flag">${sc.estimable_denominator}</span>`,true)
-    +row("status",`<span class="flag">${esc(sc.status)}</span> · scoring has run: ${sc.scoring_has_run}`,true)
+    +row("status",`<span class="flag">${esc(sc.status)}</span> · scored in this clone: ${sc.scored_in_generation_clone}`,true)
     +`</dl>`;
-  h+=`<p class="sec">why scoring has not run</p><ul class="does">${sc.why_not.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`;
+  h+=`<p class="sec">why the gate blocks</p><ul class="does">${sc.why_the_gate_blocks.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`;
+  h+=`<p class="sec">the one scored run</p><dl>`
+    +row("run",esc(mp.run_id),true)
+    +row("tree",esc(mp.tree_sha),true)
+    +row("gate",`<span class="flag">off</span> · every scored record carries ${DATA.funnel.gate.estimability_marks.map(esc).join(", ")}`,true)
+    +row("scored",String(DATA.metrics.observed.scored),true)
+    +row("matched",`<span class="flag">${DATA.metrics.observed.matched}</span> · ceiling ${DATA.metrics.ceiling.max_matched}`,true)
+    +`</dl><div class="none">${esc(sc.scored_run_note)}.</div>`;
   return h;
 }
 
 function measureHTML(){
-  const m=DATA.measurements, sh=m.shipped, S=sh.arms.S, I=sh.arms.I, th=sh.threshold, lat=sh.latency;
-  const best=Math.max(...m.sweep.rows.map(r=>r.recall_at_1));
+  const m=DATA.measurements, sh=m.shipped, S=sh.arms.S, I=sh.arms.I, th=sh.threshold, lat=sh.latency, L=m.limitations;
+  const n=m.fixture.n_positive_rows;
+  const [,R1lab]=sh.arm_columns.find(([k])=>k==="recall_at_1"), R1=esc(R1lab);
   const cell=(k,v)=>k.startsWith("recall_at")?v.toFixed(3):k==="params_m"?`${v}M`:k==="model"?esc(v):String(v);
   let h=`<h2>What was measured</h2>
-  <p class="lead">Two tables, both on the same ${m.fixture.n_positive_rows}-row fixture (${m.fixture.n_negative_rows} held-out negatives). ${esc(m.fixture.note)}.</p>`;
+  <p class="lead">Two tables, both on the same ${n}-row fixture (${m.fixture.n_negative_rows} held-out negatives). ${esc(m.fixture.note)}.</p>`;
+  /* The whole of the manifest's known limitations, not the first clause. The
+     comparison below is exactly the one these sentences qualify. */
+  h+=`<p class="sec">known limitations · ${esc(L.source)}</p><dl>`
+    +row("fixture queries",`written by the same generator family as the ${L.training_pairs.toLocaleString()} training pairs, with sight of the gold wording`)
+    +row("gain over frozen",`${R1} ${L.gain_r1_over_frozen_bge_small.toFixed(3)} for the fine-tuned model over frozen bge-small on the no-template arm · <span class="flag">${esc(L.register_alignment_share)}</span> share of it is register alignment`,true)
+    +row("lexical leakage",`${L.lexical_leakage.measured?"measured":"not measured"} and it ${L.lexical_leakage.survives?"survives":"does not survive"}: item-level Spearman ${L.lexical_leakage.item_level_spearman} (permutation p ${L.lexical_leakage.permutation_p}); ${R1} by query-to-gold overlap quartile ${L.lexical_leakage.r1_by_query_gold_overlap_quartile.map(q=>q.toFixed(3)).join(" / ")}, ${L.lexical_leakage.monotonic?"monotonic":"non-monotonic"}${L.lexical_leakage.flat_within_query_length_strata?", flat within every query-length stratum":""}`,true)
+    +row("recall by stratum",`not uniform: `+L.strata.map(s=>`${esc(s.stratum)} ${R1} ${s.recall_at_1.toFixed(3)} (n=${s.n})`).join(" · ")+`. One ${R1} below is the pooled figure`,true)
+    +row("unmeasured strata",`no fixture row for ${L.unmeasured_strata.map(esc).join(", ")}: recall there is unmeasured, not good`,true)
+    +row("phrasing",`${L.phrasing.items_retrieved_on_no_phrasing} of ${L.phrasing.gold_items} gold items retrieved on none of their ${L.phrasing.phrasings_per_item} phrasings, ${L.phrasing.items_retrieved_on_one_phrasing} on one`,true)
+    +`</dl>`;
   h+=`<p class="sec">encoder sweep · ${esc(m.sweep.what)} · ${esc(m.sweep.machine)} · dictionary ${esc(m.sweep.dictionary_version_hash)}</p>
   <div class="tbl"><table><thead><tr>${m.sweep.columns.map(([,l])=>`<th>${esc(l)}</th>`).join("")}</tr></thead><tbody>`
-   +m.sweep.rows.map(r=>`<tr>${m.sweep.columns.map(([k])=>`<td class="${k==="recall_at_1"&&r[k]===best?"hi":""}">${cell(k,r[k])}</td>`).join("")}</tr>`).join("")
+   +m.sweep.rows.map(r=>`<tr>${m.sweep.columns.map(([k])=>`<td>${cell(k,r[k])}</td>`).join("")}</tr>`).join("")
    +`</tbody></table></div>
-  <p class="prov">${esc(m.provenance.run_id)} · ${esc(m.provenance.sweep_artifacts_note)}</p>`;
-  h+=`<p class="sec">shipped model · ${esc(sh.model)} · ${sh.params_m}M params · ${esc(sh.training.negatives)}, temperature ${sh.training.temperature} · ${sh.n_targets.toLocaleString()} targets · dictionary ${esc(sh.dictionary_version_hash)}</p>
+  <p class="prov">${esc(m.provenance.run_id)} · ${esc(m.provenance.sweep_artifacts_note)}</p>
+  <div class="none">R@k is the share of the ${n} positive queries whose gold target ranked in the top k. No row is marked best: differences of a few hundredths between rows are within what a ${n}-row fixture can resolve, and no interval is computed here.</div>`;
+  h+=`<p class="sec">shipped model · ${esc(sh.model)} · ${sh.params_m}M params · ${esc(sh.training.negatives)} · ${sh.n_targets.toLocaleString()} targets · dictionary ${esc(sh.dictionary_version_hash)}</p>
   <div class="tbl"><table><thead><tr><th>query arm</th>${sh.arm_columns.map(([,l])=>`<th>${esc(l)}</th>`).join("")}<th>negatives rejected</th><th>AUROC absent vs present</th></tr></thead><tbody>`
-   +[["S",S],["I",I]].map(([k,a])=>`<tr><td>${k} · ${esc(a.label)}</td>${sh.arm_columns.map(([c])=>`<td class="${k==="I"&&c==="recall_at_1"?"hi":""}">${cell(c,a[c])}</td>`).join("")}<td>${a.negatives_rejected} / ${a.n_negatives}</td><td>${a.auroc_absent_vs_present.toFixed(4)}</td></tr>`).join("")
+   +[["S",S],["I",I]].map(([k,a])=>`<tr><td>${k} · ${esc(a.label)}</td>${sh.arm_columns.map(([c])=>`<td>${cell(c,a[c])}</td>`).join("")}<td>${a.negatives_rejected} / ${a.n_negatives}</td><td>${a.auroc_absent_vs_present.toFixed(3)}</td></tr>`).join("")
    +`</tbody></table></div>
+  <div class="none">Both arms are one model on one machine; they differ only in how the query was rendered. AUROC is shown to three places: it is computed over ${I.n_negatives} negatives and ${n} positives, and the two arms reject the same count.</div>
   <div class="tbl"><table><thead><tr><th>threshold</th><th>min_cos</th><th>coverage</th><th>precision</th><th>recall</th><th>F1</th><th>candidate values</th><th>latency</th></tr></thead><tbody>
-   <tr><td>shipped, F1-maximising over positives</td><td>${th.min_cos.toFixed(6)}</td><td>${th.coverage.toFixed(4)}</td><td>${th.precision.toFixed(4)}</td><td>${th.recall.toFixed(4)}</td><td>${th.f1.toFixed(4)}</td><td>${th.candidate_taus}</td><td>${lat.query_ms_isolated_single} ms · ${esc(lat.machine)} · ${lat.threads} threads</td></tr>
+   <tr><td>shipped · F1-maximising over the same ${n} positives it is reported on</td><td>${th.min_cos.toFixed(6)}</td><td>${th.coverage.toFixed(4)}</td><td>${th.precision.toFixed(4)}</td><td>${th.recall.toFixed(4)}</td><td>${th.f1.toFixed(4)}</td><td>${th.candidate_taus}</td><td>${lat.query_ms_isolated_single} ms · ${esc(lat.machine)} · ${lat.threads} threads</td></tr>
   </tbody></table></div>
+  <div class="none">Coverage: ${esc(th.definitions.coverage)}. Precision: ${esc(th.definitions.precision)}. Recall: ${esc(th.definitions.recall)}. This recall is not the ${R1} above: ${R1} counts every query, this one only those that cleared min_cos. ${esc(th.selection_note)}.</div>
   <p class="prov">${esc(m.provenance.commit)} · ${esc(lat.note)}</p>`;
   h+=`<div class="none">${esc(sh.wrong_pick_detection.note)}.</div>`;
   return h;
+}
+
+/* "N medication · M reproductive_hormonal", counted from the rows: the strata
+   list alone read as breadth when every row shared one outcome. Written
+   without a numeric literal, which the fabrication gate forbids on this page. */
+function sideCounts(rows,k){
+  const names=[...new Set(rows.map(a=>a[k]))];
+  return names.map(s=>({s,v:rows.filter(a=>a[k]===s).length}))
+    .sort((x,y)=>y.v-x.v).map(({s,v})=>`${v} ${esc(s)}`).join(" &middot; ");
 }
 
 /* WHERE THE SHIPPED FIGURES LIVE. These three paragraphs used to hang under
@@ -1070,24 +1155,30 @@ function measureHTML(){
    panel it describes. */
 function provenanceLine(){
   return `${panelLive
-      ? `The panel above was produced by this endpoint during this session. Its figures come from that run and are <b>not</b> committed &mdash; nothing on this page pins them, and a second run may differ. Every other figure here is loaded from <code>site/artifacts/</code> with its run id or commit.`
-      : `Every figure above is loaded from <code>site/artifacts/</code> with its run id or commit.`} Panels marked NOT YET RUN have no committed artifact and show no numbers.`;
+      ? `The panel above was produced by this server during this session. Its figures come from that run and are <b>not</b> committed &mdash; nothing on this page pins them, and a second run may differ. Every other figure here is loaded from <code>site/artifacts/</code> with its run id or commit.`
+      : `Every figure above is loaded from <code>site/artifacts/</code> with its run id or commit; nothing on this panel was produced by your query.`} Panels marked NO RECORD ON THIS PAGE carry no committed record and show no numbers.`;
 }
 
 function shippedSummary(){
-  const m=DATA.measurements, sh=m.shipped, I=sh.arms.I, lat=sh.latency;
-  return `<p>Retrieval is shipped: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, no model call. Hypothesis generation is not: the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} pairs without two survey-metadata exports, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>.</p>
-  <p>Abstention on constructs the instrument does not measure is reliable on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(4)}, ${I.negatives_rejected} of ${I.n_negatives} negatives rejected). Detecting its own wrong pick is a different question, and the one figure for it is not on this page. Whether the fixture is a ceiling or a floor is unresolved.</p>
+  const m=DATA.measurements, sh=m.shipped, I=sh.arms.I, lat=sh.latency, o=DATA.metrics.observed;
+  return `<p>Retrieval is in use: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, no language-model call. Hypothesis generation is gated: the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} pairs without two survey-metadata exports, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>. The one scored run switched that gate off; its ${o.scored} records are listed above, and ${o.matched} matched against a ceiling of ${DATA.metrics.ceiling.max_matched}.</p>
+  <p>Abstention on constructs the instrument does not measure: ${I.negatives_rejected} of ${I.n_negatives} held-out negatives rejected on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(3)}). Its recall is an upper bound, not an open question: the fixture's queries were written with sight of the gold wording, by the same generator family as the training pairs. Detecting its own wrong pick is a different question; that figure was measured, withdrawn from git, and is not reproducible from this page.</p>
   <p>${provenanceLine()}</p>`;
 }
 
-/* The footer now carries ONLY the provenance line, and only where it is
-   load-bearing: under a panel this endpoint just produced. Dropping it outright
-   would undo the fix that scoped this sentence in the first place -- live
-   figures used to sit above a claim that everything on the page was committed.
-   A sha would say which commit, and the page carries no numerals. */
+/* The footer carries ONLY the provenance line, but under EVERY panel: live or
+   committed, it says which. Scoping it to live panels left the committed ones
+   with an empty footer, so a reader who loaded the page with a query prefilled
+   saw a live-sounding masthead over a run committed days earlier and nothing
+   that said so. Metrics closes with the same line in its own summary. */
 function foot(){
-  el("#foot").innerHTML=panelLive&&sel!=="metrics"?`<p>${provenanceLine()}</p>`:"";
+  el("#foot").innerHTML=sel==="metrics"?"":`<p>${provenanceLine()}</p>`;
+}
+
+/* What the static page can and cannot do, said beside the controls that do it. */
+function servedNote(){
+  return window.COMPASS_ENDPOINT?""
+    :"Served statically: the example runs and Search only work here. Asking the pipeline needs the live server, so that button is off.";
 }
 
 function panelPNG(){
@@ -1207,7 +1298,10 @@ function stagePanel(s){
   if(sel==="generate"&&gen) return generatePanel();
   if(sel==="metrics"&&met) return metricsPanel();
   panelLive=false;
-  if(typed!==null&&!cur) return noRun();
+  /* Only the two stages a query feeds. This test used to sit above every
+     committed branch, so one unrecognised query made Generate, Score and
+     Metrics unreachable until a reload. */
+  if(typed!==null&&!cur&&(sel==="retriever"||sel==="intake")) return noRun();
   if(sel==="retriever"&&cur) return retrieverPanel();
   if(sel==="intake"&&cur) return intakePanel();
   if(sel==="generate") return generatePanel();
@@ -1242,7 +1336,12 @@ function draw(){
   document.querySelectorAll("[data-anchor]").forEach(b=>b.onclick=()=>{
     anchors[b.dataset.anchor]=b.dataset.key; draw();});
   const go=el("#go-spec"); if(go) go.onclick=runSpecifier;
+  /* Dead and silent was the worst moment on the published page: the darkest
+     control did nothing. Off, with the reason beside it, when there is no
+     server to ask. Re-read on every draw because the server sets the flag. */
   el("#ask").onclick=askResolver;
+  el("#ask").disabled=!window.COMPASS_ENDPOINT;
+  el("#served").textContent=servedNote();
   const gg=el("#go-gen"); if(gg) gg.onclick=enumerate;
   const mk=el("#met-keys"); if(mk) mk.onclick=loadMetricKeys;
   document.querySelectorAll("[data-genex]").forEach(b=>b.onclick=()=>{
@@ -1287,6 +1386,8 @@ el("#run").onclick=async()=>{
      move them. */
   if(j){ live=j; if(sel!=="specifier") steer(nav,"retriever"); draw(); }
 };
+/* Enter is the reader's first action; without this it did nothing. */
+el("#q").onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); el("#run").onclick(); } };
 el("#dl-src").onclick=()=>{
   /* One self-contained file: the live DOM as rendered, plus every loaded
      artifact embedded as JSON so load() needs no fetch when opened from disk. */

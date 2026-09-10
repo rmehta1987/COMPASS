@@ -147,3 +147,48 @@
 | PM2.5 abstention; five domains absent | out/char_neg_bge-small_ft.json (untracked), src/verify_negatives.py (tracked) | — | rerun at item 4 |
 | five-architecture table | arm_hybrid_e_D.md §2 (tracked); arm_e2.*.json withheld and not on this machine | measured 2026-09-02/03 | traced to the document; item 11 says so |
 | 13,528 training pairs | PROVENANCE.md → runs/…/compass_train_meta.json (withheld) | — | doc-only; not shown unless the manifest carries it |
+
+## 2026-09-09 — adversarial review pass (~/compass-site-review.md, five seeds + cold audit)
+Worked from the audit's revised priority; every fix the audit rejected was left alone
+(no interval on 0/28; `key` and `vector` keep their words; "floor" and the fixed 16 both
+stay; A15 says "measured, withdrawn, not reproducible", not "unmeasured").
+- Half-kept limitations (audit #1): `build_measurements.py` now parses ALL of
+  `deploy/manifest.json::known_limitations` into `measurements.limitations` — shared
+  generator family, the +0.192 gain with its unknown register-alignment share, the
+  lexical-leakage test that does not survive, the three strata (two at or near zero),
+  the four unmeasured strata, the phrasing blind spots. Rendered above the sweep it
+  qualifies. Sweep and arm tables no longer bold a winner; AUROC to 3 dp; recall,
+  coverage and precision defined from `src/char_report.py::sweep`; the threshold row says
+  it is selected and reported on the same positives.
+- A3 (audit #2): the rail no longer says "not yet run" beside a tab tabulating 28
+  outputs. Specifier, Record and Score read "ran once, gate off · output withheld here"
+  and the like; `score.json` says `scored_in_generation_clone: false` with the scored
+  run's identity read from `metrics.json`; Metrics opens with "how the scored set was
+  produced" (gate off via --allow-unestimable, narrow frame, seeded subset, different
+  tree); Generate says its gate capture is a different frame and tree from the run.
+- A10 (audit #3): `stages.json` Record stage rewritten against `agent/schema.py`: no
+  typed DAG, no critique seam, no study-design field; mediator rejected by list role.
+  The retraction block in `recordPanel` now states what the record carries, to every
+  reader. Specifier `does` no longer prints `adjudicate()`, `_gate()`, `_rank()`.
+- B2/B3 (audit #4): an unmatched query empties only Retriever and Intake; the footer's
+  provenance line renders under every committed panel. B1 (#5): "Ask the pipeline" is
+  disabled with the reason beside it when no server set the flag; Enter searches.
+- Also: ceiling rows carry their denominators and a unit-of-analysis note; the bridge
+  sentence says it is from the scoring clone's log, not BASELINE.md; the frame is
+  defined; retriever-dependence stated; attrition (7 of 48 backend errors) stated;
+  one-cell/confounding-by-indication note; per-side stratum counts replace "3 strata";
+  identical columns collapse to one line; schema floor on `excluded` stated; verdicts
+  carry a no-positive-control note and the builder regex is scoped to the three names;
+  abstained terms are null (none listed), never 0; headline shown as a quotation with
+  its source; late rows counted; rail numbers dropped and order made the pipeline's;
+  READ THE CEILING FIRST is solid ink, not the orange that marks absence; TARGET-01 is
+  labelled a pseudonym where first met; `endpoint`→server, `transduction`→structuring,
+  `samples`→attempts, `yield`→records produced, `tool calls`→lookups, `the model`
+  disambiguated to language model / analysis model.
+- Gate: `render.js` gains six checks (footer present, ask disabled, Enter searches,
+  unmatched query cannot hide Metrics/Score/Generate, rendered jargon denylist);
+  `plant.py` seeds all five review defects and every planting is red. `no_fabrication`
+  ALLOW loses the unused `i+1` entry. `render_race.js` green.
+- Not done: C5 (no page check that `token`/`inference`/`prompt` stay absent); the
+  contamination-verdict-predates-late-papers question (not determinable from the
+  artifacts here); `funnelPanel()` is dead code, untouched.

@@ -3,10 +3,11 @@
 Two halves, both hard failures:
 
 1. The page carries no numeric literal outside CSS except the allowlist
-   below. Each entry is a *context* regex, not a value, so ``i+1`` is allowed
-   where it indexes the rail and nowhere else. Widening this list to let a
+   below. Each entry is a *context* regex, not a value, so ``toFixed(3)`` is
+   allowed as display precision and nowhere else. Widening this list to let a
    figure through is the failure this check exists to prevent: a figure needs
-   an artifact.
+   an artifact. (The rail index ``i+1`` was allowed until the rail stopped
+   printing sequence numbers; an entry nothing uses is a door left open.)
 2. Every file in ``site/artifacts`` is listed by the index, is valid JSON, and
    carries a ``provenance`` object naming its ``source`` and a ``run_id``,
    ``commit`` or ``frozen`` date. A figure inside a *string* (``"cos 0.7316"``)
@@ -27,7 +28,6 @@ from common import ARTIFACTS, INDEX, SITE, fail, loaded_artifacts, ok, pages, st
 # (context regex, why it is not a figure). Keep this short and literal.
 ALLOW: list[tuple[str, str]] = [
     (r"initial-scale=1\b", "viewport meta"),
-    (r"\bi\+1\b", "1-based rail index"),
     (r"\.toFixed\(\d\)", "display precision, not a value"),
     (r"\|\|\s*1\b", "devicePixelRatio fallback"),
     (r"\bscale\(\s*dpr\s*,\s*dpr\s*\)|\*\s*dpr\b|/\s*dpr\b", "canvas scaling by dpr"),

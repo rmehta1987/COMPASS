@@ -76,11 +76,16 @@ def main() -> int:
             "clean_for_scoring": st["clean_for_scoring"],
         },
         "status": "gated",
-        "scoring_has_run": False,
-        "why_not": [
+        # This stamp describes the GENERATION clone at capture. The one scored
+        # run lives in the scoring clone, on a different tree, and is on the
+        # Metrics tab; an earlier version of this artifact said "scoring has
+        # not run" while that tab tabulated its output.
+        "scored_in_generation_clone": False,
+        "why_the_gate_blocks": [
             "the estimability gate passes zero pairs without the two survey metadata exports, so there is no estimable denominator",
-            "the baseline score runs once, on a tag, in a separate clone that holds the key; that item is still open in the pipeline loop",
+            "the baseline score runs once, on a tag, in a separate clone that holds the key; the run it scored was produced with the gate switched off, and the Metrics tab carries it",
         ],
+        "scored_run_note": "the stamp above is the generation clone at capture; the scored run's own tree and run id are on the Metrics tab, read from its own artifact",
         "estimable_denominator": ex["estimable"],
     })
     write("absence.json", {

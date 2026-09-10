@@ -15,10 +15,11 @@
   "clean_for_scoring": true
  },
  "status": "gated",
- "scoring_has_run": false,
- "why_not": [
+ "scored_in_generation_clone": false,
+ "why_the_gate_blocks": [
   "the estimability gate passes zero pairs without the two survey metadata exports, so there is no estimable denominator",
-  "the baseline score runs once, on a tag, in a separate clone that holds the key; that item is still open in the pipeline loop"
+  "the baseline score runs once, on a tag, in a separate clone that holds the key; the run it scored was produced with the gate switched off, and the Metrics tab carries it"
  ],
+ "scored_run_note": "the stamp above is the generation clone at capture; the scored run's own tree and run id are on the Metrics tab, read from its own artifact",
  "estimable_denominator": 0
 }

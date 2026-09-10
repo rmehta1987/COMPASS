@@ -5,7 +5,7 @@ clone: /home/mehta5/compass-site  (--single-branch main from GitHub, cut at 2652
        deploy/model/ copied from the operator's clone, sha-verified by retriever.py at load;
        deploy/targets.json and the dictionary are read from the operator's clone by path,
        never copied here — see site/tools/*.py for the env vars)
-last green: f6b71af   (VERIFIED 2026-09-04 by ./site-check.sh, GREEN)   (VERIFIED 2026-09-04 by ./site-check.sh on that sha, GREEN)
+last green: see SITE_PROGRESS.md 2026-09-09 (VERIFIED 2026-09-09 by ./site-check.sh unpiped, GREEN; plant.py 19/19 red)
 check: ./site-check.sh
 note: main's .gitignore excludes *.json — site/artefacts is un-ignored (item 1)
       and step 6 asserts every loaded artefact is tracked.
@@ -17,6 +17,9 @@ note: the brief's figure table needed two corrections before item 4 (see SITE_PR
       AUROC 0.719 traces only to a withdrawn artefact (QUERY_EXPANSION.md) and is dropped.
 note: compass-gen/STATE.md (7ef75fa) marks pipeline items 11 and 13 landed as CODE; no
       run has produced the new artefact yet (see BLOCKED). Re-checked 2026-09-04.
+
+note: 2026-09-09 review pass landed (SITE_PROGRESS.md); ~/compass-site-review.md is the
+      source, its AUDIT section the priority. Rejected fixes there stay rejected.
 
 ## items
 - [x] 1  strip fabricated figures; un-ignore site/artefacts; panels PLACEHOLDER

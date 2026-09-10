@@ -101,6 +101,24 @@ def main() -> int:
         root = copy_site(tmp / "h2")
         plant_page(root, "r.top_cos", "r.top_cosine_renamed")
         results.append(("parse", "renamed artifact field renders undefined", run("parse", root) != 0))
+        # 4b the five 2026-09-09 review fixes, each re-seeded: render.js must
+        # catch the defect coming back, not only the page as it stands.
+        root = copy_site(tmp / "h3")
+        plant_page(root, 'if(typed!==null&&!cur&&(sel==="retriever"||sel==="intake")) return noRun();',
+                   'if(typed!==null&&!cur) return noRun();')
+        results.append(("parse", "unmatched query hides Metrics", run("parse", root) != 0))
+        root = copy_site(tmp / "h4")
+        plant_page(root, 'el("#foot").innerHTML=sel==="metrics"?"":', 'el("#foot").innerHTML=true?"":')
+        results.append(("parse", "footer empty on a committed panel", run("parse", root) != 0))
+        root = copy_site(tmp / "h5")
+        plant_page(root, 'el("#ask").disabled=!window.COMPASS_ENDPOINT;', 'el("#ask").disabled=false;')
+        results.append(("parse", "pipeline button live with no server", run("parse", root) != 0))
+        root = copy_site(tmp / "h6")
+        plant_page(root, 'if(e.key==="Enter")', 'if(e.key==="Escape")')
+        results.append(("parse", "Enter in the search box does nothing", run("parse", root) != 0))
+        root = copy_site(tmp / "h7")
+        plant_page(root, "<b>NO RECORD ON THIS PAGE</b>", "<b>NO RECORD ON THIS ENDPOINT</b>")
+        results.append(("parse", "jargon reaches the reader", run("parse", root) != 0))
         # 5 an external script, a font stylesheet, a fetch to a host
         root = copy_site(tmp / "i")
         plant_page(root, "<head>", "<head><script src=\"https://cdn.example.com/x.js\"></script>")

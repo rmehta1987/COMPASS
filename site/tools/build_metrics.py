@@ -135,29 +135,99 @@ def main() -> int:
             "strata": summary["strata"],
             "artifact_files_on_disk": len(list(run_dir.glob("m2q*.json"))),
             "denominator_note": ("the scored set is the ledger's `emitted` rows. "
-                                 "More artifact files than that sit in the run "
+                                 "More record files than that sit in the run "
                                  "directory, because a discarded pair can still "
                                  "have written one; the extras are not scored and "
                                  "are not listed here"),
         },
-        "verdicts": dict(re.findall(r"^- (\w+): (\w+)$", text, re.M)),
+        # Only the three named checks, and only under "## Verdicts": the
+        # earlier `- word: word` pattern would have turned any such bullet
+        # anywhere in BASELINE.md into a green chip.
+        "verdicts": dict(re.findall(
+            r"^- (contamination_check|input_leakage|unearned_assertions): (\w+)$",
+            text.split("## Verdicts", 1)[1].split("## ", 1)[0], re.M)),
+        "verdicts_note": ("each verdict is the scoring run's own check, reported "
+                          "as it wrote it. This page does not re-run any of "
+                          "them and shows no positive control, so a green chip "
+                          "says the check ran and passed, not that it would "
+                          "have caught a planted failure"),
+        "headline_source": (f"quoted verbatim from artefacts/{RUN}/BASELINE.md, "
+                            "which spells artefact and writes the singular as "
+                            "a plural; the record is not edited to read better"),
+        "how_produced": [
+            ("the estimability gate was switched off for this run "
+             "(--allow-unestimable): without it no language-model call is "
+             "made, and every one of the scored records carries the gate's "
+             "own blocking mark, so the analysis set exists only because the "
+             "primary quality gate was disabled"),
+            ("the frame was the narrow one: medication and "
+             "reproductive-hormonal exposures crossed with chronic-condition "
+             "outcomes, through the same funnel the Generate tab shows for a "
+             "different frame"),
+            ("the pairs generated were a seeded subset of that frame; the seed "
+             "and limit are not carried in the artifacts this page ships"),
+            ("the Generate and Score tabs describe the generation clone at a "
+             "different tree; this run's own tree is in the provenance line "
+             "below"),
+        ],
         "artifacts": artifacts,
         "papers": [
             {"pmid": int(r.pmid), "year": r.year, "venue": r.venue,
              "design": r.design, "n": r.n,
              "inventoried_before_2026_08_27": r.inventoried_before_2026_08_27,
-             "exposure_terms_abstained": abstained.get(r.pmid, 0)}
+             # None, never 0: BASELINE.md lists only the papers with an
+             # abstention, so an unlisted paper is "none listed", which a zero
+             # would make indistinguishable from a counted zero.
+             "exposure_terms_abstained": abstained.get(r.pmid)}
             for r in COHORT_PAPERS],
         "reads": {
-            "establishes": ("that the harness runs end to end, refuses unstamped "
-                            "artifacts and emits clean verdicts"),
-            "is_not": ("a measurement of hypothesis quality. The observed rate IS "
-                       "the ceiling, so a pipeline that reasoned perfectly would "
-                       "score exactly the same"),
+            "establishes": ("that the scoring code runs end to end, refuses "
+                            "unstamped records and emits clean verdicts, with "
+                            "the estimability gate switched off"),
+            "is_not": ("a measurement of hypothesis quality: with a ceiling of "
+                       "zero the run cannot separate a good pipeline from a bad "
+                       "one, and no score above zero was attainable under this "
+                       "key and this frame"),
+            "unit_of_analysis": ("the numerator counts records, not papers: a "
+                                 "record matches when one paper's outcome key "
+                                 "and resolved exposure are both its own. The "
+                                 "ceiling counts how many of the scored records "
+                                 "could have matched any paper; a paper is "
+                                 "matchable when at least one record could match "
+                                 "it. Both denominators are stated beside their "
+                                 "counts"),
             "why_the_ceiling_is_low": ("a paper is matchable only when its outcome "
                                        "key is on record and its exposure resolves "
                                        "against the instrument; one paper of "
-                                       "sixteen clears both"),
+                                       "sixteen clears both. Resolution goes "
+                                       "through the deployed retriever, so a "
+                                       "retriever miss and a genuine non-match are "
+                                       "scored identically: the ceiling is "
+                                       "retriever-dependent"),
+            "the_frame": ("the frame is the set of pairs the funnel enumerated "
+                          "for this run: one group of exposure questions crossed "
+                          "with one group of outcome questions, here medication "
+                          "and reproductive-hormonal exposures by "
+                          "chronic-condition outcomes. A paper whose pair lies "
+                          "outside it cannot be matched by any record, however "
+                          "the pipeline reasoned"),
+            "attrition": ("the scored denominator is the emitted rows only. The "
+                          "pairs lost to a backend error were dropped without a "
+                          "missingness argument, and an error is not obviously "
+                          "independent of how hard a pair is; the rate is stated "
+                          "in the table"),
+            "one_cell": ("every scored record has the same outcome stratum, so "
+                         "the set is one cell of the instrument, not a spread. "
+                         "Self-reported medication against a self-reported "
+                         "chronic condition is the pairing an epidemiologist "
+                         "would query first, for confounding by indication and "
+                         "reverse causation; nothing in the estimability column "
+                         "speaks to either. Whether rows sharing a pair and "
+                         "differing only in their covariate sets are independent "
+                         "is not established here"),
+            "excluded_floor": ("the schema requires at least one excluded "
+                               "variable, so a count of one in that column is a "
+                               "floor the record was made to meet, not a finding"),
             # The recurring question from readers, asked twice now: why are there
             # more artifacts than papers, and which paper is each artifact from?
             # The premise is the confusion -- the two are not two counts of one
@@ -166,11 +236,11 @@ def main() -> int:
             # asked what it meant. Plain nouns, one idea per clause, and the
             # consequence (no PMID) stated as a result rather than an aside.
             "how_the_two_populations_relate": (
-                "an artifact is a pair of questionnaire items that the pipeline "
+                "a record is a pair of questionnaire items that the pipeline "
                 "proposed by itself, by working through the instrument; a paper "
                 "is a published study about the same cohort. Neither list was "
                 "built from the other, so there is no reason for the two counts "
-                "to match. Scoring compares them: every artifact below was "
+                "to match. Scoring compares them: every record below was "
                 "checked against all sixteen papers, and none matched one"),
             # An earlier version of the page said the artifacts were "not
             # joined" to the papers. That was wrong, and the operator caught it:
@@ -178,20 +248,24 @@ def main() -> int:
             # against the whole bibliography. What C12 has not built is the FULL
             # per-paper key -- covariates, model form, tier -- not the join.
             "what_the_paper_column_means": (
-                "every artifact here was scored against the bibliography. An "
-                "artifact matches a paper when the paper's outcome key is one "
-                "the artifact used, and the paper's exposure terms resolve "
-                "through the deployed retriever to the artifact's exposure. "
+                "every record here was scored against the bibliography. A "
+                "record matches a paper when the paper's outcome key is one "
+                "the record used, and the paper's exposure terms resolve "
+                "through the deployed retriever to the record's exposure. "
                 "None matched, so the column reads none: a scored result, not a "
                 "missing feature. It can only reach the papers that have an "
                 "outcome key on record, which is what caps the ceiling"),
-            # Sourced from the run's own log line for item 15d, which records
-            # why a matchable paper still yields a zero ceiling.
+            # NOT in BASELINE.md. This sentence comes from the scoring clone's
+            # progress log for item 15d, which records why a matchable paper
+            # still yields a zero ceiling; the page says so, because the
+            # bridge between the two ceiling rows is otherwise editorial prose
+            # standing where a scored result should be.
             "why_no_match_was_available": (
                 "That paper is outside the frame this run drew from, so no "
-                "match was available to find: none were possible, and none "
-                "were found. A pipeline that reasoned perfectly would have "
-                "scored the same"),
+                "record could have matched it: none were possible, and none "
+                "were found. This sentence is from the scoring clone's "
+                "progress log, not from BASELINE.md, which records only the "
+                "two counts"),
         },
         "not_built": [
             # Rewritten 2026-09-09. The previous text said "no scored artifact
@@ -199,7 +273,7 @@ def main() -> int:
             # exactly what `benchmark/baseline_score.py` does. What C12 has not
             # built is the REST of the per-paper key.
             {"what": "the full per-paper key",
-             "why": ("matching is already automatic -- every emitted artifact "
+             "why": ("matching is already automatic -- every emitted record "
                      "is scored against the whole bibliography, taking each "
                      "paper's outcome keys from the held-out key and resolving "
                      "its exposure terms through the deployed retriever. What "
@@ -215,10 +289,14 @@ def main() -> int:
                      "break that, not complete it")},
         ],
         "pubmed_base": "https://pubmed.ncbi.nlm.nih.gov/",
-        "instrument_withheld_here": ("Each scored artifact is identified by its "
+        "abstained_note": ("the count is of the paper's exposure terms the "
+                           "retriever abstained on; BASELINE.md does not record "
+                           "how many terms the line had, so no rate is given. "
+                           "Papers it does not list show none listed"),
+        "instrument_withheld_here": ("Each scored record is identified by its "
                                      "record hash. The exposure and outcome keys "
                                      "and their wording are instrument content and "
-                                     "are served only by the endpoint, to a "
+                                     "are served only by the live server, to a "
                                      "reviewer who already holds the dictionary."),
     }
     OUT.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")

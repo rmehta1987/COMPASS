@@ -9,7 +9,57 @@
  "fixture": {
   "n_positive_rows": 224,
   "n_negative_rows": 44,
-  "note": "queries were written by a model that saw the gold wording; recall is an upper bound (manifest known_limitations)"
+  "note": "queries were written by a model that saw the gold wording, by the same generator family as the training pairs, so recall is an upper bound and an unknown share of the fine-tuned model's gain over the frozen one is register alignment (manifest known_limitations, parsed below)"
+ },
+ "limitations": {
+  "source": "deploy/manifest.json known_limitations, parsed by site/tools/build_measurements.py; the strata and phrasing files those sentences cite are not in the public tree, so the manifest sentence is the tracked record",
+  "generator_family_shared_with_training": true,
+  "training_pairs": 13528,
+  "gain_r1_over_frozen_bge_small": 0.192,
+  "register_alignment_share": "unknown",
+  "lexical_leakage": {
+   "measured": true,
+   "survives": false,
+   "item_level_spearman": -0.023,
+   "permutation_p": 0.87,
+   "r1_by_query_gold_overlap_quartile": [
+    0.482,
+    0.554,
+    0.643,
+    0.589
+   ],
+   "monotonic": false,
+   "flat_within_query_length_strata": true
+  },
+  "strata": [
+   {
+    "stratum": "residence/commute",
+    "recall_at_1": 0.062,
+    "n": 16
+   },
+   {
+    "stratum": "sleep",
+    "recall_at_1": 0.0,
+    "n": 4
+   },
+   {
+    "stratum": "cancer_history",
+    "recall_at_1": 0.613,
+    "n": 80
+   }
+  ],
+  "unmeasured_strata": [
+   "SES/employment",
+   "insurance/access",
+   "cancer-screening",
+   "demographics"
+  ],
+  "phrasing": {
+   "gold_items": 56,
+   "phrasings_per_item": 4,
+   "items_retrieved_on_no_phrasing": 10,
+   "items_retrieved_on_one_phrasing": 9
+  }
  },
  "sweep": {
   "what": "frozen encoders, no fine-tuning, untemplated fixture queries, full target corpus",
@@ -202,7 +252,13 @@
    "precision": 0.6827,
    "recall": 0.6339,
    "f1": 0.6574,
-   "candidate_taus": 222
+   "candidate_taus": 222,
+   "definitions": {
+    "coverage": "positives answered (top cosine at or above min_cos) over all positives",
+    "precision": "correct over answered",
+    "recall": "correct over all positives, so abstaining costs recall"
+   },
+   "selection_note": "min_cos is the F1-maximising value over the positives, and its precision, recall, coverage and F1 are reported on those same positives; there is no held-out estimate of any of them. Only the negatives are held out"
   },
   "latency": {
    "query_ms_isolated_single": 13.06,
@@ -212,7 +268,7 @@
   },
   "wrong_pick_detection": {
    "available": false,
-   "note": "the AUROC for correct-vs-incorrect picks under the shipped arm lives only in an artifact withdrawn from git and is not shown"
+   "note": "detecting its own wrong pick was measured, the artifact was withdrawn from git, and the figure is not reproducible from anything on this page; it is not unmeasured, and it is not shown"
   }
  }
 }

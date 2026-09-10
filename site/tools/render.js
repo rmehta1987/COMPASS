@@ -62,6 +62,20 @@ function check(label) {
     console.error(`render: ${label}: panel says PLACEHOLDER; say what the stage did or "NOT YET RUN"`);
     failed++;
   }
+  // Words from other fields that mean something else to the reader this page
+  // is for: an endpoint is an outcome, transduction is a phage moving DNA, MCP
+  // is nothing. Five reviewers converged on the first. The rendered panel is
+  // what the reader sees, so that is what is scanned; a code comment may still
+  // say endpoint. "harness" is not listed: the Metrics headline is quoted
+  // verbatim from the scored record and contains it, and the quotation stays.
+  const jargon = p.match(/\b(?:endpoint|transduction|MCP|prose resolver)\b/i);
+  if (jargon) { console.error(`render: ${label}: panel says "${jargon[0]}" to the reader`); failed++; }
+}
+// The footer must say, under every committed panel, that the figures are
+// committed. It was scoped to live panels and went empty everywhere else.
+function checkFoot(label) {
+  const f = node("#foot").innerHTML;
+  if (!/site\/artifacts/.test(f)) { console.error(`render: ${label}: footer does not say where the figures come from`); failed++; }
 }
 (async () => {
   for (const s of scripts) new Function(s)();       // runs load().then(...)
@@ -103,12 +117,37 @@ function check(label) {
       if (b) { try { b.onclick(); } catch (e) { console.error(`render: ${st}/${ex}: ${e.message}`); failed++; continue; } }
       else { console.error(`render: no stage handler ${st}`); failed++; continue; }
       check(`${st}/example ${ex}`);
+      if (st !== "metrics") checkFoot(`${st}/example ${ex}`);
     }
   }
+  // With no server, the pipeline button is off and the page says why; both
+  // are re-applied by draw(), so any panel is a fair time to look.
+  if (node("#ask").disabled !== true) { console.error("render: ask button is enabled with no server"); failed++; }
+  if (!/static/i.test(node("#served").textContent)) { console.error("render: nothing says the page is served statically"); failed++; }
   // typed request that matches nothing
   node("#q").value = "a request with no committed run";
   node("#run").onclick();
   check("typed/no-run");
+  // Enter in the search box must be a Search, not nothing.
+  let entered = false; const runOnce = node("#run").onclick;
+  node("#run").onclick = () => { entered = true; runOnce(); };
+  node("#q").onkeydown({ key: "Enter", preventDefault() {} });
+  if (!entered) { console.error("render: Enter in the search box does nothing"); failed++; }
+  // The unmatched query must not take the committed stages with it: this
+  // ordering defect made Metrics, Score and Generate unreachable until reload.
+  for (const st of ["metrics", "score", "generate"]) {
+    document.querySelectorAll("[data-s]");
+    const b = byData.filter(x => x.dataset.s === st && x.onclick).pop();
+    if (b) b.onclick();
+    const p = node("#panel").innerHTML;
+    if (/NO COMMITTED RUN/.test(p)) { console.error(`render: typed/no-run hides the ${st} stage`); failed++; }
+    if (st === "metrics" && !/Cohort bibliography/.test(p)) { console.error("render: typed/no-run: bibliography table missing"); failed++; }
+  }
+  // And the retriever still says so, with the query verbatim.
+  document.querySelectorAll("[data-s]");
+  const rb = byData.filter(x => x.dataset.s === "retriever" && x.onclick).pop();
+  if (rb) rb.onclick();
+  if (!/NO COMMITTED RUN/.test(node("#panel").innerHTML)) { console.error("render: typed/no-run: retriever does not say so"); failed++; }
   // download and png handlers, if present
   for (const id of ["#dl-src", "#png"]) if (node(id).onclick) { try { node(id).onclick(); } catch (e) { console.error(`render: ${id}: ${e.message}`); failed++; } }
   console.log(`render: ${stages.length} stage(s) x ${Math.max(examples.length, 1)} example(s) rendered${failed ? `, ${failed} problem(s)` : ""}`);

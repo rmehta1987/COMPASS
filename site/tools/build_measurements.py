@@ -47,6 +47,58 @@ def sweep_rows() -> list[dict]:
     return sorted(rows, key=lambda r: r["params_m"])
 
 
+def limitations(man: dict) -> dict:
+    """Parse every figure out of the manifest's ``known_limitations`` prose.
+
+    The manifest is the source the fixture note already cites, and until
+    2026-09-09 the page kept only its first clause -- "recall is an upper
+    bound" -- and dropped the shared generator family, the unknown
+    register-alignment share, and the two strata at or near zero, while
+    rendering the frozen-versus-fine-tuned comparison those sentences qualify.
+    Parsed, never retyped: every regex must match or the build fails.
+
+    Args:
+        man: ``deploy/manifest.json`` as loaded.
+
+    Returns:
+        The structured limitations block for ``measurements.json``.
+    """
+    kl = man["known_limitations"]
+    def grab(rx: str, text: str) -> tuple[str, ...]:
+        m = re.search(rx, text)
+        assert m, (rx, text)
+        return m.groups()
+    (pairs,) = grab(r"same generator family as the ([\d,]+) training pairs", kl[0])
+    (gain,) = grab(r"An unknown share of the \+([\d.]+) over frozen bge-small is register alignment", kl[0])
+    rho, pval = grab(r"Spearman (-?[\d.]+) \(permutation p ([\d.]+)\)", kl[0])
+    quart = grab(r"quartile ([\d.]+) / ([\d.]+) / ([\d.]+) / ([\d.]+), non-monotonic", kl[0])
+    strata = re.findall(r"([\w/]+)(?: R@1)? ([\d.]+) \(n=(\d+)\)", kl[1])
+    assert len(strata) == 3, strata
+    (missing,) = grab(r"contains no (.+?) row", kl[2])
+    unmeasured = [x.strip() for x in re.split(r", | or ", missing)]
+    never, gold, phr, once = grab(r"(\d+) of (\d+) gold items are retrieved on 0 of their (\d+) phrasings and (\d+) on 1 of", kl[3])
+    return {
+        "source": "deploy/manifest.json known_limitations, parsed by site/tools/build_measurements.py; the strata and phrasing files those sentences cite are not in the public tree, so the manifest sentence is the tracked record",
+        "generator_family_shared_with_training": True,
+        "training_pairs": int(pairs.replace(",", "")),
+        "gain_r1_over_frozen_bge_small": float(gain),
+        "register_alignment_share": "unknown",
+        "lexical_leakage": {
+            "measured": True,
+            "survives": False,
+            "item_level_spearman": float(rho),
+            "permutation_p": float(pval),
+            "r1_by_query_gold_overlap_quartile": [float(q) for q in quart],
+            "monotonic": False,
+            "flat_within_query_length_strata": True,
+        },
+        "strata": [{"stratum": n, "recall_at_1": float(r), "n": int(k)} for n, r, k in strata],
+        "unmeasured_strata": unmeasured,
+        "phrasing": {"gold_items": int(gold), "phrasings_per_item": int(phr),
+                     "items_retrieved_on_no_phrasing": int(never), "items_retrieved_on_one_phrasing": int(once)},
+    }
+
+
 def main() -> int:
     rep = json.loads((REPO / "out" / "smoke_report_x86_64_Wright.json").read_text())
     man = json.loads((REPO / "deploy" / "manifest.json").read_text())
@@ -63,7 +115,8 @@ def main() -> int:
             "sweep_artifacts_note": "the per-config JSONs the sweep table was written from are withheld from the public tree; the document is the committed record",
         },
         "fixture": {"n_positive_rows": acc["I"]["ranks"].__len__(), "n_negative_rows": acc["I"]["n_negatives"],
-                    "note": "queries were written by a model that saw the gold wording; recall is an upper bound (manifest known_limitations)"},
+                    "note": "queries were written by a model that saw the gold wording, by the same generator family as the training pairs, so recall is an upper bound and an unknown share of the fine-tuned model's gain over the frozen one is register alignment (manifest known_limitations, parsed below)"},
+        "limitations": limitations(man),
         "sweep": {
             "what": "frozen encoders, no fine-tuning, untemplated fixture queries, full target corpus",
             "dictionary_version_hash": "3dc8415eccfe",
@@ -92,12 +145,17 @@ def main() -> int:
             },
             "threshold": {"min_cos": thr["shipped_tau"], "coverage": thr["at_shipped_tau"]["coverage"],
                           "precision": thr["at_shipped_tau"]["precision"], "recall": thr["at_shipped_tau"]["recall"],
-                          "f1": thr["at_shipped_tau"]["f1"], "candidate_taus": thr["candidate_taus_exhaustive"]},
+                          "f1": thr["at_shipped_tau"]["f1"], "candidate_taus": thr["candidate_taus_exhaustive"],
+                          # src/char_report.py::sweep, the code that computed them
+                          "definitions": {"coverage": "positives answered (top cosine at or above min_cos) over all positives",
+                                          "precision": "correct over answered",
+                                          "recall": "correct over all positives, so abstaining costs recall"},
+                          "selection_note": "min_cos is the F1-maximising value over the positives, and its precision, recall, coverage and F1 are reported on those same positives; there is no held-out estimate of any of them. Only the negatives are held out"},
             "latency": {"query_ms_isolated_single": rep["latency"]["query_ms_isolated_single"],
                         "threads": rep["latency"]["threads"], "machine": rep["machine"]["machine"],
                         "note": "serving machine, one query per forward pass, fp32, warm; other machines differ (the run artifacts on this page report their own)"},
             "wrong_pick_detection": {"available": False,
-                                     "note": "the AUROC for correct-vs-incorrect picks under the shipped arm lives only in an artifact withdrawn from git and is not shown"},
+                                     "note": "detecting its own wrong pick was measured, the artifact was withdrawn from git, and the figure is not reproducible from anything on this page; it is not unmeasured, and it is not shown"},
         },
     }
     (REPO / "site" / "artifacts" / "measurements.json").write_text(json.dumps(out, indent=1) + "\n")
