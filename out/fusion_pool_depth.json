@@ -1,0 +1,314 @@
+{
+ "schema": "compass_pool_depth/1",
+ "what": "Recall at the pool depths serve/api.py offers, re-read from out/fusion_task4_rewriter.json::per_row_rank. No encoding, no model call, no new generation: the ranks are the committed ones and only the depth threshold changes.",
+ "why": "FUSION.md sec 6 recommends mean_cos on its R@1. The two interactive handlers never read rank 1 alone -- they offer a pool of 8 or 20 to a model and then to a human -- so R@1 is not the quantity those routes are graded on.",
+ "sources": {
+  "ranks": "out/fusion_task4_rewriter.json",
+  "item_clustering": "retrieval_queries.json::queries[i]['key']",
+  "estimator": "src/fusion_rewriter.py::cluster_bootstrap, imported, 20000 iterations, seed 20260903"
+ },
+ "n_rows": 224,
+ "n_items": 56,
+ "depths": {
+  "depth_1": {
+   "consumed_by": null,
+   "rules": {
+    "single": {
+     "R@1": 0.567,
+     "delta_R@1_vs_single": 0.0,
+     "gained": 0,
+     "lost": 0,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@1": [
+      0.0,
+      0.0
+     ]
+    },
+    "max_cos": {
+     "R@1": 0.5625,
+     "delta_R@1_vs_single": -0.0045,
+     "gained": 14,
+     "lost": 15,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@1": [
+      -0.0625,
+      0.0491
+     ]
+    },
+    "mean_cos": {
+     "R@1": 0.6071,
+     "delta_R@1_vs_single": 0.0402,
+     "gained": 21,
+     "lost": 12,
+     "mcnemar_exact_p_two_sided": 0.16276,
+     "cluster_bootstrap_95CI_delta_R@1": [
+      -0.0179,
+      0.0982
+     ]
+    },
+    "min_rank": {
+     "R@1": 0.5714,
+     "delta_R@1_vs_single": 0.0045,
+     "gained": 14,
+     "lost": 13,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@1": [
+      -0.0446,
+      0.0536
+     ]
+    },
+    "rrf": {
+     "R@1": 0.6027,
+     "delta_R@1_vs_single": 0.0357,
+     "gained": 16,
+     "lost": 8,
+     "mcnemar_exact_p_two_sided": 0.15159,
+     "cluster_bootstrap_95CI_delta_R@1": [
+      -0.0089,
+      0.0804
+     ]
+    }
+   }
+  },
+  "depth_5": {
+   "consumed_by": null,
+   "rules": {
+    "single": {
+     "R@5": 0.8616,
+     "delta_R@5_vs_single": 0.0,
+     "gained": 0,
+     "lost": 0,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@5": [
+      0.0,
+      0.0
+     ]
+    },
+    "max_cos": {
+     "R@5": 0.875,
+     "delta_R@5_vs_single": 0.0134,
+     "gained": 6,
+     "lost": 3,
+     "mcnemar_exact_p_two_sided": 0.50781,
+     "cluster_bootstrap_95CI_delta_R@5": [
+      -0.0179,
+      0.0536
+     ]
+    },
+    "mean_cos": {
+     "R@5": 0.8616,
+     "delta_R@5_vs_single": 0.0,
+     "gained": 7,
+     "lost": 7,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@5": [
+      -0.0402,
+      0.0446
+     ]
+    },
+    "min_rank": {
+     "R@5": 0.875,
+     "delta_R@5_vs_single": 0.0134,
+     "gained": 6,
+     "lost": 3,
+     "mcnemar_exact_p_two_sided": 0.50781,
+     "cluster_bootstrap_95CI_delta_R@5": [
+      -0.0223,
+      0.0536
+     ]
+    },
+    "rrf": {
+     "R@5": 0.8661,
+     "delta_R@5_vs_single": 0.0045,
+     "gained": 7,
+     "lost": 6,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@5": [
+      -0.0357,
+      0.0491
+     ]
+    }
+   }
+  },
+  "depth_8": {
+   "consumed_by": "serve/api.py::_resolve (k default 8) -- MARGINAL, one gold per single-construct query. This route needs EVERY construct of the request in one pool; see out/pool_coverage.json",
+   "rules": {
+    "single": {
+     "R@8": 0.8884,
+     "delta_R@8_vs_single": 0.0,
+     "gained": 0,
+     "lost": 0,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@8": [
+      0.0,
+      0.0
+     ]
+    },
+    "max_cos": {
+     "R@8": 0.9062,
+     "delta_R@8_vs_single": 0.0179,
+     "gained": 7,
+     "lost": 3,
+     "mcnemar_exact_p_two_sided": 0.34375,
+     "cluster_bootstrap_95CI_delta_R@8": [
+      -0.0134,
+      0.0491
+     ]
+    },
+    "mean_cos": {
+     "R@8": 0.8929,
+     "delta_R@8_vs_single": 0.0045,
+     "gained": 5,
+     "lost": 4,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@8": [
+      -0.0223,
+      0.0312
+     ]
+    },
+    "min_rank": {
+     "R@8": 0.8973,
+     "delta_R@8_vs_single": 0.0089,
+     "gained": 5,
+     "lost": 3,
+     "mcnemar_exact_p_two_sided": 0.72656,
+     "cluster_bootstrap_95CI_delta_R@8": [
+      -0.0179,
+      0.0357
+     ]
+    },
+    "rrf": {
+     "R@8": 0.8973,
+     "delta_R@8_vs_single": 0.0089,
+     "gained": 5,
+     "lost": 3,
+     "mcnemar_exact_p_two_sided": 0.72656,
+     "cluster_bootstrap_95CI_delta_R@8": [
+      -0.0179,
+      0.0357
+     ]
+    }
+   }
+  },
+  "depth_10": {
+   "consumed_by": null,
+   "rules": {
+    "single": {
+     "R@10": 0.9196,
+     "delta_R@10_vs_single": 0.0,
+     "gained": 0,
+     "lost": 0,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@10": [
+      0.0,
+      0.0
+     ]
+    },
+    "max_cos": {
+     "R@10": 0.9241,
+     "delta_R@10_vs_single": 0.0045,
+     "gained": 7,
+     "lost": 6,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@10": [
+      -0.0312,
+      0.0402
+     ]
+    },
+    "mean_cos": {
+     "R@10": 0.9107,
+     "delta_R@10_vs_single": -0.0089,
+     "gained": 5,
+     "lost": 7,
+     "mcnemar_exact_p_two_sided": 0.77441,
+     "cluster_bootstrap_95CI_delta_R@10": [
+      -0.0402,
+      0.0179
+     ]
+    },
+    "min_rank": {
+     "R@10": 0.9107,
+     "delta_R@10_vs_single": -0.0089,
+     "gained": 6,
+     "lost": 8,
+     "mcnemar_exact_p_two_sided": 0.79053,
+     "cluster_bootstrap_95CI_delta_R@10": [
+      -0.0491,
+      0.0312
+     ]
+    },
+    "rrf": {
+     "R@10": 0.9062,
+     "delta_R@10_vs_single": -0.0134,
+     "gained": 5,
+     "lost": 8,
+     "mcnemar_exact_p_two_sided": 0.58105,
+     "cluster_bootstrap_95CI_delta_R@10": [
+      -0.0446,
+      0.0134
+     ]
+    }
+   }
+  },
+  "depth_20": {
+   "consumed_by": "serve/api.py::_pair (k default 20) -- MARGINAL, one gold per single-construct query. This route needs EVERY construct of the request in one pool; see out/pool_coverage.json",
+   "rules": {
+    "single": {
+     "R@20": 0.942,
+     "delta_R@20_vs_single": 0.0,
+     "gained": 0,
+     "lost": 0,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@20": [
+      0.0,
+      0.0
+     ]
+    },
+    "max_cos": {
+     "R@20": 0.9554,
+     "delta_R@20_vs_single": 0.0134,
+     "gained": 5,
+     "lost": 2,
+     "mcnemar_exact_p_two_sided": 0.45312,
+     "cluster_bootstrap_95CI_delta_R@20": [
+      -0.0089,
+      0.0402
+     ]
+    },
+    "mean_cos": {
+     "R@20": 0.9464,
+     "delta_R@20_vs_single": 0.0045,
+     "gained": 5,
+     "lost": 4,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@20": [
+      -0.0268,
+      0.0357
+     ]
+    },
+    "min_rank": {
+     "R@20": 0.942,
+     "delta_R@20_vs_single": 0.0,
+     "gained": 5,
+     "lost": 5,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@20": [
+      -0.0402,
+      0.0357
+     ]
+    },
+    "rrf": {
+     "R@20": 0.942,
+     "delta_R@20_vs_single": 0.0,
+     "gained": 5,
+     "lost": 5,
+     "mcnemar_exact_p_two_sided": 1.0,
+     "cluster_bootstrap_95CI_delta_R@20": [
+      -0.0312,
+      0.0312
+     ]
+    }
+   }
+  }
+ }
+}
