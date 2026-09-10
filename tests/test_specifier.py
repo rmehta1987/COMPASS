@@ -2660,3 +2660,134 @@ def test_the_gate_requires_the_pair_rather_than_defaulting_it():
     params = inspect.signature(SP._gate).parameters
     assert list(params) == ["log", "pair"]
     assert params["pair"].default is inspect.Parameter.empty
+
+
+# --------------------------------------------------------------------------- #
+# The config directory is part of the seal.
+#
+# VERIFIED 2026-09-08: a sealed invocation carrying SEALED_SETTINGS,
+# --strict-mcp-config and the whole DENY_TOOLS list, asked to name its own
+# skills, listed seventeen — three of them plugin-contributed, despite
+# SEALED_SETTINGS setting enabledPlugins to {}. The flags do not suppress skills;
+# only the config directory does. These tests exist so that gap is recorded in
+# provenance rather than discovered again.
+# --------------------------------------------------------------------------- #
+
+
+def test_the_seal_names_the_config_directory_it_actually_reads():
+    """The manifest names the config dir and what that dir makes reachable.
+
+    A manifest that omits them claims an isolation it cannot demonstrate: the
+    directory, not the flags, decides what context loads.
+    """
+    from agent.sealed import SealedWorktree
+    with SealedWorktree() as w:
+        m = w.manifest()
+        assert "claude_config_dir" in m
+        assert "skills_reachable" in m
+
+
+def test_the_manifest_names_every_skill_the_config_dir_can_contribute(
+        tmp_path, monkeypatch):
+    """User skills and plugin skills both appear in the manifest.
+
+    A skill's description enters the model's context whether or not it is ever
+    invoked, so an unnamed skill is unrecorded model-visible surface.
+    """
+    from agent.sealed import CONFIG_DIR_ENV, SealedWorktree, reachable_skills
+    (tmp_path / "skills" / "some-skill").mkdir(parents=True)
+    (tmp_path / "plugins" / "cache" / "some-plugin").mkdir(parents=True)
+    monkeypatch.setenv(CONFIG_DIR_ENV, str(tmp_path))
+    assert reachable_skills() == ["some-skill", "plugin:some-plugin"]
+    with SealedWorktree() as w:
+        assert w.manifest()["skills_reachable"] == [
+            "some-skill", "plugin:some-plugin"]
+
+
+def test_a_config_dir_holding_only_credentials_reaches_nothing(
+        tmp_path, monkeypatch):
+    """A dedicated pipeline profile contributes no skills at all.
+
+    No skills directory, no plugins directory and no CLAUDE.md means there is
+    nothing to suppress in the first place.
+    """
+    from agent.sealed import CONFIG_DIR_ENV, reachable_skills
+    (tmp_path / ".credentials.json").write_text("{}")
+    monkeypatch.setenv(CONFIG_DIR_ENV, str(tmp_path))
+    assert reachable_skills() == []
+
+
+def test_the_seal_hash_moves_when_a_skill_becomes_reachable(
+        tmp_path, monkeypatch):
+    """Installing a skill changes the recorded seal.
+
+    The one-sided property that makes the rest enforceable: without it,
+    provenance stays silent about a surface that grew.
+    """
+    from agent.sealed import CONFIG_DIR_ENV, SealedWorktree
+    monkeypatch.setenv(CONFIG_DIR_ENV, str(tmp_path))
+    with SealedWorktree() as w:
+        before = w.manifest()["seal_hash"]
+        (tmp_path / "skills" / "newly-installed").mkdir(parents=True)
+        assert w.manifest()["seal_hash"] != before
+
+
+def test_claude_md_discovery_follows_the_config_dir_override(
+        tmp_path, monkeypatch):
+    """CLAUDE.md is looked for in the dir the run reads, not a hardcoded one.
+
+    Hardcoding the default would report on a directory the run never opens,
+    which is worse than not reporting at all.
+    """
+    from agent.sealed import CONFIG_DIR_ENV, SealedWorktree
+    monkeypatch.setenv(CONFIG_DIR_ENV, str(tmp_path))
+    (tmp_path / "CLAUDE.md").write_text("# reachable")
+    with SealedWorktree() as w:
+        assert str(tmp_path / "CLAUDE.md") in w.manifest()["claude_md_found"]
+
+
+def test_the_sealed_subprocess_carries_the_config_dir_override(
+        tmp_path, monkeypatch):
+    """The child process receives the override the manifest advertises.
+
+    Recording the directory while not passing it on would make the manifest a
+    lie, so this asserts the environment the subprocess actually gets.
+    """
+    import subprocess as sp
+
+    from agent import sealed as sealed_mod
+    seen: dict[str, str] = {}
+
+    def fake_run(argv: list[str], **kw: object) -> sp.CompletedProcess:
+        """Capture the environment instead of launching anything."""
+        seen.update(kw.get("env") or {})
+        return sp.CompletedProcess(argv, 0, stdout='{"result":"ok"}', stderr="")
+
+    monkeypatch.setattr(sealed_mod.subprocess, "run", fake_run)
+    monkeypatch.setenv(sealed_mod.CONFIG_DIR_ENV, str(tmp_path))
+    with sealed_mod.SealedWorktree() as w:
+        w.run(["claude", "-p", "x"])
+    assert seen.get("CLAUDE_CONFIG_DIR") == str(tmp_path)
+
+
+def test_without_the_override_the_seal_behaves_exactly_as_before(monkeypatch):
+    """An unset override leaves every pre-existing run path untouched.
+
+    Opt-in by design: enabling the override must be a deliberate act and never
+    a default, so an unset variable adds nothing to the child environment.
+    """
+    import subprocess as sp
+
+    from agent import sealed as sealed_mod
+    seen: dict[str, str] = {}
+
+    def fake_run(argv: list[str], **kw: object) -> sp.CompletedProcess:
+        """Capture the environment instead of launching anything."""
+        seen.update(kw.get("env") or {})
+        return sp.CompletedProcess(argv, 0, stdout='{"result":"ok"}', stderr="")
+
+    monkeypatch.delenv(sealed_mod.CONFIG_DIR_ENV, raising=False)
+    monkeypatch.setattr(sealed_mod.subprocess, "run", fake_run)
+    with sealed_mod.SealedWorktree() as w:
+        w.run(["claude", "-p", "x"])
+    assert "CLAUDE_CONFIG_DIR" not in seen

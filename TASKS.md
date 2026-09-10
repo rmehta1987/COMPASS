@@ -72,6 +72,110 @@ publishes or blocks a downstream stage.
   returns (`env/tools.py::resolve_variable`, `get_item_group`), every browse construct
   label, and pins in three test files. It moves `surface_hash`.
 
+## Open — the website's backbone
+*Added 2026-09-10. The operator's framing: the website is the product and this pipeline is
+its backbone; a user prompts it like a chat assistant, and the reasoning model is meant to
+separate the query into the schema before retrieving. Placement and priority in this file
+are the operator's. `serve/` lives on the unmerged branch `worktree-serve-endpoint` and is
+named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flow
+(`compass-site:site/index.html::askResolver` → `POST /api/pair`, no `k`) depends on it.*
+
+- **C29 — one pool cannot carry a multi-construct request; split before retrieving.**
+  `serve/api.py::_role_candidates` passes the researcher's whole sentence as
+  `RetrievalRequest(construct=request)` and `_pair` offers that single pool to every role.
+  MEASURED (`out/pool_coverage.json`, `src/pool_coverage.py`, 2026-09-10, parity-gated on
+  single-construct R@20 0.942): at `_pair`'s own k=20 the pool carries **every** construct
+  the request names in **32 of 100** composed requests — 0.600 at one exposure × one
+  outcome, **0.167** at 1×2, **0.000** at 2×2. A construct alone is in the top 20 on
+  **94.2%** of the 224 rows and on **65%** inside a multi-construct sentence. k=40, the
+  handler's clamp ceiling, still fails 53 of 100. Two mechanisms, both live: one construct
+  takes the pool and another is absent entirely (67 of 68 failures), or the blended vector
+  matches neither (1 of 68). The fixture is composed to FAVOUR one ranking and inherits
+  `retrieval_queries.json::KNOWN_BIAS`, so 0.32 is an upper bound.
+  🛑 BLOCKER, and it is a request-set problem before it is a code problem: **split
+  accuracy is unmeasured and the oracle does not bound it.** `out/pool_coverage.json`'s
+  split arms split on the fixture's own phrases — a perfect decomposition — and are a
+  CEILING (0.71 at k=20, same total budget), read as `FUSION.md` §2 reads its 0.821 row.
+  A wrong split has no shared pool to fall back on and fails silently; today both
+  constructs sit in one list a human is already confirming (`_pair`'s `not_a_selection`).
+  Weigh against it: `run/serve/jobs/123623-280426.json` shows the un-split pool resolving
+  BOTH anchors correctly at k=20, the exposure at rank 15 over fourteen higher-scoring
+  items — the model already decomposes, by index, against real vocabulary, and a
+  pre-retrieval splitter names a construct blind.
+  ACCEPT, staged: (i) a split fixture of request sentences with known exposure and outcome
+  keys, authored WITHOUT sight of the gold wording — no oracle in the measurement
+  (`AGENTS.md` §Testing Patterns) — reporting gold-excluded beside recall; (ii) end-to-end
+  coverage under a real splitter reported against `out/pool_coverage.json`'s shared row
+  (0.32) and its oracle row (0.71), not against `out/fusion_pool_depth.json`'s 0.942,
+  which is a MARGINAL; (iii) the split prompt joins `model_visible_surface` and
+  `benchmark.contamination_check` re-runs; (iv) the prompt held fixed and shown stable
+  under one wording perturbation (`AGENTS.md` §Verification Discipline).
+- C29 makes **C17 bigger, not smaller**: a splitter is a third model in one run and
+  `agent/schema.py::Provenance.model_id` is one string.
+- **C29a — `absent` is defined as a claim the route cannot support.** Not blocked; smaller
+  than C29 and independent of it. `agent/prompt_contract.py::VariableSelection` documents
+  the verdict as *"the codebook does not measure this"* while `RETRIEVAL_GUIDANCE` scopes
+  the question to *"the survey codebook below"* — the k shown. C29's measurement says the
+  pool is missing a named construct 35% of the time at k=20, so the endpoint can report
+  *the cohort does not measure X* when it does. ACCEPT: a pool miss and an instrument
+  absence are distinguishable in the response, and the surface change re-runs
+  `benchmark.contamination_check`.
+
+- **C30 — what is unexpressible is two ESTIMANDS, not two items** (user-level; the fix is a
+  schema amendment or a stated convention, not a lane's).
+  🛑 Correction to a claim made on 2026-09-10 and withdrawn the same day: *"one exposure
+  against two outcomes is not expressible at any layer"* is **false as written**.
+  `agent/schema.py::DerivationRef.component_keys` is `list[VariableKey]` with
+  `min_length=1` and no upper bound, and it is the canonical specimen —
+  `tests/test_schema.py` `p014` carries a two-component outcome. `_ref_keys` already fans
+  those out into `design_keys`. What a record cannot carry is two **estimands**: a
+  derivation composes N items into ONE outcome, and only against a signed file
+  (`DerivationRef._matches_the_signature_it_names`).
+  The amendment is six fields, not one: `exposure: Ref`, `outcome: Ref`,
+  `expected_direction`, `falsifier` + `falsifier_threshold`, and
+  `estimability.smallest_detectable_effect` (one curve, one `at_n`, one
+  `asserted_baseline_prevalence` — by definition one outcome's reference-arm frequency).
+  Two validators become WRONG rather than broken: `_falsifier_is_detectable` would check
+  outcome B's threshold against outcome A's power, and `_no_covariate_repeats_an_anchor`
+  would forbid outcome A as a covariate in outcome B's model, which is legitimate.
+  🛑 The binding Hard Constraint is **not** the docstring rule — declaring a list needs no
+  banned content. It is `canonical_form`, which emits `"outcome": _ref_key(self.outcome)`
+  as a scalar; `record_hash` is a sha256 of that dict, `agent/specifier.py::_rank`'s final
+  term reads it, and every saved record carries the hash in its FILENAME — including the
+  `run/superseded/` pins §Testing Patterns requires stay under test. Two further holes
+  widening would open silently: `_all_variable_refs`'s `isinstance` guard skips a list, so
+  `_wording_is_verbatim` — the only check that `quoted_wording` is the instrument's text —
+  stops covering the outcome while still covering the exposure; and
+  `tool_authority.py::_ref_keys` returns `[]` for a list, dropping outcome keys out of
+  `design_keys` and past `_reject_uncovered`. The change also spans Lane A
+  (`schema.py`, `specifier.py`) and Lane B (`registry.py`, `tool_authority.py`), whose
+  prompt strings state the singular pair, so §Parallel Lanes and §Contamination Practice
+  both bind.
+  ACCEPT (convention reading): this file and `DESIGN.md` record that N outcomes are N
+  records sharing an exposure, and say how they are related — nothing carries that today.
+  ACCEPT (schema reading): all six fields move in one commit with their tests, the two
+  `isinstance` holes are closed with a seeded failure each, `RefusalReason` can name WHICH
+  anchor is unresolvable, `benchmark.contamination_check` re-runs, and `_rank`'s AST test
+  still passes.
+
+- **C31 — `serve/`'s request-shaping defects, in the one part of the module no test
+  reaches.** Found by adversarial review 2026-09-10; each re-checked by running it against
+  the live dictionary `3dc8415eccfe`. `tests/test_serve_redaction.py` carries 55 tests and
+  exercises `_specify`, `_canonical_key`, `_int_arg`, `Handler`, `build_server` and
+  `_refuse_unsafe_site_dir`, so this is a hole in a COVERED module: `_pair`, `_resolve`,
+  `_role_candidates` and `_pin_keys_from_prose` are never invoked by any test.
+  (a) `_pin_keys_from_prose` assigns roles by WORD ORDER — it zips `("exposure",
+  "outcome")` against keys in the order they appear, and nothing enforces the docstring's
+  assumption. *"is `m3:Q4.2` predicted by `m2:Q5.8`"* returns the outcome labelled
+  exposure, with **no retrieval and no model call**, in ~0.02 s, carrying `reason: "the
+  request named this key, so it was not inferred"`.
+  (b) A third key in the prose is silently dropped (`zip(..., strict=False)`).
+  (c) `role` is passed into `RetrievalRequest` but `deploy/template.py::to_query` never
+  renders it, while `_role_candidates`'s docstring says the request *is* framed by role.
+  `_pair` also discards the `surface` `_role_candidates` built and recomputes it.
+  ACCEPT: a test per item, each seeded red first; (a) and (b) either enforced or the
+  docstring corrected to what the code does.
+
 ## Blocked on a person, not a task
 
 - **The two Qualtrics exports — response options and survey flow.** Without them
