@@ -1,4 +1,4 @@
-"""Build site/artefacts/metrics.json — the scored baseline, instrument-free.
+"""Build site/artifacts/metrics.json — the scored baseline, instrument-free.
 
 The Metrics tab answers one question honestly: what has actually been measured,
 and what does the number mean. Two sources feed it, both read here and never
@@ -13,7 +13,7 @@ WHAT IS DELIBERATELY NOT IN THIS FILE. No variable key, no instrument wording,
 no `pair_id`, no `protocol_id`. Those two read as a module and question id
 joined by `_to_` and by an arrow respectively, so both are variable keys in
 disguise and both fail site-check step 2 on purpose — which is why this
-docstring describes their shape instead of showing one. Each artefact is
+docstring describes their shape instead of showing one. Each artifact is
 identified here by its
 `record_hash` alone. A reviewer who holds the dictionary sees the real pair over
 the endpoint's `/api/metrics`, which is where the instrument is allowed to be.
@@ -24,7 +24,7 @@ or outcome resolved against the instrument. Resolving those is task C12 and is
 not built. Matching itself IS automatic -- `benchmark/baseline_score.py` scores
 every emitted artifact against the whole bibliography -- but it can only reach
 the papers whose outcome keys the held-out key records. That is what caps the
-ceiling, and it is stated in the artefact rather than papered over.
+ceiling, and it is stated in the artifact rather than papered over.
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ from pathlib import Path
 
 SCORE = Path("/home/mehta5/compass-score")
 COMPASS = Path("/home/mehta5/COMPASS")
-OUT = Path(__file__).resolve().parents[1] / "artefacts" / "metrics.json"
+OUT = Path(__file__).resolve().parents[1] / "artifacts" / "metrics.json"
 RUN = "b3-20260904"
 
 
@@ -75,20 +75,24 @@ def main() -> int:
 
     # The SCORED set is the ledger's `emitted` rows, not the directory listing.
     # Thirty-nine files sit in the run directory and only twenty-eight were
-    # scored: a discarded pair can still have written its artefact, so globbing
+    # scored: a discarded pair can still have written its artifact, so globbing
     # the directory would silently inflate the denominator by eleven.
     ledger = [json.loads(x) for x in
               (run_dir / "ledger.jsonl").read_text(encoding="utf-8").splitlines() if x]
     emitted = {r["record_hash"]: r for r in ledger if r["outcome"] == "emitted"}
 
-    artefacts = []
+    artifacts = []
     for f in sorted(run_dir.glob("m2q*.json")):
+        # `artefact`, en-GB: the key belongs to compass-score's schema, not to
+        # this site. Everything the SITE spells is `artifact`; the four places
+        # that reach into the scoring clone keep its spelling, and a blanket
+        # rename that catches them fails loudly here rather than quietly.
         a = json.loads(f.read_text(encoding="utf-8"))["artefact"]
         if a["record_hash"] not in emitted:
             continue
         pr = a["protocol"]
         row = emitted[a["record_hash"]]
-        artefacts.append({
+        artifacts.append({
             "record_hash": a["record_hash"],
             "estimability": a["estimability"],
             "exposure_stratum": row["exposure_stratum"],
@@ -129,7 +133,7 @@ def main() -> int:
             "ledger_denominator": summary["total_generated_this_run"],
             "by_outcome": summary["by_outcome"],
             "strata": summary["strata"],
-            "artefact_files_on_disk": len(list(run_dir.glob("m2q*.json"))),
+            "artifact_files_on_disk": len(list(run_dir.glob("m2q*.json"))),
             "denominator_note": ("the scored set is the ledger's `emitted` rows. "
                                  "More artifact files than that sit in the run "
                                  "directory, because a discarded pair can still "
@@ -137,7 +141,7 @@ def main() -> int:
                                  "are not listed here"),
         },
         "verdicts": dict(re.findall(r"^- (\w+): (\w+)$", text, re.M)),
-        "artefacts": artefacts,
+        "artifacts": artifacts,
         "papers": [
             {"pmid": int(r.pmid), "year": r.year, "venue": r.venue,
              "design": r.design, "n": r.n,
@@ -155,9 +159,9 @@ def main() -> int:
                                        "against the instrument; one paper of "
                                        "sixteen clears both"),
             # The recurring question from readers, asked twice now: why are there
-            # more artefacts than papers, and which paper is each artefact from?
+            # more artifacts than papers, and which paper is each artifact from?
             # The premise is the confusion -- the two are not two counts of one
-            # population, and an artefact is not FROM a paper at all.
+            # population, and an artifact is not FROM a paper at all.
             # Rewritten 2026-09-09 after the operator read the first version and
             # asked what it meant. Plain nouns, one idea per clause, and the
             # consequence (no PMID) stated as a result rather than an aside.
@@ -190,7 +194,7 @@ def main() -> int:
                 "scored the same"),
         },
         "not_built": [
-            # Rewritten 2026-09-09. The previous text said "no scored artefact
+            # Rewritten 2026-09-09. The previous text said "no scored artifact
             # can be matched to a paper automatically", which is wrong: that is
             # exactly what `benchmark/baseline_score.py` does. What C12 has not
             # built is the REST of the per-paper key.
@@ -218,7 +222,7 @@ def main() -> int:
                                      "reviewer who already holds the dictionary."),
     }
     OUT.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
-    print(f"wrote {OUT} · {len(artefacts)} artefacts · {len(doc['papers'])} papers")
+    print(f"wrote {OUT} · {len(artifacts)} artifacts · {len(doc['papers'])} papers")
     return 0
 
 

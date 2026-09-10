@@ -3,9 +3,9 @@
 Conventions the checks rely on:
 
 * The page is every ``*.html`` under ``site/``.
-* Data reaches the page only through ``artefacts/index.json`` (which lists
-  the other artefact files under ``files``) and literal ``fetch("...")``
-  calls in the page's scripts. ``loaded_artefacts`` returns the union, so a
+* Data reaches the page only through ``artifacts/index.json`` (which lists
+  the other artifact files under ``files``) and literal ``fetch("...")``
+  calls in the page's scripts. ``loaded_artifacts`` returns the union, so a
   file the page loads can never escape steps 1, 3 and 6.
 * ``SITE_ROOT`` overrides the site directory; the planted-violation harness
   uses it to run a check against a doctored copy.
@@ -21,10 +21,10 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 SITE = Path(os.environ.get("SITE_ROOT", REPO / "site")).resolve()
-ARTEFACTS = SITE / "artefacts"
-INDEX = "artefacts/index.json"
+ARTIFACTS = SITE / "artifacts"
+INDEX = "artifacts/index.json"
 
-# only a complete literal counts; fetch("artefacts/"+f) is covered by the index
+# only a complete literal counts; fetch("artifacts/"+f) is covered by the index
 FETCH_RE = re.compile(r"""fetch\(\s*(["'])([^"']+)\1\s*\)""")
 SCRIPT_RE = re.compile(r"<script\b[^>]*>(.*?)</script>", re.S | re.I)
 STYLE_RE = re.compile(r"<style\b[^>]*>(.*?)</style>", re.S | re.I)
@@ -46,7 +46,7 @@ def strip_style(html: str) -> str:
     return re.sub(r"""\sstyle=(["']).*?\1""", "", html, flags=re.S)
 
 
-def loaded_artefacts() -> list[str]:
+def loaded_artifacts() -> list[str]:
     """Site-relative paths the page loads, index first, duplicates removed."""
     seen: list[str] = []
 
@@ -64,7 +64,7 @@ def loaded_artefacts() -> list[str]:
         add(INDEX)
         try:
             for f in json.loads(idx.read_text(encoding="utf-8")).get("files", []):
-                add(f if f.startswith("artefacts/") else f"artefacts/{f}")
+                add(f if f.startswith("artifacts/") else f"artifacts/{f}")
         except json.JSONDecodeError:
             pass  # step 1 reports the parse failure with the file name
     return seen

@@ -1,15 +1,15 @@
 """Step 6 — every file the page loads is tracked by git.
 
-``main`` ignores ``*.json``. An artefact that is ignored works from a local
+``main`` ignores ``*.json``. An artifact that is ignored works from a local
 checkout and serves empty from Pages, and ``git status`` shows nothing. For
-every loaded artefact and every page, ``git ls-files --error-unmatch`` must
+every loaded artifact and every page, ``git ls-files --error-unmatch`` must
 succeed, and ``git check-ignore`` must not match.
 """
 from __future__ import annotations
 
 import subprocess
 
-from common import REPO, SITE, fail, loaded_artefacts, ok, pages
+from common import REPO, SITE, fail, loaded_artifacts, ok, pages
 
 
 def git(*args: str) -> int:
@@ -18,7 +18,7 @@ def git(*args: str) -> int:
 
 def main() -> None:
     files = [str(p.relative_to(REPO)) for p in pages()] + \
-            [str((SITE / a).relative_to(REPO)) for a in loaded_artefacts()]
+            [str((SITE / a).relative_to(REPO)) for a in loaded_artifacts()]
     problems: list[str] = []
     for f in files:
         if git("check-ignore", "-q", f) == 0:

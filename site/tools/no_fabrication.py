@@ -1,4 +1,4 @@
-"""Step 1 — every number on the page traces to an artefact.
+"""Step 1 — every number on the page traces to an artifact.
 
 Two halves, both hard failures:
 
@@ -6,8 +6,8 @@ Two halves, both hard failures:
    below. Each entry is a *context* regex, not a value, so ``i+1`` is allowed
    where it indexes the rail and nowhere else. Widening this list to let a
    figure through is the failure this check exists to prevent: a figure needs
-   an artefact.
-2. Every file in ``site/artefacts`` is listed by the index, is valid JSON, and
+   an artifact.
+2. Every file in ``site/artifacts`` is listed by the index, is valid JSON, and
    carries a ``provenance`` object naming its ``source`` and a ``run_id``,
    ``commit`` or ``frozen`` date. A figure inside a *string* (``"cos 0.7316"``)
    is a retyped number, not data: any string value outside ``provenance``
@@ -22,7 +22,7 @@ from __future__ import annotations
 import json
 import re
 
-from common import ARTEFACTS, INDEX, SITE, fail, loaded_artefacts, ok, pages, strip_style
+from common import ARTIFACTS, INDEX, SITE, fail, loaded_artifacts, ok, pages, strip_style
 
 # (context regex, why it is not a figure). Keep this short and literal.
 ALLOW: list[tuple[str, str]] = [
@@ -83,14 +83,14 @@ def walk_strings(node, path: tuple[str, ...], out: list[str]) -> None:  # noqa: 
             out.append(f"{'.'.join(path)} = {node!r}")
 
 
-def artefact_provenance() -> list[str]:
+def artifact_provenance() -> list[str]:
     bad: list[str] = []
-    on_disk = sorted(p.name for p in ARTEFACTS.glob("*.json")) if ARTEFACTS.exists() else []
-    loaded = loaded_artefacts()
-    listed = sorted(p.split("/", 1)[1] for p in loaded if p.startswith("artefacts/"))
+    on_disk = sorted(p.name for p in ARTIFACTS.glob("*.json")) if ARTIFACTS.exists() else []
+    loaded = loaded_artifacts()
+    listed = sorted(p.split("/", 1)[1] for p in loaded if p.startswith("artifacts/"))
     for name in on_disk:
         if name not in listed:
-            bad.append(f"artefacts/{name} is on disk but nothing loads it")
+            bad.append(f"artifacts/{name} is on disk but nothing loads it")
     for rel in loaded:
         p = SITE / rel
         if not p.is_file():
@@ -114,12 +114,12 @@ def artefact_provenance() -> list[str]:
 
 
 def main() -> None:
-    problems = page_literals() + artefact_provenance()
+    problems = page_literals() + artifact_provenance()
     if problems:
         for p in problems:
             print("      " + p)
         fail(f"no_fabrication: {len(problems)} problem(s)")
-    ok(f"no_fabrication: {len(pages())} page(s), {len(loaded_artefacts())} artefact(s) traced")
+    ok(f"no_fabrication: {len(pages())} page(s), {len(loaded_artifacts())} artifact(s) traced")
 
 
 if __name__ == "__main__":

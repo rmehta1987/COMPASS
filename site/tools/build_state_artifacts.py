@@ -1,8 +1,8 @@
-"""Turn the private captures under run/site/ into public artefacts.
+"""Turn the private captures under run/site/ into public artifacts.
 
 Reads ``run/site/pipeline_state.json`` (capture_pipeline_state.py) and
 ``run/site/negatives_absence_check.json`` (src/verify_negatives.py) and writes
-``funnel.json``, ``score.json`` and ``absence.json`` under ``site/artefacts``.
+``funnel.json``, ``score.json`` and ``absence.json`` under ``site/artifacts``.
 Only counts, flags, names of exports and domains, and provenance cross the
 line; the captures' construct keys, stems and search patterns stay private.
 """
@@ -14,7 +14,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 RUN = REPO / "run" / "site"
-OUT = REPO / "site" / "artefacts"
+OUT = REPO / "site" / "artifacts"
 KEY_RE = re.compile(r"\bm\d+:Q\d+")
 
 

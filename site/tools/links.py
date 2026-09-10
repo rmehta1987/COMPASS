@@ -10,7 +10,7 @@ from __future__ import annotations
 from html.parser import HTMLParser
 from pathlib import Path
 
-from common import SITE, fail, loaded_artefacts, ok, pages
+from common import SITE, fail, loaded_artifacts, ok, pages
 
 
 class _Links(HTMLParser):
@@ -48,7 +48,7 @@ def main() -> None:
             target = (page.parent / ref.split("#")[0].split("?")[0]).resolve()
             if not target.is_file():
                 problems.append(f"{rel}:{line} <{tag}> {ref!r} does not resolve")
-    for art in loaded_artefacts():
+    for art in loaded_artifacts():
         checked += 1
         if not (SITE / art).is_file():
             problems.append(f"fetch target {art!r} does not exist")

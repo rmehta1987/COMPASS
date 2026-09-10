@@ -1,6 +1,6 @@
 // Headless render of every panel for every example under a DOM stub.
 // Run by parse.py. Exits non-zero on any exception, or if a rendered panel
-// contains "undefined" or "NaN" — the two ways a renamed artefact field fails
+// contains "undefined" or "NaN" — the two ways a renamed artifact field fails
 // silently in a browser. Usage: node render.js <site dir>
 "use strict";
 const fs = require("fs"), path = require("path");

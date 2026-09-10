@@ -31,7 +31,7 @@
    "medication",
    "reproductive_hormonal"
   ],
-  "artefact_files_on_disk": 39,
+  "artifact_files_on_disk": 39,
   "denominator_note": "the scored set is the ledger's `emitted` rows. More artifact files than that sit in the run directory, because a discarded pair can still have written one; the extras are not scored and are not listed here"
  },
  "verdicts": {
@@ -39,7 +39,7 @@
   "input_leakage": "ok",
   "unearned_assertions": "ok"
  },
- "artefacts": [
+ "artifacts": [
   {
    "record_hash": "563cb4a3b1c6113b",
    "estimability": "blocked_no_metadata",

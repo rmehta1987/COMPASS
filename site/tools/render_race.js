@@ -148,7 +148,7 @@ const fire = (attr, val) => {
     fail(`the specifier chip does not report the finished run: ${JSON.stringify(chip("specifier"))}`);
   }
   const marked = [...railHtml.matchAll(/data-s="([^"]+)" aria-current="true"/g)].map(m => m[1]);
-  if (marked.length !== Number(!!marked.length) || marked[Number()] !== "record") {
+  if (marked.length !== 1 || marked[0] !== "record") {
     fail(`the rail marks ${JSON.stringify(marked)}; the reader is on "record"`);
   }
 

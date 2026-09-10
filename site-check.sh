@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # The site loop's gate. Green or `git reset --hard HEAD`.
-#   1 no_fabrication  every number on the page traces to an artefact
+#   1 no_fabrication  every number on the page traces to an artifact
 #   2 no_instrument   no instrument wording or variable key under site/
 #   3 links           no dead internal link, anchor or fetch target
 #   4 parse           HTML balanced, every script passes node --check
 #   5 offline         zero external requests
-#   6 tracked         every loaded artefact is git-tracked and not ignored
+#   6 tracked         every loaded artifact is git-tracked and not ignored
 # Step 2 needs the withheld dictionary; on the training machine it sits at the
 # root of the operator's clone. Exits 2 (red) when it cannot be found.
 set -u

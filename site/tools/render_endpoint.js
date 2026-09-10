@@ -61,7 +61,7 @@ global.alert = () => {};
 let lastDownload = null;
 global.Blob = class { constructor(parts) { lastDownload = parts.join(""); this.size = lastDownload.length; } };
 global.URL = { createObjectURL: () => "blob:x", revokeObjectURL() {} };
-// Only /api/metrics is answered; an artefact read still goes to disk.
+// Only /api/metrics is answered; an artifact read still goes to disk.
 global.fetch = async (rel) => rel === "/api/metrics"
   ? ({ status: 200, json: async () => payload })
   : ({ json: async () => JSON.parse(fs.readFileSync(path.join(site, rel), "utf8")) });
@@ -90,12 +90,12 @@ global.fetch = async (rel) => rel === "/api/metrics"
   // on BOTH renders -- `before` is the withheld-keys branch, `p` the keyed one.
   const cols = (html, label) => {
     // The panel holds TWO tables -- the bibliography (which has a real PMID
-    // column) and the artefacts. Taking the first <thead> checked the wrong one
-    // and passed while the artefact table had no paper column at all. Select by
-    // the artefact header's own first cell.
+    // column) and the artifacts. Taking the first <thead> checked the wrong one
+    // and passed while the artifact table had no paper column at all. Select by
+    // the artifact header's own first cell.
     const tables = html.match(/<table>[\s\S]*?<\/table>/g) || [];
     const tbl = tables.find(t => /<thead>[\s\S]*?<th>record<\/th>/.test(t));
-    if (!tbl) { console.error(`${label}: no artefact table found`); failed++; return; }
+    if (!tbl) { console.error(`${label}: no artifact table found`); failed++; return; }
     const head = (tbl.match(/<thead>[\s\S]*?<\/thead>/) || [""])[0];
     const nth = (head.match(/<th\b/g) || []).length;
     const body = (tbl.match(/<tbody>[\s\S]*?<\/tbody>/) || [""])[0];
@@ -117,10 +117,10 @@ global.fetch = async (rel) => rel === "/api/metrics"
       }
     }
   };
-  cols(before, "artefact table, keys withheld");
+  cols(before, "artifact table, keys withheld");
 
   const p = node("#panel").innerHTML;
-  cols(p, "artefact table, keys shown");
+  cols(p, "artifact table, keys shown");
   for (const bad of ["undefined", "NaN", "[object Object]"]) {
     if (p.includes(bad)) { console.error(`enriched panel contains "${bad}"`); failed++; }
   }
@@ -147,10 +147,10 @@ global.fetch = async (rel) => rel === "/api/metrics"
     }
   }
   // The footer closes by asserting every figure on the page traces to a
-  // committed artefact. Standing under a panel this endpoint just produced,
+  // committed artifact. Standing under a panel this endpoint just produced,
   // that sentence is false, and it is the one a reviewer would quote back. Only
   // this harness can see it: the static render never sets COMPASS_ENDPOINT.
-  // LAUNCHING A RUN FROM A SCORED ARTEFACT must tell Retriever and Intake what
+  // LAUNCHING A RUN FROM A SCORED ARTIFACT must tell Retriever and Intake what
   // was actually run. Before this, the launch set the anchors and started the
   // Specifier while those two stages went on showing whatever was there before
   // -- a committed example, or the previous request's hits -- so the page
@@ -220,6 +220,25 @@ global.fetch = async (rel) => rel === "/api/metrics"
     }
   }
 
+  // The two lists are independent, and the panel has to say so structurally, not
+  // just in prose: back to back, the second table reads as more of the first.
+  const heads = [...p.matchAll(/<p class="sec major">([\s\S]*?)<\/p>/g)].map(m =>
+    m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+  if (heads.length !== 2) {
+    console.error(`expected two major sections, found ${heads.length}: ${JSON.stringify(heads)}`);
+    failed++;
+  }
+  if (!heads.some(t => /Enumerated variable pairs/.test(t))) {
+    console.error("no section heading for what the pipeline proposed"); failed++;
+  }
+  if (!heads.some(t => /Cohort bibliography/.test(t))) {
+    console.error("no section heading for what the literature published"); failed++;
+  }
+  // ...and the pipeline's own output is no longer labelled "artifacts" to the reader.
+  if (/the scored artifacts/.test(p)) {
+    console.error('the pipeline output is still headed "the scored artifacts"'); failed++;
+  }
+
   const f = node("#foot").innerHTML;
   if (!f.includes("<b>not</b> committed")) {
     console.error("footer still claims every figure is committed, under a live panel"); failed++;
@@ -235,7 +254,7 @@ global.fetch = async (rel) => rel === "/api/metrics"
       console.error("footer still scoped to live figures on a committed panel"); failed++;
     }
     if (!f2.includes("Every figure above is loaded from")) {
-      console.error("footer dropped the committed-artefact claim on a static panel"); failed++;
+      console.error("footer dropped the committed-artifact claim on a static panel"); failed++;
     }
   }
 

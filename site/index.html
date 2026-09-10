@@ -56,6 +56,11 @@
   .sec{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink-2);
     border-bottom:1px solid var(--ink);padding-bottom:6px;margin:0 0 12px}
   .sec+.sec{margin-top:26px}
+  .sec.major{font-size:14px;letter-spacing:.01em;color:var(--ink);text-transform:none;
+    border-top:1px solid var(--rule);border-bottom:2px solid var(--ink);
+    padding-top:26px;padding-bottom:8px;margin-top:40px;font-family:inherit;font-weight:600}
+  .sec.major em{display:block;font-style:normal;font-weight:400;font-size:12px;
+    color:var(--ink-2);margin-top:5px;font-family:var(--mono)}
 
   .tools{border:1px solid var(--rule);margin:0 0 26px;font-family:var(--mono);font-size:12.5px}
   .tools .t{border-bottom:1px solid var(--rule-2);padding:9px 12px}
@@ -127,7 +132,7 @@
 
 <script>
 /* Nothing on this page is typed in. Every stage description, run, record and
-   figure is fetched from site/artefacts/*.json, each carrying its provenance.
+   figure is fetched from site/artifacts/*.json, each carrying its provenance.
    site-check.sh fails the build if a numeric literal appears here. */
 const DATA={};
 let sel="retriever", cur=null, typed=null;
@@ -141,12 +146,12 @@ const row=(k,v,m)=>`<dt>${k}</dt><dd class="${m?'m':''}">${v}</dd>`;
 const f4=x=>x.toFixed(4);
 
 async function load(){
-  const emb=document.getElementById("embedded-artefacts");
+  const emb=document.getElementById("embedded-artifacts");
   if(emb){Object.assign(DATA,JSON.parse(emb.textContent));return;}
-  const idx=await (await fetch("artefacts/index.json")).json();
+  const idx=await (await fetch("artifacts/index.json")).json();
   DATA.index=idx;
   for(const f of idx.files){
-    DATA[f.replace(/\.json$/,"")]=await (await fetch("artefacts/"+f)).json();
+    DATA[f.replace(/\.json$/,"")]=await (await fetch("artifacts/"+f)).json();
   }
 }
 
@@ -843,7 +848,7 @@ function funnelPanel(){
 
 let met=null, metBusy=false;
 
-/* The public artefact carries no key and no wording -- see build_metrics.py.
+/* The public artifact carries no key and no wording -- see build_metrics.py.
    A reviewer on the endpoint can ask for them, because they hold the
    dictionary already; that is a request, never the default. */
 async function loadMetricKeys(){
@@ -882,7 +887,7 @@ function metricsPanel(){
     +row("by outcome",Object.entries(o.by_outcome)
         .map(([k,v])=>`${esc(k)} ${v}`).join(" &middot; "),true)
     +row("strata",esc(o.strata.join(" &middot; ")),true)
-    +row("artifact files on disk",String(o.artefact_files_on_disk),true)
+    +row("artifact files on disk",String(o.artifact_files_on_disk),true)
     +`</dl><div class="none">${esc(o.denominator_note)}.</div>`;
 
   h+=`<p class="sec">how to read that</p><ul class="does">`
@@ -894,8 +899,13 @@ function metricsPanel(){
       `<div class="t gate ${v==="ok"?"pass":"fail"}"><span class="call">${esc(k)}</span>`
       +`<span class="ret">${esc(v)}</span></div>`).join("")+`</div>`;
 
-  h+=`<p class="sec">the papers this run was scored against &middot; `
-    +`${m.papers.length} indexed, and that is a floor</p>`
+  /* TWO SECTIONS, NOT ONE TABLE AFTER ANOTHER. Met back to back, the second
+     table reads as a continuation of the first and the reader starts hunting for
+     the row that ties them -- which is the question that keeps arriving. Each
+     now says whose output it is, above a rule. */
+  h+=`<p class="sec major">Cohort bibliography &middot; ${m.papers.length} indexed,`
+    +` and that is a floor`
+    +`<em>What the literature published. Nothing here came from the pipeline.</em></p>`
     +`<div class="tbl"><table><thead><tr><th>PMID</th><th>year</th><th>venue</th>`
     +`<th>design &middot; exposure to outcome</th><th>n</th><th>terms that abstained</th>`
     +`</tr></thead><tbody>`
@@ -909,23 +919,25 @@ function metricsPanel(){
     +`assignment made before then is wrong.</div>`;
 
   const gap=m.not_built.find(x=>x.what.indexOf("per-paper")>-1);
-  h+=`<p class="sec">where the join would go</p>`
+  h+=`<p class="sec">what is still missing from the key</p>`
     +`<div class="ph"><b>NOT BUILT</b> &mdash; ${esc(gap.why)}.</div>`;
 
-  /* Asked twice by readers: why more artefacts than papers, and which paper is
-     each artefact from. The second question's premise is the confusion, so the
-     answer goes directly above the table rather than in a footnote. Every number
-     is interpolated from the artefact; the page states none of its own. */
-  h+=`<p class="sec">how the artifacts and the papers relate</p>`
-    +`<div class="none">${esc(m.reads.how_the_two_populations_relate)}.`
+  /* "Artifact" is what the pipeline calls its output file; it tells a reader
+     nothing about what the row IS. Each row is one pair of questionnaire
+     variables -- an exposure and an outcome -- enumerated from the instrument
+     and then specified, so that is what the heading says. The stored key stays
+     `artifacts`: it is the file's own noun, and renaming data to match a
+     heading is how a page starts disagreeing with its source. */
+  h+=`<p class="sec major">Enumerated variable pairs &middot; ${m.artifacts.length}`
+    +`<em>What the pipeline proposed, working only from the instrument.</em></p>`
+    +`<div class="none">Each row is one pair of questionnaire variables, an`
+    +` exposure and an outcome, that the pipeline enumerated and then specified.`
     +` The ledger generated ${o.ledger_denominator} pair(s) this run`
     +` (${Object.entries(o.by_outcome).map(([k,v])=>`${v} ${esc(k)}`).join(", ")});`
-    +` the ${m.artefacts.length} scored below are the emitted ones, drawn from`
-    +` ${o.strata.length} strata: ${o.strata.map(esc).join(", ")}.`
-    +` The bibliography holds ${m.papers.length} paper(s).</div>`
+    +` these are the emitted ones, drawn from`
+    +` ${o.strata.length} strata: ${o.strata.map(esc).join(", ")}.</div>`
+    +`<div class="none">${esc(m.reads.how_the_two_populations_relate)}.</div>`
     +`<div class="none">${esc(m.reads.what_the_paper_column_means)}.</div>`;
-
-  h+=`<p class="sec">the scored artifacts &middot; ${m.artefacts.length}</p>`;
   if(!keyed) h+=`<div class="none">${esc(m.instrument_withheld_here)}`
     +(window.COMPASS_ENDPOINT
       ?` <button class="g" id="met-keys">${metBusy?"asking the endpoint&hellip;"
@@ -937,7 +949,7 @@ function metricsPanel(){
     +(keyed?`<th>exposure</th><th>outcome</th>`:`<th>exposure stratum</th><th>outcome stratum</th>`)
     +`<th>estimability</th><th>adjusted</th><th>excluded</th><th>sought, not found</th>`
     +`<th>n source</th>`+(keyed?`<th></th>`:``)+`</tr></thead><tbody>`
-    +m.artefacts.map((a,ai)=>{
+    +m.artifacts.map((a,ai)=>{
       const k=keyed?keyed[a.record_hash]:null;
       const tok=`metrics:${ai}`;
       if(k) launchable[tok]={source:"metrics",
@@ -954,7 +966,7 @@ function metricsPanel(){
         +`<td class="m" title="${att(m.reads.what_the_paper_column_means)}">`
         +`<span class="ret">none</span></td>`
         /* Three states, not two. The header is driven by whether the endpoint
-           answered AT ALL; these cells by whether it answered for THIS artefact.
+           answered AT ALL; these cells by whether it answered for THIS artifact.
            Conflating them put a stratum under a column headed "exposure", and
            dropped the trailing cell entirely, so every row the endpoint had no
            pair for was one cell short of its own header. */
@@ -1016,7 +1028,7 @@ function measureHTML(){
   <div class="tbl"><table><thead><tr>${m.sweep.columns.map(([,l])=>`<th>${esc(l)}</th>`).join("")}</tr></thead><tbody>`
    +m.sweep.rows.map(r=>`<tr>${m.sweep.columns.map(([k])=>`<td class="${k==="recall_at_1"&&r[k]===best?"hi":""}">${cell(k,r[k])}</td>`).join("")}</tr>`).join("")
    +`</tbody></table></div>
-  <p class="prov">${esc(m.provenance.run_id)} · ${esc(m.provenance.sweep_artefacts_note)}</p>`;
+  <p class="prov">${esc(m.provenance.run_id)} · ${esc(m.provenance.sweep_artifacts_note)}</p>`;
   h+=`<p class="sec">shipped model · ${esc(sh.model)} · ${sh.params_m}M params · ${esc(sh.training.negatives)}, temperature ${sh.training.temperature} · ${sh.n_targets.toLocaleString()} targets · dictionary ${esc(sh.dictionary_version_hash)}</p>
   <div class="tbl"><table><thead><tr><th>query arm</th>${sh.arm_columns.map(([,l])=>`<th>${esc(l)}</th>`).join("")}<th>negatives rejected</th><th>AUROC absent vs present</th></tr></thead><tbody>`
    +[["S",S],["I",I]].map(([k,a])=>`<tr><td>${k} · ${esc(a.label)}</td>${sh.arm_columns.map(([c])=>`<td class="${k==="I"&&c==="recall_at_1"?"hi":""}">${cell(c,a[c])}</td>`).join("")}<td>${a.negatives_rejected} / ${a.n_negatives}</td><td>${a.auroc_absent_vs_present.toFixed(4)}</td></tr>`).join("")
@@ -1067,7 +1079,7 @@ function panelPNG(){
 }
 
 /* Which branch `stagePanel` took. The footer closes by asserting that every
-   figure on the page is loaded from a committed artefact; for a panel this
+   figure on the page is loaded from a committed artifact; for a panel this
    endpoint produced moments ago that is simply untrue, and it is the sentence a
    reviewer would quote. Read only by `foot`. */
 let panelLive=false;
@@ -1087,7 +1099,7 @@ function panelRecord(){
   if(spec) doc.specifier_run=spec;
   if(gen) doc.enumeration=gen;
   if(met) doc.metrics_keys=met;
-  doc.artefact_provenance=Object.fromEntries(Object.entries(DATA)
+  doc.artifact_provenance=Object.fromEntries(Object.entries(DATA)
     .filter(([k])=>k!=="index").map(([k,v])=>[k,v.provenance]));
   return doc;
 }
@@ -1098,7 +1110,7 @@ function panelRecord(){
 function panelHasRecord(){ return Boolean(cur||ask||live||posed||spec||gen||met); }
 
 /* Both anchors as they were handed to the Specifier. Wording only if the
-   endpoint supplied it: the committed artefact carries none, and an empty
+   endpoint supplied it: the committed artifact carries none, and an empty
    string must read as "withheld", never as a blank that looks like an answer. */
 function posedPair(){
   const L=posed;
@@ -1173,7 +1185,7 @@ function draw(){
      exception here does not blank one panel, it leaves the PREVIOUS stage's DOM
      on screen with handlers still bound to a run that has moved on, and the rail
      stops responding. The realistic cause is a malformed endpoint reply: the
-     committed artefacts pass site-check, an endpoint payload passes nothing.
+     committed artifacts pass site-check, an endpoint payload passes nothing.
      The message is safe to show -- the payload it came from was already through
      the server's scrubber and was about to be rendered into this same panel. */
   try{ h+=stagePanel(s); }
@@ -1237,11 +1249,11 @@ el("#run").onclick=async()=>{
 };
 el("#dl-src").onclick=()=>{
   /* One self-contained file: the live DOM as rendered, plus every loaded
-     artefact embedded as JSON so load() needs no fetch when opened from disk. */
+     artifact embedded as JSON so load() needs no fetch when opened from disk. */
   const root=document.documentElement.cloneNode(true);
-  const old=root.querySelector("#embedded-artefacts"); if(old) old.remove();
+  const old=root.querySelector("#embedded-artifacts"); if(old) old.remove();
   const emb=document.createElement("script");
-  emb.type="application/json"; emb.id="embedded-artefacts";
+  emb.type="application/json"; emb.id="embedded-artifacts";
   emb.textContent=JSON.stringify(DATA).replace(/<\//g,"<\\/");
   root.querySelector("head").appendChild(emb);
   const b=new Blob(["<!DOCTYPE html>\n"+root.outerHTML],{type:"text/html"});
@@ -1249,7 +1261,7 @@ el("#dl-src").onclick=()=>{
   a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
 
 load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); draw(); foot();}).catch(e=>{
-  el("#panel").innerHTML=`<h2>Artifacts did not load</h2><div class="ph"><b>NO DATA</b> — ${esc(e.message)}. Serve this directory over HTTP; a file:// open cannot fetch the artefacts.</div>`;
+  el("#panel").innerHTML=`<h2>Artifacts did not load</h2><div class="ph"><b>NO DATA</b> — ${esc(e.message)}. Serve this directory over HTTP; a file:// open cannot fetch the artifacts.</div>`;
 });
 </script>
 </body>

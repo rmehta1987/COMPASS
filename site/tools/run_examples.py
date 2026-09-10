@@ -1,4 +1,4 @@
-"""Item 4 — run the real retriever and emit tier-A artefacts.
+"""Item 4 — run the real retriever and emit tier-A artifacts.
 
 Runs only where the deploy bundle is complete (``deploy/model/`` and
 ``deploy/targets.json`` are withheld from the public tree). For each request
@@ -6,7 +6,7 @@ in ``requests.json`` it renders the shipped template, calls ``search`` and
 ``select`` on ``deploy/retriever.py`` exactly as a caller would, and records
 what came back. Two files are written:
 
-* ``site/artefacts/runs.json`` — public. Cosine, rank, margin, threshold,
+* ``site/artifacts/runs.json`` — public. Cosine, rank, margin, threshold,
   abstention, fold size and option position verbatim; every target renamed
   ``TARGET-NN`` by first appearance; domain from ``src/char_strata.py``; no
   key, stem, option label or module anywhere. The writer refuses to save a
@@ -164,8 +164,8 @@ def main() -> int:
     }
     text = json.dumps(out, indent=1, ensure_ascii=False) + "\n"
     if KEY_RE.search(text):
-        raise SystemExit("refusing to write: a variable key reached the public artefact")
-    (REPO / "site" / "artefacts" / "runs.json").write_text(text, encoding="utf-8")
+        raise SystemExit("refusing to write: a variable key reached the public artifact")
+    (REPO / "site" / "artifacts" / "runs.json").write_text(text, encoding="utf-8")
     priv = REPO / "run" / "site" / run_id
     priv.mkdir(parents=True, exist_ok=True)
     (priv / "pseudonym_map.json").write_text(json.dumps(pseud, indent=1) + "\n")

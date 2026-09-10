@@ -3,7 +3,7 @@
 A scan that has never fired is not known to work. For steps 1–5 the site is
 copied to a scratch directory, one violation is planted, and the check runs
 with ``SITE_ROOT`` pointing at the copy; it must exit non-zero. Step 6 needs
-the real repository: an untracked artefact is created, the check runs, and
+the real repository: an untracked artifact is created, the check runs, and
 the file is removed again. The instrument run planted for step 2 is taken
 from the dictionary at run time and written only to the scratch copy.
 
@@ -65,15 +65,15 @@ def main() -> int:
         root = copy_site(tmp / "a")
         plant_page(root, "<main class=\"wrap\">", "<main class=\"wrap\"><p>cos 0.8214</p>")
         results.append(("no_fabrication", "numeric literal on the page", run("no_fabrication", root) != 0))
-        # 1b an artefact without provenance
+        # 1b an artifact without provenance
         root = copy_site(tmp / "b")
-        (root / "artefacts").mkdir(exist_ok=True)
-        (root / "artefacts" / "index.json").write_text(json.dumps(
+        (root / "artifacts").mkdir(exist_ok=True)
+        (root / "artifacts" / "index.json").write_text(json.dumps(
             {"files": ["planted.json"], "provenance": {"source": "plant", "run_id": "x"}}))
-        (root / "artefacts" / "planted.json").write_text(json.dumps({"cos": 0.5}))
-        results.append(("no_fabrication", "artefact without provenance", run("no_fabrication", root) != 0))
+        (root / "artifacts" / "planted.json").write_text(json.dumps({"cos": 0.5}))
+        results.append(("no_fabrication", "artifact without provenance", run("no_fabrication", root) != 0))
         # 1c a figure retyped inside a string
-        (root / "artefacts" / "planted.json").write_text(json.dumps(
+        (root / "artifacts" / "planted.json").write_text(json.dumps(
             {"note": "cos 0.7316 cleared", "provenance": {"source": "plant", "run_id": "x"}}))
         results.append(("no_fabrication", "figure inside a string", run("no_fabrication", root) != 0))
         # 2a five instrument words
@@ -89,7 +89,7 @@ def main() -> int:
         plant_page(root, "<main class=\"wrap\">", "<main class=\"wrap\"><a href=\"#nowhere\">x</a>")
         results.append(("links", "dead anchor", run("links", root) != 0))
         root = copy_site(tmp / "f")
-        plant_page(root, "<script>", "<script>fetch(\"artefacts/missing.json\");")
+        plant_page(root, "<script>", "<script>fetch(\"artifacts/missing.json\");")
         results.append(("links", "missing fetch target", run("links", root) != 0))
         # 4 unbalanced tag and a syntax error
         root = copy_site(tmp / "g")
@@ -100,7 +100,7 @@ def main() -> int:
         results.append(("parse", "script syntax error", run("parse", root) != 0))
         root = copy_site(tmp / "h2")
         plant_page(root, "r.top_cos", "r.top_cosine_renamed")
-        results.append(("parse", "renamed artefact field renders undefined", run("parse", root) != 0))
+        results.append(("parse", "renamed artifact field renders undefined", run("parse", root) != 0))
         # 5 an external script, a font stylesheet, a fetch to a host
         root = copy_site(tmp / "i")
         plant_page(root, "<head>", "<head><script src=\"https://cdn.example.com/x.js\"></script>")
@@ -111,8 +111,8 @@ def main() -> int:
         root = copy_site(tmp / "k")
         plant_page(root, "<script>", "<script>fetch(\"https://example.com/a\");")
         results.append(("offline", "fetch to a host", run("offline", root) != 0))
-    # 6 an untracked artefact in the real tree
-    art = SITE / "artefacts"
+    # 6 an untracked artifact in the real tree
+    art = SITE / "artifacts"
     art.mkdir(exist_ok=True)
     planted = art / "planted_untracked.json"
     idx = art / "index.json"
@@ -122,7 +122,7 @@ def main() -> int:
         planted.write_text(json.dumps({"provenance": {"source": "plant", "run_id": "x"}}))
         files = (json.loads(saved).get("files", []) if saved else []) + ["planted_untracked.json"]
         idx.write_text(json.dumps({"files": files, "provenance": {"source": "plant", "run_id": "x"}}))
-        results.append(("tracked", "untracked artefact", run("tracked", SITE) != 0))
+        results.append(("tracked", "untracked artifact", run("tracked", SITE) != 0))
     finally:
         planted.unlink(missing_ok=True)
         if had_index:

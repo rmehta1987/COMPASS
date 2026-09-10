@@ -8,7 +8,7 @@ with a dictionary entry's ``searchable_text``, ``question_text`` or
 rendered text, because markup breaks runs the reader still sees whole.
 
 Tier A adds a second rule: no variable key (module, colon, question id) may appear. The
-pseudonym map lives with the run artefacts on the private side, never here.
+pseudonym map lives with the run artifacts on the private side, never here.
 
 The dictionary is withheld from the public tree. Without it this check cannot
 certify anything, so it exits 2 rather than passing vacuously. Point
