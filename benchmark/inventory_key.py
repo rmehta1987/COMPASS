@@ -430,3 +430,127 @@ def inventory_input(papers: list[dict[str, Any]],
                         for side, counts in side_exclusions(normalised,
                                                             index).items()},
         analogue_only=sum(1 for paper in normalised if analogue_only(paper)))
+
+
+class SideAgreement(NamedTuple):
+    """Two readers compared on one side of one paper, or pooled over papers.
+
+    Never a single percentage. Status agreement and key agreement have
+    different denominators -- the second is taken only over rows both readers
+    called present -- and a variable one reader listed and the other did not
+    has no denominator at all, because there is no shared row to compare. A
+    pooled figure would hide which of the three moved.
+
+    Attributes:
+        labels_both: Labels both readers listed on this side.
+        labels_a_only: Labels only reader A listed.
+        labels_b_only: Labels only reader B listed.
+        status_agree: Shared labels the two gave the same `status`.
+        status_compared: Shared labels, the denominator of `status_agree`.
+        key_agree: Shared labels both called present where the keys fold to
+            the same construct.
+        key_compared: Shared labels both called present, the denominator of
+            `key_agree`.
+    """
+
+    labels_both: int
+    labels_a_only: int
+    labels_b_only: int
+    status_agree: int
+    status_compared: int
+    key_agree: int
+    key_compared: int
+
+
+def _by_label(rows: Iterable[Mapping[str, Any]]) -> dict[str, Mapping[str, Any]]:
+    """Index one side's rows by their verbatim label, casefolded and stripped.
+
+    Labels are the only join available: the whole point of a second reading is
+    that the two readers may have chosen different keys for the same variable,
+    so joining on the key would compare only the rows that already agree.
+
+    Args:
+        rows: One side's rows.
+
+    Returns:
+        Label to row; a repeated label keeps the first, since a reader listing
+        one variable twice is an adjudication item, not a merge.
+    """
+    out: dict[str, Mapping[str, Any]] = {}
+    for row in rows:
+        label = str(row.get("label", "")).strip().casefold()
+        if label:
+            out.setdefault(label, row)
+    return out
+
+
+def _side_agreement(a_rows: Iterable[Mapping[str, Any]],
+                    b_rows: Iterable[Mapping[str, Any]],
+                    index: Mapping[str, Any]) -> SideAgreement:
+    """Compare two readers on one side of one paper.
+
+    Args:
+        a_rows: Reader A's rows for this side.
+        b_rows: Reader B's rows for this side.
+        index: The key-to-construct index, so two readers who picked a member
+            and its construct are not scored as disagreeing.
+
+    Returns:
+        The counts.
+    """
+    a, b = _by_label(a_rows), _by_label(b_rows)
+    shared = sorted(set(a) & set(b))
+    status = sum(1 for k in shared if a[k].get("status") == b[k].get("status"))
+    both_present = [k for k in shared
+                    if a[k].get("status") == b[k].get("status") == MATCHING_STATUS]
+    key_agree = sum(1 for k in both_present
+                    if (ak := a[k].get("key")) is not None
+                    and (bk := b[k].get("key")) is not None
+                    and fold(str(ak), index) & fold(str(bk), index))
+    return SideAgreement(labels_both=len(shared), labels_a_only=len(set(a) - set(b)),
+                         labels_b_only=len(set(b) - set(a)), status_agree=status,
+                         status_compared=len(shared), key_agree=key_agree,
+                         key_compared=len(both_present))
+
+
+def agreement(a: Iterable[dict[str, Any]], b: Iterable[dict[str, Any]],
+              index: Mapping[str, Any] | None = None,
+              ) -> dict[str, dict[str, SideAgreement]]:
+    """Compare two readings of the same papers, per paper and per side.
+
+    Task S of `BRIEF_inventory_discovery.md`: a hand-written key has no
+    reliability estimate, and that number bounds every figure the inventory
+    scores. This computes it and reports it with n on every line. It never
+    pools the three quantities into one percentage, and it decides nothing:
+    every disagreement is a row for the operator to adjudicate by reading the
+    paper.
+
+    Args:
+        a: One reader's papers, rows as dicts. The operator's inventory.
+        b: The other reader's papers, same shape. The second rater's files.
+        index: The key-to-construct index; built from the dictionary when
+            None, so the brief's two-argument call works as written.
+
+    Returns:
+        Paper id to side to counts, for the papers BOTH readers covered, plus
+        the key `"__pooled__"` holding the per-side sums. A paper only one
+        reader covered is absent: there is nothing to compare, and counting it
+        as a disagreement would confuse coverage with reliability.
+    """
+    if index is None:
+        index = _dictionary_index()
+    by_a = {str(p["paper"]): p for p in normalise_papers(list(a))}
+    by_b = {str(p["paper"]): p for p in normalise_papers(list(b))}
+    out: dict[str, dict[str, SideAgreement]] = {}
+    zero = SideAgreement(0, 0, 0, 0, 0, 0, 0)
+    pooled = {side: zero for side in SIDES}
+    for paper in sorted(set(by_a) & set(by_b)):
+        out[paper] = {}
+        for side in SIDES:
+            got = _side_agreement(by_a[paper].get(side, []),
+                                  by_b[paper].get(side, []), index)
+            out[paper][side] = got
+            pooled[side] = SideAgreement(*(x + y for x, y in
+                                           zip(pooled[side], got, strict=True)))
+    out["__pooled__"] = pooled
+    return out

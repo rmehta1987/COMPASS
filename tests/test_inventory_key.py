@@ -17,7 +17,9 @@ import pytest
 from benchmark import baseline_score as B
 from benchmark.cohort_papers import COHORT_PAPERS
 from benchmark.inventory_key import (
+    SideAgreement,
     SideCounts,
+    agreement,
     fold,
     in_frame,
     inventory_input,
@@ -410,3 +412,91 @@ def test_the_cli_needs_the_harness_whenever_it_is_given_an_inventory():
         with pytest.raises(SystemExit) as e:
             B.main(argv)
         assert e.value.code == 2
+
+
+# --- task S's dependency: the second reader's agreement ---------------------
+#
+# A hand-written key has no reliability estimate, and that number bounds every
+# figure the inventory scores. The function is written here; the reading it
+# compares is the operator's step in the scoring clone, and nothing below
+# touches a real paper.
+
+
+def _row(label, status="present", key=None, confident=True) -> dict:
+    return {"label": label, "status": status, "key": key, "analogue_key": None,
+            "confident": confident}
+
+
+def _paper(pid, exposures, outcomes) -> dict:
+    return {"paper": pid, "exposures": exposures, "outcomes": outcomes}
+
+
+def test_two_identical_readings_agree_on_every_shared_row(index):
+    a = [_paper("fA", [_row("smoking", key=FA_KEY)], [_row("bp", key="m2:Q5.19")])]
+    got = agreement(a, [dict(p) for p in a], index)
+    side = got["fA"]["exposures"]
+    assert side == SideAgreement(labels_both=1, labels_a_only=0, labels_b_only=0,
+                                 status_agree=1, status_compared=1,
+                                 key_agree=1, key_compared=1)
+    assert got["__pooled__"]["outcomes"].status_agree == 1
+
+
+def test_a_member_and_its_construct_are_not_a_disagreement(index):
+    """A member and its construct name the same variable.
+
+    Two readers who picked one each did not disagree, and scoring it as a miss
+    would inflate the disagreement the operator has to adjudicate.
+    """
+    construct = index[FA_KEY].construct_key
+    a = [_paper("fA", [_row("smoking", key=FA_KEY)], [])]
+    b = [_paper("fA", [_row("smoking", key=construct)], [])]
+    side = agreement(a, b, index)["fA"]["exposures"]
+    assert side.key_agree == 1 and side.key_compared == 1
+
+
+def test_a_real_key_disagreement_is_counted_as_one(index):
+    a = [_paper("fA", [_row("smoking", key=FA_KEY)], [])]
+    b = [_paper("fA", [_row("smoking", key="m2:Q5.19")], [])]
+    side = agreement(a, b, index)["fA"]["exposures"]
+    assert side.status_agree == 1, "both still called it present"
+    assert side.key_agree == 0 and side.key_compared == 1
+
+
+def test_a_status_disagreement_is_not_compared_on_keys(index):
+    """Key agreement is taken only over rows BOTH readers called present.
+
+    Comparing keys where one reader said absent would count a row twice, once
+    as a status disagreement and once as a key one.
+    """
+    a = [_paper("fA", [_row("smoking", key=FA_KEY)], [])]
+    b = [_paper("fA", [_row("smoking", status="absent")], [])]
+    side = agreement(a, b, index)["fA"]["exposures"]
+    assert side.status_agree == 0 and side.status_compared == 1
+    assert side.key_compared == 0, "no shared present row, so no key denominator"
+
+
+def test_a_variable_only_one_reader_listed_has_no_denominator(index):
+    a = [_paper("fA", [_row("smoking", key=FA_KEY), _row("alcohol", key="m2:Q5.19")],
+                [])]
+    b = [_paper("fA", [_row("smoking", key=FA_KEY)], [])]
+    side = agreement(a, b, index)["fA"]["exposures"]
+    assert (side.labels_both, side.labels_a_only, side.labels_b_only) == (1, 1, 0)
+    assert side.status_compared == 1, "the unshared row is not a comparison"
+
+
+def test_a_paper_only_one_reader_covered_is_absent_not_a_disagreement(index):
+    a = [_paper("fA", [_row("smoking", key=FA_KEY)], []),
+         _paper("fB", [_row("x", key=FA_KEY)], [])]
+    b = [_paper("fA", [_row("smoking", key=FA_KEY)], [])]
+    got = agreement(a, b, index)
+    assert set(got) == {"fA", "__pooled__"}, "coverage is not reliability"
+
+
+def test_the_pooled_row_is_the_papers_summed_never_a_single_percentage(index):
+    one = _paper("fA", [_row("smoking", key=FA_KEY)], [])
+    two = _paper("fB", [_row("smoking", key=FA_KEY)], [])
+    got = agreement([one, two], [dict(one), dict(two)], index)
+    pooled = got["__pooled__"]["exposures"]
+    assert pooled.status_compared == 2 and pooled.key_compared == 2
+    # every field is a count with its own denominator; none is a ratio
+    assert all(isinstance(v, int) for v in pooled)
