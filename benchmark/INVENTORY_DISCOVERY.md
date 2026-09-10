@@ -134,3 +134,88 @@ This document does not author, extend or correct the inventory.
 `benchmark/PAPER_INVENTORY_GUIDE.md` §Who writes it: a person, on the key side,
 never an agent. Where a rule above needs a row the inventory does not carry, the
 work stops and says so rather than inferring the row.
+
+## The operator's run
+
+Not run here, and not runnable here: the inventory and the answer key are on the
+scoring side, and this clone bars both by design. What follows is the exact
+command sequence, with two corrections to the form it was first written in. Both
+were found by checking the command against the code rather than by reading it.
+
+```bash
+cd /home/mehta5/compass-score
+git fetch origin ralph-loop && git checkout 9fecf79
+python -m benchmark.contamination_check --live
+
+# The harness scores exactly the ledger's EMITTED set and refuses any other
+# set of paths. Derive it from the ledger; never a shell glob.
+RUN=artefacts/b3-20260904
+EMITTED=$(python -c "
+from pathlib import Path
+from pipeline import ledger as L
+d = Path('$RUN')
+print(' '.join(str(d / r.artefact)
+               for r in L.read_rows(d / L.LEDGER_NAME)
+               if r.outcome == 'emitted' and r.artefact))")
+
+python -m benchmark.baseline_score $EMITTED \
+    --sha 703a1779c8bad8c1e6a829a24bf2bdc15361f3c9 \
+    --inventory inventory/ --harness handoff/for_harness.json \
+    --out $RUN/BASELINE_inventory.md
+```
+
+`9fecf79` is the last commit that changed code under this brief. The commit
+carrying this section changes only this document, so either sha scores the same
+tree; use whichever `git log` shows as the tip of `ralph-loop`.
+
+### Correction 1: the report path must not end in `.json`
+
+`baseline_score.main` writes the markdown to `--out` and then writes the JSON to
+the same path with a `.json` suffix. Given `--out …/BASELINE_inventory.json`
+those are the SAME path: the report is written, overwritten a line later, and
+the operator ends up with JSON, no report, and no error. The CLI now refuses
+that path at argument-parsing time, before a retriever is loaded or a live
+contamination check has run. Name the report `.md`; the JSON takes the same
+stem automatically, so `BASELINE_inventory.json` is still what appears beside
+it.
+
+### Correction 2: the emitted set, never a glob
+
+`m2q*.json` matches every artefact the run wrote, emitted and discarded alike;
+the ledger's emitted set is a strict subset of it. `load_artefacts` refuses a
+path set that is not exactly the emitted set, so the glob form does not
+silently score the wrong denominator -- it stops. The command above derives the
+set from the ledger, which is also what `STATE.md` item 15d records for the
+first baseline run.
+
+### Two new flags, and what they do not change
+
+`--inventory` and `--harness` are given together or not at all. `--harness` is
+never defaulted: a harness guessed at is a pin that checks nothing. Without both
+flags the CLI behaves exactly as it did before this brief -- one ceiling, from
+the prevalence key and the retriever -- and the prevalence-key ceiling is
+byte-identical with the flags or without them on the same inputs, pinned in
+`tests/test_baseline_score.py`.
+
+### After the run
+
+The operator re-derives every number in the output before it is quoted
+anywhere. The site's `metrics.json` is rebuilt from `BASELINE.md` by
+`site/tools/build_metrics.py` in the site clone, and is never edited by hand.
+
+## The second reading
+
+The reliability term named in §What this cannot settle is estimated by a second
+reader, blind, in the scoring clone, driven by the operator. That procedure is
+`BRIEF_inventory_discovery.md` task S; it is not run by the loop and not run
+here. Its report goes through `benchmark/inventory_key.py::agreement`, which
+lands with this work so that the second reading and the ceiling above share one
+fold and one schema pin.
+
+`agreement` reports three quantities per side, with n on each and never pooled
+into one percentage: status agreement over the labels both readers listed, key
+agreement over the labels both called present, and the variables one reader
+listed and the other did not. It joins on the LABEL, because joining on the key
+would compare only the rows that already agree. It decides nothing: every
+disagreement is a row for the operator to adjudicate by reading the paper, and
+only the operator moves a row into `inventory/`.

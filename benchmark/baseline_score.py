@@ -922,6 +922,14 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     if (a.inventory is None) != (a.harness is None):
         ap.error("--inventory and --harness are given together or not at all")
+    if a.out is not None and a.out == a.out.with_suffix(".json"):
+        # The JSON is written to <out>.with_suffix(".json"), so a .json report
+        # path IS that path: the markdown would be written and overwritten a
+        # line later, leaving the operator with JSON, no report and no error.
+        # Checked here rather than at write time so it costs nothing -- by
+        # then a retriever is loaded and a live contamination check has run.
+        ap.error(f"--out {a.out.name} would be overwritten by the JSON written "
+                 f"beside it. Name the report .md; the JSON takes the same stem.")
     from pipeline.retrieve import load_retriever
 
     retriever = load_retriever()

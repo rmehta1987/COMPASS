@@ -471,3 +471,21 @@ def test_a_synthetic_inventory_is_announced_in_the_ceiling_sentence(tmp_path):
                 verdicts=OK, require_sha=SHA[:12],
                 inventory=_inventory(frozenset({"36702470"}), synthetic=True))
     assert "SYNTHETIC INVENTORY, a rehearsal and not a measurement." in B.render(b)
+
+
+def test_a_json_report_path_is_refused_rather_than_overwritten(tmp_path, capsys):
+    """`--out x.json` names the path the JSON is written to a line later.
+
+    The markdown would be written, overwritten, and the operator would get
+    JSON, no report and no error. The brief for this work asked for exactly
+    that path, which is how the collision was found.
+    """
+    with pytest.raises(SystemExit) as e:
+        B.main([str(tmp_path / "a.json"), "--sha", "x",
+                "--out", str(tmp_path / "BASELINE_inventory.json")])
+    assert e.value.code == 2
+    assert "would be overwritten by the JSON" in capsys.readouterr().err
+    # the .md form is accepted at parse time and fails later, on the artefacts
+    with pytest.raises(SystemExit) as e:
+        B.main([str(tmp_path / "a.json"), "--sha", "x", "--nonexistent-flag"])
+    assert e.value.code == 2
