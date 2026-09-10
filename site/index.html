@@ -436,7 +436,7 @@ function readableProtocol(r){
         `<div class="t"><span class="call"><b>${esc(u.construct_sought||"")}</b></span>`
         +`<span class="ret">${esc(u.exposes_the_estimate_to||u.why_rejected||"")}</span></div>`
         +(u.search_phrases&&u.search_phrases.length
-          ?`<div class="t"><span class="call">tried: ${esc(u.search_phrases.join(" &middot; "))}</span></div>`:"")
+          ?`<div class="t"><span class="call">tried: ${u.search_phrases.map(esc).join(" &middot; ")}</span></div>`:"")
       ).join("")+`</div>`;
   h+=`<p class="sec">estimability</p><dl>`
     +row("analytic n",e.analytic_n===null||e.analytic_n===undefined
@@ -489,7 +489,7 @@ function generatePanel(){
     +`<div class="tools"><div class="t gate ${committed.passed?"pass":"fail"}">`
     +`<span class="call">live ${committed.live} &middot; passed ${committed.passed}`
     +` &middot; blocked ${committed.blocked}</span>`
-    +`<span class="ret">${esc(committed.blocked_on.join(" &middot; "))}</span></div></div>`;
+    +`<span class="ret">${committed.blocked_on.map(esc).join(" &middot; ")}</span></div></div>`;
   if(!window.COMPASS_ENDPOINT) return h+`<div class="none">Served statically, so the`
     +` funnel cannot be run from here. The figures above are the committed run.</div>`;
   if(!gen) return h+`<div class="after"><button class="g" id="go-gen">Run the funnel now</button></div>`;
@@ -880,25 +880,6 @@ function metricsPanel(){
     +`</dl><div class="none">${esc(m.reads.why_the_ceiling_is_low)}.`
     +` ${esc(m.reads.why_no_match_was_available)}.</div>`;
 
-  h+=`<p class="sec">observed</p><dl>`
-    +row("matched",`<span class="flag">${o.matched}</span>`,true)
-    +row("scored, the ledger's emitted count",String(o.scored),true)
-    +row("ledger denominator",String(o.ledger_denominator),true)
-    +row("by outcome",Object.entries(o.by_outcome)
-        .map(([k,v])=>`${esc(k)} ${v}`).join(" &middot; "),true)
-    +row("strata",esc(o.strata.join(" &middot; ")),true)
-    +row("artifact files on disk",String(o.artifact_files_on_disk),true)
-    +`</dl><div class="none">${esc(o.denominator_note)}.</div>`;
-
-  h+=`<p class="sec">how to read that</p><ul class="does">`
-    +`<li><b>It establishes</b> ${esc(m.reads.establishes)}.</li>`
-    +`<li><b>It is not</b> ${esc(m.reads.is_not)}.</li></ul>`;
-
-  h+=`<p class="sec">verdicts</p><div class="tools">`
-    +Object.entries(m.verdicts).map(([k,v])=>
-      `<div class="t gate ${v==="ok"?"pass":"fail"}"><span class="call">${esc(k)}</span>`
-      +`<span class="ret">${esc(v)}</span></div>`).join("")+`</div>`;
-
   /* TWO SECTIONS, NOT ONE TABLE AFTER ANOTHER. Met back to back, the second
      table reads as a continuation of the first and the reader starts hunting for
      the row that ties them -- which is the question that keeps arriving. Each
@@ -922,6 +903,14 @@ function metricsPanel(){
   h+=`<p class="sec">what is still missing from the key</p>`
     +`<div class="ph"><b>NOT BUILT</b> &mdash; ${esc(gap.why)}.</div>`;
 
+  /* The verdicts certify the KEY SIDE: that scoring saw no instrument content it
+     should not have, and that nothing leaked into the inputs. They sit with the
+     bibliography and the key rather than with the pipeline's output. */
+  h+=`<p class="sec">verdicts on this scoring run</p><div class="tools">`
+    +Object.entries(m.verdicts).map(([k,v])=>
+      `<div class="t gate ${v==="ok"?"pass":"fail"}"><span class="call">${esc(k)}</span>`
+      +`<span class="ret">${esc(v)}</span></div>`).join("")+`</div>`;
+
   /* "Artifact" is what the pipeline calls its output file; it tells a reader
      nothing about what the row IS. Each row is one pair of questionnaire
      variables -- an exposure and an outcome -- enumerated from the instrument
@@ -938,6 +927,26 @@ function metricsPanel(){
     +` ${o.strata.length} strata: ${o.strata.map(esc).join(", ")}.</div>`
     +`<div class="none">${esc(m.reads.how_the_two_populations_relate)}.</div>`
     +`<div class="none">${esc(m.reads.what_the_paper_column_means)}.</div>`;
+
+  /* These count THIS list, so they belong to it: what the run emitted, out of
+     what it generated, and what that does and does not establish. `strata` was
+     `esc(join(" &middot; "))`, which escaped the separator's own ampersand and
+     printed the entity as text -- escape each value, then join, as the row above
+     it already did. */
+  h+=`<p class="sec">observed</p><dl>`
+    +row("matched",`<span class="flag">${o.matched}</span>`,true)
+    +row("scored, the ledger's emitted count",String(o.scored),true)
+    +row("ledger denominator",String(o.ledger_denominator),true)
+    +row("by outcome",Object.entries(o.by_outcome)
+        .map(([k,v])=>`${esc(k)} ${v}`).join(" &middot; "),true)
+    +row("strata",o.strata.map(esc).join(" &middot; "),true)
+    +row("artifact files on disk",String(o.artifact_files_on_disk),true)
+    +`</dl><div class="none">${esc(o.denominator_note)}.</div>`;
+
+  h+=`<p class="sec">how to read that</p><ul class="does">`
+    +`<li><b>It establishes</b> ${esc(m.reads.establishes)}.</li>`
+    +`<li><b>It is not</b> ${esc(m.reads.is_not)}.</li></ul>`;
+
   if(!keyed) h+=`<div class="none">${esc(m.instrument_withheld_here)}`
     +(window.COMPASS_ENDPOINT
       ?` <button class="g" id="met-keys">${metBusy?"asking the endpoint&hellip;"

@@ -234,6 +234,25 @@ global.fetch = async (rel) => rel === "/api/metrics"
   if (!heads.some(t => /Cohort bibliography/.test(t))) {
     console.error("no section heading for what the literature published"); failed++;
   }
+  // Each block must sit INSIDE the section it describes. Asserted by position,
+  // because a block that drifts back above the headings still renders fine and
+  // still says all the right words -- it just answers under the wrong list.
+  const at = t => p.indexOf(t);
+  const pairsAt = at("Enumerated variable pairs"), biblioAt = at("Cohort bibliography");
+  for (const [block, section, start] of [
+      ['<p class="sec">observed</p>', "Enumerated variable pairs", pairsAt],
+      ['<p class="sec">how to read that</p>', "Enumerated variable pairs", pairsAt],
+      ['<p class="sec">verdicts on this scoring run</p>', "Cohort bibliography", biblioAt]]) {
+    const i = at(block);
+    if (i < 0) { console.error(`missing block ${block}`); failed++; continue; }
+    // the next major heading after the section this block should belong to
+    const nextMajor = p.indexOf('class="sec major"', start + 1);
+    const end = nextMajor < 0 ? p.length : nextMajor;
+    if (i < start || i > end) {
+      console.error(`${block} is not inside the "${section}" section`); failed++;
+    }
+  }
+
   // ...and the pipeline's own output is no longer labelled "artifacts" to the reader.
   if (/the scored artifacts/.test(p)) {
     console.error('the pipeline output is still headed "the scored artifacts"'); failed++;

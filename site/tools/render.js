@@ -48,6 +48,13 @@ function check(label) {
   for (const bad of ["undefined", "NaN", "[object Object]"]) {
     if (p.includes(bad)) { console.error(`render: ${label}: panel contains "${bad}"`); failed++; }
   }
+  // An ESCAPED entity reference is always a bug: `esc(xs.join(" &middot; "))`
+  // escapes the separator's own ampersand, so the reader sees the literal text
+  // "&middot;". Three panels shipped that way. Escape each value, then join.
+  // A bare "&amp;" is NOT checked -- that is correct output for a real ampersand
+  // in a venue name -- only an ampersand followed by an entity name.
+  const ent = p.match(/&amp;(?:[a-zA-Z][a-zA-Z0-9]{1,9}|#\d{1,6});/);
+  if (ent) { console.error(`render: ${label}: escaped entity ${ent[0]} renders as text`); failed++; }
 }
 (async () => {
   for (const s of scripts) new Function(s)();       // runs load().then(...)
