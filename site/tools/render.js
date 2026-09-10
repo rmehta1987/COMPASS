@@ -55,6 +55,13 @@ function check(label) {
   // in a venue name -- only an ampersand followed by an entity name.
   const ent = p.match(/&amp;(?:[a-zA-Z][a-zA-Z0-9]{1,9}|#\d{1,6});/);
   if (ent) { console.error(`render: ${label}: escaped entity ${ent[0]} renders as text`); failed++; }
+  // "PLACEHOLDER" told the reader what the panel is NOT, in a word from the
+  // build's own vocabulary. A stage that has not run says "NOT YET RUN"; one
+  // that has says what it did. Guarded so the word cannot drift back in.
+  if (/PLACEHOLDER/.test(p)) {
+    console.error(`render: ${label}: panel says PLACEHOLDER; say what the stage did or "NOT YET RUN"`);
+    failed++;
+  }
 }
 (async () => {
   for (const s of scripts) new Function(s)();       // runs load().then(...)

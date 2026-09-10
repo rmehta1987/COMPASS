@@ -157,8 +157,8 @@ async function load(){
 
 /* What a stage is doing RIGHT NOW, or null to keep the committed chip.
    `stages.json` describes the SHIPPED state of the pipeline, not this session,
-   so its chips read PLACEHOLDER for retriever and intake and "blocked, no run
-   yet" for specifier and record. `rail` ran once at load and never again, so
+   so its chips describe the shipped pipeline: a committed run for retriever and
+   intake, "not yet run" for specifier and record. `rail` ran once at load and never again, so
    those stayed on screen through a completed run -- the page said no run had
    happened while showing its record -- and `aria-current` never moved either,
    so the rail did not even mark the stage being read.
@@ -219,7 +219,7 @@ function match(q){
 }
 
 function placeholder(s){
-  return `<p class="sec">output</p><div class="ph"><b>PLACEHOLDER</b> — no committed artifact yet. ${esc(s.placeholder)}`
+  return `<p class="sec">output</p><div class="ph"><b>NOT YET RUN</b> — no committed artifact yet. ${esc(s.placeholder)}`
     +(s.waits_for?` Waits for ${esc(s.waits_for)}.`:"")+`</div>`;
 }
 /* Live retrieval, used only when this page is being SERVED BY serve/api.py.
@@ -1056,7 +1056,7 @@ function foot(){
   <p>Abstention on constructs the instrument does not measure is reliable on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(4)}, ${I.negatives_rejected} of ${I.n_negatives} negatives rejected). Detecting its own wrong pick is a different question, and the one figure for it is not on this page. Whether the fixture is a ceiling or a floor is unresolved.</p>
   <p>${panelLive
       ? `The panel above was produced by this endpoint during this session. Its figures come from that run and are <b>not</b> committed &mdash; nothing on this page pins them, and a second run may differ. Every other figure here is loaded from <code>site/artifacts/</code> with its run id or commit.`
-      : `Every figure above is loaded from <code>site/artifacts/</code> with its run id or commit.`} Panels marked PLACEHOLDER have no committed artifact and show no numbers.</p>`;
+      : `Every figure above is loaded from <code>site/artifacts/</code> with its run id or commit.`} Panels marked NOT YET RUN have no committed artifact and show no numbers.</p>`;
 }
 
 function panelPNG(){

@@ -191,14 +191,16 @@ global.fetch = async (rel) => rel === "/api/metrics"
       }
     }
 
-    // The chips for these two stages are PLACEHOLDER in stages.json, which
-    // describes the shipped pipeline, not this session.
+    // These chips default to what stages.json says, which describes the shipped
+    // pipeline rather than this session. Checking for the old word "PLACEHOLDER"
+    // went vacuous the moment it was removed from the data, so assert the chip
+    // has actually moved off its committed default and onto this run.
     const railHtml = node("#rail").innerHTML;
     for (const id of ["retriever", "intake"]) {
       const m = new RegExp(`data-s="${id}"[\\s\\S]*?<span class="st[^"]*">([^<]*)</span>`).exec(railHtml);
       const txt = m ? m[1].trim() : "";
-      if (/PLACEHOLDER/i.test(txt)) {
-        console.error(`${id} chip still reads PLACEHOLDER after a posed launch`); failed++;
+      if (/committed run|not yet run/i.test(txt)) {
+        console.error(`${id} chip still shows its committed default: ${JSON.stringify(txt)}`); failed++;
       }
       if (!/posed/i.test(txt)) {
         console.error(`${id} chip does not say the pair was posed: ${JSON.stringify(txt)}`); failed++;
