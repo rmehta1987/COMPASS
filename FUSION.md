@@ -593,6 +593,263 @@ fixture's numbers in the same direction.
 
 ---
 
+### Addendum, 2026-09-10 — reopened for the interactive endpoint
+
+**Status: PROPOSED, awaiting operator sign-off.** Recommendation 1 is a measured
+recommendation, so re-scoping it is a user amendment (`AGENTS.md` §Source of Truth).
+Nothing below has been acted on; `deploy/` is untouched and its threshold unchanged.
+
+**What was asked.** Recommendation 1 says *"Ship nothing from this work"* on three
+grounds: the interval contains zero, the latency, and the loss of a deterministic answer.
+All three were formed against a batch benchmark. Do they hold for the interactive route
+in `serve/api.py::_pair` — the tool page's *Ask the pipeline* flow — where a human is
+already waiting through model calls and no table in [`RESULTS.md`](RESULTS.md) or
+[`CHARACTERISATION.md`](CHARACTERISATION.md) depends on the answer being reproducible?
+
+**Operator's design intent, recorded 2026-09-10, because it decides which step is worth
+measuring.** The website is the product and this pipeline is its backbone. A general user
+prompts it like a chat assistant; a user who knows the cohort's data asks a specific
+question that *is* in the codebook without knowing its exact wording. The intended flow is
+that the reasoning model **separates the query into the schema — exposure, outcome — and
+only then retrieves each part**, which is what lets a request scale past one pair to, for
+instance, one exposure against two outcomes.
+
+**Answer.** Ship nothing, interactively too — Recommendation 1 stands. But none of its
+three grounds is what carries it here, and the reason it *is* carried was unmeasured until
+now: **one ranking built from the whole sentence does not carry the constructs the
+sentence names.** At `_pair`'s own depth it carries all of them in **32 of 100** composed
+requests. A phrasing rewriter repairs wording downstream of that; wording is not what is
+broken.
+
+#### 1. The measurement: does one pool carry every construct?
+
+VERIFIED, run 2026-09-10:
+`python src/pool_coverage.py --out out/pool_coverage.json`, through the shipped bundle
+with its guards live. The run refuses to report unless single-construct R@20 reproduces
+**0.942** from [`out/fusion_pool_depth.json`](out/fusion_pool_depth.json); it did, exactly.
+No model is called anywhere in it.
+
+Fixture: 100 requests over 270 constructs in four shapes, composed by
+[`src/build_multi_construct_fixture.py`](src/build_multi_construct_fixture.py) from the
+224-row fixture's own request phrasings — the gold question wording is never copied, and
+slots hold distinct **target ids**, not merely distinct keys.
+`fixtures/multi_construct_requests.json` stays untracked, as `retrieval_queries.json`
+does, because it carries variable keys (sha256 `9a36df9a16d6a69e3f79c38d…`, 57,243 bytes).
+
+*Covered* = **every** construct the request names is inside the offered pool.
+
+| depth | shared — what ships | **oracle split by ROLE** | oracle split by CONSTRUCT | by construct, k each |
+|---|---|---|---|---|
+| 8 — `_resolve` | **11 / 100** | 34 / 100 | 47 / 100 | 73 / 100 |
+| 10 | 13 / 100 | 36 / 100 | 59 / 100 | 78 / 100 |
+| **20 — `_pair`** | **32 / 100** | **51 / 100** | 71 / 100 | 80 / 100 |
+| 40 — `_pair`'s clamp ceiling | 47 / 100 | 61 / 100 | 78 / 100 | 94 / 100 |
+
+🛑 **Read the ROLE column, not the construct column, for the design named here and in
+`TASKS.md` C29.** A role splitter emits one query per role however many constructs that
+role carries, so on a 1×2 request its outcome query still blends two constructs — the very
+defect the shared arm has, surviving inside the split. The two arms are the same operation
+only on the 40 1×1 requests. An earlier version of this addendum quoted the construct
+column as C29's ceiling; that was an error, corrected 2026-09-10 after an adversarial
+review named it and the role arm was added and run.
+
+🛑 **The split arms are an ORACLE and are not a measurement of any design.** They split on
+the fixture's own constituent phrases, i.e. on a perfect decomposition. They bound what
+splitting could buy *if a splitter never erred*. No splitter exists and none is measured
+here. Read them exactly as §2 reads its 0.821 best-phrasing oracle.
+
+**It degrades along the axis the operator asked about.** At k=20, by shape:
+
+| exposures × outcomes | shared | **split by ROLE** | split by construct |
+|---|---|---|---|
+| 1 × 1 — the shape every layer assumes | 0.600 | 0.825 | 0.825 — same operation |
+| 1 × 2 — the operator's scaling case | **0.167** | **0.300** | 0.633 |
+| 2 × 1 | 0.150 | 0.450 | 0.700 |
+| 2 × 2 | **0.000** — 0 of 10 | **0.000** — no better than not splitting | 0.500 |
+
+**The role split is worth least exactly where it was wanted.** At 1×2 it recovers 0.167 →
+0.300 where a construct split reaches 0.633, and at 2×2 a *perfect* role split covers
+nothing at all, because each of its two queries still carries two blended constructs. The
+schema thinks in roles (`exposure: Ref`, `outcome: Ref`); the retriever needs constructs.
+If anything is built, decomposition has to be per construct with roles assigned after,
+not a two-way split by role.
+
+**The single figure.** A construct queried **alone** is in the top 20 on **94.2%** of the
+224 rows. The same constructs queried inside a multi-construct sentence: **65%**, 176 of
+270. Nothing about the construct changed — only what else was in the query.
+
+**Two failure modes, not one.** Of the 68 requests uncovered at k=20, **67 are partial** —
+one construct wins the pool and another is *entirely absent*; the per-request gold ranks
+read `[None, 1]`, `[None, 2]`, `[5, None]`. **One is total**: `[None, None]`, the blended
+vector matching neither. Covered requests average pairwise construct cosine **+0.018**,
+uncovered ones **−0.005**, so constructs that are *unlike* each other are harder, not
+easier. Slot competition and blend dilution are different mechanisms and both are live.
+
+**The fixture is biased in the shared pool's favour and it still scores 0.32.** Each
+request is a conjunction of lookup labels naming every construct explicitly and at equal
+length — the most favourable input a single ranking can get. It also inherits
+`retrieval_queries.json`'s `KNOWN_BIAS`. And `serve/api.py`'s `labels.cite` filter is not
+modelled here (`build/dictionary.json` is absent from this checkout), so every figure
+above is an upper bound by that much again.
+
+#### 2. What that does to §4's rewriter, at the depths these routes read
+
+§4 reports R@1, R@5 and R@10. `_resolve` offers 8 and `_pair` offers 20, and
+`compass-site:site/index.html::askResolver` sends no `k`, so `_pair`'s default applies.
+Re-read from the committed `per_row_rank` by
+[`src/fusion_pool_depth.py`](src/fusion_pool_depth.py) (VERIFIED 2026-09-10):
+
+| rule | R@1 (rows) | R@8 | fixed / broke | R@20 | fixed / broke |
+|---|---|---|---|---|---|
+| `single` (shipped) | 0.567 (127) | **0.8884 (199)** | — | **0.9420 (211)** | — |
+| `mean_cos` (§6's pick) | 0.6071 (136) | 0.8929 (200) | 5 / 4 | 0.9464 (212) | 5 / 4 |
+| `max_cos` | 0.5625 (126) | **0.9062 (203)** | 7 / 3 | **0.9554 (214)** | 5 / 2 |
+| `min_rank` | 0.5714 (128) | 0.8973 (201) | 5 / 3 | 0.9420 (211) | 5 / 5 |
+| `rrf` | 0.6027 (135) | 0.8973 (201) | 5 / 3 | 0.9420 (211) | 5 / 5 |
+
+**Read these as a share of what is available, not raw.** `single` already has the gold
+inside the pool on 199 and 211 rows, so the rows a rule *could* fix are 97 at rank 1, 25
+at depth 8, 13 at depth 20. The recommended rule's net gain is +9 / +1 / +1 — i.e.
+**9.3% / 4.0% / 7.7% of available headroom, roughly flat.** The absolute effect shrinks
+because the headroom shrinks, not because the rule degrades at depth.
+
+**And these depths have almost no power to exclude zero.** At depth 20 the largest Δ the
+fixture can physically exhibit is 13/224 = **0.058**, against an interval half-width of
+~0.031: excluding zero would need ≥7 of the 13 available rows fixed with nothing broken.
+"The interval contains zero" is a statement about a saturated fixture there, not about the
+rules. The intervals also sit on a 1/224 lattice — `[−0.0268, +0.0357]` is exactly
+`[−6/224, +8/224]` — and a percentile bootstrap over 9 discordant rows is not calibrated.
+
+🛑 **These rows are a MARGINAL — one gold per single-construct query — and `_pair` needs a
+JOINT.** §1 is the joint and measures 0.32 where this table reads 0.942. The rows are the
+right control for a *future single-construct* rewriter and are the wrong denominator for
+`_pair`. `out/fusion_pool_depth.json::CONSUMED_BY` now carries that sentence, so it
+travels with the JSON rather than living only here.
+
+**Recommendation 2's rule choice does not survive the move.** `mean_cos` wins at rank 1
+and only there; `max_cos` is best at 5, 8, 10 and 20, and `mean_cos` is negative at 10.
+An ordering that changes with the cut-off is not a property of the rule. Recommendation 2
+is scoped to R@1. Both readings rest on 25 unadjusted intervals over one 224-row fixture
+with post-hoc rule selection, so neither is strong.
+
+#### 3. The three grounds, corrected
+
+**Interval contains zero.** Transfers, and the effect is smaller in absolute terms — but
+per §2 that is largely headroom saturation, not a property of the interactive case. This
+ground alone does not carry the recommendation.
+
+**Latency.** §4's *"two to four orders of magnitude"* is true of the **retriever** (33.8 s
+against 2.94 ms batched, 13–18 ms isolated) and is not a statement about `_pair`, which
+already makes up to two `claude -p` `claude-haiku-4-5` calls through the same
+`ClaudeCliBackend` that `src/fusion_rewriter.py::measure_latency` timed — and that figure
+was already measured *unbatched, as the single-request shape*, per its own docstring.
+Measured on the endpoint's saved jobs: `_pair` 37.47 / 47.31 / 66.07 s (n=3);
+`_specify` 261.96 / 284.86 / 328.35 / 370.65 / 427.52 s (n=5).
+🛑 **No ratio should be quoted from these.** The only within-input replicate available —
+two `_specify` runs of the same pair at the same `prompt_hash` — differ by **+63%**
+(261.96 s vs 427.52 s), the same order as any effect this n could detect. The three
+`_pair` runs are three different requests, one of them single-construct, and two share an
+exposure. The honest statement is that `_pair` already pays tens of seconds per request
+and a rewriter is not a two-to-four-order-of-magnitude change there; the size is unknown.
+
+**Determinism.** `min_cos` does appear only in `_retrieve` — verified, and it is a fact
+about a *string*, not about a mechanism. **`k` is a threshold on the pool exactly as τ is
+a threshold on the score**, and `_pair`'s own comment is the proof: the `absent` verdict
+moved from k=8 to k=20 on identical input against identical frozen vectors. Smoking sits
+at ranks 19–20; one rewriter draw pushes it to 21 and the exposure returns `absent`, the
+next draw returns `resolved`. That is verbatim §6's *"answered on one run and refused on
+the next"*, in the route this addendum's first draft said the mechanism was not present
+in. §6's **base** claim is also τ-independent — non-reproducible ranking, no network
+dependency, no external failure mode — and lands hardest on routes whose entire output
+*is* a ranking, persisted to disk with cosines. Today `_pair`'s pool is a pure
+deterministic function of the request string and every saved job stamps
+`dictionary_version: 3dc8415eccfe`, which is a replay guarantee; an unseeded model
+upstream of the encoder ends it.
+
+#### 4. `absent` is defined as a claim the route cannot support
+
+`agent/prompt_contract.py::VariableSelection` documents the verdict as *"`absent` when the
+codebook does not measure this"*, while `RETRIEVAL_GUIDANCE` scopes the question to *"the
+survey codebook **below**"* — the k candidates shown. Those disagree, and §1 says the gap
+is not rare: at k=20 a construct is missing from the pool 35% of the time. So the endpoint
+can tell a researcher **the cohort does not measure X** when the cohort measures X and the
+pool merely missed it, and nothing in the response separates the two. For a tool whose
+value is an auditable variable choice, a false *"we don't collect that"* is the worst
+output it can produce. This is independent of fusion and of splitting; it is a defect in
+what the verdict is allowed to mean.
+
+#### 5. What this addendum's first draft got wrong
+
+Recorded rather than silently replaced. Five hostile reviews on 2026-09-10 (independent
+account, no access to the conversation that wrote it) found these; each was re-checked
+against the code before being accepted.
+
+1. **The smoking/hypertension case was cited as the failure motivating a split. It is the
+   shared pool's success case.** Saved job `run/serve/jobs/123623-280426.json` records
+   that at k=20 *both* roles resolved correctly from one un-split pool in 37.47 s — the
+   exposure at rank 15, chosen over fourteen higher-scoring items, with a reason
+   separating it from the two intensity follow-ups at 17 and 19. The first draft quoted
+   the k=8 half of `_pair`'s comment and dropped the k=20 half. The verdict was in the
+   endpoint's own job files, which the draft had already opened for latency.
+2. **"A factor of nine" was a denominator artifact** — corrected in §2 to a share of
+   available headroom.
+3. **"Every interval still spans zero" was reported as a finding** at depths where the
+   fixture cannot exclude zero — corrected in §2.
+4. **R@8 / R@20 were attributed to `_pair`** after §4 had disowned exactly that
+   attribution. §1 now measures the joint the route needs; `CONSUMED_BY` carries the
+   caveat.
+5. **The determinism ground was declared not to transfer.** It transfers as `k`, per §3.
+6. **The architecture verdict was asserted at a strength the document said it could not
+   support** and was not tagged. §1 now measures the retrieval half. The *split* half —
+   whether a real splitter is accurate enough to realise the oracle — remains
+   **UNVERIFIED** and is an open question, not a verdict.
+
+#### 6. What would have to be measured before anything ships
+
+1. **Split accuracy, which is unmeasured.** §1 bounds what a perfect splitter would buy;
+   nothing bounds a real one. A split fixture needs request sentences with known exposure
+   and outcome keys, authored **without** sight of the gold wording (`AGENTS.md`
+   §Testing Patterns: no oracle in the measurement), reporting gold-excluded beside
+   recall. A wrong split has no shared pool to fall back on, and its failure is silent and
+   confident — the opposite of today's degradation, where both constructs sit in one list
+   a human is already confirming.
+2. **Whether the model's per-role reads are already doing the decomposition.** Today it
+   selects by index from real items and can overrule cosine — it did, at rank 15. A
+   pre-retrieval splitter names a construct blind, before seeing any of the 1,353. That
+   trade is not measured in either direction.
+3. **A rewriter, if ever revisited, measured at k=8 and k=20** with `cluster_bootstrap`,
+   reported as a share of available headroom, against §1's joint figure and not §2's
+   marginal.
+4. **Latency re-measured at the route** with within-input replicates, per §3.
+5. **`benchmark.contamination_check` re-run** with any new prompt in
+   `model_visible_surface`, and the prompt held fixed and shown stable under one wording
+   perturbation (`AGENTS.md` §Verification Discipline).
+6. **A test for `_pair`.** `serve/` is not untested — `tests/test_serve_redaction.py`
+   carries 55 tests and exercises `_specify`, `_canonical_key`, `_int_arg`, `Handler`,
+   `build_server` and `_refuse_unsafe_site_dir` from `serve.api`. But **`_pair`,
+   `_resolve`, `_role_candidates` and `_pin_keys_from_prose` are never invoked by any
+   test**, which makes this a hole in a covered module rather than an uncovered one. The guarantee "k=20 carries both halves" is unenforced and
+   §1 measures it at 0.32; the reviews additionally found that `_pin_keys_from_prose`
+   assigns roles by word order with nothing enforcing it, that a third key in the prose is
+   silently dropped, and that `role` is passed to `RetrievalRequest` but never rendered
+   while `_role_candidates`'s docstring says it is. Those are `serve/` defects, filed in
+   `TASKS.md`, not results of this work.
+
+#### 7. Recommendation 1, restated for the interactive case
+
+**Ship nothing, here too.** A phrasing rewriter is worth one row of 224 inside a pool of 8
+or 20, and it repairs wording. §1 says wording is not the defect: at `_pair`'s own depth
+the pool is missing a construct the request named in **68 of 100** cases, and reaching for
+a deeper pool does not fix it — 40 candidates still fails more than half the time.
+
+**The work the interactive flow needs is upstream of everything §2 measures**, and the
+retrieval half of it is now measured: giving each construct its own query more than
+doubles coverage at every depth. Whether a real splitter can realise that is the open
+question, and it is a request-set problem before it is a code problem.
+
+
+---
+
 ## 7. Constraints observed
 
 | constraint | status |
