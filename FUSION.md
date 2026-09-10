@@ -595,9 +595,16 @@ fixture's numbers in the same direction.
 
 ### Addendum, 2026-09-10 — reopened for the interactive endpoint
 
-**Status: PROPOSED, awaiting operator sign-off.** Recommendation 1 is a measured
-recommendation, so re-scoping it is a user amendment (`AGENTS.md` §Source of Truth).
-Nothing below has been acted on; `deploy/` is untouched and its threshold unchanged.
+**Status: SIGNED OFF by the operator in writing, 2026-09-10** — after §5's corrections
+and §1's role-arm measurement were put to them. Recommendation 1 is a measured
+recommendation, so re-scoping it is a user amendment (`AGENTS.md` §Source of Truth); this
+addendum is that amendment.
+
+What is settled: **ship nothing from this work interactively either**, the six corrections
+in §5, and the reading of §1 and §2 as they now stand. What is **not** settled and is not
+authorised by this signature: building a splitter. That remains an open backlog item
+(`TASKS.md` C29, restaged as C29-A/B/C) whose own blocker — split accuracy — is still
+UNVERIFIED. `deploy/` is untouched and its threshold unchanged.
 
 **What was asked.** Recommendation 1 says *"Ship nothing from this work"* on three
 grounds: the interval contains zero, the latency, and the loss of a deterministic answer.

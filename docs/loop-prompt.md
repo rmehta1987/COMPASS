@@ -24,6 +24,24 @@ answer key, and you author prompts and docstrings — reading it is the channel,
 session does not close it. If `benchmark.contamination_check` will not run, that is
 **task 0d below**, not a reason to go and get the key.
 
+## Baseline, measured in the loop clone 2026-09-10
+
+Read your own floor on iteration 1 and compare to these; do not inherit a number from
+another clone. `compass-score`'s 994 is a different tree.
+
+| gate | value here | limit | headroom |
+|---|---|---|---|
+| tests collected (4 key-dependent modules ignored) | **809** (791 passed, 10 failed, 8 skipped) | may only rise | — |
+| `ruff check .` | **227** | `RUFF_CEILING` 232 | 5 |
+| `mypy` | **59** | `MYPY_CEILING` 59 | **none — any new error fails** |
+| `build.py` | **3dc8415eccfe** | `tests/test_dictionary.py::BUILD_HASH` | must not move |
+| `benchmark.retrieval_eval` | runs | — | — |
+| `benchmark.contamination_check` | **cannot run** — `benchmark.prevalence_key` | task 0d | — |
+
+The 10 failures and the 4 ignored modules are all the same cause, and all clear when 0d
+lands. `pytest tests/` unignored exits 2 on collection, so **0d is the first thing that
+makes the primary gate runnable at all.**
+
 ## Order
 
 Do exactly one item per iteration, in this order. Skip nothing silently: if an item is
