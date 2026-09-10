@@ -1116,7 +1116,7 @@ def main() -> int:
         # First, because a marker verdict over a partial surface is worth less
         # than it reads, and this is the section that says whether it is partial.
         "every registry tool sampled": lambda: check_tool_coverage(),
-        "markers in model-visible surface": lambda s=surface: check_markers(s),
+        "markers in model-visible surface": lambda: check_markers(surface),
         # The INSTRUMENT side of the marker audit. check_markers asks whether a
         # marker reached the model; this asks whether a marker was ever a fair
         # thing to scan for. Both are needed: a marker that matches the
@@ -1124,7 +1124,7 @@ def main() -> int:
         "markers are not instrument content":
             lambda: check_markers_are_not_instrument_content(),
         "published prevalence figures in surface":
-            lambda s=surface: check_no_prevalence_figure_in_surface(s),
+            lambda: check_no_prevalence_figure_in_surface(surface),
         # The INPUT side, added 2026-08-28 (C2). Every section above scans what
         # the environment says to the model; this one asks whether the question
         # already contains its own answer. A benchmark can be broken before the
@@ -1134,7 +1134,7 @@ def main() -> int:
         "input does not contain the answer":
             lambda: check_input_does_not_contain_the_answer(),
         "survey platform named in surface":
-            lambda s=surface: check_no_platform_name_in_surface(s),
+            lambda: check_no_platform_name_in_surface(surface),
         "convention provenance": lambda: check_provenance(),
         "seal configuration": lambda: check_seal_config(),
         "held-out registry unreachable": lambda: check_holdout_not_reachable(),

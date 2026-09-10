@@ -66,6 +66,40 @@ def test_a_skipped_section_never_reports_as_clean(monkeypatch, capsys) -> None:
         "contamination section as a clean one.")
 
 
+def test_every_surface_section_scans_the_surface_whose_hash_is_printed(
+        monkeypatch, capsys) -> None:
+    """A verdict is over the surface `surface_hash` names, or it names nothing.
+
+    The sections are deferred lambdas, so each one captures the surface rather
+    than being handed it. A lambda that scanned a different or rebuilt surface
+    would print one hash and report on text that hash does not identify.
+    """
+    surface = {"planted": "text only this test built"}
+    seen: dict[str, object] = {}
+
+    def recorder(name: str):  # noqa: ANN202 -- a monkeypatch shim
+        def check(s: object) -> list[str]:
+            seen[name] = s
+            return []
+        return check
+
+    scanners = ("check_markers", "check_no_prevalence_figure_in_surface",
+                "check_no_platform_name_in_surface")
+    monkeypatch.setattr(cc, "model_visible_surface", lambda: surface)
+    for name in scanners:
+        monkeypatch.setattr(cc, name, recorder(name))
+    for name in ("check_tool_coverage", "check_markers_are_not_instrument_content",
+                 "check_input_does_not_contain_the_answer", "check_provenance",
+                 "check_seal_config", "check_holdout_not_reachable"):
+        monkeypatch.setattr(cc, name, lambda *a, **k: [])
+    monkeypatch.setattr(sys, "argv", ["contamination_check"])
+    cc.main()
+    capsys.readouterr()
+    assert set(seen) == set(scanners), f"sections never ran: {set(scanners) - set(seen)}"
+    for name, s in seen.items():
+        assert s is surface, f"{name} scanned a surface other than the hashed one"
+
+
 def test_a_genuinely_missing_module_still_stops_the_run(monkeypatch) -> None:
     """Only the withheld modules are skippable; everything else still raises."""
     def explode() -> list[str]:
