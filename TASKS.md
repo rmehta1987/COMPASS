@@ -215,15 +215,28 @@ claim below was exercised either by lifting the rule's source by AST or by stubb
   what removed the BMI derivation of 2026-09-08 (`BRIEF_derivation_source_gen.md` §3) and
   it is still open; a `signed is True` rule in `check_provenance` would be a benchmark-side
   alarm for a serving-path defect.
-- **C31 — `recipe` reaches transduction; every field qualifying it does not** (Lane A).
-  `agent/specifier.py::_RESULT_BEARING["get_derivation"]` projects
-  `(derivation_id, unit, component_keys, recipe, fitted_to_outcome)`. `caveat`,
-  `construct_validity_basis`, `construct_source` and `binding_source` are all dropped by
-  `_render_log`. So `social_cohesion_scale`'s "after reverse-coding items 4 and 5" reaches
-  the prompt while "direction of the Likert scale must be confirmed by the study team"
-  does not, and `met_hours_week`'s "Compendium v2011" reaches it while "response coding
-  absent from the public codebook" does not. Citation in, provenance out. Pre-existing;
-  `1b41cb8` widened it by adding two more projected-out fields.
+- **C31 — CLOSED 2026-09-09.** `agent/specifier.py::_RESULT_BEARING["get_derivation"]`
+  now projects `caveat`, `construct_source`, `binding_source` and
+  `construct_validity_basis` alongside the original five (operator chose all four over
+  caveat-only). Nothing is newly exposed: `get_derivation` handed the model the whole file
+  in call 1 and `contamination_check` scans it whole; the fix restores what the SECOND
+  call can see. Order is load-bearing — `_render_log` truncates at 700 and the provenance
+  fields are last; measured met_hours_week 522, social_cohesion_scale 626, pinned by
+  `tests/test_specifier.py::test_no_real_derivation_is_cut_by_the_rendered_log_bound`,
+  which reads the bound from source rather than restating it.
+- **C41 — the rank penalty C31 created is LIVE and unaddressed** (user amendment, not a
+  lane's). `agent/specifier.py::_rank` sorts on `len(p.blocked_on)` ASCENDING. With C31
+  landed, a record that honestly transcribes `social_cohesion_scale`'s caveat into
+  `BlockedOn.study_team_confirmation` now carries one more blocker than a silent twin and
+  therefore ranks BELOW it. C31 made the disclosure possible and `_rank` charges for it.
+  This is the same failure `AGENTS.md` §Hard Constraints names by hand, and the same shape
+  as the `sought_covariates` answer (disclosure kept OUT of `blocked_on`) recorded in
+  `tests/test_specifier.py::test_recording_a_covariate_gap_does_not_rank_a_record_below_a_silent_one`.
+  C28 and C29 already amend `_rank` and `AGENTS.md` says the amendments must be designed
+  together or each will undo the others — so this is a third term in the same design, not
+  a separate change. NOT MEASURED: whether a live Haiku run naming `social_cohesion_scale`
+  actually gains the blocker now that the caveat is visible. Run it before designing the
+  amendment; report the record beside its own tool log.
 - **C32 — `check_holdout_not_reachable` is a source-text grep and cannot see a composed
   path** (Lane B). It scans `env/tools.py`'s TEXT for the literals `"benchmark"` and
   `"references"`. It reported `ok  held-out registry unreachable` for the entire period in
@@ -243,6 +256,11 @@ claim below was exercised either by lifting the rule's source by AST or by stubb
   mechanical enforcement of the conventions Hard Constraint without checking that the
   token feeding the membership test is the whole declared value.
 - **C34 — `construct_source` is never compared to `construct_validity_basis`** (Lane B).
+  PROMOTED 2026-09-09: this is now the ONLY mechanism that can catch a laundered
+  derivation. `prior-art` was restored to `BINDING_SOURCES` the same day (the bar made
+  disclosure unrepresentable rather than laundering — see the comment beside the sets), so
+  no vocabulary restriction stands between an author and a binding they did not earn. A
+  set-membership test cannot compare a declaration to the file's own prose; this can.
   `check_provenance` tests one for set membership and the other for truthiness, and never
   relates them. Measured: a derivation carrying
   `construct_validity_basis: "Ainsworth compendium of physical activities, 2011 update"`

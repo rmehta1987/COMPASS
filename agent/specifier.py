@@ -1185,8 +1185,31 @@ def _refusal_gate(log: ToolLog, reason: RefusalReason) -> tuple[bool, str]:
 _RESULT_BEARING: dict[str, tuple[str, ...]] = {
     "resolve_variable": ("outcome", "key", "quoted_wording", "stem_text",
                          "subitem_text", "group_key"),
+    # The four provenance fields are projected DELIBERATELY, and the "show less"
+    # rule above does not apply to them: `env/tools.py::get_derivation` already
+    # handed the model this whole file in call 1, and
+    # `benchmark/contamination_check.py` already scans it whole. Nothing here is
+    # newly exposed; the only question is whether the SECOND call can still see
+    # it.
+    #
+    # It could not, and that was the defect. `TRANSDUCE` requires every blocker
+    # to "already appear in the analysis or the tool log", so with `caveat`
+    # stripped, `social_cohesion_scale`'s "direction of the Likert scale must be
+    # confirmed by the study team" was unavailable exactly where
+    # `BlockedOn.study_team_confirmation` gets written -- while `recipe`'s
+    # "after reverse-coding items 4 and 5" survived. The instruction reached the
+    # record and the warning qualifying it did not.
+    #
+    # ORDER IS LOAD-BEARING: `_render_log` truncates `json.dumps(shown)` at 700
+    # chars and dict order follows this tuple, so the last fields are cut first.
+    # Measured 2026-09-09 with all four: met_hours_week 522, social_cohesion_scale
+    # 626. Pinned by `tests/test_specifier.py::
+    # test_no_real_derivation_is_cut_by_the_rendered_log_bound`, which reads the
+    # bound from the source rather than restating 700 -- a new field or a longer
+    # caveat must redden that test, not silently truncate the caveat away.
     "get_derivation": ("derivation_id", "unit", "component_keys", "recipe",
-                       "fitted_to_outcome"),
+                       "fitted_to_outcome", "caveat", "construct_source",
+                       "binding_source", "construct_validity_basis"),
 }
 
 

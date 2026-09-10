@@ -3,7 +3,7 @@
   "author": "R. Mehta",
   "date": "2026-08-26",
   "construct_source": "prior-art",
-  "binding_source": "authored-unconfirmed",
+  "binding_source": "prior-art",
   "signed": true,
   "unit": "MET-hours/week",
   "component_keys": ["m3:Q2.33","m3:Q2.62"],

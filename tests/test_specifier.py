@@ -881,12 +881,17 @@ def test_check_provenance_is_red_on_every_rule_it_claims_to_enforce(
                for b in only(construct_validity_basis=""))
     assert any("fitted_to_outcome is true" in b for b in only(fitted_to_outcome=True))
 
-    # `prior-art` is legal for the construct and UNREPRESENTABLE for the
-    # binding. That asymmetry is the whole reason the field was split: prior art
-    # supplies a construct, never a binding to this instrument's keys.
+    # `prior-art` is legal in BOTH derivation fields, and that is a correction.
+    # It was briefly barred from `binding_source` to make laundering
+    # "unrepresentable"; what it actually made unrepresentable was disclosure.
+    # met_hours_week multiplies by a "compendium MET value" -- external
+    # coefficients inside the binding -- so the bar forced a false
+    # `authored-unconfirmed` on the one file that had something true to say.
+    # Same shape as `_rank` sorting `len(blocked_on)` ascending: a vocabulary
+    # that cannot express a disclosure penalises the author who makes one.
+    # Laundering is C34's job, by comparing the declaration to the file's prose.
     assert only(construct_source="prior-art") == []
-    assert any("binding_source 'prior-art'" in b
-               for b in only(binding_source="prior-art"))
+    assert only(binding_source="prior-art") == []
 
     # Surrounding whitespace is accepted, not reported as "not in [... it ...]".
     assert only(construct_source=" prior-art\n") == []
@@ -914,9 +919,12 @@ def test_a_convention_may_not_declare_a_derivation_only_source(
     convention(source="prior-art")
     problems = CC.check_provenance()
     assert any("prior-art" in b for b in problems), problems
+    # The live asymmetry is conventions vs derivations, NOT construct vs binding:
+    # the two derivation vocabularies are deliberately identical (see the comment
+    # beside them), and only `ALLOWED_SOURCES` withholds the value.
     assert "prior-art" not in CC.ALLOWED_SOURCES
     assert "prior-art" in CC.CONSTRUCT_SOURCES
-    assert "prior-art" not in CC.BINDING_SOURCES
+    assert "prior-art" in CC.BINDING_SOURCES
 
 
 def test_a_provenance_check_that_reads_nothing_does_not_report_clean(
@@ -1929,6 +1937,54 @@ def test_a_derivations_component_keys_are_not_quietly_restated(record):
     assert out["exposure"]["component_keys"] == ["m3:Q16.1_1"]   # not repaired
     with pytest.raises(ValueError, match="declares component_keys"):
         ProtocolSpecification.model_validate(out)
+
+
+def test_a_derivations_caveat_reaches_the_prompt_that_writes_the_record():
+    """The warning must travel with the instruction it qualifies.
+
+    `agent/specifier.py::TRANSDUCE` requires every blocker to "already appear in
+    the analysis or the tool log". Until 2026-09-09 `_RESULT_BEARING` projected
+    `recipe` and dropped `caveat`, so for `social_cohesion_scale` the model could
+    transcribe "after reverse-coding items 4 and 5" into the record but NOT
+    "direction of the Likert scale must be confirmed by the study team" — the
+    sentence that licenses `BlockedOn.study_team_confirmation`. The instruction
+    reached the record and the warning qualifying it did not.
+
+    Nothing is newly exposed by fixing it: `env/tools.py::get_derivation` hands
+    the model the whole file in call 1 and
+    `benchmark/contamination_check.py` scans it whole. The only question this
+    pins is whether the SECOND call can still see it.
+    """
+    raw = T.get_derivation(derivation_id="social_cohesion_scale")
+    row = {"tool": "get_derivation",
+           "args": {"derivation_id": "social_cohesion_scale"},
+           "outcome": "ok", "result": raw}
+    rendered = SP._render_log(T.ToolLog(), [row])
+    assert "reverse-coding items 4 and 5" in rendered      # the instruction
+    assert "confirmed by the study team" in rendered       # its qualifier
+    assert raw["construct_source"] in rendered
+    assert raw["binding_source"] in rendered
+
+
+def test_no_real_derivation_is_cut_by_the_rendered_log_bound():
+    """A projected caveat that gets truncated away is not projected.
+
+    `_render_log` cuts `json.dumps(shown)` at a fixed bound and dict order
+    follows `_RESULT_BEARING`'s tuple, so the LAST fields are lost first — and
+    the four provenance fields are last. This reads the bound out of the source
+    rather than restating it, so a longer caveat, a ninth field, or a lowered
+    bound reddens here instead of silently dropping the qualifier again.
+    """
+    bound = int(re.search(r"json\.dumps\(shown\)\[:(\d+)\]",
+                          inspect.getsource(SP._render_log)).group(1))
+    fields = SP._RESULT_BEARING["get_derivation"]
+    for did in T.list_derivations()["derivations"]:
+        raw = T.get_derivation(derivation_id=did)
+        shown = {k: raw[k] for k in fields if k in raw and raw[k] is not None}
+        n = len(json.dumps(shown))
+        assert n <= bound, (
+            f"{did}: rendered log payload is {n} chars against a bound of "
+            f"{bound}; the trailing provenance fields are being truncated away")
 
 
 def test_the_transduction_can_see_the_values_it_is_told_to_copy():

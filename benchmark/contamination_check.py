@@ -236,15 +236,31 @@ SOURCE_RE = re.compile(r"\*\*Source:\*\*\s*`?([a-z-]+)`?", re.I)
 # direction is unconfirmed. One field picked whichever half the author preferred,
 # and the preferred half was the flattering one.
 #
-# `prior-art` is deliberately absent from BINDING_SOURCES and that asymmetry is
-# the whole point: prior art supplies a construct, never a binding to THIS
-# instrument's keys or response coding. `binding_source: prior-art` is
-# unrepresentable, so the laundering is blocked by the vocabulary rather than by
-# a reviewer noticing. `study-team` still claims confirmation in either field and
-# is still upgradable only by the user, in writing.
+# The two sets are IDENTICAL, and that is a correction, not an oversight.
+# `prior-art` was briefly barred from BINDING_SOURCES on the argument that prior
+# art supplies a construct and never a binding, so `binding_source: prior-art`
+# would be unrepresentable and laundering "blocked by the vocabulary rather than
+# by a reviewer noticing". That argument was wrong in the direction that matters.
+# `met_hours_week` multiplies by a "compendium MET value": external coefficients
+# used INSIDE the binding. Barring the value did not stop anyone claiming a
+# binding they did not earn -- `study-team` and `instrument-derived` were both
+# still legal and neither is checked -- it stopped the honest author saying where
+# the coefficients came from, and forced a false `authored-unconfirmed`.
+#
+# That is the failure `AGENTS.md` §Hard Constraints already names about `_rank`
+# sorting `len(blocked_on)` ASCENDING: a vocabulary that cannot express a
+# disclosure ranks the honest record below the silent one. Removing a value to
+# prevent a claim penalises the author who tells the truth.
+#
+# Laundering is caught by COMPARING the declaration to the file's own prose --
+# `construct_source` against `construct_validity_basis`, TASKS.md C34 -- which is
+# something a set-membership test cannot do and a comparison can. The two names
+# stay separate because the FIELDS mean different things and C34 will treat them
+# differently; only the legal values coincide.
 CONSTRUCT_SOURCES = {"study-team", "instrument-derived", "authored-unconfirmed",
                      "prior-art"}
-BINDING_SOURCES = {"study-team", "instrument-derived", "authored-unconfirmed"}
+BINDING_SOURCES = {"study-team", "instrument-derived", "authored-unconfirmed",
+                   "prior-art"}
 
 # An outcome that means the tool did its work. Anything else is a tool that
 # bailed before touching the data it would normally return, which is the shape a
