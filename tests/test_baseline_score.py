@@ -235,3 +235,84 @@ def test_a_zero_ceiling_names_itself_as_not_a_measurement(tmp_path):
                 verdicts=OK, require_sha=SHA[:12])
     assert b.matched == 0 and b.ceiling.max_matched == 1 and not b.ceiling.at_ceiling
     assert "gap below the ceiling is the pipeline's" in B.render(b).splitlines()[2]
+
+
+# --- the exposure-key override (BRIEF_inventory_discovery.md, task 1) -------
+#
+# The exposure side of today's key is prose fragments handed to the retriever,
+# where a MISS and a genuine ABSENCE are the same empty result. A table whose
+# source names keys must not go through that path at all, so the guarantee is
+# not "the answer is the same" but "the retriever was never asked".
+
+
+class CountingRetriever(FakeRetriever):
+    """A retriever that records every question put to it.
+
+    `targets` raises rather than returning, so building `Strata` off this
+    double is a test failure too: strata come from the retriever, and a run
+    that builds them has touched it even if it never searched.
+    """
+
+    def __init__(self, *, allow_targets: bool = False) -> None:
+        """Start with no questions recorded.
+
+        Args:
+            allow_targets: Let `targets` answer, for a partial override where
+                some paper still needs the retriever and so needs strata.
+        """
+        self.queries: list[str] = []
+        self._allow_targets = allow_targets
+
+    @property
+    def targets(self) -> list[dict[str, Any]]:      # type: ignore[override]
+        if not self._allow_targets:
+            raise AssertionError("strata were built, so the retriever was touched")
+        return FakeRetriever.targets
+
+    def search(self, query: str, k: int = 10) -> list[dict[str, Any]]:
+        self.queries.append(query)
+        return FakeRetriever.search(self, query, k)
+
+
+def test_paper_key_still_takes_three_positional_fields():
+    """The new field is defaulted, so no call site that predates it moves."""
+    k = B.PaperKey("36702470", ("hormone therapy",), ("m2:Q5.2",))
+    assert k.exposure_keys == ()
+
+
+def test_an_override_answers_the_exposure_side_without_asking_the_retriever(tmp_path):
+    d = _run_dir(tmp_path, _record())
+    r = CountingRetriever()
+    override = {p.pmid: ("m2:Q9.95",) for p in TABLE}
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=r, verdicts=OK,
+                require_sha=SHA[:12], exposure_keys_override=override)
+    assert r.queries == [], f"the retriever was asked {len(r.queries)} times"
+    assert b.papers_exposure_resolved == len(TABLE)
+    assert b.exposure_abstentions == {}, "only a retriever can abstain"
+    # 22222222 abstained under the old rule and is matchable under the override,
+    # so the override reaches the ceiling as well as the rate
+    assert b.ceiling.papers_matchable == 4
+
+
+def test_only_the_overridden_papers_skip_the_retriever(tmp_path):
+    d = _run_dir(tmp_path, _record())
+    r = CountingRetriever(allow_targets=True)
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=r, verdicts=OK,
+                require_sha=SHA[:12],
+                exposure_keys_override={"36702470": ("m2:Q9.95",)})
+    asked = len(r.queries)
+    assert asked == sum(len(p.exposure_terms) for p in TABLE if p.pmid != "36702470")
+    assert asked > 0, "a partial override must not silence the whole table"
+    assert b.papers_exposure_resolved == 4
+
+
+def test_a_table_carrying_its_own_exposure_keys_needs_no_override(tmp_path):
+    """`PaperKey.exposure_keys` is the second source; the retriever is the third."""
+    d = _run_dir(tmp_path, _record())
+    r = CountingRetriever()
+    table = tuple(p._replace(exposure_terms=(), exposure_keys=("m2:Q9.95",))
+                  for p in TABLE)
+    b = B.score([d / "p1.r1.json"], table=table, retriever=r, verdicts=OK,
+                require_sha=SHA[:12])
+    assert r.queries == []
+    assert b.papers_exposure_resolved == len(table)

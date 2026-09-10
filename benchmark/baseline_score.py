@@ -42,7 +42,7 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import NamedTuple
 
@@ -71,14 +71,20 @@ class PaperKey(NamedTuple):
 
     Attributes:
         pmid: PubMed identifier.
-        exposure_terms: From the design line; empty for a descriptive paper.
+        exposure_terms: From the design line; empty for a descriptive paper,
+            and empty for every row an inventory built, which names keys.
         outcome_keys: Instrument keys the held-out key records as outcome;
             empty when it records none.
+        exposure_keys: Instrument keys for the exposure side, when the table's
+            source names them. Empty by default, so every call site that
+            predates `benchmark/inventory_key.py` is unchanged and still
+            resolves its exposure side through the retriever.
     """
 
     pmid: str
     exposure_terms: tuple[str, ...]
     outcome_keys: tuple[str, ...]
+    exposure_keys: tuple[str, ...] = ()
 
 
 class Refused(ValueError):
@@ -324,23 +330,47 @@ def keys_of(rec: RetrievalRecord) -> frozenset[str]:
 
 def resolve_exposures(table: Iterable[PaperKey], retriever: RetrieverLike,
                       strata: Strata | None = None,
+                      override: Mapping[str, tuple[str, ...]] | None = None,
                       ) -> tuple[dict[str, frozenset[str]], dict[str, tuple[str, ...]]]:
-    """Resolve every paper's exposure terms through the deployed retriever.
+    """Resolve every paper's exposure keys, through the retriever only where needed.
+
+    Three sources, in precedence order, so a key that is already known is
+    never re-derived by a retriever that could miss it:
+
+    1. `override[pmid]`, the caller's keys for that paper;
+    2. `PaperKey.exposure_keys`, when the table's own source named them;
+    3. the deployed retriever, over `PaperKey.exposure_terms`.
+
+    Only 3 can abstain, so only 3 appears in the returned abstentions. Papers
+    settled by 1 or 2 reach the retriever zero times, and where NO paper needs
+    it the strata are not built either -- the point of an inventory-backed
+    table is that a retriever miss can no longer be read as an absence.
 
     Args:
         table: The papers.
         retriever: The loaded bundle, or a test double.
-        strata: Precomputed; built from the retriever when None.
+        strata: Precomputed; built from the retriever when None and needed.
+        override: Per pmid, exposure keys that replace both other sources.
 
     Returns:
         Per pmid, the union of `keys_of` over its resolved terms; and per
         pmid, the terms that abstained (present only when any did).
     """
-    if strata is None:
+    override = {} if override is None else override
+    papers = list(table)
+    needs_retriever = [p for p in papers
+                       if p.pmid not in override and not p.exposure_keys]
+    if strata is None and needs_retriever:
         strata = Strata.from_retriever(retriever)
     keys: dict[str, frozenset[str]] = {}
     abstained: dict[str, tuple[str, ...]] = {}
-    for paper in table:
+    for paper in papers:
+        if paper.pmid in override:
+            keys[paper.pmid] = frozenset(override[paper.pmid])
+            continue
+        if paper.exposure_keys:
+            keys[paper.pmid] = frozenset(paper.exposure_keys)
+            continue
         found: set[str] = set()
         missed: list[str] = []
         for term in paper.exposure_terms:
@@ -412,7 +442,9 @@ def ceiling(loaded: Sequence[Loaded], table: Sequence[PaperKey],
 
 def score(paths: Sequence[Path], *, table: Sequence[PaperKey],
           retriever: RetrieverLike, verdicts: dict[str, str],
-          require_sha: str | None = None, strata: Strata | None = None) -> Baseline:
+          require_sha: str | None = None, strata: Strata | None = None,
+          exposure_keys_override: Mapping[str, tuple[str, ...]] | None = None,
+          ) -> Baseline:
     """Score one run's committed artefacts against the paper table.
 
     Args:
@@ -422,6 +454,10 @@ def score(paths: Sequence[Path], *, table: Sequence[PaperKey],
         verdicts: From `run_verdicts`, or supplied by a test.
         require_sha: The sha being scored; every stamp must match it.
         strata: Precomputed strata, when the caller has them.
+        exposure_keys_override: Per pmid, exposure keys that replace the
+            retriever for that paper. `papers_exposure_resolved` then counts
+            it as resolved, because it is: the keys are named, not guessed at
+            by a search that could have missed. See `resolve_exposures`.
 
     Returns:
         The baseline.
@@ -436,7 +472,8 @@ def score(paths: Sequence[Path], *, table: Sequence[PaperKey],
     dictionary_hash = str(retriever.manifest["dictionary_version_hash"])
     loaded, summary = load_artefacts(paths, dictionary_hash=dictionary_hash,
                                      require_sha=require_sha)
-    exposure_keys, abstained = resolve_exposures(table, retriever, strata)
+    exposure_keys, abstained = resolve_exposures(table, retriever, strata,
+                                                exposure_keys_override)
     matches: list[Match] = []
     matched_artefacts: set[str] = set()
     for path, rec in loaded:
