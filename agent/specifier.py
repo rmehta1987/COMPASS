@@ -74,6 +74,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import string
 import sys
 from collections.abc import Callable
@@ -90,6 +91,7 @@ from agent.backends import Backend, Reply
 from agent.registry import build_registry
 from agent.schema import (
     REFUSAL_EVIDENCE,
+    DerivationRef,
     NotSpecifiable,
     ProtocolSpecification,
     RefusalEvidence,
@@ -690,6 +692,14 @@ class Attempt:
     #: Transduction attempts spent, and the raw object the last one emitted.
     attempts: int = 0
     rejected: str | None = None
+    #: C19. Every rejected transduction and the error it was shown, kept on a
+    #: PASS too. A repair error can quote a signed file -- the derivation
+    #: validator names its `component_keys` -- so a repaired record
+    #: can carry a value no tool returned, and discarding the repairs on
+    #: success left that value with no visible source.
+    repairs: list[dict] = field(default_factory=list)
+    #: The sample's tool calls with their return values, for the same trace.
+    raw_log: list[dict] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -1189,7 +1199,7 @@ def _render_log(log: ToolLog, raw_log: list[dict] | None) -> str:
 
 def _emit(backend: Backend, schema: dict, body: str, seed: int | None,
           build: Callable[[dict], Any], fail_kind: str = "invalid_record",
-          ) -> tuple[Any, str, str, int, str]:
+          ) -> tuple[Any, str, str, int, str, list[dict]]:
     """Run one constrained emission with its bounded repair loop.
 
     Shared by the protocol and the refusal transductions. Extracted rather than
@@ -1207,8 +1217,10 @@ def _emit(backend: Backend, schema: dict, body: str, seed: int | None,
         fail_kind: The gate value to report when the whole budget is spent.
 
     Returns:
-        `(record, error, kind, attempts_spent, last_rejected_text)`. `record` is
-        None exactly when the budget was spent without a valid one.
+        `(record, error, kind, attempts_spent, last_rejected_text, repairs)`.
+        `record` is None exactly when the budget was spent without a valid one.
+        `repairs` holds every rejected attempt with the error it was shown,
+        whether or not a later attempt passed.
     """
     msg = [{"role": "system",
             "content": "You emit JSON matching a schema. Nothing else."},
@@ -1218,6 +1230,7 @@ def _emit(backend: Backend, schema: dict, body: str, seed: int | None,
     base = body + ("\n\n--- REQUIRED JSON SCHEMA ---\n"
                    + json.dumps(schema) if cli else "")
     prompt = base
+    repairs: list[dict] = []
 
     for attempt in range(MAX_TRANSDUCE_ATTEMPTS):
         if cli:
@@ -1227,16 +1240,19 @@ def _emit(backend: Backend, schema: dict, body: str, seed: int | None,
             r = backend.chat(msg, guided_json=schema, temperature=0.0, seed=seed,
                              max_tokens=4096)
         try:
-            return build(json.loads(r.content)), "", "pass", attempt + 1, r.content
+            rec = build(json.loads(r.content))
+            return rec, "", "pass", attempt + 1, r.content, repairs
         except GateMismatch as exc:
             err, kind = str(exc)[:1800], "gate_field_mismatch"
         except (ValidationError, ValueError) as exc:
             err, kind = str(exc)[:1800], fail_kind
+        repairs.append({"attempt": attempt + 1, "kind": kind, "error": err,
+                        "rejected": r.content})
         if attempt == MAX_TRANSDUCE_ATTEMPTS - 1:
             # The object that was rejected, kept. Without it a failed live run
             # reports a validator name and nothing to read it against, and
             # diagnosing one costs another paid run.
-            return None, err, kind, attempt + 1, r.content
+            return None, err, kind, attempt + 1, r.content, repairs
         # THE PREVIOUS ATTEMPT ITSELF, not just the error. Found 2026-08-26 by
         # running the live driver twice: `claude -p` is a fresh session per call,
         # so on this branch the model was handed "your previous attempt was
@@ -1258,6 +1274,77 @@ def _emit(backend: Backend, schema: dict, body: str, seed: int | None,
                 "content": _template("REPAIR").render(attempt="(above)",
                                                       err=err)}]
     raise AssertionError("unreachable: the loop returns on its last pass")
+
+
+#: The derivation validator's own sentence, parsed back out of a kept repair.
+_DECLARED_KEYS = re.compile(
+    r"derivation '([^']+)' declares component_keys (\[[^\]]*\])")
+
+
+def untraced_derivation_values(record: BaseModel, raw_log: list[dict],
+                               repairs: list[dict]) -> list[str]:
+    """Derivation key sets in a record that no tool returned and no repair showed.
+
+    C19. `DerivationRef._matches_the_signature_it_names` quotes the signed file's
+    `component_keys` in its error, so a repair can hand the model a derivation's
+    membership that no tool in its log returned -- observed live with
+    `get_derivation` never called. The keys were right; their channel was
+    invisible, because `_emit` discarded the repairs of a sample that went on to
+    pass. So each reference's key set must match a `get_derivation` return for
+    that id in the sample's own log, or a kept repair error that quotes it.
+
+    The unit is not checked: `agent/tool_authority.py::_restate_derivation_units`
+    stamps it from the signed file before validation, so it never passes
+    through the model at all.
+
+    Args:
+        record: A validated protocol or refusal.
+        raw_log: The sample's tool calls with their return values.
+        repairs: The sample's rejected transductions, each with its error.
+
+    Returns:
+        One line per reference whose key set traces nowhere; empty when all do.
+    """
+    fetched = [e.get("result") for e in raw_log if e.get("tool") == "get_derivation"]
+    quoted: list[tuple[str, set[str]]] = []
+    for r in repairs:
+        for line in str(r.get("error", "")).splitlines():
+            # pydantic appends `[type=..., input_value={...}]`, the rejected
+            # object's own repr. A list the model wrote itself is not a list the
+            # repair showed it, so only the message before that counts.
+            said = line.split(" [type=", 1)[0]
+            quoted += [(did, set(re.findall(r"'([^']*)'", keys)))
+                       for did, keys in _DECLARED_KEYS.findall(said)]
+    out = []
+    for ref in _derivation_refs(record):
+        want = set(ref.component_keys)
+        in_log = any(isinstance(f, dict) and f.get("derivation_id") == ref.derivation_id
+                     and set(f.get("component_keys", [])) == want for f in fetched)
+        if not in_log and (ref.derivation_id, want) not in quoted:
+            out.append(f"{ref.derivation_id}: component_keys {sorted(want)} were "
+                       f"returned by no get_derivation call and shown by no repair")
+    return out
+
+
+def _derivation_refs(node: object) -> list[DerivationRef]:
+    """Every `DerivationRef` anywhere inside a record.
+
+    Args:
+        node: A model, list, dict or leaf.
+
+    Returns:
+        The references, in field order.
+    """
+    if isinstance(node, DerivationRef):
+        return [node]
+    if isinstance(node, BaseModel):
+        return [r for name in type(node).model_fields
+                for r in _derivation_refs(getattr(node, name))]
+    if isinstance(node, list | tuple):
+        return [r for item in node for r in _derivation_refs(item)]
+    if isinstance(node, dict):
+        return [r for item in node.values() for r in _derivation_refs(item)]
+    return []
 
 
 def _transduce(backend: Backend, analysis: str, log: ToolLog, seed: int | None,
@@ -1297,12 +1384,14 @@ def _transduce(backend: Backend, analysis: str, log: ToolLog, seed: int | None,
     schema = ProtocolSpecification.model_json_schema()
     body = _template("TRANSDUCE").render(
         analysis=analysis, toollog=_render_log(log, raw_log))
-    rec, err, kind, spent, rejected = _emit(backend, schema, body, seed, build)
+    rec, err, kind, spent, rejected, repairs = _emit(backend, schema, body, seed,
+                                                     build)
     if rec is None:
         return Attempt(analysis=analysis, tool_names=log.names, gate=kind,
-                       error=err, seed=seed, attempts=spent, rejected=rejected)
+                       error=err, seed=seed, attempts=spent, rejected=rejected,
+                       repairs=repairs)
     return Attempt(protocol=rec, analysis=analysis, tool_names=log.names,
-                   gate="pass", seed=seed, attempts=spent)
+                   gate="pass", seed=seed, attempts=spent, repairs=repairs)
 
 
 def _transduce_refusal(backend: Backend, analysis: str, log: ToolLog,
@@ -1361,13 +1450,14 @@ def _transduce_refusal(backend: Backend, analysis: str, log: ToolLog,
             "finding": verdict.finding,
             "blocked_on": list(verdict.blocked_on),
             "evidence": [e.model_dump() for e in verdict.evidence]}, indent=1))
-    rec, err, kind, spent, rejected = _emit(backend, schema, body, seed, build,
-                                            fail_kind="invalid_refusal")
+    rec, err, kind, spent, rejected, repairs = _emit(
+        backend, schema, body, seed, build, fail_kind="invalid_refusal")
     if rec is None:
         return Attempt(analysis=analysis, tool_names=log.names, gate=kind,
-                       error=err, seed=seed, attempts=spent, rejected=rejected)
+                       error=err, seed=seed, attempts=spent, rejected=rejected,
+                       repairs=repairs)
     return Attempt(refusal=rec, analysis=analysis, tool_names=log.names,
-                   gate="refused", seed=seed, attempts=spent)
+                   gate="refused", seed=seed, attempts=spent, repairs=repairs)
 
 
 def specify_once(backend: Backend, pair, *, mode="benchmark", seed=0,
@@ -1451,6 +1541,7 @@ def specify_once(backend: Backend, pair, *, mode="benchmark", seed=0,
                        replace(identity, seed=seed) if identity else None)
     a.steps = steps
     a.tool_log_path = path
+    a.raw_log = raw
     a.claimed_reason = claimed
     return a
 

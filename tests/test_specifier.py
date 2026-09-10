@@ -501,6 +501,85 @@ def test_a_repairable_record_is_repaired_within_the_budget(pair):
     assert a.attempts == 3
 
 
+def _repaired_through_the_validator(
+        pair: tuple) -> tuple[SP.Attempt, list[str], str]:
+    """A sample whose derivation key set reached it only through a repair.
+
+    The scripted reasoning never calls `get_derivation`, the first transduction
+    drops one component key, and the validator's error quotes the signed list:
+    the live observation C19 records. (Not the unit: tool authority stamps that
+    from the signed file, so it never passes through the model.)
+
+    Args:
+        pair: The module's `(pair, version, counts)` fixture.
+
+    Returns:
+        The attempt, the signed key list and the rejected first transduction.
+    """
+    p, version, counts = pair
+    good = json.loads(fixture(version, counts["enumerated"]))
+    signed = good["exposure"]["component_keys"]
+    wrong = json.dumps({**good, "exposure": {**good["exposure"],
+                                             "component_keys": signed[:-1]}})
+    backend = ScriptedBackend(
+        [Reply(tool_calls=REASON_CALLS_A), Reply(tool_calls=REASON_CALLS_B),
+         Reply(content=ANALYSIS), Reply(content=wrong),
+         Reply(content=json.dumps(good))])
+    return SP.specify_once(backend, p, seed=0), signed, wrong
+
+
+def test_every_derivation_value_traces_to_the_log_or_a_kept_repair(
+        pair: tuple) -> None:
+    """C19: a value no tool returned is accounted for only if its repair is kept.
+
+    `_emit` kept the rejected object only when the whole budget was spent, so a
+    record that passed on its second attempt carried the signed key set with no
+    trace of where it came from.
+    """
+    a, signed, wrong = _repaired_through_the_validator(pair)
+    assert a.ok, a.error
+    assert "get_derivation" not in a.tool_names, "the script must not fetch it"
+    assert [r["rejected"] for r in a.repairs] == [wrong]
+    assert str(signed) in a.repairs[0]["error"]
+    assert SP.untraced_derivation_values(a.protocol, a.raw_log, a.repairs) == []
+    # Anti-vacuity: the repair is the ONLY source. Without it the key set traces
+    # nowhere, which is exactly the record C19 observed live.
+    lost = SP.untraced_derivation_values(a.protocol, a.raw_log, [])
+    assert len(lost) == 1 and "social_cohesion_scale" in lost[0], lost
+    # The sentence inside pydantic's `input_value` repr is the model's own
+    # writing, not something a repair showed it.
+    echoed = [{"error": "Value error, bad [type=value_error, input_value=\"derivation "
+                        f"'social_cohesion_scale' declares component_keys {signed}\"]"}]
+    assert SP.untraced_derivation_values(a.protocol, a.raw_log, echoed) == lost
+
+
+def test_a_derivation_the_sample_fetched_traces_to_its_own_log(pair: tuple) -> None:
+    """The other half: a key set `get_derivation` returned needs no repair."""
+    p, version, counts = pair
+    fetch = [*REASON_CALLS_A, tool_call(
+        "get_derivation", {"derivation_id": "social_cohesion_scale"}, "c4b")]
+    backend = ScriptedBackend(
+        [Reply(tool_calls=fetch), Reply(tool_calls=REASON_CALLS_B),
+         Reply(content=ANALYSIS), Reply(content=fixture(version, counts["enumerated"]))])
+    a = SP.specify_once(backend, p, seed=0)
+    assert a.ok, a.error
+    assert a.repairs == []
+    assert SP.untraced_derivation_values(a.protocol, a.raw_log, []) == []
+
+
+def test_the_live_driver_writes_the_repairs_beside_the_record(
+        pair: tuple, tmp_path: Path) -> None:
+    """The trace needs the repairs on disk: `Attempt` does not outlive the run."""
+    from generate.live_specifier import save_repairs
+
+    a, _, wrong = _repaired_through_the_validator(pair)
+    saved = save_repairs(tmp_path / "P-x.abc123.json", a, a.raw_log)
+    assert saved.name == "P-x.abc123.repairs.json"
+    data = json.loads(saved.read_text())
+    assert [r["rejected"] for r in data["repairs"]] == [wrong]
+    assert data["untraced"] == []
+
+
 # --------------------------------------------------------------------------- #
 # backend seam
 # --------------------------------------------------------------------------- #
