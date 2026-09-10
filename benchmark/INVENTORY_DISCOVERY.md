@@ -151,7 +151,7 @@ were found by checking the command against the code rather than by reading it.
 
 ```bash
 cd /home/mehta5/compass-score
-git fetch origin ralph-loop && git checkout 9fecf79
+git fetch origin ralph-loop && git checkout fd6c4a1
 python -m benchmark.contamination_check --live
 
 # The harness scores exactly the ledger's EMITTED set and refuses any other
@@ -171,9 +171,12 @@ python -m benchmark.baseline_score $EMITTED \
     --out $RUN/BASELINE_inventory.md
 ```
 
-`9fecf79` is the last commit that changed code under this brief. The commit
-carrying this section changes only this document, so either sha scores the same
-tree; use whichever `git log` shows as the tip of `ralph-loop`.
+`fd6c4a1` is the last commit that changed code under this brief, at the time
+this paragraph was written. It is a floor, not a pin: later work on
+`ralph-loop` is fine and the tip of the branch is the right thing to score.
+Check with `git log --oneline -1 origin/ralph-loop` and use that, and re-read
+this section if it has moved -- a sha written into prose goes stale the moment
+the next commit lands, which is what happened to the first draft of this line.
 
 ### Correction 1: the report path must not end in `.json`
 
