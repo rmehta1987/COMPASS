@@ -35,7 +35,14 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 DEPLOY = REPO / "deploy"
-KEY_RE = re.compile(r"\bm\d+:Q\d+")
+# Ported from `serve/redact.py::KEY_RE`, as `site/tools/no_instrument.py` was.
+# This is the writer's last line before a public artifact is saved, and the
+# pattern it replaced saw 1,284 of the 2,804 item keys (MEASURED 2026-09-09):
+# it cannot match a numeric roster prefix between the colon and the `Q`, which
+# is the shape of 1,520 of them.
+KEY_RE = re.compile(
+    r"\bm\d+:(?:\d+_)?Q\d+(?:\.\d+)?(?:#\d+(?:_\d+)*)?(?:_\d+)*(?:_TEXT)?(?:~\d+)?",
+    re.IGNORECASE)
 
 
 def load(path: Path, name: str):  # noqa: ANN201
