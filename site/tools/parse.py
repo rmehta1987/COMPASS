@@ -10,13 +10,39 @@ repo, so this is the gate. Also requires ``<title>``, ``lang`` and a single
 """
 from __future__ import annotations
 
+import json
 import os
+import re
 import subprocess
 import tempfile
 from html.parser import HTMLParser
 from pathlib import Path
 
-from common import SITE, fail, ok, pages, scripts
+from common import ARTIFACTS, SITE, fail, ok, pages, scripts
+
+
+def unstyled_status_classes(html: str) -> list[str]:
+    """Status values the rail renders that the stylesheet gives no rule.
+
+    `rail()` interpolates a stage's `status` straight into `class="st ..."`, so
+    a value the stylesheet does not define renders with no colour and the chip
+    silently says nothing. MEASURED 2026-09-09: `metrics` carries `pass` and
+    only `shipped`, `built` and `blocked` had rules, so the one stage that
+    passed was the one the rail did not mark.
+
+    Args:
+        html: The page source, stylesheet included.
+
+    Returns:
+        One line per status value with no matching rule; empty when all are
+        defined.
+    """
+    defined = set(re.findall(r"\.st\.(\w+)\s*\{", html))
+    stages = json.loads((ARTIFACTS / "stages.json").read_text(encoding="utf-8"))["stages"]
+    used = {s["status"] for s in stages if s.get("status")}
+    return [f"stages.json uses status {v!r}, but the stylesheet defines no .st.{v} "
+            f"(defined: {', '.join(sorted(defined)) or 'none'})"
+            for v in sorted(used - defined)]
 
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
         "param", "source", "track", "wbr"}
@@ -85,6 +111,10 @@ def main() -> None:
             if r.returncode:
                 problems.append(f"{rel}: script #{i} fails node --check: "
                                 f"{r.stderr.strip().splitlines()[-1] if r.stderr.strip() else r.returncode}")
+    for page in pages():
+        html = page.read_text(encoding="utf-8")
+        rel = page.relative_to(SITE)
+        problems.extend(f"{rel}: {e}" for e in unstyled_status_classes(html))
     r = subprocess.run(["node", str(Path(__file__).with_name("render.js")), str(SITE)],
                        capture_output=True, text=True)
     if r.returncode:

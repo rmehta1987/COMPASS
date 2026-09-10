@@ -45,6 +45,7 @@
   .rail .n{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-right:8px}
   .rail .st{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;margin-top:3px}
   .st.shipped{color:var(--ok)} .st.built{color:var(--ink-3)} .st.blocked{color:var(--signal)}
+  .st.pass{color:var(--ok)}
 
   .panel{padding:22px 24px 26px;background:#fff}
   .panel h2{font-size:23px;margin:0 0 3px;letter-spacing:-.012em}
@@ -162,7 +163,11 @@ async function load(){
    those stayed on screen through a completed run -- the page said no run had
    happened while showing its record -- and `aria-current` never moved either,
    so the rail did not even mark the stage being read.
-   Only the three classes that exist are used: shipped, built, blocked. */
+   Returns one of the classes the stylesheet defines. `stages.json` also uses
+   `pass`, on Metrics, which `rail` interpolates straight into the class -- so
+   the stylesheet defines that one too. An earlier note here claimed only three
+   classes existed, which was true of this function's own returns and false of
+   the committed data it falls back to. */
 function liveStatus(id){
   if(id==="retriever"){
     if(posed) return {cls:"built",label:"posed &middot; not retrieved"};
