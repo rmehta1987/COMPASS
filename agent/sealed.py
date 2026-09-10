@@ -67,6 +67,47 @@ SEALED_SETTINGS = {
 DENY_TOOLS = ["Bash", "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep",
               "WebSearch", "WebFetch", "Task", "TodoWrite", "SlashCommand"]
 
+# Which Claude Code config directory a sealed run reads. Unset means the user's
+# default, which is what every run before 2026-09-08 used.
+#
+# The config dir, NOT the flags, is what decides whether user skills, plugin
+# skills, ~/.claude/CLAUDE.md and project memory are reachable. VERIFIED
+# 2026-09-08: a sealed invocation carrying SEALED_SETTINGS, --strict-mcp-config
+# and the whole of DENY_TOOLS still listed SEVENTEEN skills when asked to name
+# them, three of them plugin-contributed, even though SEALED_SETTINGS sets
+# enabledPlugins to {}. The same probe against a directory holding only
+# credentials returned twelve — the built-ins alone. DENY_TOOLS covers
+# SlashCommand but not Skill, and `--settings` documents itself as loading
+# ADDITIONAL settings, so setting enabledPlugins there does not unset the user's.
+CONFIG_DIR_ENV = "COMPASS_CLAUDE_CONFIG_DIR"
+
+
+def config_dir() -> Path:
+    """The Claude Code config directory a sealed run reads.
+
+    Returns:
+        The override named by `COMPASS_CLAUDE_CONFIG_DIR`, else `~/.claude`.
+    """
+    override = os.environ.get(CONFIG_DIR_ENV)
+    return Path(override) if override else Path.home() / ".claude"
+
+
+def reachable_skills() -> list[str]:
+    """User and plugin skills the config dir can contribute to a sealed run.
+
+    In the manifest because the seal's flags do not suppress these, so a seal
+    that does not name them is claiming an isolation it does not have. A skill's
+    description enters the model's context whether or not it is ever invoked.
+
+    Returns:
+        Sorted skill directory names, plugin caches prefixed `plugin:`.
+    """
+    cfg = config_dir()
+    names = sorted(d.name for d in (cfg / "skills").glob("*") if d.is_dir())
+    names += sorted(f"plugin:{d.name}"
+                    for d in (cfg / "plugins" / "cache").glob("*") if d.is_dir())
+    return names
+
 # Asked from inside the seal. A clean run answers no to all three.
 #
 # PROBE 1 WAS REWORDED 2026-08-26, and this is the one wording change worth
@@ -275,6 +316,8 @@ class SealedWorktree:
     def run(self, argv: list[str], timeout: float = 900.0) -> dict:
         env = {**os.environ, "COMPASS_MODE": self.mode}
         env.pop("CLAUDE_PROJECT_DIR", None)
+        if os.environ.get(CONFIG_DIR_ENV):
+            env["CLAUDE_CONFIG_DIR"] = os.environ[CONFIG_DIR_ENV]
         p = subprocess.run(argv, cwd=self.cwd, env=env, capture_output=True,
                            text=True, timeout=timeout)
         if p.returncode != 0:
@@ -300,6 +343,8 @@ class SealedWorktree:
             "mcp_servers": ["compass"],
             "mode": self.mode,
             "claude_md_found": self._claude_md_sources(),
+            "claude_config_dir": str(config_dir()),
+            "skills_reachable": reachable_skills(),
         }
         m["seal_hash"] = hashlib.sha256(
             json.dumps(m, sort_keys=True).encode()).hexdigest()[:16]
@@ -308,8 +353,10 @@ class SealedWorktree:
     def _claude_md_sources(self) -> list[str]:
         found = [str(p / "CLAUDE.md") for p in [self.cwd, *self.cwd.parents]
                  if (p / "CLAUDE.md").exists()]
-        if (Path.home() / ".claude" / "CLAUDE.md").exists():
-            found.append(str(Path.home() / ".claude" / "CLAUDE.md"))
+        # Follows the config dir: hardcoding ~/.claude here would report on a
+        # directory the run does not read whenever CONFIG_DIR_ENV is set.
+        if (config_dir() / "CLAUDE.md").exists():
+            found.append(str(config_dir() / "CLAUDE.md"))
         return found
 
     def verify(self, model: str = "claude-haiku-4-5") -> dict:

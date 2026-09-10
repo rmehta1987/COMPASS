@@ -36,7 +36,7 @@ import time
 from pathlib import Path
 
 from agent.backends import Reply
-from agent.sealed import DENY_TOOLS, SealedWorktree
+from agent.sealed import CONFIG_DIR_ENV, DENY_TOOLS, SealedWorktree
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -129,6 +129,9 @@ class ClaudeCliBackend:
     def _run(self, argv: list[str]) -> str:
         env = {**os.environ, "COMPASS_MODE": self.mode,
                "COMPASS_TOOL_LOG": str(self.tool_log)}
+        # Same override the sealed worktree honours; see agent/sealed.py.
+        if os.environ.get(CONFIG_DIR_ENV):
+            env["CLAUDE_CONFIG_DIR"] = os.environ[CONFIG_DIR_ENV]
         p = subprocess.run(argv, cwd=self.sandbox, env=env, capture_output=True,
                            text=True, timeout=self.timeout)
         if p.returncode != 0:
