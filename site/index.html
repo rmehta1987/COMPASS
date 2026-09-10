@@ -78,10 +78,28 @@
   .tools .gate{background:var(--ground);color:var(--ink-2);font-size:11.5px}
   .tools .gate.pass{box-shadow:inset 3px 0 0 var(--ok)}
   .tools .gate.fail{box-shadow:inset 3px 0 0 var(--signal)}
-  .none{border:1px solid var(--rule);padding:14px 12px;margin:0 0 26px;
-    font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
-  .ph{border:1px dashed var(--signal);padding:14px 12px;margin:0 0 26px;
-    font-family:var(--mono);font-size:12.5px;color:var(--signal)}
+  /* These two hold sentences, not machine output. In 12.5px monospace grey
+     they were the smallest text on the page and carried its longest
+     paragraphs; the reader was asked to work hardest exactly where the
+     argument is. Sans, larger, and the same measure as the body. */
+  .none{border:1px solid var(--rule);padding:14px 13px;margin:0 0 22px;
+    font-size:14.5px;line-height:1.6;color:var(--ink-2)}
+  .none code,.none b{font-family:var(--mono);font-size:13px}
+  .ph{border:1px dashed var(--signal);padding:14px 13px;margin:0 0 22px;
+    font-size:14.5px;line-height:1.6;color:var(--signal)}
+  /* A caveat the reader can open when they want it, instead of four grey slabs
+     stacked between them and the table. Closed by default; the lead paragraph
+     above it carries what a first read needs. */
+  .fold{border:1px solid var(--rule);margin:0 0 22px;background:var(--paper)}
+  .fold>summary{cursor:pointer;padding:11px 13px;font-size:14px;font-weight:600;
+    color:var(--ink);list-style-position:inside}
+  .fold>summary:hover{background:#fff}
+  .fold[open]>summary{border-bottom:1px solid var(--rule)}
+  .fold>.in{padding:4px 13px 6px}
+  .notes{display:block;border:0;margin:0}
+  .notes dt{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);
+    background:none;border:0;padding:12px 0 2px}
+  .notes dd{font-size:14.5px;line-height:1.6;color:var(--ink-2);border:0;padding:0 0 8px}
   .ph b{letter-spacing:.06em}
   /* The one box that is NOT an absence: solid ink, not the dashed orange that
      marks NOT YET RUN and NO RECORD. Orange used to mean both. */
@@ -92,7 +110,7 @@
   dl{margin:0 0 26px;display:grid;grid-template-columns:150px minmax(0,1fr);border:1px solid var(--rule)}
   dt,dd{margin:0;padding:8px 12px;border-bottom:1px solid var(--rule-2);font-size:14px}
   dt{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);background:var(--paper)}
-  dd.m{font-family:var(--mono);font-size:12.5px;word-break:break-word}
+  dd.m{font-family:var(--mono);font-size:13.5px;word-break:break-word}
   dl>:nth-last-child(-n+2){border-bottom:0}
   .flag{color:var(--signal);font-weight:600}
   .good{color:var(--ok);font-weight:600}
@@ -104,7 +122,7 @@
   .measure p.lead{margin:0 0 16px;font-size:14px;color:var(--ink-2);max-width:82ch}
   .tbl{overflow-x:auto;border:1px solid var(--rule);background:#fff;margin:0 0 18px}
   table{border-collapse:collapse;width:100%;font-size:13.5px}
-  th,td{padding:8px 12px;border-bottom:1px solid var(--rule-2);text-align:right;font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--rule-2);text-align:right;font-family:var(--mono);font-size:13.5px;white-space:nowrap}
   th{font-weight:600;color:var(--ink-2);background:var(--paper);letter-spacing:.03em;font-size:11px}
   td:first-child,th:first-child{text-align:left;font-family:var(--sans);font-size:13.5px}
   tr:last-child td{border-bottom:0}
@@ -1002,18 +1020,29 @@ function metricsPanel(){
      heading is how a page starts disagreeing with its source. */
   h+=`<p class="sec major">Enumerated variable pairs &middot; ${m.artifacts.length}`
     +`<em>What the pipeline proposed, working only from the instrument.</em></p>`
+    /* Five grey slabs of dense prose used to stand between the heading and the
+       table, in the order they were written rather than the order they are
+       needed. The lead answers what a row is and how many there are; the rest
+       are caveats on a reading the reader has not made yet, so they fold. */
     +`<div class="none">Each row is one pair of questionnaire variables, an`
     +` exposure and an outcome, that the pipeline enumerated and then specified.`
     +` The ledger generated ${o.ledger_denominator} pair(s) this run`
     +` (${Object.entries(o.by_outcome).map(([k,v])=>`${v} ${esc(k)}`).join(", ")});`
     +` these are the emitted ones. By side: ${sideCounts(m.artifacts,"exposure_stratum")} as exposure;`
     +` ${sideCounts(m.artifacts,"outcome_stratum")} as outcome.</div>`
-    +`<div class="none">${esc(m.reads.one_cell)}.</div>`
-    +`<div class="none">${esc(m.reads.attrition)}: ${o.by_outcome.backend_error||"none"} of`
+    +`<details class="fold"><summary>How to read this section</summary><div class="in">`
+    +`<dl class="notes">`
+    +`<dt>It is one cell of the instrument, not a spread</dt>`
+    +`<dd>${esc(m.reads.one_cell)}.</dd>`
+    +`<dt>What was lost before scoring</dt>`
+    +`<dd>${esc(m.reads.attrition)}: ${o.by_outcome.backend_error||"none"} of`
     +` ${o.ledger_denominator} generated pairs ended in a backend error and are not in the scored`
-    +` ${o.scored}.</div>`
-    +`<div class="none">${esc(m.reads.how_the_two_populations_relate)}.</div>`
-    +`<div class="none">${esc(m.reads.what_the_paper_column_means)}.</div>`;
+    +` ${o.scored}.</dd>`
+    +`<dt>Why the record count and the paper count differ</dt>`
+    +`<dd>${esc(m.reads.how_the_two_populations_relate)}.</dd>`
+    +`<dt>What the paper column means</dt>`
+    +`<dd>${esc(m.reads.what_the_paper_column_means)}.</dd>`
+    +`</dl></div></details>`;
 
   /* These count THIS list, so they belong to it: what the run emitted, out of
      what it generated, and what that does and does not establish. `strata` was
@@ -1046,11 +1075,26 @@ function metricsPanel(){
      differ. Same for n source. */
   const shared=k=>{const [first,...rest]=new Set(m.artifacts.map(a=>a[k]));return rest.length?null:first;};
   const estAll=shared("estimability"), nsAll=shared("n_source");
-  if(estAll!==null||nsAll!==null) h+=`<div class="none">Every row below`
-    +(estAll!==null?` carries estimability <span class="flag">${esc(estAll)}</span>`:``)
-    +(estAll!==null&&nsAll!==null?` and`:``)
-    +(nsAll!==null?` has n source <span class="flag">${esc(nsAll)}</span>`:``)
-    +`, so neither is repeated per row. ${esc(m.reads.excluded_floor)}.</div>`;
+  /* Held, not appended: it describes the rows, so it belongs inside the fold
+     with them rather than above a summary the reader has not opened. */
+  const sharedNote=(estAll!==null||nsAll!==null)
+    ?`<div class="none">Every row below`
+      +(estAll!==null?` carries estimability <span class="flag">${esc(estAll)}</span>`:``)
+      +(estAll!==null&&nsAll!==null?` and`:``)
+      +(nsAll!==null?` has n source <span class="flag">${esc(nsAll)}</span>`:``)
+      +`, so neither is repeated per row. ${esc(m.reads.excluded_floor)}.</div>`
+    :``;
+  /* Reviewers said this table read as noise, and with keys withheld it is:
+     `paper matched` is `none` on every row by construction, the outcome
+     stratum is one value, and estimability and n source are hoisted out above,
+     so a row is a hash and three counts. The counts that DO carry the section
+     are in the lead and in `observed`. Folded, not dropped: the page promises
+     every scored record is listed, the Specifier and Record tabs point here for
+     exactly that, and an auditor opens it. Open when the server supplied keys,
+     because then each row is a real pair carrying its own button. */
+  h+=`<details class="fold"${keyed?" open":""}>`
+    +`<summary>Every scored record, one row each &middot; ${m.artifacts.length}</summary>`
+    +`<div class="in">`+sharedNote;
   h+=`<div class="tbl"><table><thead><tr><th>record</th><th>paper matched</th>`
     +(keyed?`<th>exposure</th><th>outcome</th>`:`<th>exposure stratum</th><th>outcome stratum</th>`)
     +(estAll===null?`<th>estimability</th>`:``)+`<th>adjusted</th><th>excluded</th><th>sought, not found</th>`
@@ -1093,11 +1137,11 @@ function metricsPanel(){
             :`<td></td>`)
           :``)
         +`</tr>`;}).join("")
-    +`</tbody></table></div>`;
+    +`</tbody></table></div>`
+    +(keyed?`<div class="none">Running one of these re-drives the Specifier on that pair `
+      +`and lands in <b>Record</b>. It does not re-score: ${esc(m.not_built.find(x=>x.what.indexOf("scoring")>-1).why)}.</div>`:``)
+    +`</div></details>`;
 
-  const nos=m.not_built.find(x=>x.what.indexOf("scoring")>-1);
-  h+=`<div class="none">Running one of these re-drives the Specifier on that pair `
-    +`and lands in <b>Record</b>. It does not re-score: ${esc(nos.why)}.</div>`;
   h+=`<p class="sec major">What is shipped, and what these figures are`
     +`<em>The whole run in three paragraphs, closing the tab that scores it.</em></p>`
     +`<div class="none">${shippedSummary()}</div>`;
