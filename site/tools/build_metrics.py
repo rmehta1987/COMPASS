@@ -215,7 +215,7 @@ def main() -> int:
                           "pairs lost to a backend error were dropped without a "
                           "missingness argument, and an error is not obviously "
                           "independent of how hard a pair is; the rate is stated "
-                          "in the table"),
+                          "beside this sentence"),
             "one_cell": ("every scored record has the same outcome stratum, so "
                          "the set is one cell of the instrument, not a spread. "
                          "Self-reported medication against a self-reported "
@@ -240,7 +240,7 @@ def main() -> int:
                 "proposed by itself, by working through the instrument; a paper "
                 "is a published study about the same cohort. Neither list was "
                 "built from the other, so there is no reason for the two counts "
-                "to match. Scoring compares them: every record below was "
+                "to match. Scoring compares them: every scored record was "
                 "checked against all sixteen papers, and none matched one"),
             # An earlier version of the page said the artifacts were "not
             # joined" to the papers. That was wrong, and the operator caught it:
@@ -293,11 +293,14 @@ def main() -> int:
                            "retriever abstained on; BASELINE.md does not record "
                            "how many terms the line had, so no rate is given. "
                            "Papers it does not list show none listed"),
-        "instrument_withheld_here": ("Each scored record is identified by its "
-                                     "record hash. The exposure and outcome keys "
-                                     "and their wording are instrument content and "
-                                     "are served only by the live server, to a "
-                                     "reviewer who already holds the dictionary."),
+        # The per-record listing is not published, so nothing on the page is
+        # identified by record hash any more and no route serves keys to it.
+        # Saying otherwise pointed a reviewer at a path that no longer exists.
+        "instrument_withheld_here": ("The exposure and outcome keys behind these "
+                                     "counts, and their wording, are instrument "
+                                     "content. They are not published here in any "
+                                     "form, and no part of this page requests "
+                                     "them."),
     }
     OUT.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
     print(f"wrote {OUT} · {len(artifacts)} artifacts · {len(doc['papers'])} papers")

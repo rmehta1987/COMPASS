@@ -2,7 +2,7 @@
  "schema": "compass_site/metrics/1",
  "provenance": {
   "run_id": "b3-20260904",
-  "source": "scored in the clone that holds the prevalence key, on a tag, before any tuning; this page reads the result and never the key",
+  "source": "scored in the clone that holds the prevalence key, on a tag, before any tuning; this page reads the result and never the key; 2026-09-10: three prose strings edited in place to match the removal of the per-record listing (they referred to a table, a list below them and a record-hash identity that no longer render). Same edits made in build_metrics.py; no figure touched",
   "baseline_md": "artefacts/b3-20260904/BASELINE.md",
   "bibliography": "benchmark/cohort_papers.py",
   "dictionary_version_hash": "3dc8415eccfe",
@@ -631,10 +631,10 @@
   "unit_of_analysis": "the numerator counts records, not papers: a record matches when one paper's outcome key and resolved exposure are both its own. The ceiling counts how many of the scored records could have matched any paper; a paper is matchable when at least one record could match it. Both denominators are stated beside their counts",
   "why_the_ceiling_is_low": "a paper is matchable only when its outcome key is on record and its exposure resolves against the instrument; one paper of sixteen clears both. Resolution goes through the deployed retriever, so a retriever miss and a genuine non-match are scored identically: the ceiling is retriever-dependent",
   "the_frame": "the frame is the set of pairs the funnel enumerated for this run: one group of exposure questions crossed with one group of outcome questions, here medication and reproductive-hormonal exposures by chronic-condition outcomes. A paper whose pair lies outside it cannot be matched by any record, however the pipeline reasoned",
-  "attrition": "the scored denominator is the emitted rows only. The pairs lost to a backend error were dropped without a missingness argument, and an error is not obviously independent of how hard a pair is; the rate is stated in the table",
+  "attrition": "the scored denominator is the emitted rows only. The pairs lost to a backend error were dropped without a missingness argument, and an error is not obviously independent of how hard a pair is; the rate is stated beside this sentence",
   "one_cell": "every scored record has the same outcome stratum, so the set is one cell of the instrument, not a spread. Self-reported medication against a self-reported chronic condition is the pairing an epidemiologist would query first, for confounding by indication and reverse causation; nothing in the estimability column speaks to either. Whether rows sharing a pair and differing only in their covariate sets are independent is not established here",
   "excluded_floor": "the schema requires at least one excluded variable, so a count of one in that column is a floor the record was made to meet, not a finding",
-  "how_the_two_populations_relate": "a record is a pair of questionnaire items that the pipeline proposed by itself, by working through the instrument; a paper is a published study about the same cohort. Neither list was built from the other, so there is no reason for the two counts to match. Scoring compares them: every record below was checked against all sixteen papers, and none matched one",
+  "how_the_two_populations_relate": "a record is a pair of questionnaire items that the pipeline proposed by itself, by working through the instrument; a paper is a published study about the same cohort. Neither list was built from the other, so there is no reason for the two counts to match. Scoring compares them: every scored record was checked against all sixteen papers, and none matched one",
   "what_the_paper_column_means": "every record here was scored against the bibliography. A record matches a paper when the paper's outcome key is one the record used, and the paper's exposure terms resolve through the deployed retriever to the record's exposure. None matched, so the column reads none: a scored result, not a missing feature. It can only reach the papers that have an outcome key on record, which is what caps the ceiling",
   "why_no_match_was_available": "That paper is outside the frame this run drew from, so no record could have matched it: none were possible, and none were found. This sentence is from the scoring clone's progress log, not from BASELINE.md, which records only the two counts"
  },
@@ -650,5 +650,5 @@
  ],
  "pubmed_base": "https://pubmed.ncbi.nlm.nih.gov/",
  "abstained_note": "the count is of the paper's exposure terms the retriever abstained on; BASELINE.md does not record how many terms the line had, so no rate is given. Papers it does not list show none listed",
- "instrument_withheld_here": "Each scored record is identified by its record hash. The exposure and outcome keys and their wording are instrument content and are served only by the live server, to a reviewer who already holds the dictionary."
+ "instrument_withheld_here": "The exposure and outcome keys behind these counts, and their wording, are instrument content. They are not published here in any form, and no part of this page requests them."
 }

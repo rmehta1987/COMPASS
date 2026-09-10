@@ -256,7 +256,6 @@ function liveStatus(id){
     return null;
   }
   if(id==="generate"&&gen&&!gen.running&&!gen.error) return {cls:"built",label:"ran"};
-  if(id==="metrics"&&met&&!met.error) return {cls:"built",label:"ran"};
   return null;
 }
 
@@ -601,7 +600,12 @@ function generatePanel(){
         question:""};
       return `<div class="t"><span class="call"><b>${esc(pr.pair_id)}</b></span>`
       +(pr.exposure&&pr.outcome
-        ?`<button class="g pick" data-genex="${esc(pr.exposure)}" data-genout="${esc(pr.outcome)}" data-launch="${att(tok)}">specify this pair</button>`
+        ?/* `att`, not `esc`: these are attribute values from the endpoint, and `esc`
+             leaves a double quote alone -- one in a key closes the attribute early
+             and the rest becomes markup inside a button. `att` was already used
+             for the token beside them. Proved red by the planted quote in
+             `render_endpoint.js`. */
+          `<button class="g pick" data-genex="${att(pr.exposure)}" data-genout="${att(pr.outcome)}" data-launch="${att(tok)}">specify this pair</button>`
         :`<span class="ret">keys withheld</span>`)+`</div>`
       +`<div class="t"><span class="call">${esc(pr.exposure_stem||"")} &rarr; ${esc(pr.outcome_stem||"")}</span></div>`;
     }).join("")+`</div>`;
@@ -934,26 +938,20 @@ function funnelPanel(){
   return h;
 }
 
-let met=null, metBusy=false;
-
-/* The public artifact carries no key and no wording -- see build_metrics.py.
-   A reviewer on the endpoint can ask for them, because they hold the
-   dictionary already; that is a request, never the default. */
-async function loadMetricKeys(){
-  if(!window.COMPASS_ENDPOINT||metBusy) return;
-  metBusy=true; draw();
-  try{
-    const r=await fetch("/api/metrics",{method:"POST",
-      headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
-    const j=await r.json().catch(()=>null);
-    met=(j&&typeof j==="object")?j:{error:`the server answered ${r.status}`};
-  }catch(err){ met={error:"the server did not answer"}; }
-  finally{ metBusy=false; draw(); }
-}
+/* `loadMetricKeys` and the `met` state went with the per-record listing. They
+   existed to fetch exposure and outcome keys from `/api/metrics` and join them
+   onto the rows by `record_hash`; with no rows there is no join and nothing to
+   render, and the payload was still being written into the JSON download while
+   appearing nowhere on screen. Removing it also removes the page's only
+   runtime path for instrument wording, and with it three false claims a single
+   click used to produce: `stagePanel` returned the metrics panel through its
+   live branch, so `provenanceLine` announced that committed figures were "not
+   committed"; the rail chip flipped to `ran` with no run; and a server error
+   set `met` truthy, making all of that stick for the session with no way to
+   clear it. */
 
 function metricsPanel(){
   const m=DATA.metrics, c=m.ceiling, o=m.observed;
-  const keyed=(met&&met.pairs)?met.pairs:null;
 
   let h=`<div class="key"><b>READ THE CEILING FIRST</b> &mdash; ${esc(m.headline)}</div>`
     +`<p class="prov">${esc(m.headline_source)}</p>`;
@@ -1018,129 +1016,64 @@ function metricsPanel(){
      and then specified, so that is what the heading says. The stored key stays
      `artifacts`: it is the file's own noun, and renaming data to match a
      heading is how a page starts disagreeing with its source. */
-  h+=`<p class="sec major">Enumerated variable pairs &middot; ${m.artifacts.length}`
-    +`<em>What the pipeline proposed, working only from the instrument.</em></p>`
-    /* Five grey slabs of dense prose used to stand between the heading and the
-       table, in the order they were written rather than the order they are
-       needed. The lead answers what a row is and how many there are; the rest
-       are caveats on a reading the reader has not made yet, so they fold. */
-    +`<div class="none">Each row is one pair of questionnaire variables, an`
-    +` exposure and an outcome, that the pipeline enumerated and then specified.`
+  /* THE PER-RECORD LISTING IS NOT PUBLISHED. Every row's result column read
+     `none` by construction, the outcome stratum was one value, and estimability
+     and n source were identical on every row -- so a row carried a hash and
+     three counts, none of them interpretable without the wording this page
+     exists to withhold. Reviewers read the rows as findings; they are the
+     pipeline's own end-to-end check. What the section had that a reader needs
+     is the COUNTS and the two admissions, and those stay, unfolded: the
+     corrections used to sit behind a click while the numbers that mislead sat
+     open. Two other caveats went with the table because their subject did --
+     `what_the_paper_column_means` described a column and `excluded_floor` a
+     count that no longer render. */
+  h+=`<p class="sec major">What the run produced`
+    +`<em>Counts only. The per-record listing is the pipeline's own check and is not published here.</em></p>`
+    +`<div class="none">The pipeline enumerated pairs of questionnaire variables`
+    +` from the instrument, an exposure and an outcome, and specified each one.`
     +` The ledger generated ${o.ledger_denominator} pair(s) this run`
     +` (${Object.entries(o.by_outcome).map(([k,v])=>`${v} ${esc(k)}`).join(", ")});`
-    +` these are the emitted ones. By side: ${sideCounts(m.artifacts,"exposure_stratum")} as exposure;`
-    +` ${sideCounts(m.artifacts,"outcome_stratum")} as outcome.</div>`
-    +`<details class="fold"><summary>How to read this section</summary><div class="in">`
-    +`<dl class="notes">`
-    +`<dt>It is one cell of the instrument, not a spread</dt>`
-    +`<dd>${esc(m.reads.one_cell)}.</dd>`
-    +`<dt>What was lost before scoring</dt>`
-    +`<dd>${esc(m.reads.attrition)}: ${o.by_outcome.backend_error||"none"} of`
-    +` ${o.ledger_denominator} generated pairs ended in a backend error and are not in the scored`
-    +` ${o.scored}.</dd>`
-    +`<dt>Why the record count and the paper count differ</dt>`
-    +`<dd>${esc(m.reads.how_the_two_populations_relate)}.</dd>`
-    +`<dt>What the paper column means</dt>`
-    +`<dd>${esc(m.reads.what_the_paper_column_means)}.</dd>`
-    +`</dl></div></details>`;
+    +` the emitted ones are the scored set. By side:`
+    +` ${sideCounts(m.artifacts,"exposure_stratum")} as exposure;`
+    +` ${sideCounts(m.artifacts,"outcome_stratum")} as outcome.</div>`;
 
-  /* These count THIS list, so they belong to it: what the run emitted, out of
-     what it generated, and what that does and does not establish. `strata` was
-     `esc(join(" &middot; "))`, which escaped the separator's own ampersand and
-     printed the entity as text -- escape each value, then join, as the row above
-     it already did. */
+  /* Was inside the fold, and before that a column the `shared` hoist deleted
+     precisely BECAUSE every row carried it -- so the uniform worst case was the
+     one case the reader could not see. It is the run's disqualifying fact and it
+     is now in the open, above the counts. */
+  const shared=k=>{const [first,...rest]=new Set(m.artifacts.map(a=>a[k]));return rest.length?null:first;};
+  const estAll=shared("estimability"), nsAll=shared("n_source");
+  if(estAll!==null||nsAll!==null) h+=`<div class="none">Every scored record`
+    +(estAll!==null?` carries estimability <span class="flag">${esc(estAll)}</span>`:``)
+    +(estAll!==null&&nsAll!==null?` and`:``)
+    +(nsAll!==null?` has n source <span class="flag">${esc(nsAll)}</span>`:``)
+    +`, without exception.</div>`;
+
+  /* The two admissions the run makes about itself. Unfolded: an external reader
+     who stops here has still read them. */
+  h+=`<div class="none">${esc(m.reads.one_cell)}.</div>`
+    +`<div class="none">${esc(m.reads.attrition)}: ${o.by_outcome.backend_error===undefined?"an unrecorded number":o.by_outcome.backend_error} of`
+    +` ${o.ledger_denominator} generated pairs ended in a backend error and are not in the scored`
+    +` ${o.scored}.</div>`
+    +`<div class="none">${esc(m.reads.how_the_two_populations_relate)}.</div>`;
+
+  /* `strata, both sides` printed a flat three-item list that read as breadth --
+     the exact defect `sideCounts` was written to fix, still shipping two rows
+     below the fix. `record files on disk` is a filesystem count in a directory
+     withheld from the public tree: the author's reconciliation note, not a
+     result. Both go; the note that explained the gap goes with them. */
   h+=`<p class="sec">observed</p><dl>`
-    +row("matched",`<span class="flag">${o.matched}</span>`,true)
-    +row("scored, the ledger's emitted count",String(o.scored),true)
-    +row("ledger denominator",String(o.ledger_denominator),true)
-    +row("by outcome",Object.entries(o.by_outcome)
+    +row("matched",`<span class="flag">${o.matched}</span> of ${o.scored} scored`,true)
+    +row("generated, the ledger's denominator",String(o.ledger_denominator),true)
+    +row("ledger disposition",Object.entries(o.by_outcome)
         .map(([k,v])=>`${esc(k)} ${v}`).join(" &middot; "),true)
-    +row("strata, both sides",o.strata.map(esc).join(" &middot; "),true)
-    +row("record files on disk",String(o.artifact_files_on_disk),true)
-    +`</dl><div class="none">${esc(o.denominator_note)}.</div>`;
+    +`</dl>`;
 
   h+=`<p class="sec">how to read that</p><ul class="does">`
     +`<li><b>It establishes</b> ${esc(m.reads.establishes)}.</li>`
     +`<li><b>It is not</b> ${esc(m.reads.is_not)}.</li></ul>`;
 
-  if(!keyed) h+=`<div class="none">${esc(m.instrument_withheld_here)}`
-    +(window.COMPASS_ENDPOINT
-      ?` <button class="g" id="met-keys">${metBusy?"asking the server&hellip;"
-        :"Show the keys and wording"}</button>`
-      :``)+`</div>`;
-  if(met&&met.error) h+=`<div class="ph"><b>NO KEYS</b> &mdash; ${esc(met.error)}.</div>`;
-  launchable={};
-  /* A column every row fills identically carries nothing per row. Say the
-     shared value once, above, and drop the column; keep it only when rows
-     differ. Same for n source. */
-  const shared=k=>{const [first,...rest]=new Set(m.artifacts.map(a=>a[k]));return rest.length?null:first;};
-  const estAll=shared("estimability"), nsAll=shared("n_source");
-  /* Held, not appended: it describes the rows, so it belongs inside the fold
-     with them rather than above a summary the reader has not opened. */
-  const sharedNote=(estAll!==null||nsAll!==null)
-    ?`<div class="none">Every row below`
-      +(estAll!==null?` carries estimability <span class="flag">${esc(estAll)}</span>`:``)
-      +(estAll!==null&&nsAll!==null?` and`:``)
-      +(nsAll!==null?` has n source <span class="flag">${esc(nsAll)}</span>`:``)
-      +`, so neither is repeated per row. ${esc(m.reads.excluded_floor)}.</div>`
-    :``;
-  /* Reviewers said this table read as noise, and with keys withheld it is:
-     `paper matched` is `none` on every row by construction, the outcome
-     stratum is one value, and estimability and n source are hoisted out above,
-     so a row is a hash and three counts. The counts that DO carry the section
-     are in the lead and in `observed`. Folded, not dropped: the page promises
-     every scored record is listed, the Specifier and Record tabs point here for
-     exactly that, and an auditor opens it. Open when the server supplied keys,
-     because then each row is a real pair carrying its own button. */
-  h+=`<details class="fold"${keyed?" open":""}>`
-    +`<summary>Every scored record, one row each &middot; ${m.artifacts.length}</summary>`
-    +`<div class="in">`+sharedNote;
-  h+=`<div class="tbl"><table><thead><tr><th>record</th><th>paper matched</th>`
-    +(keyed?`<th>exposure</th><th>outcome</th>`:`<th>exposure stratum</th><th>outcome stratum</th>`)
-    +(estAll===null?`<th>estimability</th>`:``)+`<th>adjusted</th><th>excluded</th><th>sought, not found</th>`
-    +(nsAll===null?`<th>n source</th>`:``)+(keyed?`<th></th>`:``)+`</tr></thead><tbody>`
-    +m.artifacts.map((a,ai)=>{
-      const k=keyed?keyed[a.record_hash]:null;
-      const tok=`metrics:${ai}`;
-      if(k) launchable[tok]={source:"metrics",
-        source_label:"a scored artifact on the Metrics tab",
-        id:a.record_hash, exposure:k.exposure, outcome:k.outcome,
-        exposure_text:k.exposure_wording||"", outcome_text:k.outcome_wording||"",
-        question:k.question||""};
-      /* NOT "not joined", which is what this said first and was wrong:
-         `benchmark/baseline_score.py` scores every emitted artifact against the
-         whole bibliography, and the answer for all of them is that no paper
-         matched. A scored zero, not an absent feature. Were one to match, its
-         PMID would belong here. */
-      return `<tr><td class="m">${esc(a.record_hash)}</td>`
-        +`<td class="m" title="${att(m.reads.what_the_paper_column_means)}">`
-        +`<span class="ret">none</span></td>`
-        /* Three states, not two. The header is driven by whether the endpoint
-           answered AT ALL; these cells by whether it answered for THIS artifact.
-           Conflating them put a stratum under a column headed "exposure", and
-           dropped the trailing cell entirely, so every row the endpoint had no
-           pair for was one cell short of its own header. */
-        +(keyed
-          ?(k?`<td class="m" title="${att(k.exposure_wording||k.exposure_wording_hash)}">`
-              +`${esc(k.exposure)}</td>`
-              +`<td class="m" title="${att(k.outcome_wording||k.outcome_wording_hash)}">`
-              +`${esc(k.outcome)}</td>`
-            :`<td class="m"><span class="ret">not returned</span></td>`
-             +`<td class="m"><span class="ret">not returned</span></td>`)
-          :`<td>${esc(a.exposure_stratum)}</td><td>${esc(a.outcome_stratum)}</td>`)
-        +(estAll===null?`<td><span class="flag">${esc(a.estimability)}</span></td>`:``)
-        +`<td>${a.n_adjusted}</td><td>${a.n_excluded}</td><td>${a.n_sought_not_found}</td>`
-        +(nsAll===null?`<td>${esc(a.n_source)}</td>`:``)
-        +(keyed
-          ?(k?`<td><button class="g pick" data-genex="${esc(k.exposure)}" `
-             +`data-genout="${esc(k.outcome)}" data-launch="${att(tok)}">run the pipeline</button></td>`
-            :`<td></td>`)
-          :``)
-        +`</tr>`;}).join("")
-    +`</tbody></table></div>`
-    +(keyed?`<div class="none">Running one of these re-drives the Specifier on that pair `
-      +`and lands in <b>Record</b>. It does not re-score: ${esc(m.not_built.find(x=>x.what.indexOf("scoring")>-1).why)}.</div>`:``)
-    +`</div></details>`;
+  h+=`<div class="none">${esc(m.instrument_withheld_here)}</div>`;
 
   h+=`<p class="sec major">What is shipped, and what these figures are`
     +`<em>The whole run in three paragraphs, closing the tab that scores it.</em></p>`
@@ -1243,7 +1176,7 @@ function provenanceLine(){
 
 function shippedSummary(){
   const m=DATA.measurements, sh=m.shipped, I=sh.arms.I, lat=sh.latency, o=DATA.metrics.observed;
-  return `<p>Retrieval is in use: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, no language-model call. Hypothesis generation is gated: the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} pairs without two survey-metadata exports, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>. The one scored run switched that gate off; its ${o.scored} records are listed above, and ${o.matched} matched against a ceiling of ${DATA.metrics.ceiling.max_matched}.</p>
+  return `<p>Retrieval is in use: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, no language-model call. Hypothesis generation is gated: the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} pairs without two survey-metadata exports, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>. The one scored run switched that gate off; it emitted ${o.scored} records, of which ${o.matched} matched against a ceiling of ${DATA.metrics.ceiling.max_matched}.</p>
   <p>Abstention on constructs the instrument does not measure: ${I.negatives_rejected} of ${I.n_negatives} held-out negatives rejected on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(3)}). Its recall is an upper bound, not an open question: the fixture's queries were written with sight of the gold wording, by the same generator family as the training pairs. Detecting its own wrong pick is a different question; that figure was measured, withdrawn from git, and is not reproducible from this page.</p>
   <p>${provenanceLine()}</p>`;
 }
@@ -1311,7 +1244,6 @@ function panelRecord(){
   if(live) doc.live_retrieval=live;
   if(spec) doc.specifier_run=spec;
   if(gen) doc.enumeration=gen;
-  if(met) doc.metrics_keys=met;
   doc.artifact_provenance=Object.fromEntries(Object.entries(DATA)
     .filter(([k])=>k!=="index").map(([k,v])=>[k,v.provenance]));
   return doc;
@@ -1320,7 +1252,7 @@ function panelRecord(){
 /* True when there is something to download. The PNG button is NOT gated on
    this: a panel always renders something, and hiding a button that works would
    be the same defect pointed the other way. */
-function panelHasRecord(){ return Boolean(cur||ask||live||posed||spec||gen||met); }
+function panelHasRecord(){ return Boolean(cur||ask||live||posed||spec||gen); }
 
 /* Both anchors as they were handed to the Specifier. Wording only if the
    endpoint supplied it: the committed artifact carries none, and an empty
@@ -1378,7 +1310,6 @@ function stagePanel(s){
   if(live&&sel==="retriever") return livePanel();
   if((live||(ask&&ask.rendered_query))&&sel==="intake") return liveIntakePanel();
   if(sel==="generate"&&gen) return generatePanel();
-  if(sel==="metrics"&&met) return metricsPanel();
   panelLive=false;
   /* Only the two stages a query feeds. This test used to sit above every
      committed branch, so one unrecognised query made Generate, Score and
@@ -1425,7 +1356,6 @@ function draw(){
   el("#ask").disabled=!window.COMPASS_ENDPOINT;
   el("#served").textContent=servedNote();
   const gg=el("#go-gen"); if(gg) gg.onclick=enumerate;
-  const mk=el("#met-keys"); if(mk) mk.onclick=loadMetricKeys;
   document.querySelectorAll("[data-genex]").forEach(b=>b.onclick=()=>{
     anchors.exposure=b.dataset.genex; anchors.outcome=b.dataset.genout;
     /* A run already holds the lock: `runSpecifier` would return in silence and

@@ -1,8 +1,9 @@
 """Prove each check goes red on a planted violation.
 
-A scan that has never fired is not known to work. For steps 1–5 the site is
-copied to a scratch directory, one violation is planted, and the check runs
-with ``SITE_ROOT`` pointing at the copy; it must exit non-zero. Step 6 needs
+A scan that has never fired is not known to work. For steps 1–5, 7 and 8 the
+site is copied to a scratch directory, one violation is planted, and the check
+runs against the copy; it must exit non-zero. Steps 1–5 take the copy through
+``SITE_ROOT``; steps 7 and 8 are node and take it as an argument. Step 6 needs
 the real repository: an untracked artifact is created, the check runs, and
 the file is removed again. The instrument run planted for step 2 is taken
 from the dictionary at run time and written only to the scratch copy.
@@ -27,6 +28,25 @@ REPO = SITE.parent
 def run(step: str, root: Path) -> int:
     env = dict(os.environ, SITE_ROOT=str(root), PYTHONDONTWRITEBYTECODE="1")
     r = subprocess.run([sys.executable, str(HERE / f"{step}.py")], env=env,
+                       capture_output=True, text=True)
+    return r.returncode
+
+
+def run_node(step: str, root: Path) -> int:
+    """Run a node harness against a planted copy.
+
+    Steps 7 and 8 are node, take the site directory as an argument rather than
+    through ``SITE_ROOT``, and stub the route they drive, so they need no
+    server.
+
+    Args:
+        step: Harness basename under ``site/tools`` without its suffix.
+        root: The planted site directory to run against.
+
+    Returns:
+        The harness's exit status; non-zero means it caught the violation.
+    """
+    r = subprocess.run(["node", str(HERE / f"{step}.js"), str(root)],
                        capture_output=True, text=True)
     return r.returncode
 
@@ -129,6 +149,32 @@ def main() -> int:
         root = copy_site(tmp / "k")
         plant_page(root, "<script>", "<script>fetch(\"https://example.com/a\");")
         results.append(("offline", "fetch to a host", run("offline", root) != 0))
+        # 7 the live branch. Each of these three shipped at some point: the
+        # attribute break was live until a planted quote found it, the
+        # estimability sentence was moved behind a fold, and the per-record
+        # listing was published as though it were a result.
+        root = copy_site(tmp / "n1")
+        plant_page(root, 'data-genex="${att(pr.exposure)}"', 'data-genex="${esc(pr.exposure)}"')
+        results.append(("render_endpoint", "a key with a quote breaks out of its attribute",
+                        run_node("render_endpoint", root) != 0))
+        root = copy_site(tmp / "n2")
+        plant_page(root, 'if(estAll!==null||nsAll!==null) h+=`<div class="none">Every scored record`',
+                   'if(false) h+=`<div class="none">Every scored record`')
+        results.append(("render_endpoint", "the estimability mark is not stated",
+                        run_node("render_endpoint", root) != 0))
+        root = copy_site(tmp / "n3")
+        plant_page(root, '<p class="sec">observed</p><dl>',
+                   '<table><thead><tr><th>record</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>'
+                   '<p class="sec">observed</p><dl>')
+        results.append(("render_endpoint", "the per-record listing is published again",
+                        run_node("render_endpoint", root) != 0))
+        # 8 a stage change decided after an await must be forfeited if the
+        # reader has moved; `steer` is the whole guarantee, in one line.
+        root = copy_site(tmp / "n4")
+        plant_page(root, "function steer(nav,stage){ if(nav===navGen) sel=stage; }",
+                   "function steer(nav,stage){ sel=stage; }")
+        results.append(("render_race", "a finished run drags the reader off the stage they picked",
+                        run_node("render_race", root) != 0))
     # 6 an untracked artifact in the real tree
     art = SITE / "artifacts"
     art.mkdir(exist_ok=True)

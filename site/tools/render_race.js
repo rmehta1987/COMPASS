@@ -9,8 +9,10 @@
 // run that finished minutes later ended in `finally` with an unconditional
 // `sel="record"`.
 //
-// Not part of site-check: it asserts endpoint behaviour, and site-check must
-// stay runnable on a clone with no endpoint. Usage: node render_race.js <site dir>
+// Step 8 of site-check. It asserts endpoint BEHAVIOUR but stubs the endpoint
+// itself, so it needs no server and runs on any clone -- the two were conflated
+// while it sat outside the gate, and a rail-vocabulary change went unnoticed.
+// Usage: node render_race.js <site dir>
 "use strict";
 const fs = require("fs"), path = require("path");
 const site = process.argv[2];
@@ -144,7 +146,8 @@ const fire = (attr, val) => {
   if (/no run yet/.test(chip("specifier") || "")) {
     fail(`the specifier chip still reads ${JSON.stringify(chip("specifier"))} after a finished run`);
   }
-  if (!/complete|record|refused/i.test(chip("specifier") || "")) {
+  // Vocabulary changed in the chip rewrite: a finished Specifier run says "ran".
+  if (!/\bran\b|complete|record|refused/i.test(chip("specifier") || "")) {
     fail(`the specifier chip does not report the finished run: ${JSON.stringify(chip("specifier"))}`);
   }
   const marked = [...railHtml.matchAll(/data-s="([^"]+)" aria-current="true"/g)].map(m => m[1]);

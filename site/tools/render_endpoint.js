@@ -1,25 +1,32 @@
-// Render the Metrics panel in its ENDPOINT state, which the committed gate
-// cannot reach: site-check renders the static page, where COMPASS_ENDPOINT is
-// unset and the keys are never fetched. This drives the other branch with the
-// real /api/metrics payload, so a renamed field there fails here rather than in
-// a reviewer's browser.
+// Drive the page's ENDPOINT branch, which site-check cannot reach: the committed
+// gate renders the static page, where COMPASS_ENDPOINT is unset and no route is
+// ever called. This drives the live branch instead, so a renamed field there
+// fails here rather than in a reviewer's browser.
 //
-// NOT part of site-check, deliberately: it needs a payload only the training
-// machine can produce, and site-check must stay runnable on a clone that has
-// neither the dictionary nor the scored run. Produce one with the endpoint's
-// own route, then:  node site/tools/render_endpoint.js site <payload.json>
+// IT USED TO DRIVE /api/metrics. That route fed the Metrics tab's per-record
+// table, which was removed: with keys withheld every row's result column read
+// `none` by construction and a row carried a hash and three counts, so it was
+// the pipeline's own end-to-end check published as though it were a result.
+// The route went with it, and so did the only path by which instrument wording
+// reached this page at runtime. What that left stranded was the posed-launch
+// regression suite below, whose only source of a [data-genex] button was that
+// table. It now launches from the Generate tab's enumerated pairs, which is the
+// remaining source, and the payload is synthesised here rather than produced on
+// the training machine -- so this runs on any clone:
 //
-// It found one real defect on its first run. Question wording went into a
-// title="" through `esc`, which escapes &, < and > and leaves the double quote
-// alone, so the first wording carrying one would have closed the attribute
-// early. The first version of the assertion could not see that -- a broken-out
-// value simply ends the title=" match and reads as a shorter title -- so it now
-// asserts the exact attribute text, and was confirmed red against `esc` before
-// being kept. No wording in the current run carries a quote, so run it against
-// a payload with one planted or the check passes vacuously.
+//     node site/tools/render_endpoint.js site
+//
+// Step 7 of site-check. It needs neither the dictionary nor the scored run now
+// that the payload is synthesised here, so it runs on any clone.
+//
+// One planted value carries a double quote. That is deliberate: an attribute
+// written with `esc` rather than `att` closes early on the first such value,
+// and a check that counts attribute runs cannot see it -- the broken-out value
+// simply ends the match and reads as a shorter attribute. This payload makes
+// that check fire instead of passing vacuously.
 "use strict";
 const fs = require("fs"), path = require("path");
-const site = process.argv[2], payload = JSON.parse(fs.readFileSync(process.argv[3], "utf8"));
+const site = process.argv[2];
 const html = fs.readFileSync(path.join(site, "index.html"), "utf8");
 const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(m => m[1]);
 
@@ -61,101 +68,64 @@ global.alert = () => {};
 let lastDownload = null;
 global.Blob = class { constructor(parts) { lastDownload = parts.join(""); this.size = lastDownload.length; } };
 global.URL = { createObjectURL: () => "blob:x", revokeObjectURL() {} };
-// Only /api/metrics is answered; an artifact read still goes to disk.
-global.fetch = async (rel) => rel === "/api/metrics"
-  ? ({ status: 200, json: async () => payload })
+
+// Synthetic, and deliberately not instrument content: these are stand-in keys
+// with the shape the route returns. QUOTE_KEY is the planted attribute break.
+const QUOTE_KEY = 'EXP_Q" onmouseover="x';
+const PAIRS = [
+  { pair_id: "P_ONE", exposure: "EXP_ONE", outcome: "OUT_ONE",
+    exposure_stem: "stem for the first exposure", outcome_stem: "stem for the first outcome" },
+  { pair_id: "P_TWO", exposure: QUOTE_KEY, outcome: "OUT_TWO",
+    exposure_stem: 'a stem carrying a " double quote', outcome_stem: "stem for the second outcome" },
+];
+const ENUMERATE = {
+  note: "a synthesised enumerate reply, for this harness only",
+  shown: PAIRS.length,
+  sets: { exposures: PAIRS.length, outcomes: PAIRS.length,
+          exposure_module: "MOD_A", exposure_prefix: "PFX_A",
+          outcome_module: "MOD_B", outcome_prefix: "PFX_B" },
+  counts: { enumerated: PAIRS.length, pruned_S2: 0, live: PAIRS.length,
+            estimable: 0, unknown: PAIRS.length, requires_derivation: 0 },
+  pairs: PAIRS,
+};
+global.fetch = async (rel) => rel === "/api/enumerate"
+  ? ({ status: 200, json: async () => ENUMERATE })
   : ({ json: async () => JSON.parse(fs.readFileSync(path.join(site, rel), "utf8")) });
 
 (async () => {
   for (const s of scripts) new Function(s)();
   await new Promise(r => setTimeout(r, 300));
   let failed = 0;
+  const fail = m => { console.error(m); failed++; };
+
+  // --- the Generate tab's live branch -------------------------------------
   document.querySelectorAll("[data-s]");
-  const tab = byData.filter(x => x.dataset.s === "metrics" && x.onclick).pop();
-  if (!tab) { console.error("no metrics tab handler"); process.exit(1); }
-  tab.onclick();
+  const genTab = byData.filter(x => x.dataset.s === "generate" && x.onclick).pop();
+  if (!genTab) { console.error("no generate tab handler"); process.exit(1); }
+  genTab.onclick();
+  const goGen = node("#go-gen");
+  if (!goGen.onclick) fail("the funnel button has no handler on the endpoint");
+  else { await goGen.onclick(); await new Promise(r => setTimeout(r, 50)); }
 
-  // the "Show the keys and wording" button, then the enriched table
-  document.querySelectorAll("[data-genex]");
-  const before = node("#panel").innerHTML;
-  if (!before.includes("Show the keys and wording")) {
-    console.error("no key request offered on the endpoint"); failed++;
-  }
-  const btn = node("#met-keys");
-  if (!btn.onclick) { console.error("the key button has no handler"); failed++; }
-  else { await btn.onclick(); }
-
-  // A new column is the classic way to desync a table: the header gains a cell
-  // and the rows do not, or one branch is updated and the other is not. Checked
-  // on BOTH renders -- `before` is the withheld-keys branch, `p` the keyed one.
-  const cols = (html, label) => {
-    // The panel holds TWO tables -- the bibliography (which has a real PMID
-    // column) and the artifacts. Taking the first <thead> checked the wrong one
-    // and passed while the artifact table had no paper column at all. Select by
-    // the artifact header's own first cell.
-    const tables = html.match(/<table>[\s\S]*?<\/table>/g) || [];
-    const tbl = tables.find(t => /<thead>[\s\S]*?<th>record<\/th>/.test(t));
-    if (!tbl) { console.error(`${label}: no artifact table found`); failed++; return; }
-    const head = (tbl.match(/<thead>[\s\S]*?<\/thead>/) || [""])[0];
-    const nth = (head.match(/<th\b/g) || []).length;
-    const body = (tbl.match(/<tbody>[\s\S]*?<\/tbody>/) || [""])[0];
-    const rows = body.match(/<tr>[\s\S]*?<\/tr>/g) || [];
-    if (!nth || !rows.length) { console.error(`${label}: no table to check`); failed++; return; }
-    for (const r of rows) {
-      const ntd = (r.match(/<td\b/g) || []).length;
-      if (ntd !== nth) {
-        console.error(`${label}: header has ${nth} cell(s), a row has ${ntd}`); failed++; return;
-      }
-    }
-    if (!/<th>paper matched<\/th>/.test(head)) { console.error(`${label}: no paper column`); failed++; }
-    // "none" is a scored result -- every artifact WAS matched against the whole
-    // bibliography and hit nothing. It is not the same claim as "not joined",
-    // which is what this said before and was wrong, so assert the exact cell.
-    for (const r of rows) {
-      if (!/<span class="ret">none<\/span>/.test(r)) {
-        console.error(`${label}: a row omits the scored paper result`); failed++; return;
-      }
-    }
-  };
-  cols(before, "artifact table, keys withheld");
-
-  const p = node("#panel").innerHTML;
-  cols(p, "artifact table, keys shown");
+  const g = node("#panel").innerHTML;
   for (const bad of ["undefined", "NaN", "[object Object]"]) {
-    if (p.includes(bad)) { console.error(`enriched panel contains "${bad}"`); failed++; }
+    if (g.includes(bad)) fail(`the enumerated panel contains "${bad}"`);
   }
-  const anyKey = Object.values(payload.pairs)[0].exposure;
-  if (!p.includes(anyKey)) { console.error(`enriched panel is missing ${anyKey}`); failed++; }
-  const runs = [...p.matchAll(/data-genex="([^"]+)"/g)].length;
-  if (runs !== Object.keys(payload.pairs).length) {
-    console.error(`run buttons: ${runs}, expected ${Object.keys(payload.pairs).length}`); failed++;
+  const runs = [...g.matchAll(/data-genex="([^"]+)"/g)].length;
+  if (runs !== PAIRS.length) fail(`run buttons: ${runs}, expected ${PAIRS.length}`);
+
+  // A key carrying a double quote must not break out of its attribute. Assert
+  // the exact attribute text: counting runs cannot see a broken-out value.
+  const want = `data-genex="${QUOTE_KEY.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")}"`;
+  if (!g.includes(want)) {
+    fail(`a key carrying a double quote escaped its attribute; expected ${JSON.stringify(want)}`);
   }
-  // A wording carrying a double quote must not escape its title attribute.
-  // Counting title=" runs cannot see that: a broken-out value simply ends the
-  // match early and reads as a shorter title. So assert the exact attribute
-  // text the page should have produced, for every wording it was handed.
-  const esc = t => String(t).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-  const attExpected = t => esc(t).replace(/"/g, "&quot;");
-  let titles = 0;
-  for (const v of Object.values(payload.pairs)) {
-    for (const w of [v.exposure_wording, v.outcome_wording]) {
-      if (!w) continue;
-      titles++;
-      if (!p.includes(`title="${attExpected(w)}"`)) {
-        console.error(`title wrong or broken out: ${JSON.stringify(w.slice(0, 48))}`); failed++;
-      }
-    }
-  }
-  // The footer closes by asserting every figure on the page traces to a
-  // committed artifact. Standing under a panel this endpoint just produced,
-  // that sentence is false, and it is the one a reviewer would quote back. Only
-  // this harness can see it: the static render never sets COMPASS_ENDPOINT.
-  // LAUNCHING A RUN FROM A SCORED ARTIFACT must tell Retriever and Intake what
-  // was actually run. Before this, the launch set the anchors and started the
-  // Specifier while those two stages went on showing whatever was there before
-  // -- a committed example, or the previous request's hits -- so the page
-  // answered "what was run?" with a different run's numbers.
-  //
+
+  // --- the posed launch ----------------------------------------------------
+  // A launch poses a pair with no retrieval of its own. Retriever and Intake
+  // must say so and must name THIS pair, rather than going on showing whatever
+  // was there before -- a committed example, or the previous request's hits --
+  // which made the page answer "what was run?" with a different run's numbers.
   // The page is standing on a committed example when the launch happens, which
   // is what makes the clearing below observable.
   node("#q").value = "a query whose retrieval must not survive the launch";
@@ -164,46 +134,47 @@ global.fetch = async (rel) => rel === "/api/metrics"
   if (retTab) retTab.onclick();
 
   document.querySelectorAll("[data-genex]");
-  const launch = byData.filter(x => x.dataset.genex && x.onclick).pop();
-  if (!launch) { console.error("no run button to launch from"); failed++; }
+  // Launch from the PLAIN pair. The planted quote exists for the attribute
+  // assertion above; here it would only compare an attribute-encoded value
+  // against the same key rendered as element text, which is a difference in
+  // this stub's own reading of the DOM, not in the page.
+  const launch = byData.filter(x => x.dataset.genex === PAIRS[0].exposure && x.onclick).pop();
+  if (!launch) fail("no run button to launch from");
   else {
-    if (!launch.dataset.launch) { console.error("the run button carries no launch token"); failed++; }
-    const want = { ex: launch.dataset.genex, out: launch.dataset.genout };
+    if (!launch.dataset.launch) fail("the run button carries no launch token");
+    const posed = { ex: launch.dataset.genex, out: launch.dataset.genout };
     launch.onclick();
     await new Promise(r => setTimeout(r, 50));
 
     for (const [stage, must] of [["retriever", "NO RETRIEVAL WAS RUN"],
                                  ["intake", "NO QUERY WAS RENDERED"]]) {
       document.querySelectorAll("[data-s]");
-      const tab = byData.filter(x => x.dataset.s === stage && x.onclick).pop();
-      if (!tab) { console.error(`no ${stage} tab`); failed++; continue; }
-      tab.onclick();
+      const t = byData.filter(x => x.dataset.s === stage && x.onclick).pop();
+      if (!t) { fail(`no ${stage} tab`); continue; }
+      t.onclick();
       const panel = node("#panel").innerHTML;
-      if (!panel.includes(must)) {
-        console.error(`${stage} does not say a posed pair was not retrieved`); failed++;
-      }
-      // ...and it names THIS pair, which is the whole point.
-      for (const k of [want.ex, want.out]) {
-        if (!panel.includes(k)) { console.error(`${stage} omits ${k}`); failed++; }
+      if (!panel.includes(must)) fail(`${stage} does not say a posed pair was not retrieved`);
+      for (const k of [posed.ex, posed.out]) {
+        if (!panel.includes(k)) fail(`${stage} omits ${k}`);
       }
       for (const bad of ["undefined", "NaN", "[object Object]"]) {
-        if (panel.includes(bad)) { console.error(`${stage} contains "${bad}"`); failed++; }
+        if (panel.includes(bad)) fail(`${stage} contains "${bad}"`);
       }
     }
 
     // These chips default to what stages.json says, which describes the shipped
-    // pipeline rather than this session. Checking for the old word "PLACEHOLDER"
-    // went vacuous the moment it was removed from the data, so assert the chip
-    // has actually moved off its committed default and onto this run.
+    // pipeline rather than this session. Checking for a literal word went
+    // vacuous the moment the vocabulary changed, so assert BOTH that the chip
+    // moved off its committed default and what it moved to.
     const railHtml = node("#rail").innerHTML;
     for (const id of ["retriever", "intake"]) {
       const m = new RegExp(`data-s="${id}"[\\s\\S]*?<span class="st[^"]*">([^<]*)</span>`).exec(railHtml);
       const txt = m ? m[1].trim() : "";
-      if (/committed run|not yet run/i.test(txt)) {
-        console.error(`${id} chip still shows its committed default: ${JSON.stringify(txt)}`); failed++;
+      if (/example|past run|committed run|not yet run/i.test(txt)) {
+        fail(`${id} chip still shows its committed default: ${JSON.stringify(txt)}`);
       }
-      if (!/posed/i.test(txt)) {
-        console.error(`${id} chip does not say the pair was posed: ${JSON.stringify(txt)}`); failed++;
+      if (!/nothing to show/i.test(txt)) {
+        fail(`${id} chip does not report it has no output for the posed pair: ${JSON.stringify(txt)}`);
       }
     }
 
@@ -213,77 +184,99 @@ global.fetch = async (rel) => rel === "/api/metrics"
     // without it the file mixes a posed run with an unrelated example and takes
     // that example's id for its name.
     const dlp = node("#dl-json");
-    if (!dlp || !dlp.onclick) { console.error("no download after a posed launch"); failed++; }
+    if (!dlp || !dlp.onclick) fail("no download after a posed launch");
     else {
       dlp.onclick();
       const doc = JSON.parse(lastDownload);
-      if (!doc.posed_pair) { console.error("the download omits the posed pair"); failed++; }
-      if (doc.example) { console.error("the download carries an unrelated committed example"); failed++; }
+      if (!doc.posed_pair) fail("the download omits the posed pair");
+      if (doc.example) fail("the download carries an unrelated committed example");
     }
   }
+
+  // --- the Metrics tab's structure ----------------------------------------
+  document.querySelectorAll("[data-s]");
+  const metTab = byData.filter(x => x.dataset.s === "metrics" && x.onclick).pop();
+  if (!metTab) { console.error("no metrics tab handler"); process.exit(1); }
+  metTab.onclick();
+  const p = node("#panel").innerHTML;
+  for (const bad of ["undefined", "NaN", "[object Object]"]) {
+    if (p.includes(bad)) fail(`the metrics panel contains "${bad}"`);
+  }
+
+  // The per-record listing must NOT come back: it is the pipeline's own check,
+  // and every row's result column was fixed by construction.
+  if (/<th>record<\/th>/.test(p)) fail("the per-record table is published again");
+  if (/data-genex=/.test(p)) fail("the Metrics tab offers a per-record launch again");
+  if (/Show the keys and wording/.test(p)) fail("the Metrics tab asks the server for instrument wording again");
 
   // The two lists are independent, and the panel has to say so structurally, not
   // just in prose: back to back, the second table reads as more of the first.
   const heads = [...p.matchAll(/<p class="sec major">([\s\S]*?)<\/p>/g)].map(m =>
     m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
-  const wanted = [/Cohort bibliography/, /Enumerated variable pairs/, /What is shipped/];
+  const wanted = [/Cohort bibliography/, /What the run produced/, /What is shipped/];
   for (const w of wanted) {
-    if (!heads.some(t => w.test(t))) { console.error(`no major section matching ${w}`); failed++; }
+    if (!heads.some(t => w.test(t))) fail(`no major section matching ${w}`);
   }
   if (heads.length !== wanted.length) {
-    console.error(`expected ${wanted.length} major sections, found ${heads.length}: ${JSON.stringify(heads)}`);
-    failed++;
+    fail(`expected ${wanted.length} major sections, found ${heads.length}: ${JSON.stringify(heads)}`);
   }
   // Each block must sit INSIDE the section it describes. Asserted by position,
   // because a block that drifts back above the headings still renders fine and
   // still says all the right words -- it just answers under the wrong list.
   const at = t => p.indexOf(t);
-  const pairsAt = at("Enumerated variable pairs"), biblioAt = at("Cohort bibliography");
+  const producedAt = at("What the run produced"), biblioAt = at("Cohort bibliography");
   for (const [block, section, start] of [
-      ['<p class="sec">observed</p>', "Enumerated variable pairs", pairsAt],
-      ['<p class="sec">how to read that</p>', "Enumerated variable pairs", pairsAt],
+      ['<p class="sec">observed</p>', "What the run produced", producedAt],
+      ['<p class="sec">how to read that</p>', "What the run produced", producedAt],
       ['<p class="sec">verdicts on this scoring run</p>', "Cohort bibliography", biblioAt]]) {
     const i = at(block);
-    if (i < 0) { console.error(`missing block ${block}`); failed++; continue; }
-    // the next major heading after the section this block should belong to
+    if (i < 0) { fail(`missing block ${block}`); continue; }
     const nextMajor = p.indexOf('class="sec major"', start + 1);
     const end = nextMajor < 0 ? p.length : nextMajor;
-    if (i < start || i > end) {
-      console.error(`${block} is not inside the "${section}" section`); failed++;
-    }
+    if (i < start || i > end) fail(`${block} is not inside the "${section}" section`);
   }
 
   // ...and the pipeline's own output is no longer labelled "artifacts" to the reader.
-  if (/the scored artifacts/.test(p)) {
-    console.error('the pipeline output is still headed "the scored artifacts"'); failed++;
+  if (/the scored artifacts/.test(p)) fail('the pipeline output is still headed "the scored artifacts"');
+
+  // The disqualifying fact must be in the open, not behind a click: when every
+  // record carries it, the `shared` hoist used to remove the column BECAUSE it
+  // was uniform, and a fold then hid the sentence that replaced it -- so the
+  // uniform worst case was the one case the reader could not see.
+  // Pin the SENTENCE, not the mark. The mark also reaches this panel through
+  // other prose, so searching for it alone stayed green with the sentence
+  // deleted -- confirmed by seeding exactly that.
+  const estSent = /Every scored record carries estimability <span class="flag">([^<]+)<\/span>/.exec(p);
+  if (!estSent) fail("the metrics panel does not state that every scored record carries the estimability mark");
+  else {
+    const est = estSent.index;
+    const fold = p.lastIndexOf("<details", est);
+    const close = fold < 0 ? -1 : p.indexOf("</details>", fold);
+    if (fold >= 0 && close > est) fail("the estimability mark is inside a fold");
   }
 
-  // The three-paragraph summary now closes the Metrics tab. The footer keeps
-  // only the provenance line, and only where it is load-bearing: under a LIVE
-  // panel that is not Metrics. On a static panel it is empty, which is the
-  // point -- no sentence, rather than a sentence that is false.
-  if (!p.includes("<b>not</b> committed")) {
-    console.error("the Metrics summary does not say its live figures are uncommitted"); failed++;
-  }
-  if (!p.includes("Retrieval is shipped")) {
-    console.error("the Metrics tab does not carry the shipped summary"); failed++;
-  }
+  // Retrieval's shipped summary closes the Metrics tab and must not leak.
+  if (!p.includes("Retrieval is in use")) fail("the Metrics tab does not carry the shipped summary");
   document.querySelectorAll("[data-s]");
   const stat = byData.filter(x => x.dataset.s === "score" && x.onclick).pop();
-  if (!stat) { console.error("no score tab handler"); failed++; }
+  if (!stat) fail("no score tab handler");
   else {
     stat.onclick();
+    // The footer says where the figures come from under EVERY panel but Metrics,
+    // which carries its own provenance line in the body. This assertion used to
+    // require the footer be empty here -- the behaviour before `foot` was fixed
+    // for having been scoped to live panels only, which `render.js::checkFoot`
+    // now pins the other way. It was stale, and nothing ran it to notice.
     const f2 = node("#foot").innerHTML.trim();
-    if (f2 !== "") {
-      console.error(`footer should be empty on a static panel, got ${JSON.stringify(f2.slice(0, 70))}`);
-      failed++;
+    if (!/site\/artifacts/.test(f2)) {
+      fail(`footer does not say where a static panel's figures come from, got ${JSON.stringify(f2.slice(0, 70))}`);
     }
-    if (node("#panel").innerHTML.includes("Retrieval is shipped")) {
-      console.error("the shipped summary leaked onto a non-Metrics panel"); failed++;
+    if (node("#panel").innerHTML.includes("Retrieval is in use")) {
+      fail("the shipped summary leaked onto a non-Metrics panel");
     }
   }
 
   console.log(failed ? `RED: ${failed} problem(s)`
-    : `GREEN: enriched panel renders, ${runs} run button(s), ${titles} wording title(s), footer scoped both ways`);
+    : `GREEN: enumerate renders, ${runs} run button(s), posed launch clears and names its pair, metrics publishes no per-record listing`);
   process.exit(failed ? 1 : 0);
 })();
