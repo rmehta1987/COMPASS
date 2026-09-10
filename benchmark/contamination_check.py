@@ -69,10 +69,17 @@ import hashlib
 import json
 import re
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, NamedTuple
 
 ROOT = Path(__file__).resolve().parent.parent
+
+#: Modules held out of every clone but the scoring one. A section that needs one
+#: SKIPS loudly and makes the exit status non-zero; it never counts as clean.
+#: Named explicitly rather than caught broadly, so a genuine missing dependency
+#: still takes the run down instead of being reported as a withheld-key skip.
+WITHHELD_MODULES = frozenset({"benchmark.prevalence_key", "benchmark.leak_facts"})
 sys.path.insert(0, str(ROOT))
 
 import agent.prompt_contract as PC  # noqa: E402
@@ -1105,19 +1112,19 @@ def main() -> int:
     blob = "\n".join(f"{k}\n{v}" for k, v in sorted(surface.items()))
     surface_hash = hashlib.sha256(blob.encode()).hexdigest()[:16]
 
-    sections = {
+    sections: dict[str, Callable[[], list[str]]] = {
         # First, because a marker verdict over a partial surface is worth less
         # than it reads, and this is the section that says whether it is partial.
-        "every registry tool sampled": check_tool_coverage(),
-        "markers in model-visible surface": check_markers(surface),
+        "every registry tool sampled": lambda: check_tool_coverage(),
+        "markers in model-visible surface": lambda s=surface: check_markers(s),
         # The INSTRUMENT side of the marker audit. check_markers asks whether a
         # marker reached the model; this asks whether a marker was ever a fair
         # thing to scan for. Both are needed: a marker that matches the
         # questionnaire makes the section above fire on the study's own work.
         "markers are not instrument content":
-            check_markers_are_not_instrument_content(),
+            lambda: check_markers_are_not_instrument_content(),
         "published prevalence figures in surface":
-            check_no_prevalence_figure_in_surface(surface),
+            lambda s=surface: check_no_prevalence_figure_in_surface(s),
         # The INPUT side, added 2026-08-28 (C2). Every section above scans what
         # the environment says to the model; this one asks whether the question
         # already contains its own answer. A benchmark can be broken before the
@@ -1125,12 +1132,12 @@ def main() -> int:
         # authority gate, the refusal gate and the marker scan all pass a model
         # that read the answer out of its own prompt.
         "input does not contain the answer":
-            check_input_does_not_contain_the_answer(),
+            lambda: check_input_does_not_contain_the_answer(),
         "survey platform named in surface":
-            check_no_platform_name_in_surface(surface),
-        "convention provenance": check_provenance(),
-        "seal configuration": check_seal_config(),
-        "held-out registry unreachable": check_holdout_not_reachable(),
+            lambda s=surface: check_no_platform_name_in_surface(s),
+        "convention provenance": lambda: check_provenance(),
+        "seal configuration": lambda: check_seal_config(),
+        "held-out registry unreachable": lambda: check_holdout_not_reachable(),
     }
 
     print("=" * 74)
@@ -1141,7 +1148,24 @@ def main() -> int:
           f"({sum(1 for k in surface if k.startswith('tool:'))} are tool return values)")
     print()
     failed = 0
-    for name, problems in sections.items():
+    skipped: list[str] = []
+    for name, run_section in sections.items():
+        try:
+            problems = run_section()
+        except ModuleNotFoundError as exc:
+            # ONLY the withheld answer key, and ONLY as a loud skip. Every other
+            # import error is a real failure and must still take the run down.
+            # A skipped section is NOT a clean one (`AGENTS.md` §Verification
+            # Discipline: "could not detect X" is never "X is absent"), so this
+            # prints SKIP, is listed again at the end, and makes the exit status
+            # non-zero so no gate can read a partial run as a pass.
+            if exc.name not in WITHHELD_MODULES:
+                raise
+            skipped.append(name)
+            print(f"  SKIP  {name}")
+            print(f"          {exc.name} is withheld from this clone, so this "
+                  f"section did not run. NOT a pass.")
+            continue
         print(f"  {'FAIL' if problems else 'ok  '}  {name}")
         for p in problems:
             print(f"          {p}")
@@ -1177,8 +1201,20 @@ def main() -> int:
         print("\n  live seal probes SKIPPED — pass --live before a benchmark run.")
 
     print()
+    if skipped:
+        print(f"  {len(skipped)} section(s) DID NOT RUN, because a withheld "
+              f"module is absent from this clone:")
+        for name in skipped:
+            print(f"      {name}")
+        print("  A skipped section is not a clean one. This exit status is "
+              "non-zero on")
+        print("  purpose: run the check where the key lives before a benchmark "
+              "run, and")
+        print("  never read this as a pass.")
     if failed:
         print(f"  {failed} problem(s). Do not run a benchmark until these are clear.")
+    elif skipped:
+        print("  Every section that RAN was clean.")
     else:
         print("  clean. Record surface_hash with the run.")
         print("\n  NOT CHECKED, and not checkable here: a curated sentence a")
@@ -1189,7 +1225,7 @@ def main() -> int:
         print("  it reached a saved record. The control is a human re-reading")
         print("  every curated sentence against the paper record. Nothing above")
         print("  substitutes for that, and no check added here would.")
-    return 1 if failed else 0
+    return 1 if (failed or skipped) else 0
 
 
 if __name__ == "__main__":

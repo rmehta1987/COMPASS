@@ -87,7 +87,6 @@ from benchmark.cohort_papers import (  # noqa: E402
     KNOWN_DUPLICATES,
     CohortPaper,
 )
-from benchmark.prevalence_key import PREVALENCE_KEY  # noqa: E402
 from generate.funnel import Candidate, Construct, load_constructs, run  # noqa: E402
 
 #: The longest phrase compared. Four covers every distinctive construction in the
@@ -271,6 +270,14 @@ def _prevalence_tokens() -> set[str]:
     Returns:
         Figure tokens derived from the held-out prevalence key.
     """
+    # Deferred, not module-level: `benchmark/prevalence_key.py` is the held-out
+    # answer key and is withheld from every clone but the scoring one. At module
+    # scope this import took `benchmark.contamination_check` -- the MANDATORY gate
+    # after any prompt or convention edit -- down with ModuleNotFoundError on every
+    # other clone, so the check could not run where the code it checks is written.
+    # The function that needs the key still raises there; nothing else does.
+    from benchmark.prevalence_key import PREVALENCE_KEY
+
     out: set[str] = set()
     for row in PREVALENCE_KEY:
         if row.value is None:
