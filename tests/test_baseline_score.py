@@ -316,3 +316,158 @@ def test_a_table_carrying_its_own_exposure_keys_needs_no_override(tmp_path):
                 require_sha=SHA[:12])
     assert r.queries == []
     assert b.papers_exposure_resolved == len(table)
+
+
+# --- the second ceiling (BRIEF_inventory_discovery.md, task 2) --------------
+#
+# Beside the first, never in place of it and never pooled with it. The
+# inventory rows are built here rather than read: the fold from a key to a
+# construct is tests/test_inventory_key.py's guarantee, and this file's is that
+# two ceilings reach the report intact.
+
+INV_TABLE = (
+    B.PaperKey("36702470", (), ("m2:Q5.2",), ("m2:Q9.95",)),   # both sides keyed
+    B.PaperKey("11111111", (), (), ("m2:Q9.95",)),             # outcome absent
+    B.PaperKey("22222222", (), ("m2:Q5.2",), ()),              # exposure absent
+)
+SIDES = {"exposures": {"papers": 3, "matchable_sides": 2, "excluded_sides": 1,
+                       "rows_present_confident": 2, "rows_present_not_confident": 0,
+                       "rows_modality": 0, "rows_absent": 1, "rows_unresolvable": 0,
+                       "rows_not_confident_any_status": 0},
+         "outcomes": {"papers": 3, "matchable_sides": 2, "excluded_sides": 1,
+                      "rows_present_confident": 2, "rows_present_not_confident": 1,
+                      "rows_modality": 0, "rows_absent": 0, "rows_unresolvable": 0,
+                      "rows_not_confident_any_status": 1}}
+
+
+def _inventory(in_frame, **kw: bool) -> B.InventoryInput:
+    return B.InventoryInput(table=INV_TABLE, in_frame=in_frame,
+                            excluded_sides=SIDES, analogue_only=0, **kw)
+
+
+def test_a_paper_in_frame_with_matching_keys_gives_a_ceiling_of_one_record(tmp_path):
+    d = _run_dir(tmp_path, _record())
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12],
+                inventory=_inventory(frozenset({"36702470"})))
+    c = b.inventory_ceiling
+    assert c is not None
+    assert (c.papers, c.scored) == (3, 1)
+    assert (c.papers_with_outcome_key, c.papers_with_exposure_key) == (2, 2)
+    assert c.papers_matchable == 1 and c.in_frame == 1
+    assert c.records_could_match == 1 and c.matched == 1 and c.at_ceiling
+    assert c.rate == 1.0
+
+
+def test_a_paper_outside_the_frame_gives_a_ceiling_of_zero_records(tmp_path):
+    """Matchable and unreachable are different failures and read differently."""
+    d = _run_dir(tmp_path, _record())
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12], inventory=_inventory(frozenset()))
+    c = b.inventory_ceiling
+    assert c is not None
+    assert c.papers_matchable == 1, "the inventory still keys it"
+    assert c.in_frame == 0 and c.records_could_match == 0
+    text = B.render(b)
+    assert "zero by construction" in text
+    assert "Widening or re-choosing the frame" in text
+
+
+def test_an_unenumerated_frame_reports_unknown_and_never_zero(tmp_path):
+    d = _run_dir(tmp_path, _record())
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12], inventory=_inventory(None))
+    c = b.inventory_ceiling
+    assert c is not None and c.in_frame is None
+    assert c.records_could_match == 1, "no frame means no gate, not an empty gate"
+    text = B.render(b)
+    assert "unknown (frame not enumerated)" in text
+    assert "UNKNOWN, not zero" in text
+
+
+#: The prevalence-key ceiling on the standard fixture, byte for byte, as it
+#: was before BRIEF_inventory_discovery.md added a second one. Pinned as
+#: serialised JSON rather than field by field: a field ADDED to `Ceiling`
+#: would slip past an equality on the fields anyone remembered to list.
+OLD_CEILING_JSON = ('{"papers_matchable":3,"outcome_side":1,"exposure_side":1,'
+                    '"max_matched":1,"max_rate":1.0,"at_ceiling":true}')
+
+
+def test_the_old_ceiling_is_untouched_by_the_new_one(tmp_path):
+    d = _run_dir(tmp_path, _record())
+    plain = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                    verdicts=OK, require_sha=SHA[:12])
+    withinv = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                      verdicts=OK, require_sha=SHA[:12],
+                      inventory=_inventory(frozenset({"36702470"})))
+    assert plain.ceiling.model_dump_json() == OLD_CEILING_JSON
+    assert withinv.ceiling.model_dump_json() == OLD_CEILING_JSON
+    assert plain.inventory_ceiling is None, "no inventory, no second ceiling"
+    assert (plain.matched, plain.rate) == (withinv.matched, withinv.rate)
+
+
+def test_both_ceilings_reach_the_report_with_a_denominator_on_every_line(tmp_path):
+    d = _run_dir(tmp_path, _record())
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12],
+                inventory=_inventory(frozenset({"36702470"})))
+    text = B.render(b)
+    assert "**Ceiling: at most 1 of 1 artefacts" in text, "the old sentence stays"
+    assert "**Ceiling under the inventory: at most 1 of 1 artefacts" in text
+    for line, n, denom in [
+            ("papers with a confident present outcome key", "2", "3 papers"),
+            ("papers with a confident present exposure key", "2", "3 papers"),
+            ("papers matchable under the inventory (both sides)", "1", "3 papers"),
+            ("papers matchable AND in the run's frame", "1", "3 papers"),
+            ("records that could have matched under the inventory", "1",
+             "1 scored records"),
+            ("records that could have matched under the prevalence key + "
+             "retriever (today)", "1", "1 scored records")]:
+        assert f"| {line} | {n} | {denom} |" in text, line
+
+
+def test_the_report_forbids_pooling_and_names_what_bounds_the_rate(tmp_path):
+    d = _run_dir(tmp_path, _record())
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12],
+                inventory=_inventory(frozenset({"36702470"})))
+    text = " ".join(B.render(b).split())
+    assert "never pooled: they are not averaged, summed or covered by one " \
+           "sentence" in text
+    assert "The observed rate under the inventory rule is compared to the " \
+           "inventory ceiling, and the observed rate under today's rule to " \
+           "the prevalence-key ceiling" in text
+    assert "What bounds the inventory rate is the IN-FRAME count" in text
+
+
+def test_every_excluded_side_is_counted_in_the_report(tmp_path):
+    d = _run_dir(tmp_path, _record())
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12],
+                inventory=_inventory(frozenset({"36702470"})))
+    text = B.render(b)
+    assert "### Sides excluded from matching, and why" in text
+    for side in ("exposures", "outcomes"):
+        cells = " | ".join(str(SIDES[side][k]) for k in B._EXCLUSION_COLUMNS)
+        assert f"| {side} | {cells} |" in text, side
+    assert "never silently dropped" in " ".join(text.split())
+
+
+def test_an_analogue_only_paper_is_named_unmatchable_not_binned(tmp_path):
+    d = _run_dir(tmp_path, _record())
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12],
+                inventory=B.InventoryInput(table=INV_TABLE, in_frame=frozenset(),
+                                           excluded_sides=SIDES, analogue_only=2))
+    text = " ".join(B.render(b).split())
+    assert "2 paper(s) of 3 are reachable on both sides only through a " \
+           "modality analogue" in text
+    assert "UNMATCHABLE rather than binning them" in text
+
+
+def test_a_synthetic_inventory_is_announced_in_the_ceiling_sentence(tmp_path):
+    d = _run_dir(tmp_path, _record())
+    b = B.score([d / "p1.r1.json"], table=TABLE, retriever=FakeRetriever(),
+                verdicts=OK, require_sha=SHA[:12],
+                inventory=_inventory(frozenset({"36702470"}), synthetic=True))
+    assert "SYNTHETIC INVENTORY, a rehearsal and not a measurement." in B.render(b)

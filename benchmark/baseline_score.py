@@ -65,6 +65,14 @@ QUALIFIER = ("does the pipeline land on associations the literature found, "
 
 HALTING = ("contamination_check", "input_leakage")
 
+#: The `SideCounts` fields the report prints, in order. Read from the counts
+#: the caller hands over, so a field added to `inventory_key.SideCounts` shows
+#: up as a missing column here rather than being silently dropped.
+_EXCLUSION_COLUMNS = ("papers", "matchable_sides", "excluded_sides",
+                      "rows_present_confident", "rows_present_not_confident",
+                      "rows_modality", "rows_absent", "rows_unresolvable",
+                      "rows_not_confident_any_status")
+
 
 class PaperKey(NamedTuple):
     """What the scorer needs of one paper: its pmid, exposure terms, outcome keys.
@@ -173,6 +181,123 @@ class Ceiling(BaseModel):
         return head + " The gap below the ceiling is the pipeline's."
 
 
+class InventoryInput(NamedTuple):
+    """The inventory rule's inputs, prepared by the caller.
+
+    One parameter rather than five, and a NamedTuple rather than a model,
+    because `score` treats it as opaque: it never reads an inventory row, never
+    imports the inventory's schema and never enumerates a frame. Building this
+    is `benchmark/inventory_key.py::inventory_input`'s job, and the frame comes
+    from the funnel itself (`INVENTORY_DISCOVERY.md` rule 4).
+
+    Attributes:
+        table: One `PaperKey` per paper, both sides already folded to
+            constructs; `exposure_terms` empty, so the retriever is never
+            asked.
+        in_frame: The pmids whose construct pair the run's frame contained.
+            None means the frame was NOT ENUMERATED, which is reported as
+            unknown and never as zero.
+        excluded_sides: `side_exclusions` output, per side, as plain ints.
+        analogue_only: Papers reachable on both sides only through an
+            analogue, hence unmatchable under rule 2 and named rather than
+            binned.
+        synthetic: Whether the source declared itself a rehearsal. True only
+            when it said so, so a real run cannot be labelled synthetic by
+            accident and a rehearsal cannot lose the label by omission.
+    """
+
+    table: tuple[PaperKey, ...]
+    in_frame: frozenset[str] | None
+    excluded_sides: dict[str, dict[str, int]]
+    analogue_only: int
+    synthetic: bool = False
+
+
+class InventoryCeiling(BaseModel):
+    """The most the match rule could have found under the variable inventory.
+
+    Beside `Ceiling`, never in place of it. The two are computed from different
+    key sources and are NEVER pooled: no average, no sum, no single sentence
+    covering both. A reader who combines them has invented a rule nobody
+    pre-registered.
+
+    The record ceiling is gated on the FRAME. A paper the run could never have
+    reached bounds nothing, however well the inventory keys it, so
+    `records_could_match` counts artefacts against papers that are matchable
+    AND in frame. Where the frame was not enumerated the gate is not applied
+    and `in_frame` is None, which the report prints as unknown.
+
+    Attributes:
+        papers: The table's size, the denominator of every paper line.
+        scored: Artefacts accepted, the denominator of every record line.
+        papers_with_outcome_key: Papers with a confident present outcome key.
+        papers_with_exposure_key: Papers with a confident present exposure key.
+        papers_matchable: Papers with both.
+        in_frame: Papers matchable AND in the run's frame; None when the frame
+            was not enumerated.
+        records_could_match: Artefacts hitting a matchable, in-frame paper on
+            both sides. An upper bound on `matched`.
+        records_could_match_under_prevalence_key: `Ceiling.max_matched`,
+            restated on its own line for comparison only.
+        matched: Artefacts matching some matchable paper under rule 2.
+        rate: `matched / scored`; None when nothing was scored.
+        at_ceiling: `matched == records_could_match`.
+        excluded_sides: Per side, every row and paper-side the rule excluded.
+        analogue_only: Papers reachable on both sides only through an analogue.
+        synthetic: The inventory declared itself a rehearsal; see
+            `InventoryInput`.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    papers: int = Field(ge=0)
+    scored: int = Field(ge=0)
+    papers_with_outcome_key: int = Field(ge=0)
+    papers_with_exposure_key: int = Field(ge=0)
+    papers_matchable: int = Field(ge=0)
+    in_frame: int | None
+    records_could_match: int = Field(ge=0)
+    records_could_match_under_prevalence_key: int = Field(ge=0)
+    matched: int = Field(ge=0)
+    rate: float | None
+    at_ceiling: bool
+    excluded_sides: dict[str, dict[str, int]]
+    analogue_only: int = Field(ge=0)
+    synthetic: bool = False
+
+    def sentence(self) -> str:
+        """The reading the inventory rate must travel with.
+
+        Returns:
+            One paragraph, naming which ceiling this rate is compared to and
+            what bounds it.
+        """
+        warn = ("SYNTHETIC INVENTORY, a rehearsal and not a measurement. "
+                if self.synthetic else "")
+        frame = ("not enumerated" if self.in_frame is None
+                 else f"{self.in_frame} of {self.papers}")
+        head = (f"{warn}Ceiling under the inventory: at most {self.records_could_match} "
+                f"of {self.scored} artefacts could match "
+                f"({self.papers_matchable} of {self.papers} papers matchable, "
+                f"{frame} of those in the run's frame); observed {self.matched}.")
+        if self.in_frame == 0:
+            return (head + " No matchable paper was in the frame the run was "
+                    "generated from, so the observed rate is zero by "
+                    "construction and measures nothing about hypothesis "
+                    "quality. Widening or re-choosing the frame is the only "
+                    "thing that can move it.")
+        if self.in_frame is None:
+            return (head + " The frame was not enumerated, so the in-frame "
+                    "count is UNKNOWN, not zero, and this ceiling is not yet "
+                    "the bound a rate may be read against.")
+        if self.records_could_match == 0:
+            return (head + " The observed rate IS this ceiling; it is not a "
+                    "measurement of hypothesis quality.")
+        if self.at_ceiling:
+            return head + " The observed rate is at this ceiling."
+        return head + " The gap below this ceiling is the pipeline's."
+
+
 class Baseline(BaseModel):
     """The baseline, whole: the four numbers, their qualifier, and provenance.
 
@@ -197,6 +322,10 @@ class Baseline(BaseModel):
         matches: Every match, in artefact order.
         verdicts: Named check to its verdict string.
         ceiling: The most the rule could have found; see `Ceiling`.
+        inventory_ceiling: The same question asked of the variable inventory,
+            beside the prevalence-key ceiling and never pooled with it; None
+            when the run was scored without an inventory. See
+            `InventoryCeiling`.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -220,6 +349,7 @@ class Baseline(BaseModel):
     matches: tuple[Match, ...]
     verdicts: dict[str, str]
     ceiling: Ceiling
+    inventory_ceiling: InventoryCeiling | None = None
 
 
 # ---------------------------------------------------------------- loading
@@ -440,11 +570,52 @@ def ceiling(loaded: Sequence[Loaded], table: Sequence[PaperKey],
                    at_ceiling=matched == both)
 
 
+def inventory_ceiling(loaded: Sequence[Loaded], inventory: InventoryInput,
+                      ) -> InventoryCeiling:
+    """Bound the match count under the variable inventory; see `InventoryCeiling`.
+
+    Args:
+        loaded: The accepted artefacts.
+        inventory: The rule's prepared inputs.
+
+    Returns:
+        The ceiling, with the observed count beside it.
+    """
+    table = inventory.table
+    matchable = [p for p in table if p.outcome_keys and p.exposure_keys]
+    reachable = ([p for p in matchable if p.pmid in inventory.in_frame]
+                 if inventory.in_frame is not None else matchable)
+    out_keys = frozenset(k for p in reachable for k in p.outcome_keys)
+    exp_keys = frozenset(k for p in reachable for k in p.exposure_keys)
+    could = 0
+    matched: set[str] = set()
+    for path, rec in loaded:
+        ours_o = keys_of(rec.artefact.retrieval["outcome"])
+        ours_e = keys_of(rec.artefact.retrieval["exposure"])
+        if (ours_o & out_keys) and (ours_e & exp_keys):
+            could += 1
+        for paper in matchable:
+            if match(rec, paper, frozenset(paper.exposure_keys)) is not None:
+                matched.add(path.name)
+    scored = len(loaded)
+    return InventoryCeiling(
+        papers=len(table), scored=scored,
+        papers_with_outcome_key=sum(1 for p in table if p.outcome_keys),
+        papers_with_exposure_key=sum(1 for p in table if p.exposure_keys),
+        papers_matchable=len(matchable),
+        in_frame=None if inventory.in_frame is None else len(reachable),
+        records_could_match=could, records_could_match_under_prevalence_key=0,
+        matched=len(matched), at_ceiling=len(matched) == could,
+        rate=None if scored == 0 else len(matched) / scored,
+        excluded_sides=inventory.excluded_sides,
+        analogue_only=inventory.analogue_only, synthetic=inventory.synthetic)
+
+
 def score(paths: Sequence[Path], *, table: Sequence[PaperKey],
           retriever: RetrieverLike, verdicts: dict[str, str],
           require_sha: str | None = None, strata: Strata | None = None,
           exposure_keys_override: Mapping[str, tuple[str, ...]] | None = None,
-          ) -> Baseline:
+          inventory: InventoryInput | None = None) -> Baseline:
     """Score one run's committed artefacts against the paper table.
 
     Args:
@@ -458,6 +629,11 @@ def score(paths: Sequence[Path], *, table: Sequence[PaperKey],
             retriever for that paper. `papers_exposure_resolved` then counts
             it as resolved, because it is: the keys are named, not guessed at
             by a search that could have missed. See `resolve_exposures`.
+        inventory: The variable inventory's prepared inputs. When given, a
+            SECOND ceiling is computed from them and reported beside the
+            prevalence-key one; the prevalence-key numbers are untouched, so
+            the same paths and table give the same `ceiling` with or without
+            it.
 
     Returns:
         The baseline.
@@ -485,6 +661,14 @@ def score(paths: Sequence[Path], *, table: Sequence[PaperKey],
     env = loaded[0].record.generation
     assert env is not None
     scored = len(loaded)
+    old = ceiling(loaded, table, exposure_keys, len(matched_artefacts))
+    inv = None
+    if inventory is not None:
+        # The prevalence-key ceiling is restated on the inventory ceiling's own
+        # line so the two can be READ side by side. They are never pooled: the
+        # figure below is a copy for comparison, not a term in a combination.
+        inv = inventory_ceiling(loaded, inventory).model_copy(
+            update={"records_could_match_under_prevalence_key": old.max_matched})
     return Baseline(
         run_id=summary.run_id, tree_sha=env.tree_sha, dictionary_hash=dictionary_hash,
         generation=env, scored=scored, matched=len(matched_artefacts),
@@ -495,7 +679,7 @@ def score(paths: Sequence[Path], *, table: Sequence[PaperKey],
         papers_exposure_resolved=sum(1 for p in table if exposure_keys[p.pmid]),
         papers_matched=len({m.pmid for m in matches}),
         exposure_abstentions=abstained, matches=tuple(matches), verdicts=verdicts,
-        ceiling=ceiling(loaded, table, exposure_keys, len(matched_artefacts)))
+        ceiling=old, inventory_ceiling=inv)
 
 
 # ---------------------------------------------------------------- verdicts
@@ -537,6 +721,79 @@ def run_verdicts(paths: Sequence[Path], root: Path = ROOT,
 
 
 # ---------------------------------------------------------------- report
+
+
+def _inventory_section(c: InventoryCeiling) -> list[str]:
+    """The inventory ceiling, beside the prevalence-key one and never pooled.
+
+    Every line carries its own denominator, because the two ceilings have
+    DIFFERENT ones -- papers for the four above, scored artefacts for the two
+    below -- and a reader who reads a paper count as a record count has
+    combined them.
+
+    Args:
+        c: The ceiling.
+
+    Returns:
+        The section's lines.
+    """
+    frame = "unknown (frame not enumerated)" if c.in_frame is None else str(c.in_frame)
+    lines = [
+        "",
+        "## Ceiling under the variable inventory",
+        "",
+        f"**{c.sentence()}**",
+        "",
+        "| line | n | denominator |",
+        "|---|---|---|",
+        f"| papers with a confident present outcome key | "
+        f"{c.papers_with_outcome_key} | {c.papers} papers |",
+        f"| papers with a confident present exposure key | "
+        f"{c.papers_with_exposure_key} | {c.papers} papers |",
+        f"| papers matchable under the inventory (both sides) | "
+        f"{c.papers_matchable} | {c.papers} papers |",
+        f"| papers matchable AND in the run's frame | {frame} | "
+        f"{c.papers} papers |",
+        f"| records that could have matched under the inventory | "
+        f"{c.records_could_match} | {c.scored} scored records |",
+        f"| records that could have matched under the prevalence key + "
+        f"retriever (today) | {c.records_could_match_under_prevalence_key} | "
+        f"{c.scored} scored records |",
+        f"| records observed matching under the inventory | {c.matched} | "
+        f"{c.scored} scored records |",
+        "",
+        "The two ceilings above are computed from DIFFERENT key sources and "
+        "are never pooled: they are not averaged, summed or covered by one "
+        "sentence. The observed rate under the inventory rule is compared to "
+        "the inventory ceiling, and the observed rate under today's rule to "
+        "the prevalence-key ceiling, each in its own section.",
+        "",
+        "What bounds the inventory rate is the IN-FRAME count: a paper the run "
+        "could never have reached bounds nothing, however well the inventory "
+        "keys it. Where that count is unknown the frame was not enumerated, "
+        "which is not the same as no paper being in it.",
+    ]
+    if c.analogue_only:
+        lines += [
+            "",
+            f"{c.analogue_only} paper(s) of {c.papers} are reachable on both "
+            f"sides only through a modality analogue. An analogue is a "
+            f"different measurement, so rule 2 makes them UNMATCHABLE rather "
+            f"than binning them into a tier that would flatter the rate. The "
+            f"fifth clause that would place them is the operator's.",
+        ]
+    lines += ["", "### Sides excluded from matching, and why", "",
+              "| side | " + " | ".join(_EXCLUSION_COLUMNS) + " |",
+              "|---" * (1 + len(_EXCLUSION_COLUMNS)) + "|"]
+    for side, counts in sorted(c.excluded_sides.items()):
+        cells = " | ".join(str(counts.get(k, 0)) for k in _EXCLUSION_COLUMNS)
+        lines.append(f"| {side} | {cells} |")
+    lines += ["", "A `confident == false` row is excluded from matching and "
+              "counted here, never silently dropped. The five row columns are "
+              "a partition and sum to the rows read; the last column overlaps "
+              "them, because a non-confident row can also be a modality or "
+              "absent row."]
+    return lines
 
 
 def render(b: Baseline) -> str:
@@ -581,6 +838,8 @@ def render(b: Baseline) -> str:
         lines += ["", "exposure terms that abstained:"]
         lines += [f"- {pmid}: {len(terms)} of the line's terms"
                   for pmid, terms in sorted(b.exposure_abstentions.items())]
+    if b.inventory_ceiling is not None:
+        lines += _inventory_section(b.inventory_ceiling)
     lines += ["", "## Verdicts", ""]
     lines += [f"- {k}: {v}" for k, v in b.verdicts.items()]
     lines += ["", "## Matches", ""]
@@ -589,6 +848,51 @@ def render(b: Baseline) -> str:
     lines += [f"- {m.artefact} ~ PMID {m.pmid}: exposure {m.exposure_key}, "
               f"outcome {m.outcome_key}" for m in b.matches]
     return "\n".join(lines) + "\n"
+
+
+def frame_pairs(retriever: RetrieverLike) -> list[tuple[str, str]]:
+    """Enumerate the run's frame as construct pairs, from the funnel itself.
+
+    Rule 4 of `INVENTORY_DISCOVERY.md`: never a hand-typed list. This calls
+    `pipeline.run.narrow_frame`, the same code path `pipeline.run --frame-only`
+    prints its count from, so the pairs cannot drift from the frame the run
+    was generated under without the count drifting too.
+
+    Args:
+        retriever: The loaded bundle, for the strata and targets the frame
+            is built over.
+
+    Returns:
+        `(exposure_construct_key, outcome_construct_key)` per live candidate.
+    """
+    from generate.funnel import load_constructs
+    from pipeline.run import narrow_frame
+
+    constructs, _ = load_constructs()
+    strata = Strata.from_retriever(retriever)
+    live, _counts = narrow_frame(constructs, strata, retriever.targets)
+    return [(c.exposure.construct_key, c.outcome.construct_key) for c in live]
+
+
+def _load_inventory(inventory: Path, harness: Path,
+                    retriever: RetrieverLike) -> InventoryInput:
+    """Read the inventory and prepare the second ceiling's inputs.
+
+    Args:
+        inventory: The rows, as `tiered_score.load_papers` accepts them.
+        harness: `handoff/for_harness.json`.
+        retriever: For the frame.
+
+    Returns:
+        The prepared input.
+    """
+    from benchmark.inventory_key import inventory_input
+    from benchmark.tiered_score import load_handoff, load_papers
+
+    papers, synthetic = load_papers(inventory)
+    prepared = inventory_input(papers, load_handoff(harness),
+                               frame_pairs=frame_pairs(retriever))
+    return prepared._replace(synthetic=synthetic)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -605,7 +909,19 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--sha", required=True, help="the sha being scored")
     ap.add_argument("--out", type=Path, default=None,
                     help="where to write the report; <run dir>/BASELINE.md when unset")
+    ap.add_argument("--inventory", type=Path, default=None,
+                    help="the variable inventory, one file per paper in a "
+                         "directory or one file with a papers list. Without "
+                         "it the CLI behaves exactly as before: one ceiling, "
+                         "from the prevalence key and the retriever.")
+    ap.add_argument("--harness", type=Path, default=None,
+                    help="handoff/for_harness.json, whose schema_version pins "
+                         "the field names the inventory rows are read under. "
+                         "Required with --inventory, never defaulted: a "
+                         "harness guessed at is a pin that checks nothing.")
     a = ap.parse_args(argv)
+    if (a.inventory is None) != (a.harness is None):
+        ap.error("--inventory and --harness are given together or not at all")
     from pipeline.retrieve import load_retriever
 
     retriever = load_retriever()
@@ -613,8 +929,10 @@ def main(argv: list[str] | None = None) -> int:
     for k, v in verdicts.items():
         print(f"  {k}: {v}")
     try:
+        inventory = (None if a.inventory is None
+                     else _load_inventory(a.inventory, a.harness, retriever))
         b = score(a.paths, table=load_key_table(), retriever=retriever,
-                  verdicts=verdicts, require_sha=a.sha)
+                  verdicts=verdicts, require_sha=a.sha, inventory=inventory)
     except Refused as e:
         print(f"REFUSED: {e}")
         return 2

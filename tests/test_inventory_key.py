@@ -7,6 +7,7 @@ asserts against a real row, a real pmid or a real tier count.
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 from pathlib import Path
@@ -18,6 +19,8 @@ from benchmark.cohort_papers import COHORT_PAPERS
 from benchmark.inventory_key import (
     SideCounts,
     fold,
+    in_frame,
+    inventory_input,
     key_table_from_inventory,
     side_exclusions,
 )
@@ -346,3 +349,64 @@ def test_the_module_records_no_second_copy_of_the_pin():
     """
     src = Path("benchmark/inventory_key.py").read_text()
     assert not re.findall(r"schema\.py@[0-9a-f]{6,}", src)
+
+
+# --- task 2: the frame gate, on the fakes ------------------------------------
+
+
+def test_a_papers_frame_membership_is_decided_on_folded_constructs(index):
+    """The fixture's fA has a member key for an exposure; a frame names constructs.
+
+    A frame test that compared the inventory's key against the frame's
+    construct key would put every paper out of frame and read as "the run
+    could reach nothing", which is the same wrong answer the old exposure rule
+    gives for a different reason.
+    """
+    table = _table(FAKE["papers"], index)
+    fa = table["fA"]
+    exposure = index[FA_KEY].construct_key
+    outcome = index[PAPER["fA"]["outcomes"][0]["key"]].construct_key
+
+    assert in_frame(fa, [(exposure, outcome)], index)
+    assert not in_frame(fa, [(outcome, exposure)], index), "the pair is ORDERED"
+    assert not in_frame(fa, [], index)
+    # a paper with an empty side can be in no frame, however rich the frame is
+    assert not in_frame(table["fD"], [(exposure, outcome)], index)
+
+
+def test_inventory_input_gates_the_frame_and_counts_the_rest(index):
+    exposure = index[FA_KEY].construct_key
+    outcome = index[PAPER["fA"]["outcomes"][0]["key"]].construct_key
+    prepared = inventory_input(FAKE["papers"], HARNESS, index=index,
+                               frame_pairs=[(exposure, outcome)])
+    assert prepared.in_frame == frozenset({"fA"})
+    assert len(prepared.table) == len(FAKE["papers"])
+    assert set(prepared.excluded_sides) == {"exposures", "outcomes"}
+    assert prepared.synthetic is False, "load_papers sets it; this call cannot"
+
+    unknown = inventory_input(FAKE["papers"], HARNESS, index=index)
+    assert unknown.in_frame is None, "no frame given is UNKNOWN, never empty"
+
+
+def test_the_frame_is_enumerated_from_the_funnel_not_written_down():
+    """Rule 4, asserted on the call node rather than on a substring.
+
+    `pipeline.run.narrow_frame` is the frame `--frame-only` prints its count
+    from. A hand-typed pair list would drift from it silently, so the wiring
+    is what is pinned.
+    """
+    src = Path("benchmark/baseline_score.py").read_text()
+    fn = next(n for n in ast.walk(ast.parse(src))
+              if isinstance(n, ast.FunctionDef) and n.name == "frame_pairs")
+    called = {n.func.id for n in ast.walk(fn)
+              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    assert "narrow_frame" in called, called
+
+
+def test_the_cli_needs_the_harness_whenever_it_is_given_an_inventory():
+    """A harness guessed at is a pin that checks nothing."""
+    for argv in (["a.json", "--sha", "x", "--inventory", "inv/"],
+                 ["a.json", "--sha", "x", "--harness", "h.json"]):
+        with pytest.raises(SystemExit) as e:
+            B.main(argv)
+        assert e.value.code == 2

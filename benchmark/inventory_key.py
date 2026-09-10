@@ -33,7 +33,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from typing import Any, NamedTuple
 
-from benchmark.baseline_score import PaperKey
+from benchmark.baseline_score import InventoryInput, PaperKey
 from benchmark.tiered_score import (
     Handoff,
     HandoffMismatch,
@@ -259,6 +259,77 @@ def side_exclusions(papers: Iterable[Mapping[str, Any]],
     return totals
 
 
+def in_frame(paper: PaperKey, frame_pairs: Iterable[tuple[str, str]],
+             index: Mapping[str, Any]) -> bool:
+    """Whether the run's frame contained a pair this paper could be matched on.
+
+    Rule 4 of `INVENTORY_DISCOVERY.md`. Both of the paper's confident present
+    sides are folded to constructs and looked for as an ORDERED pair among the
+    candidates `generate/funnel.py::s2_prune` left live. A paper the frame
+    never contained bounds nothing, however well the inventory keys it.
+
+    Args:
+        paper: One row of the inventory-backed table.
+        frame_pairs: `(exposure_construct, outcome_construct)` for every live
+            candidate, enumerated from the funnel -- never a hand-typed list.
+        index: The key-to-construct index.
+
+    Returns:
+        True when some live pair joins one of the paper's exposure constructs
+        to one of its outcome constructs.
+    """
+    if not paper.exposure_keys or not paper.outcome_keys:
+        return False
+    exposures = {c for k in paper.exposure_keys
+                 if (c := _construct(k, index)) is not None}
+    outcomes = {c for k in paper.outcome_keys
+                if (c := _construct(k, index)) is not None}
+    return any(e in exposures and o in outcomes for e, o in frame_pairs)
+
+
+def _construct(key: str, index: Mapping[str, Any]) -> str | None:
+    """The construct key holding `key`, or None when the build has neither.
+
+    Args:
+        key: A variable or construct key.
+        index: The key-to-construct index.
+
+    Returns:
+        The construct key, or None.
+    """
+    construct = index.get(key)
+    return None if construct is None else str(construct.construct_key)
+
+
+def analogue_only(paper: Mapping[str, Any]) -> bool:
+    """Whether a paper is reachable on both sides ONLY through an analogue.
+
+    Under rule 2 such a paper is unmatchable, and the report says so rather
+    than binning it into a tier that would flatter it. This is the tier-B
+    question `TIER_STATE.md` leaves open for the operator; naming the shape
+    here is not settling it.
+
+    Args:
+        paper: One inventory paper, rows as dicts.
+
+    Returns:
+        True when neither side has a confident present key and both sides
+        carry a confident analogue.
+    """
+    def state(rows: Iterable[Mapping[str, Any]]) -> tuple[bool, bool]:
+        rows = list(rows)
+        present = any(r.get("status") == MATCHING_STATUS and r.get("key") is not None
+                      and r.get("confident") is True for r in rows)
+        analogue = any(r.get("status") == "modality"
+                       and r.get("analogue_key") is not None
+                       and r.get("confident") is True for r in rows)
+        return present, analogue
+
+    e_present, e_analogue = state(paper.get("exposures", []))
+    o_present, o_analogue = state(paper.get("outcomes", []))
+    return not e_present and not o_present and e_analogue and o_analogue
+
+
 def key_table_from_inventory(papers: list[dict[str, Any]],
                              harness: Handoff | Mapping[str, Any],
                              *, index: Mapping[str, Any] | None = None,
@@ -315,3 +386,47 @@ def _dictionary_index() -> Mapping[str, Any]:
 
     constructs, _ = load_constructs()
     return construct_index(constructs)
+
+
+def inventory_input(papers: list[dict[str, Any]],
+                    harness: Handoff | Mapping[str, Any],
+                    *, frame_pairs: Iterable[tuple[str, str]] | None = None,
+                    index: Mapping[str, Any] | None = None,
+                    schema_path: Any = None) -> InventoryInput:
+    """Prepare everything `baseline_score.score` needs for the inventory rule.
+
+    The scorer never reads an inventory row, never imports the inventory's
+    schema and never enumerates a frame; this function does all three and
+    hands over plain counts and folded keys.
+
+    Args:
+        papers: Inventory papers, rows as dicts.
+        harness: The loaded `handoff/for_harness.json`, or a `Handoff`.
+        frame_pairs: `(exposure_construct, outcome_construct)` for every
+            candidate the funnel left live, from `pipeline/run.py --frame-only`
+            against the frame the run used. None means NOT ENUMERATED, which
+            the report prints as unknown and never as zero.
+        index: The key-to-construct index; built from the dictionary when None.
+        schema_path: Passed to the schema pin.
+
+    Returns:
+        The prepared input.
+
+    Raises:
+        HandoffMismatch: From the schema pin.
+    """
+    if index is None:
+        index = _dictionary_index()
+    table = key_table_from_inventory(papers, harness, index=index,
+                                     schema_path=schema_path)
+    frame: frozenset[str] | None = None
+    if frame_pairs is not None:
+        pairs = list(frame_pairs)
+        frame = frozenset(k.pmid for k in table if in_frame(k, pairs, index))
+    normalised = normalise_papers(list(papers))
+    return InventoryInput(
+        table=table, in_frame=frame,
+        excluded_sides={side: counts._asdict()
+                        for side, counts in side_exclusions(normalised,
+                                                            index).items()},
+        analogue_only=sum(1 for paper in normalised if analogue_only(paper)))
