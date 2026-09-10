@@ -1010,71 +1010,21 @@ function metricsPanel(){
       +`<span class="ret">${esc(v)}</span></div>`).join("")+`</div>`
     +`<div class="none">${esc(m.verdicts_note)}.</div>`;
 
-  /* "Artifact" is what the pipeline calls its output file; it tells a reader
-     nothing about what the row IS. Each row is one pair of questionnaire
-     variables -- an exposure and an outcome -- enumerated from the instrument
-     and then specified, so that is what the heading says. The stored key stays
-     `artifacts`: it is the file's own noun, and renaming data to match a
-     heading is how a page starts disagreeing with its source. */
-  /* THE PER-RECORD LISTING IS NOT PUBLISHED. Every row's result column read
-     `none` by construction, the outcome stratum was one value, and estimability
-     and n source were identical on every row -- so a row carried a hash and
-     three counts, none of them interpretable without the wording this page
-     exists to withhold. Reviewers read the rows as findings; they are the
-     pipeline's own end-to-end check. What the section had that a reader needs
-     is the COUNTS and the two admissions, and those stay, unfolded: the
-     corrections used to sit behind a click while the numbers that mislead sat
-     open. Two other caveats went with the table because their subject did --
-     `what_the_paper_column_means` described a column and `excluded_floor` a
-     count that no longer render. */
-  h+=`<p class="sec major">What the run produced`
-    +`<em>Counts only. The per-record listing is the pipeline's own check and is not published here.</em></p>`
-    +`<div class="none">The pipeline enumerated pairs of questionnaire variables`
-    +` from the instrument, an exposure and an outcome, and specified each one.`
-    +` The ledger generated ${o.ledger_denominator} pair(s) this run`
-    +` (${Object.entries(o.by_outcome).map(([k,v])=>`${v} ${esc(k)}`).join(", ")});`
-    +` the emitted ones are the scored set. By side:`
-    +` ${sideCounts(m.artifacts,"exposure_stratum")} as exposure;`
-    +` ${sideCounts(m.artifacts,"outcome_stratum")} as outcome.</div>`;
-
-  /* Was inside the fold, and before that a column the `shared` hoist deleted
-     precisely BECAUSE every row carried it -- so the uniform worst case was the
-     one case the reader could not see. It is the run's disqualifying fact and it
-     is now in the open, above the counts. */
-  const shared=k=>{const [first,...rest]=new Set(m.artifacts.map(a=>a[k]));return rest.length?null:first;};
-  const estAll=shared("estimability"), nsAll=shared("n_source");
-  if(estAll!==null||nsAll!==null) h+=`<div class="none">Every scored record`
-    +(estAll!==null?` carries estimability <span class="flag">${esc(estAll)}</span>`:``)
-    +(estAll!==null&&nsAll!==null?` and`:``)
-    +(nsAll!==null?` has n source <span class="flag">${esc(nsAll)}</span>`:``)
-    +`, without exception.</div>`;
-
-  /* The two admissions the run makes about itself. Unfolded: an external reader
-     who stops here has still read them. */
-  h+=`<div class="none">${esc(m.reads.one_cell)}.</div>`
-    +`<div class="none">${esc(m.reads.attrition)}: ${o.by_outcome.backend_error===undefined?"an unrecorded number":o.by_outcome.backend_error} of`
-    +` ${o.ledger_denominator} generated pairs ended in a backend error and are not in the scored`
-    +` ${o.scored}.</div>`
-    +`<div class="none">${esc(m.reads.how_the_two_populations_relate)}.</div>`;
-
-  /* `strata, both sides` printed a flat three-item list that read as breadth --
-     the exact defect `sideCounts` was written to fix, still shipping two rows
-     below the fix. `record files on disk` is a filesystem count in a directory
-     withheld from the public tree: the author's reconciliation note, not a
-     result. Both go; the note that explained the gap goes with them. */
-  h+=`<p class="sec">observed</p><dl>`
-    +row("matched",`<span class="flag">${o.matched}</span> of ${o.scored} scored`,true)
-    +row("generated, the ledger's denominator",String(o.ledger_denominator),true)
-    +row("ledger disposition",Object.entries(o.by_outcome)
-        .map(([k,v])=>`${esc(k)} ${v}`).join(" &middot; "),true)
-    +`</dl>`;
-
-  h+=`<p class="sec">how to read that</p><ul class="does">`
-    +`<li><b>It establishes</b> ${esc(m.reads.establishes)}.</li>`
-    +`<li><b>It is not</b> ${esc(m.reads.is_not)}.</li></ul>`;
-
-  h+=`<div class="none">${esc(m.instrument_withheld_here)}</div>`;
-
+  /* THE PIPELINE'S OWN OUTPUT IS NOT REPORTED ON THIS PAGE. What stood here --
+     a per-record table, then the counts and caveats left after it went -- was
+     the pipeline's end-to-end check, and it read as evidence to every reviewer
+     who met it. The RESULT does not live here and never did: the ceiling block
+     above states the score against the highest score available, the headline
+     quotes it verbatim, and Score carries the run's stamp. So the section is
+     gone rather than trimmed again.
+     What the page no longer says anywhere, stated plainly because it is a real
+     subtraction: how many pairs the ledger generated, that some were lost to a
+     backend error before scoring, that every scored record shares one outcome
+     stratum, and that the pairing invites confounding by indication. Those were
+     the run's own limitations. They remain in `metrics.json` -- `observed`,
+     `reads.one_cell`, `reads.attrition` -- which is committed and readable; the
+     page simply does not render them. Restoring any of them means restoring a
+     section, so weigh that before adding a sentence back on its own. */
   h+=`<p class="sec major">What is shipped, and what these figures are`
     +`<em>The whole run in three paragraphs, closing the tab that scores it.</em></p>`
     +`<div class="none">${shippedSummary()}</div>`;
@@ -1153,11 +1103,10 @@ function measureHTML(){
 /* "N medication · M reproductive_hormonal", counted from the rows: the strata
    list alone read as breadth when every row shared one outcome. Written
    without a numeric literal, which the fabrication gate forbids on this page. */
-function sideCounts(rows,k){
-  const names=[...new Set(rows.map(a=>a[k]))];
-  return names.map(s=>({s,v:rows.filter(a=>a[k]===s).length}))
-    .sort((x,y)=>y.v-x.v).map(({s,v})=>`${v} ${esc(s)}`).join(" &middot; ");
-}
+/* `sideCounts` went with the section that called it. It counted each stratum
+   on its own side of a pair, written that way because a flat list of stratum
+   names read as breadth when one side had a single value. If a per-side count
+   is ever wanted again, that is the defect to write it against. */
 
 /* WHERE THE SHIPPED FIGURES LIVE. These three paragraphs used to hang under
    every panel as a page footer, which put system-wide claims beneath a stage

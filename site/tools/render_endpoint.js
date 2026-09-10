@@ -213,7 +213,7 @@ global.fetch = async (rel) => rel === "/api/enumerate"
   // just in prose: back to back, the second table reads as more of the first.
   const heads = [...p.matchAll(/<p class="sec major">([\s\S]*?)<\/p>/g)].map(m =>
     m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
-  const wanted = [/Cohort bibliography/, /What the run produced/, /What is shipped/];
+  const wanted = [/Cohort bibliography/, /What is shipped/];
   for (const w of wanted) {
     if (!heads.some(t => w.test(t))) fail(`no major section matching ${w}`);
   }
@@ -224,10 +224,8 @@ global.fetch = async (rel) => rel === "/api/enumerate"
   // because a block that drifts back above the headings still renders fine and
   // still says all the right words -- it just answers under the wrong list.
   const at = t => p.indexOf(t);
-  const producedAt = at("What the run produced"), biblioAt = at("Cohort bibliography");
+  const biblioAt = at("Cohort bibliography");
   for (const [block, section, start] of [
-      ['<p class="sec">observed</p>', "What the run produced", producedAt],
-      ['<p class="sec">how to read that</p>', "What the run produced", producedAt],
       ['<p class="sec">verdicts on this scoring run</p>', "Cohort bibliography", biblioAt]]) {
     const i = at(block);
     if (i < 0) { fail(`missing block ${block}`); continue; }
@@ -243,17 +241,20 @@ global.fetch = async (rel) => rel === "/api/enumerate"
   // record carries it, the `shared` hoist used to remove the column BECAUSE it
   // was uniform, and a fold then hid the sentence that replaced it -- so the
   // uniform worst case was the one case the reader could not see.
-  // Pin the SENTENCE, not the mark. The mark also reaches this panel through
-  // other prose, so searching for it alone stayed green with the sentence
-  // deleted -- confirmed by seeding exactly that.
-  const estSent = /Every scored record carries estimability <span class="flag">([^<]+)<\/span>/.exec(p);
-  if (!estSent) fail("the metrics panel does not state that every scored record carries the estimability mark");
-  else {
-    const est = estSent.index;
-    const fold = p.lastIndexOf("<details", est);
-    const close = fold < 0 ? -1 : p.indexOf("</details>", fold);
-    if (fold >= 0 && close > est) fail("the estimability mark is inside a fold");
+  // The pipeline's own output is not reported here at all. These four are the
+  // shapes it came back in before: a per-record table, a launch column, a key
+  // request, and the counts-and-caveats section left after the table went.
+  // Each was removed for reading as evidence, so each is pinned out.
+  for (const [re, what] of [
+      [/<p class="sec">observed<\/p>/, "the run's own counts"],
+      [/<p class="sec">how to read that<\/p>/, "the run's own how-to-read list"],
+      [/What the run produced/, "the run's own output section"],
+      [/ledger denominator|ledger disposition/, "the ledger's dispositions"]]) {
+    if (re.test(p)) fail(`the metrics panel reports ${what} again`);
   }
+  // The RESULT is not the pipeline's output and must stay: it is the ceiling
+  // and the score against it, which is what the tab is for.
+  if (!/records that could have matched/.test(p)) fail("the metrics panel no longer states the ceiling");
 
   // Retrieval's shipped summary closes the Metrics tab and must not leak.
   if (!p.includes("Retrieval is in use")) fail("the Metrics tab does not carry the shipped summary");

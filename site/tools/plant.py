@@ -149,24 +149,32 @@ def main() -> int:
         root = copy_site(tmp / "k")
         plant_page(root, "<script>", "<script>fetch(\"https://example.com/a\");")
         results.append(("offline", "fetch to a host", run("offline", root) != 0))
-        # 7 the live branch. Each of these three shipped at some point: the
-        # attribute break was live until a planted quote found it, the
-        # estimability sentence was moved behind a fold, and the per-record
-        # listing was published as though it were a result.
+        # 7 the live branch. Each of these shipped at some point: the attribute
+        # break was live until a planted quote found it, and the pipeline's own
+        # output was published as a per-record table and then, after that went,
+        # as the counts and caveats left behind. Both read as evidence, so both
+        # are pinned out; the ceiling is pinned IN, because that is the result.
         root = copy_site(tmp / "n1")
         plant_page(root, 'data-genex="${att(pr.exposure)}"', 'data-genex="${esc(pr.exposure)}"')
         results.append(("render_endpoint", "a key with a quote breaks out of its attribute",
                         run_node("render_endpoint", root) != 0))
         root = copy_site(tmp / "n2")
-        plant_page(root, 'if(estAll!==null||nsAll!==null) h+=`<div class="none">Every scored record`',
-                   'if(false) h+=`<div class="none">Every scored record`')
-        results.append(("render_endpoint", "the estimability mark is not stated",
+        plant_page(root, '<p class="sec">verdicts on this scoring run</p>',
+                   '<p class="sec">observed</p><dl><dt>x</dt><dd>y</dd></dl>'
+                   '<p class="sec">verdicts on this scoring run</p>')
+        results.append(("render_endpoint", "the run's own counts are reported again",
                         run_node("render_endpoint", root) != 0))
         root = copy_site(tmp / "n3")
-        plant_page(root, '<p class="sec">observed</p><dl>',
+        plant_page(root, '<p class="sec">verdicts on this scoring run</p>',
                    '<table><thead><tr><th>record</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>'
-                   '<p class="sec">observed</p><dl>')
+                   '<p class="sec">verdicts on this scoring run</p>')
         results.append(("render_endpoint", "the per-record listing is published again",
+                        run_node("render_endpoint", root) != 0))
+        root = copy_site(tmp / "n3b")
+        # Rename it OUT of the asserted phrase. An earlier plant appended a
+        # character, which left the phrase intact as a substring and passed.
+        plant_page(root, 'row("records that could have matched"', 'row("records that could have been matched"')
+        results.append(("render_endpoint", "the ceiling stops being stated",
                         run_node("render_endpoint", root) != 0))
         # 8 a stage change decided after an await must be forfeited if the
         # reader has moved; `steer` is the whole guarantee, in one line.
