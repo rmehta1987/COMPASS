@@ -24,6 +24,27 @@ answer key, and you author prompts and docstrings — reading it is the channel,
 session does not close it. If `benchmark.contamination_check` will not run, that is
 **task 0d below**, not a reason to go and get the key.
 
+## Clone setup: which artifacts may be symlinked, and which may NOT
+
+🛑 **`build/` and `run/` must be REAL COPIES in the loop clone, never symlinks.**
+`tests/test_dictionary.py::test_build_is_deterministic` runs `build.py` as a subprocess
+with `cwd=ROOT`, and `build.py` writes `dictionary.json`, `version.json` and four CSVs
+into `ROOT/"build"`. Through a symlink that write lands in the clone the link points at.
+Observed 2026-09-10: two suite runs in the loop clone rewrote
+`/home/mehta5/compass-gen/build/` — harmless that time because the rules were unmutated
+and the hash stayed `3dc8415eccfe`, but `CLAUDE.md` requires re-running the build between
+seeding a `build.py` mutation and testing it, and that sequence would have written a
+MUTATED dictionary into the generation clone. Git cannot see it: the artifact is
+untracked and outside the tree. `build.py::_version_hash`'s own docstring says it was
+extracted so a test could ask what a rule edit does to the hash *without* running a build
+"which would write `build/`" — and this test does exactly that.
+
+Read-only paths may stay symlinks: `raw/`, `benchmark/fixtures/`, `deploy/targets.json`,
+and the root `targets.json` / `dictionary.json` / `retrieval_queries.json`.
+
+Also set `user.name` and `user.email` **in the clone** — COMPASS sets them locally, not
+globally, so a fresh clone cannot commit at all until you do.
+
 ## Baseline, measured in the loop clone 2026-09-10
 
 Read your own floor on iteration 1 and compare to these; do not inherit a number from
