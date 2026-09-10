@@ -687,6 +687,43 @@ def test_the_seal_is_hashed_for_provenance():
         assert len(a.manifest()["seal_hash"]) == 16
 
 
+def test_both_cli_calls_replace_the_system_prompt_rather_than_append(
+        tmp_path: Path) -> None:
+    """T4: the Specifier's instructions replace Claude Code's own system prompt.
+
+    `--append-system-prompt` left the Specifier reasoning inside the CLI's
+    coding-assistant persona. VERIFIED live 2026-09-10 on claude-haiku-4-5:
+    under `--system-prompt` the reply carried a canary word the system prompt
+    demanded, and the model still called `mcp__compass__resolve_variable`. So
+    the flag is read -- unlike `--append-system-prompt-file`, which this CLI
+    accepts and ignores -- and MCP tool calling survives the swap.
+    """
+    import shutil
+
+    from agent.cli_backend import ClaudeCliBackend
+
+    seen: list[list[str]] = []
+
+    class NoSubprocess(ClaudeCliBackend):
+        """Records the argv instead of running `claude -p`."""
+
+        def _run(self, argv: list[str]) -> str:
+            seen.append(argv)
+            return "{}"
+
+    b = NoSubprocess(model="claude-haiku-4-5", tool_log_dir=tmp_path)
+    try:
+        b.reason("SPECIFIER SYSTEM", "prompt", ["resolve_variable"])
+        b.transduce("prompt")
+    finally:
+        shutil.rmtree(b.sandbox, ignore_errors=True)
+    assert len(seen) == 2
+    for argv in seen:
+        assert "--append-system-prompt" not in argv, argv
+        assert "--system-prompt" in argv, argv
+    assert seen[0][seen[0].index("--system-prompt") + 1] == "SPECIFIER SYSTEM"
+
+
 def test_headless_backend_denies_every_context_bypassing_builtin():
     from agent.cli_backend import DENY
     for t in ("Bash", "Read", "Glob", "Grep", "WebSearch", "WebFetch", "Task"):

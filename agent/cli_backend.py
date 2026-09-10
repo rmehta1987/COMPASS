@@ -152,7 +152,9 @@ class ClaudeCliBackend:
         """Call 1. Tools available via MCP; every built-in denied.
 
         Args:
-            system: The Specifier's system prompt, appended to the CLI's own.
+            system: The Specifier's system prompt. It REPLACES the CLI's own
+                (`--system-prompt`), so the Specifier does not reason inside
+                Claude Code's coding-assistant persona.
             prompt: The stated pair and what to establish about it.
             tool_names: The registry's tool names for this mode; anything not
                 listed cannot be reached at the process boundary.
@@ -169,7 +171,7 @@ class ClaudeCliBackend:
         return Reply(content=self._run([
             "claude", "-p", prompt,
             "--model", self.model,
-            "--append-system-prompt", system,
+            "--system-prompt", system,
             "--mcp-config", str(self.mcp_config),
             "--settings", str(self.settings),
             "--strict-mcp-config",
@@ -184,7 +186,7 @@ class ClaudeCliBackend:
         return Reply(content=self._run([
             "claude", "-p", prompt,
             "--model", self.model,
-            "--append-system-prompt",
+            "--system-prompt",
             "You emit one JSON object matching the requested schema and nothing "
             "else. No prose, no markdown fence, no commentary.",
             "--settings", str(self.settings),
