@@ -257,8 +257,12 @@ claim below was exercised either by lifting the rule's source by AST or by stubb
   `1b41cb8` added two more `d.get` calls to the same unguarded body.
 - **C36 — the provenance floors fire only at zero, over a denominator nothing ties to the
   served set** (Lane B). `1b41cb8` added `if not conventions` / `if not derivations`.
-  Measured: making them fire only when BOTH partitions are empty leaves all three
-  provenance tests green. A 1-of-6 partial corpus passes while
+  Measured, and narrower than first written: mutating the CONVENTIONS floor alone to
+  `if not conventions and not derivations:` leaves all three provenance tests green,
+  because no test ever seeds "derivation present, conventions absent". Mutating BOTH
+  floors that way is caught, by
+  `test_a_provenance_check_that_reads_nothing_does_not_report_clean`. The unseeded
+  direction is the conventions floor, not the pair. A 1-of-6 partial corpus passes while
   `env/tools.py::get_design_convention` raises `FileNotFoundError` for the other five
   topics in `CONVENTION_FILES`. `AGENTS.md` §Testing Patterns asks for "a floor per
   partition" and "floors only rise" — a count floor is one-sided and cannot pin a corpus,

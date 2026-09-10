@@ -1028,12 +1028,16 @@ def get_derivation(derivation_id: str) -> dict:
     # `derivation_id` arrives exactly as the model wrote it. Nothing validates it:
     # `agent/registry.py::GetDerivationArgs.derivation_id` is a bare `str` with no
     # pattern, and no `model_validate` runs on the call path. Pasted into a path it
-    # was a traversal -- `get_derivation("../../benchmark/fixtures/retrieval_queries")`
+    # was a traversal: an id of `../../<held-out dir>/fixtures/retrieval_queries`
     # returned the held-out retrieval fixtures as `outcome: ok`, and
     # `../../build/dictionary` returned the built dictionary. The Hard Constraint
-    # `benchmark/contamination_check.py::check_holdout_not_reachable` enforces was
-    # reporting `ok` throughout, because it scans THIS FILE'S SOURCE TEXT for the
-    # word "benchmark" and the offending path is composed at run time.
+    # forbidding that reported `ok` throughout, because its check scans THIS
+    # FILE'S SOURCE TEXT for the held-out directory's name and the offending path
+    # is composed at run time. That check is `check_holdout_not_reachable`; this
+    # comment must not spell the directory it greps for, or the comment itself
+    # turns the section red -- which is exactly what happened at 359319a and is
+    # the cry-wolf half of TASKS.md C32. Naming the token here is a defect; the
+    # scan being text rather than AST is the defect C32 fixes.
     #
     # Containment is therefore decided on the RESOLVED path, never inferred from the
     # id's spelling: a denylist of "../" would miss absolute ids and symlinks. The
