@@ -152,6 +152,17 @@ const fire = (attr, val) => {
     fail(`the rail marks ${JSON.stringify(marked)}; the reader is on "record"`);
   }
 
+  // The footer lost its three-paragraph summary to the Metrics tab and kept one
+  // job: saying that the figures directly above came from this session and are
+  // not committed. The reader is on `record`, a live panel, so it must be there.
+  const foot = node("#foot").innerHTML;
+  if (!/<b>not<\/b> committed/.test(foot)) {
+    fail(`the footer does not mark a live panel's figures as uncommitted: ${JSON.stringify(foot.slice(0, 80))}`);
+  }
+  if (/Retrieval is shipped/.test(foot)) {
+    fail("the shipped summary is still in the footer; it belongs to the Metrics tab");
+  }
+
   const dl = node("#dl-json");
   if (!dl || !dl.onclick) fail("no download offered after a completed run");
   else {

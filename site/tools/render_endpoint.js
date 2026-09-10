@@ -226,15 +226,13 @@ global.fetch = async (rel) => rel === "/api/metrics"
   // just in prose: back to back, the second table reads as more of the first.
   const heads = [...p.matchAll(/<p class="sec major">([\s\S]*?)<\/p>/g)].map(m =>
     m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
-  if (heads.length !== 2) {
-    console.error(`expected two major sections, found ${heads.length}: ${JSON.stringify(heads)}`);
+  const wanted = [/Cohort bibliography/, /Enumerated variable pairs/, /What is shipped/];
+  for (const w of wanted) {
+    if (!heads.some(t => w.test(t))) { console.error(`no major section matching ${w}`); failed++; }
+  }
+  if (heads.length !== wanted.length) {
+    console.error(`expected ${wanted.length} major sections, found ${heads.length}: ${JSON.stringify(heads)}`);
     failed++;
-  }
-  if (!heads.some(t => /Enumerated variable pairs/.test(t))) {
-    console.error("no section heading for what the pipeline proposed"); failed++;
-  }
-  if (!heads.some(t => /Cohort bibliography/.test(t))) {
-    console.error("no section heading for what the literature published"); failed++;
   }
   // Each block must sit INSIDE the section it describes. Asserted by position,
   // because a block that drifts back above the headings still renders fine and
@@ -260,22 +258,28 @@ global.fetch = async (rel) => rel === "/api/metrics"
     console.error('the pipeline output is still headed "the scored artifacts"'); failed++;
   }
 
-  const f = node("#foot").innerHTML;
-  if (!f.includes("<b>not</b> committed")) {
-    console.error("footer still claims every figure is committed, under a live panel"); failed++;
+  // The three-paragraph summary now closes the Metrics tab. The footer keeps
+  // only the provenance line, and only where it is load-bearing: under a LIVE
+  // panel that is not Metrics. On a static panel it is empty, which is the
+  // point -- no sentence, rather than a sentence that is false.
+  if (!p.includes("<b>not</b> committed")) {
+    console.error("the Metrics summary does not say its live figures are uncommitted"); failed++;
   }
-  // ...and it must go back to the committed claim on a static stage.
+  if (!p.includes("Retrieval is shipped")) {
+    console.error("the Metrics tab does not carry the shipped summary"); failed++;
+  }
   document.querySelectorAll("[data-s]");
   const stat = byData.filter(x => x.dataset.s === "score" && x.onclick).pop();
   if (!stat) { console.error("no score tab handler"); failed++; }
   else {
     stat.onclick();
-    const f2 = node("#foot").innerHTML;
-    if (f2.includes("<b>not</b> committed")) {
-      console.error("footer still scoped to live figures on a committed panel"); failed++;
+    const f2 = node("#foot").innerHTML.trim();
+    if (f2 !== "") {
+      console.error(`footer should be empty on a static panel, got ${JSON.stringify(f2.slice(0, 70))}`);
+      failed++;
     }
-    if (!f2.includes("Every figure above is loaded from")) {
-      console.error("footer dropped the committed-artifact claim on a static panel"); failed++;
+    if (node("#panel").innerHTML.includes("Retrieval is shipped")) {
+      console.error("the shipped summary leaked onto a non-Metrics panel"); failed++;
     }
   }
 

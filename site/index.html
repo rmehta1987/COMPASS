@@ -1001,6 +1001,10 @@ function metricsPanel(){
   const nos=m.not_built.find(x=>x.what.indexOf("scoring")>-1);
   h+=`<div class="none">Running one of these re-drives the Specifier on that pair `
     +`and lands in <b>Record</b>. It does not re-score: ${esc(nos.why)}.</div>`;
+  h+=`<p class="sec major">What is shipped, and what these figures are`
+    +`<em>The whole run in three paragraphs, closing the tab that scores it.</em></p>`
+    +`<div class="none">${shippedSummary()}</div>`;
+
   h+=`<p class="prov">${esc(m.provenance.run_id)} &middot; dictionary `
     +`${esc(m.provenance.dictionary_version_hash)} &middot; tree `
     +`${esc(m.provenance.tree_sha)} &middot; ${esc(m.provenance.source)}</p>`;
@@ -1050,13 +1054,35 @@ function measureHTML(){
   return h;
 }
 
-function foot(){
-  const m=DATA.measurements, sh=m.shipped, I=sh.arms.I, lat=sh.latency;
-  el("#foot").innerHTML=`<p>Retrieval is shipped: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, no model call. Hypothesis generation is not: the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} pairs without two survey-metadata exports, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>.</p>
-  <p>Abstention on constructs the instrument does not measure is reliable on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(4)}, ${I.negatives_rejected} of ${I.n_negatives} negatives rejected). Detecting its own wrong pick is a different question, and the one figure for it is not on this page. Whether the fixture is a ceiling or a floor is unresolved.</p>
-  <p>${panelLive
+/* WHERE THE SHIPPED FIGURES LIVE. These three paragraphs used to hang under
+   every panel as a page footer, which put system-wide claims beneath a stage
+   that had nothing to do with them. They are a summary of the whole run, so they
+   close the Metrics tab instead, as a section of their own.
+
+   `provenanceLine` stays available to `foot` because the third paragraph is the
+   one thing that is NOT a summary: it says whether the figures directly above
+   are committed or were produced moments ago, and that has to travel with the
+   panel it describes. */
+function provenanceLine(){
+  return `${panelLive
       ? `The panel above was produced by this endpoint during this session. Its figures come from that run and are <b>not</b> committed &mdash; nothing on this page pins them, and a second run may differ. Every other figure here is loaded from <code>site/artifacts/</code> with its run id or commit.`
-      : `Every figure above is loaded from <code>site/artifacts/</code> with its run id or commit.`} Panels marked NOT YET RUN have no committed artifact and show no numbers.</p>`;
+      : `Every figure above is loaded from <code>site/artifacts/</code> with its run id or commit.`} Panels marked NOT YET RUN have no committed artifact and show no numbers.`;
+}
+
+function shippedSummary(){
+  const m=DATA.measurements, sh=m.shipped, I=sh.arms.I, lat=sh.latency;
+  return `<p>Retrieval is shipped: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, no model call. Hypothesis generation is not: the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} pairs without two survey-metadata exports, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>.</p>
+  <p>Abstention on constructs the instrument does not measure is reliable on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(4)}, ${I.negatives_rejected} of ${I.n_negatives} negatives rejected). Detecting its own wrong pick is a different question, and the one figure for it is not on this page. Whether the fixture is a ceiling or a floor is unresolved.</p>
+  <p>${provenanceLine()}</p>`;
+}
+
+/* The footer now carries ONLY the provenance line, and only where it is
+   load-bearing: under a panel this endpoint just produced. Dropping it outright
+   would undo the fix that scoped this sentence in the first place -- live
+   figures used to sit above a claim that everything on the page was committed.
+   A sha would say which commit, and the page carries no numerals. */
+function foot(){
+  el("#foot").innerHTML=panelLive&&sel!=="metrics"?`<p>${provenanceLine()}</p>`:"";
 }
 
 function panelPNG(){
