@@ -194,6 +194,23 @@ def test_the_retrieval_contract_renders_the_request_and_every_verdict():
         assert key not in rendered
 
 
+def test_absent_is_scoped_to_the_items_listed_not_the_codebook() -> None:
+    """C29a: the model sees k candidates, so `absent` can only mean the list missed.
+
+    It was defined as "the codebook does not measure this" while the model was
+    shown a pool, so a pool miss read as an instrument absence.
+    """
+    import re
+
+    rendered = PC.retrieval_contract("x", PC.candidates_from_keys(KEYS)).render()
+    # The schema is JSON inside the prompt, so a wrapped docstring line arrives
+    # as a literal backslash-n plus indentation.
+    flat = re.sub(r"(\\n|\s)+", " ", rendered)
+    assert "none of the items listed measures this" in flat
+    assert "codebook does not measure" not in flat
+    assert "items listed below" in PC.RETRIEVAL_GUIDANCE
+
+
 def test_the_retrieval_task_explains_the_family_fact_it_ships():
     """The prompt names `roster_family_size` because the candidates carry it."""
     c = PC.retrieval_contract("x", PC.candidates_from_keys(

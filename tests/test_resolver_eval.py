@@ -1113,3 +1113,10 @@ def test_the_structured_arm_cannot_request_more_samples_and_says_so():
                         sampling_note="scripted", prompt_arm="structured")
     assert report.extra_requests == 0
     assert report.results[0].samples_drawn == 2
+
+
+def test_the_critics_absent_is_scoped_to_what_it_was_shown() -> None:
+    """C29a: the critic sees the union of the shortlists, not the codebook."""
+    doc = " ".join((R.CriticVerdict.__doc__ or "").split())
+    assert "none of the items shown measures this" in doc
+    assert "codebook does not measure" not in doc

@@ -240,8 +240,10 @@ class VariableSelection(BaseModel):
             request spans a whole repeated family and one member would be wrong;
             `derive` when no item measures this and it must be computed;
             `ambiguous` when candidates are genuinely different variables and
-            the wording cannot say which is meant; `absent` when the codebook
-            does not measure this.
+            the wording cannot say which is meant; `absent` when none of the
+            items listed measures this. That is a claim about the list, not
+            the codebook: a list drawn from a larger codebook can miss an item
+            the codebook has.
         indices: The selected `index` values — one for `resolved`, one member
             for `family`, the inputs for `derive`, empty otherwise.
         recipe: How to compute the value, when the verdict is `derive`.
@@ -264,8 +266,9 @@ class VariableSelection(BaseModel):
 #: positives in 21 rows, every unpinnable request answered with one confident
 #: item.
 RETRIEVAL_GUIDANCE = (
-    "Decide what kind of answer this request has in the survey codebook "
-    "below. You have each item's wording and named facts about it; you do not "
+    "Decide what kind of answer this request has among the survey codebook "
+    "items listed below. You have each item's wording and named facts about "
+    "it; you do not "
     "have response options, value labels, skip logic or any data. If "
     "separating two candidates would need a fact you were not given, that is "
     "`ambiguous`, not a close call. Do not pick one to be helpful.\n\n"

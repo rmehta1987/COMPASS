@@ -1086,3 +1086,61 @@ def test_a_pair_named_in_prose_spends_nothing_and_says_the_role_was_positional(
     for role in ("exposure", "outcome"):
         assert roles[role]["verdict"] == "pinned", roles[role]
         assert "by position" in roles[role]["reason"], roles[role]["reason"]
+
+
+def test_an_absent_verdict_says_it_is_about_the_pool_not_the_instrument(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """C29a: `absent` on a pool of k is a pool miss, and the response says so."""
+    import time
+
+    from agent import cli_backend
+    from agent import prompt_contract as PC
+    from agent.backends import Reply
+    from serve import api
+
+    assert api._absence_scope("resolved", 20) is None
+    keys = ["m3:Q4.2", "m2:Q5.8"]
+    pool = {"cands": PC.candidates_from_keys(keys), "skipped": [],
+            "cos": dict.fromkeys(keys, 0.5), "rendered": "q"}
+
+    class _SaysAbsent:
+        """A backend whose every answer is `absent`."""
+
+        name = "says-absent"
+        last_cost = None
+
+        def __init__(self, **_: object) -> None:
+            pass
+
+        def transduce(self, *_: object) -> Reply:
+            return Reply(content='{"verdict": "absent", "indices": [], "reason": "no"}')
+
+    monkeypatch.setattr(cli_backend, "ClaudeCliBackend", _SaysAbsent)
+    monkeypatch.setattr(api, "_role_candidates", lambda *_a, **_k: pool)
+    st = api.State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    ticket = api._pair(st, {"request": "does smoking raise blood pressure"})["ticket"]
+    deadline = time.time() + 30
+    while st.jobs[ticket]["status"] == "running" and time.time() < deadline:
+        time.sleep(0.05)
+    done = st.jobs[ticket]
+    assert done["status"] == "done", done
+    for role in ("exposure", "outcome"):
+        out = done["run"]["roles"][role]
+        assert out["verdict"] == "absent"
+        assert "none of the 2 candidates shown" in out["absent_scope"]
+        assert "not a finding that the cohort lacks it" in out["absent_scope"]
+
+
+def test_both_prose_routes_state_the_scope_of_absent() -> None:
+    """`_resolve` needs the deployed bundle to run, so its wiring is read instead."""
+    import ast
+    import inspect
+
+    from serve import api
+
+    for fn in (api._pair, api._resolve):
+        tree = ast.parse(inspect.getsource(fn))
+        called = {n.func.id for n in ast.walk(tree)
+                  if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+        assert "_absence_scope" in called, (
+            f"{fn.__name__} returns a verdict without saying what `absent` covers")

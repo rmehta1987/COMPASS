@@ -120,6 +120,13 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   *the cohort does not measure X* when it does. ACCEPT: a pool miss and an instrument
   absence are distinguishable in the response, and the surface change re-runs
   `benchmark.contamination_check`.
+  DONE 2026-09-10 (loop item 6). `absent` is defined on the items listed, not the
+  codebook, in `VariableSelection`, `RETRIEVAL_GUIDANCE` and
+  `benchmark/resolver_eval.py::CriticVerdict`; both `serve/` prose routes return
+  `absent_scope`, naming the k shown and saying the instrument was not searched.
+  RE-BASELINE: `benchmark/resolver_eval.py`'s critic prompt changed with it, so no
+  resolver_eval result from before this commit is comparable to one after. None is
+  quoted in any document (searched 2026-09-10); the next run is the new baseline.
 
 - **C30 — N outcomes are N records. DECIDED 2026-09-10 by the operator: the convention
   reading, not the schema amendment.** A request naming one exposure against N outcomes

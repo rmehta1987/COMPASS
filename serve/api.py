@@ -437,6 +437,29 @@ PINNED_REASON = ("the request named this key, so the key was not inferred. Its "
                  "sentence. Check the direction before confirming.")
 
 
+def _absence_scope(verdict: str, shown: int) -> str | None:
+    """What an `absent` verdict can claim on a route that showed `shown` items.
+
+    C29a. The model saw the top `shown` candidates, never the instrument, so
+    `absent` here means the POOL missed; it is not a finding that the cohort
+    lacks the construct. C29 measured the pool missing constructs a request
+    names (`out/pool_coverage.json`), so reading `absent` the other way would
+    tell a researcher the cohort does not measure X when it does.
+
+    Args:
+        verdict: The model's verdict.
+        shown: How many candidates it was offered.
+
+    Returns:
+        The scope sentence for `absent`, else None.
+    """
+    if verdict != "absent":
+        return None
+    return (f"none of the {shown} candidates shown measures this. Nothing searched "
+            f"the rest of the instrument, so this is not a finding that the "
+            f"cohort lacks it: ask again in other words, or with a larger k.")
+
+
 def _pin_keys_from_prose(request: str, constructs: dict[str, Any]) -> dict[str, str]:
     """Keys the caller wrote into the request, given roles BY POSITION.
 
@@ -799,6 +822,8 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                 proposed = [i for i in chosen.indices if 1 <= i <= len(pool["cands"])]
                 out[role] = {
                     "verdict": chosen.verdict,
+                    "absent_scope": _absence_scope(chosen.verdict,
+                                                   len(pool["cands"])),
                     "reason": chosen.reason,
                     "recipe": chosen.recipe or None,
                     "missing_dimension": chosen.missing_dimension or None,
@@ -939,6 +964,7 @@ def _resolve(state: State, body: dict[str, Any]) -> dict[str, Any]:
                 "elapsed_s": round(time.time() - t0, 2),
                 "cost_usd": backend.last_cost,
                 "verdict": chosen.verdict,
+                "absent_scope": _absence_scope(chosen.verdict, len(cands)),
                 "reason": chosen.reason,
                 "recipe": chosen.recipe or None,
                 "missing_dimension": chosen.missing_dimension or None,

@@ -190,7 +190,8 @@ class CriticVerdict(BaseModel):
             member would be wrong; `derive` when no item measures this and it
             must be computed from others; `ambiguous` when several candidates are
             genuinely different variables and the wording cannot say which is
-            meant; `absent` when the codebook does not measure this at all.
+            meant; `absent` when none of the items shown measures this -- a
+            claim about the shortlists, not the codebook.
         items: The items the verdict names — one for `resolved`, any member of
             the family for `family`, the inputs for `derive`, empty otherwise.
         recipe: How to compute the value, when the verdict is `derive`.
