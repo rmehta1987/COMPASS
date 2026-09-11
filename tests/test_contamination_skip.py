@@ -116,3 +116,48 @@ def test_the_split_prompt_is_in_the_scanned_surface() -> None:
     surface = cc.model_visible_surface()
     assert {"split_prompt", "split_schema"} <= set(surface)
     assert "Use only the question's own words" in surface["split_prompt"]
+
+
+_SECTIONS = ("check_tool_coverage", "check_markers",
+             "check_markers_are_not_instrument_content",
+             "check_no_prevalence_figure_in_surface",
+             "check_input_does_not_contain_the_answer",
+             "check_no_platform_name_in_surface", "check_provenance",
+             "check_seal_config", "check_holdout_not_reachable")
+
+
+def _live_run_without_the_scorer(monkeypatch: pytest.MonkeyPatch,
+                                 missing: str) -> None:
+    """Every section clean, the probes answering, the scorer import failing."""
+    from agent import sealed
+
+    def no_scorer(self: sealed.SealedWorktree, model: str = "") -> dict:
+        raise ModuleNotFoundError(f"No module named '{missing}'", name=missing)
+
+    monkeypatch.setattr(sealed.SealedWorktree, "verify", no_scorer)
+    monkeypatch.setattr(sealed.SealedWorktree, "run",
+                        lambda self, argv, timeout=900.0: {"result": "NO, planted"})
+    for name in _SECTIONS:
+        monkeypatch.setattr(cc, name, lambda *a, **k: [])
+    monkeypatch.setattr(sys, "argv", ["contamination_check", "--live"])
+
+
+def test_a_withheld_scorer_skips_the_live_probes_but_shows_the_answers(
+        monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """`--live` crashed in every clone without the scorer, answers and all."""
+    from agent.sealed import PROBES
+
+    _live_run_without_the_scorer(monkeypatch, "benchmark.leak_facts")
+    rc = cc.main()
+    out = capsys.readouterr().out
+    assert "SKIP  live seal probes" in out and "NOT a pass" in out
+    assert out.count("NO, planted") == len(PROBES), "every answer is shown, unscored"
+    assert rc != 0, "an unscored seal probe is not a clean one"
+
+
+def test_a_genuinely_missing_module_still_stops_the_live_probes(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Only the withheld scorer turns the live probes into a skip."""
+    _live_run_without_the_scorer(monkeypatch, "numpy")
+    with pytest.raises(ModuleNotFoundError, match="numpy"):
+        cc.main()

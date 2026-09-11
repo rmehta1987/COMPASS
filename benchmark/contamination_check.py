@@ -1191,10 +1191,28 @@ def main() -> int:
         failed += len(problems)
 
     if live:
-        from agent.sealed import CLEAN, SealedWorktree
+        from agent.sealed import CLEAN, PROBES, SealedWorktree
         print("\n  live seal probes (Haiku 4.5):")
         with SealedWorktree() as w:
-            r = w.verify(model="claude-haiku-4-5")
+            try:
+                r = w.verify(model="claude-haiku-4-5")
+            except ModuleNotFoundError as exc:
+                # The probes can run here; only their scorer is withheld. Until
+                # 2026-09-11 this crashed, which hid the answers as well, and
+                # the answers are the part a person can still read. Same rule as
+                # the sections above: a loud skip and a non-zero exit, never a pass.
+                if exc.name not in WITHHELD_MODULES:
+                    raise
+                skipped.append("live seal probes")
+                print("  SKIP  live seal probes")
+                print(f"          {exc.name} is withheld from this clone, so no "
+                      f"answer was scored. NOT a pass. Unscored, for a person:")
+                for n, q in PROBES:
+                    out = w.run([*w.base_argv("claude-haiku-4-5"), q], timeout=240)
+                    print(f"    ????  {n}")
+                    print(f"          {str(out.get('result', '')).strip()[:400]}"
+                          .replace("\n", " "))
+                r = {"probes": {}}
             for n, p in r["probes"].items():
                 tag = {"clean": "ok  ", "leaked": "LEAK",
                        "inconclusive": "????"}[p["verdict"]]
