@@ -551,6 +551,66 @@ def pair_verdict(responses: list[ResponseVerdict],
     return SPECIFIABLE if n >= min_specifiable else NOT_SPECIFIABLE
 
 
+#: C6's two readings of a pair the unaided arm could not specify.
+#: `NOT_SPECIFIABLE` alone conflates them (`TASKS.md` C6, second blocker): a pair
+#: that needs the instrument, and a pair that has no coherent design at all.
+NEEDS_INSTRUMENT = "needs_instrument"
+NO_COHERENT_DESIGN = "no_coherent_design"
+
+
+def instrument_blocker(exposure_key: str, outcome_key: str) -> str | None:
+    """What stops this pair having a design even WITH the instrument, or None.
+
+    Reuses `benchmark/calibration_set.py::_evaluate`, the environment ruling the
+    calibration set is built on, which reads the real tools live, rather than a
+    second copy of its four gates. A key the dictionary does not hold is a
+    blocker too: `_evaluate` refuses to reason about an invented key.
+
+    Args:
+        exposure_key: The exposure anchor.
+        outcome_key: The outcome anchor.
+
+    Returns:
+        The blocker's name (a `RefusalReason` value, or `unresolvable`), or None
+        when the environment finds nothing that stops a design.
+    """
+    from benchmark.calibration_set import _evaluate
+
+    try:
+        verdict = _evaluate(exposure_key, outcome_key)
+    except ValueError:
+        return "unresolvable"
+    return verdict.reason.value if verdict.reason is not None else None
+
+
+def with_instrument(unaided: str, exposure_key: str, outcome_key: str) -> str:
+    """Split an unaided verdict by whether the instrument makes the pair designable.
+
+    Deterministic and model-free: the unaided rubric's verdict, then the
+    environment's ruling on the pair. A pair the unaided arm specified stays
+    `SPECIFIABLE`; one it could not becomes `NEEDS_INSTRUMENT` when the
+    environment finds no blocker, and `NO_COHERENT_DESIGN` when it names one.
+
+    Args:
+        unaided: `SPECIFIABLE` or `NOT_SPECIFIABLE`, from `pair_verdict`.
+        exposure_key: The exposure anchor.
+        outcome_key: The outcome anchor.
+
+    Returns:
+        `SPECIFIABLE`, `NEEDS_INSTRUMENT` or `NO_COHERENT_DESIGN`.
+
+    Raises:
+        ValueError: If `unaided` is not one of the two unaided verdicts.
+    """
+    if unaided == SPECIFIABLE:
+        return SPECIFIABLE
+    if unaided != NOT_SPECIFIABLE:
+        raise ValueError(f"not an unaided verdict: {unaided!r}")
+    if instrument_blocker(exposure_key, outcome_key) is None:
+        return NEEDS_INSTRUMENT
+    return NO_COHERENT_DESIGN
+
+
 # --------------------------------------------------------------------------- #
 # the runner
 # --------------------------------------------------------------------------- #

@@ -606,3 +606,51 @@ def test_pair_slug_is_a_usable_filename():
     s = PairSpec("m3:Q16.1", "a", "m2:Q5.8", "b").slug
     assert "/" not in s and ":" not in s and " " not in s
     assert s.startswith("m3") and s.endswith("Q5.8")
+
+
+# --------------------------------------------------------------------------- #
+# C6's second blocker: needs the instrument, or no coherent design at all
+# --------------------------------------------------------------------------- #
+
+
+def test_the_instrument_check_agrees_with_every_calibration_row() -> None:
+    """The ruling is the calibration set's own, so it must reproduce every row."""
+    from benchmark.calibration_set import build_calibration_set
+    from benchmark.unaided_specifiability import instrument_blocker
+
+    rows = build_calibration_set()
+    got = [instrument_blocker(r.exposure_key, r.outcome_key) for r in rows]
+    want = [r.refusal_reason.value if r.refusal_reason is not None else None
+            for r in rows]
+    assert got == want
+    # Anti-vacuity: both kinds of row are present.
+    assert None in got and any(g is not None for g in got)
+
+
+def test_a_key_the_dictionary_lacks_is_a_blocker() -> None:
+    """An invented key has no design, however the unaided arm answered."""
+    from benchmark.unaided_specifiability import instrument_blocker
+
+    assert instrument_blocker("m9:Q0.0", "m2:Q5.8") == "unresolvable"
+
+
+def test_not_specifiable_splits_by_what_the_instrument_allows() -> None:
+    """Needs-the-instrument and no-coherent-design are two readings, kept apart."""
+    from benchmark.calibration_set import build_calibration_set
+    from benchmark.unaided_specifiability import (
+        NEEDS_INSTRUMENT,
+        NO_COHERENT_DESIGN,
+        with_instrument,
+    )
+
+    rows = build_calibration_set()
+    open_row = next(r for r in rows if r.refusal_reason is None)
+    blocked = next(r for r in rows if r.refusal_reason is not None)
+    for r in (open_row, blocked):
+        assert with_instrument(SPECIFIABLE, r.exposure_key, r.outcome_key) == SPECIFIABLE
+    assert with_instrument(NOT_SPECIFIABLE, open_row.exposure_key,
+                           open_row.outcome_key) == NEEDS_INSTRUMENT
+    assert with_instrument(NOT_SPECIFIABLE, blocked.exposure_key,
+                           blocked.outcome_key) == NO_COHERENT_DESIGN
+    with pytest.raises(ValueError, match="not an unaided verdict"):
+        with_instrument("maybe", open_row.exposure_key, open_row.outcome_key)

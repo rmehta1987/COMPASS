@@ -26,7 +26,11 @@ testable; seed its failure first.
   `clinical`/`lab`/`ehr` arms survive.
 - C6 second blocker: `benchmark/unaided_specifiability.py::NOT_SPECIFIABLE` conflates
   "needs the instrument" with "no coherent design at all", so C6's arms need a
-  designable-WITH-instrument check. It exists nowhere; build it first.
+  designable-WITH-instrument check. BUILT 2026-09-11 (loop): 
+  `benchmark/unaided_specifiability.py::with_instrument` splits `NOT_SPECIFIABLE`
+  into `NEEDS_INSTRUMENT` and `NO_COHERENT_DESIGN` using
+  `benchmark/calibration_set.py::_evaluate`, the calibration set's own environment
+  ruling, and reproduces every calibration row's verdict. C6 itself stays BLOCKED on C12.
 - **C13 — prune published pairs from the generation frame.** BLOCKED on C12. Filter at
   `generate/funnel.py::s2_prune` on the key's construct-key pairs, never in a prompt.
   VERIFIED none is in the current frame, so it binds only once the frame widens. ACCEPT: a
