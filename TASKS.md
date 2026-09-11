@@ -92,6 +92,11 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   takes the pool and another is absent entirely (67 of 68 failures), or the blended vector
   matches neither (1 of 68). The fixture is composed to FAVOUR one ranking and inherits
   `retrieval_queries.json::KNOWN_BIAS`, so 0.32 is an upper bound.
+  C29-B RESTATED 2026-09-11 (loop item 10), counted from `out/pool_coverage.json`: 60 of
+  those 100 requests (30 1×2, 20 2×1, 10 2×2) are shapes no single record carries; under
+  C30's convention each is N records, one per pair. The figure governing `_pair` as it
+  ships is the 1×1 row: **0.600 shared against 0.825 oracle, on 40 requests** (24 and 33
+  of 40). 0.32 is the all-shapes joint; quote it only with that beside it.
   🛑 BLOCKER, and it is a request-set problem before it is a code problem: **split
   accuracy is unmeasured and the oracle does not bound it.** `out/pool_coverage.json`'s
   split arms split on the fixture's own phrases — a perfect decomposition — and are a
@@ -106,7 +111,7 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   keys, authored WITHOUT sight of the gold wording — no oracle in the measurement
   (`AGENTS.md` §Testing Patterns) — reporting gold-excluded beside recall; (ii) end-to-end
   coverage under a real splitter reported against `out/pool_coverage.json`'s shared row
-  (0.32) and its oracle row (0.71), not against `out/fusion_pool_depth.json`'s 0.942,
+  (0.32; 0.600 at 1×1) and its oracle row (0.71; 0.825 at 1×1), not against `out/fusion_pool_depth.json`'s 0.942,
   which is a MARGINAL; (iii) the split prompt joins `model_visible_surface` and
   `benchmark.contamination_check` re-runs; (iv) the prompt held fixed and shown stable
   under one wording perturbation (`AGENTS.md` §Verification Discipline).

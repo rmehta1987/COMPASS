@@ -699,6 +699,14 @@ length — the most favourable input a single ranking can get. It also inherits
 modelled here (`build/dictionary.json` is absent from this checkout), so every figure
 above is an upper bound by that much again.
 
+**Restatement for C29-B, 2026-09-11, added by the backlog loop after the signature; the
+signed text above is unchanged.** 0.32 is the joint over all four shapes, and 60 of the 100
+requests (30 1×2, 20 2×1, 10 2×2) are shapes no single record carries: under `TASKS.md`
+C30's convention each is N records, one per pair. The figure that governs `_pair` as it
+ships is the 1×1 row: **0.600 shared against 0.825 oracle, on 40 requests** (24 and 33 of
+40; `out/pool_coverage.json::depths.depth_20.by_shape`). Every 0.32 in this addendum, here
+and in §2 and §6, is the all-shapes joint and is read with this beside it.
+
 #### 2. What that does to §4's rewriter, at the depths these routes read
 
 §4 reports R@1, R@5 and R@10. `_resolve` offers 8 and `_pair` offers 20, and

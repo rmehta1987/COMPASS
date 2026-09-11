@@ -39,7 +39,9 @@ DEPTHS = (1, 5, 8, 10, 20)
 #: number. These rows are a MARGINAL -- one gold per single-construct query.
 #: `_pair` builds ONE pool that has to carry EVERY construct the sentence names,
 #: which is a joint event and is strictly smaller: out/pool_coverage.json
-#: measures it at 0.32 against this file's 0.942 marginal. An earlier version of
+#: measures it at 0.32 over all four request shapes, and 0.600 on the 40
+#: one-exposure, one-outcome requests `_pair` serves as it ships, against this
+#: file's 0.942 marginal. An earlier version of
 #: this constant named the handlers without that sentence, so the artifact
 #: asserted an attribution FUSION.md had already disowned in prose -- a
 #: disclaimer that lives only in the document does not travel with the JSON.
