@@ -3119,3 +3119,43 @@ def test_the_seal_check_catches_builtins_left_on(monkeypatch: pytest.MonkeyPatch
 
     monkeypatch.setattr(sealed.SealedWorktree, "base_argv", without_switch)
     assert any("built-in tools" in b for b in cc.check_seal_config())
+
+
+# --------------------------------------------------------------------------- #
+# the saved record gets its own sample's log, not a same-hash twin's
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize("silent_first", [True, False])
+def test_the_live_driver_audits_the_selected_record_against_its_own_attempt(
+        pair: tuple, record: dict, silent_first: bool) -> None:
+    """A silent twin and a disclosing twin hash alike; only one produced the record.
+
+    The driver matched the winner by `record_hash`, so with the silent twin
+    first it copied the silent twin's tool log, audit and repairs beside the
+    disclosing record that won.
+    """
+    from generate.live_specifier import winning_attempt
+
+    p, _, _ = pair
+    silent, disclosing = json.dumps(record), _disclosing(record)
+    order = [silent, disclosing] if silent_first else [disclosing, silent]
+    backend = ScriptedBackend(_good_script(order[0]) + _good_script(order[1]))
+    res = SP.specify(backend, p, k=2)
+    assert res.selected is not None and res.selected.sought_covariates
+    win = winning_attempt(res)
+    assert win is not None and win.protocol is res.selected
+    assert win.protocol.sought_covariates, "the driver picked the silent twin's attempt"
+
+
+def test_the_live_driver_finds_its_winner_through_winning_attempt() -> None:
+    """The lookup lives in one tested place, not inline in main."""
+    import ast
+    import inspect
+
+    from generate import live_specifier
+
+    tree = ast.parse(inspect.getsource(live_specifier.main))
+    called = {n.func.id for n in ast.walk(tree)
+              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    assert "winning_attempt" in called

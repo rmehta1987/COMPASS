@@ -218,6 +218,7 @@ def ref(r: object) -> str:
     return f"area:{getattr(r, 'measure_id', r)}"
 from agent.specifier import (  # noqa: E402
     Attempt,
+    Result,
     specify,
     untraced_derivation_values,
 )
@@ -230,6 +231,26 @@ from generate.funnel import (  # noqa: E402
     load_constructs,
     run,
 )
+
+
+def winning_attempt(res: Result) -> Attempt | None:
+    """The attempt that produced the selected record, found by identity.
+
+    Not by `record_hash`. `sought_covariates` sits outside `canonical_form`, so a
+    silent sample and its disclosing twin hash identically, and a hash match
+    returned whichever arrived first. When the disclosing twin won, the saved
+    record got the silent twin's tool log, audit and repairs. `specify` selects
+    an attempt's own protocol object, so identity names exactly one attempt.
+
+    Args:
+        res: What `specify` returned.
+
+    Returns:
+        The attempt whose protocol was selected, or None if none was.
+    """
+    if res.selected is None:
+        return None
+    return next((a for a in res.attempts if a.protocol is res.selected), None)
 
 
 def save_repairs(out: Path, attempt: Attempt, log_records: list[dict]) -> Path:
@@ -422,9 +443,7 @@ def main() -> None:
     # the two together. Without this the record is auditable only against
     # whatever happened to be in run/tool_log.jsonl last, which is how an earlier
     # session came to report 28 tool calls for a record that made none of them.
-    win = next((a for a in res.attempts
-                if a.protocol is not None and a.tool_log_path
-                and a.protocol.record_hash() == p.record_hash()), None)
+    win = winning_attempt(res)
     src = win.tool_log_path if win else None
     log_recs: list[dict] = []
     if src and Path(src).exists():
