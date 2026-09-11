@@ -218,3 +218,57 @@ def test_the_retrieval_task_explains_the_family_fact_it_ships():
     rendered = c.render()
     assert "roster_family_size" in c.task
     assert '"roster_family_size": 15' in rendered
+
+
+# --------------------------------------------------------------------------- #
+# C29-C: the splitter may leave words out, never add or change one
+# --------------------------------------------------------------------------- #
+
+_REQ = "Does smoking and heavy, regular drinking raise the risk of high blood pressure?"
+
+
+def _reply(exposures: list[str], outcomes: list[str], unsplittable: bool = False) -> str:
+    return json.dumps({"exposures": exposures, "outcomes": outcomes,
+                       "unsplittable": unsplittable})
+
+
+def test_a_split_in_the_questions_own_words_is_accepted() -> None:
+    """Case, spacing and punctuation are forgiven, and words may be left out."""
+    split = PC.parse_split(_REQ, "```json\n" + _reply(
+        ["Smoking", "heavy drinking"], ["high blood   pressure"]) + "\n```")
+    assert split.exposures == ("Smoking", "heavy drinking")   # "regular" dropped
+    assert split.outcomes == ("high blood   pressure",)
+
+
+def test_a_split_that_adds_changes_or_reorders_a_word_is_refused() -> None:
+    """The splitter cannot paraphrase, reorder, or bring in wording of its own."""
+    for bad in (_reply(["tobacco use"], ["high blood pressure"]),    # added
+                _reply(["smoking"], ["hypertension"]),               # changed
+                _reply(["drinking heavy"], ["high blood pressure"]),  # reordered
+                _reply(["smoking"], ["   "])):                        # empty
+        with pytest.raises(PC.SplitRejected, match="own words"):
+            PC.parse_split(_REQ, bad)
+
+
+def test_a_split_that_contradicts_itself_is_refused() -> None:
+    """One entry in both roles, entries beside `unsplittable`, or half a pair."""
+    with pytest.raises(PC.SplitRejected, match="both exposure and outcome"):
+        PC.parse_split(_REQ, _reply(["smoking"], ["Smoking"]))
+    with pytest.raises(PC.SplitRejected, match="unsplittable"):
+        PC.parse_split(_REQ, _reply(["smoking"], [], unsplittable=True))
+    with pytest.raises(PC.SplitRejected, match="both needed"):
+        PC.parse_split(_REQ, _reply(["smoking"], []))
+    with pytest.raises(PC.SplitRejected, match="no JSON object"):
+        PC.parse_split(_REQ, "I cannot split this.")
+    # Anti-vacuity: a request that names neither kind may say so.
+    assert PC.parse_split("tell me about the survey", _reply([], [], True)).unsplittable
+
+
+def test_the_split_prompt_carries_the_request_and_nothing_else_retrieved() -> None:
+    """The splitter reads the sentence alone: no candidates, no instrument text."""
+    prompt = PC.split_prompt(_REQ)
+    assert _REQ in prompt and PC.SPLIT_GUIDANCE in prompt
+    assert "Candidates" not in prompt and '"index"' not in prompt
+    assert json.dumps(PC.RequestSplit.model_json_schema()) in prompt
+    # The developer note stays out of what the model reads.
+    assert "prompt text" not in json.dumps(PC.RequestSplit.model_json_schema())

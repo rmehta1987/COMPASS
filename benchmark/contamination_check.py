@@ -659,6 +659,21 @@ def _rewrite_surface() -> dict[str, str]:
     return out
 
 
+def _split_surface() -> dict[str, str]:
+    """C29-C's splitter: a prompt that carries no instrument wording by design.
+
+    It reads the researcher's sentence and nothing else, and that is a claim
+    about the text, which is what this scan checks.
+
+    Returns:
+        The rendered prompt, with a placeholder request, and its schema.
+    """
+    from agent.prompt_contract import RequestSplit, split_prompt
+
+    return {"split_prompt": split_prompt("<the researcher's request>"),
+            "split_schema": json.dumps(RequestSplit.model_json_schema())}
+
+
 def model_visible_surface(mode: Mode = "benchmark") -> dict[str, str]:
     """Every byte the model receives, keyed by where it comes from.
 
@@ -697,6 +712,8 @@ def model_visible_surface(mode: Mode = "benchmark") -> dict[str, str]:
         # The hybrid's pool prompt: a different renderer, so a scan over arm D's
         # catalogue is not a scan over this.
         **_hybrid_surface(),
+        # C29-C's splitter, which runs before retrieval on the site's route.
+        **_split_surface(),
     }
     # Tool RETURN VALUES. Generated, not stored — a file grep cannot see these.
     # The whole return is scanned, not a chosen field: `get_design_convention`

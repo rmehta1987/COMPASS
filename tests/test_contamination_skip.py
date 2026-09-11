@@ -109,3 +109,10 @@ def test_a_genuinely_missing_module_still_stops_the_run(monkeypatch) -> None:
     monkeypatch.setattr(sys, "argv", ["contamination_check"])
     with pytest.raises(ModuleNotFoundError, match="numpy"):
         cc.main()
+
+
+def test_the_split_prompt_is_in_the_scanned_surface() -> None:
+    """C29-C: the splitter's prompt and schema reach a model, so the scan reads them."""
+    surface = cc.model_visible_surface()
+    assert {"split_prompt", "split_schema"} <= set(surface)
+    assert "Use only the question's own words" in surface["split_prompt"]
