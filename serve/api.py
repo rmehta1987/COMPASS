@@ -745,15 +745,102 @@ def _enumerate(state: State, body: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _union_pools(parts: list[dict[str, Any]]) -> dict[str, Any]:
+    """Merge per-phrase pools into one, interleaved by rank, each key once.
+
+    Round-robin by rank so no phrase's candidates are buried under another's:
+    the first-ranked item of every phrase comes before any second-ranked one.
+
+    Args:
+        parts: Pools as `_role_candidates` returns them.
+
+    Returns:
+        One pool in the same shape, re-indexed 1..n.
+    """
+    from agent import prompt_contract as PC
+
+    keys: list[str] = []
+    facts: dict[str, dict[str, Any]] = {}
+    cos: dict[str, float] = {}
+    for rank in range(max(len(p["cands"]) for p in parts)):
+        for p in parts:
+            if rank < len(p["cands"]) and p["cands"][rank].key not in cos:
+                c = p["cands"][rank]
+                keys.append(c.key)
+                facts[c.key] = dict(c.facts)
+                cos[c.key] = p["cos"][c.key]
+    skipped: list[str] = []
+    for p in parts:
+        skipped += [s for s in p["skipped"] if s not in skipped]
+    return {"cands": PC.candidates_from_keys(keys, facts), "cos": cos,
+            "skipped": skipped,
+            "rendered": " | ".join(p["rendered"] for p in parts)}
+
+
+def _split_pools(state: State, backend: Any, request: str, k: int,
+                 fallback: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """C29-C: split the request, then give each role the pool its phrases build.
+
+    One shared pool carries every construct a request names in only 32 of 100
+    composed requests (`out/pool_coverage.json`). Here a model names the
+    exposures and outcomes first, `agent/prompt_contract.py::parse_split`
+    refuses any entry that is not the request's own words, and each phrase is
+    retrieved alone at an equal share of `k` -- the same total budget.
+
+    ANY SPLIT THAT CANNOT BE USED FALLS BACK TO THE SHARED POOL, and says why.
+    A refused or unsplittable reply, or a role whose phrases cite nothing,
+    leaves the route exactly as it was without `split`.
+
+    Args:
+        state: Shared handles.
+        backend: The model backend, already holding the lock.
+        request: The researcher's prose.
+        k: The route's total pool budget.
+        fallback: The shared pool for every role left unpinned.
+
+    Returns:
+        `(pools by role, what the split did)`.
+    """
+    from agent import prompt_contract as PC
+
+    note: dict[str, Any] = {"splitter_model": backend.name}
+    try:
+        split = PC.parse_split(
+            request, str(backend.transduce(PC.split_prompt(request)).content))
+    except ValueError as exc:
+        return fallback, {**note, "status": "fallback", "why": str(exc)[:300]}
+    if split.unsplittable:
+        return fallback, {**note, "status": "fallback",
+                          "why": "the splitter found no exposure and outcome"}
+    phrases = {"exposure": split.exposures, "outcome": split.outcomes}
+    each = max(1, k // (len(split.exposures) + len(split.outcomes)))
+    pools: dict[str, Any] = {}
+    for role in fallback:
+        parts = []
+        for phrase in phrases[role]:
+            try:
+                parts.append(_role_candidates(state, phrase, role, each))
+            except ValueError:
+                continue
+        if not parts:
+            return fallback, {**note, "status": "fallback",
+                              "why": f"no {role} phrase built a citable pool"}
+        pools[role] = _union_pools(parts)
+    return pools, {**note, "status": "used", "exposures": list(split.exposures),
+                   "outcomes": list(split.outcomes), "per_phrase_k": each}
+
+
 def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
     """Propose BOTH anchors from one piece of prose. The human confirms.
 
     Args:
         state: Shared handles.
-        body: The request, carrying `request` prose and optionally `k`, `model`.
+        body: The request, carrying `request` prose and optionally `k`, `model`,
+            and `split` to have a model separate the request into its
+            exposures and outcomes before anything is retrieved (C29-C).
 
     Returns:
-        A ticket; the run is two model calls.
+        A ticket; the run is two model calls, three with `split`.
 
     Raises:
         ValueError: When `request` is missing or the model is not offered.
@@ -783,6 +870,10 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
     # pool is deepened and shared, and the model picks each role from it.
     shared = None if len(pinned) == 2 else _role_candidates(state, request, "exposure", k)
     roles = {r: shared for r in ("exposure", "outcome") if r not in pinned}
+    # C29-C, opt-in until it is measured on a clean fixture. The split is a
+    # model call, so it runs inside the job after the lock, and it falls back to
+    # the shared pool above whenever the split cannot be used.
+    split_on = bool(body.get("split")) and len(pinned) < 2
 
     if not state.model_lock.acquire(blocking=False):
         raise Busy("a model run is already in progress on this endpoint.")
@@ -799,6 +890,11 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
             backend = ClaudeCliBackend(model=model, mode="benchmark")
             t0 = time.time()
             out: dict[str, Any] = {}
+            pools: dict[str, Any] = dict(roles)
+            split_info: dict[str, Any] = {"status": "off"}
+            if split_on:
+                pools, split_info = _split_pools(state, backend, request, k,
+                                                 pools)
             for role in ("exposure", "outcome"):
                 if role in pinned:
                     key = pinned[role]
@@ -811,7 +907,7 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                         "candidates": [],
                     }
                     continue
-                pool = roles[role]
+                pool = pools[role]
                 # `shared` is None only when both roles are pinned, and then
                 # `roles` is empty, so no loop pass reaches here without a pool.
                 assert pool is not None
@@ -857,6 +953,7 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                 "elapsed_s": round(time.time() - t0, 2),
                 "cost_usd": backend.last_cost,
                 "roles": out,
+                "split": split_info,
                 "anchors_proposed_by": "model",
                 "not_a_selection":
                     "Proposals only. Nothing is committed: confirm each anchor "

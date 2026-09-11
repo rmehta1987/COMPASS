@@ -1170,3 +1170,102 @@ def test_specify_tells_run_identity_who_proposed_the_pair() -> None:
              and isinstance(n.func, ast.Name) and n.func.id == "run_identity"]
     assert calls, "_specify no longer builds a run identity"
     assert {"models", "anchors_proposed_by"} <= {k.arg for k in calls[0].keywords}
+
+
+# --------------------------------------------------------------------------- #
+# C29-C: split before retrieving, and fall back to the shared pool when a split
+# cannot be used
+# --------------------------------------------------------------------------- #
+
+_SPLIT_REQ = "does smoking raise high blood pressure"
+_POOLS = {_SPLIT_REQ: ["m3:Q2.1"], "smoking": ["m3:Q4.2"],
+          "high blood pressure": ["m2:Q5.8"]}
+
+
+def _run_pair(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: dict,
+              replies: list[str]) -> tuple[dict, list[tuple[str, str, int]]]:
+    """Drive `_pair` with scripted model replies and a pool per query text.
+
+    Returns:
+        The finished job and every `(query, role, k)` a pool was built for.
+    """
+    import time
+
+    from agent import cli_backend
+    from agent import prompt_contract as PC
+    from agent.backends import Reply
+    from serve import api
+
+    seen: list[tuple[str, str, int]] = []
+    script = iter(replies)
+
+    def fake_pool(_state: object, query: str, role: str, k: int) -> dict:
+        seen.append((query, role, k))
+        ks = _POOLS[query]
+        return {"cands": PC.candidates_from_keys(ks), "cos": dict.fromkeys(ks, 0.5),
+                "skipped": [], "rendered": f"q:{query}"}
+
+    class _Scripted:
+        """A backend that answers from a script, in order."""
+
+        name = "scripted"
+        last_cost = None
+
+        def __init__(self, **_: object) -> None:
+            pass
+
+        def transduce(self, *_: object) -> Reply:
+            return Reply(content=next(script))
+
+    monkeypatch.setattr(cli_backend, "ClaudeCliBackend", _Scripted)
+    monkeypatch.setattr(api, "_role_candidates", fake_pool)
+    st = api.State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run",
+                   show_instrument=True)
+    ticket = api._pair(st, body)["ticket"]
+    deadline = time.time() + 30
+    while st.jobs[ticket]["status"] == "running" and time.time() < deadline:
+        time.sleep(0.05)
+    return st.jobs[ticket], seen
+
+
+_PICK_FIRST = '{"verdict": "resolved", "indices": [1]}'
+
+
+def test_a_split_pair_builds_each_role_from_its_own_phrases(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """C29-C: each phrase is retrieved alone, at an equal share of k."""
+    split = json.dumps({"exposures": ["smoking"], "outcomes": ["high blood pressure"]})
+    done, seen = _run_pair(tmp_path, monkeypatch,
+                           {"request": _SPLIT_REQ, "split": True},
+                           [split, _PICK_FIRST, _PICK_FIRST])
+    assert done["status"] == "done", done
+    run = done["run"]
+    assert run["split"]["status"] == "used", run["split"]
+    assert ("smoking", "exposure", 10) in seen
+    assert ("high blood pressure", "outcome", 10) in seen
+    assert [c["key"] for c in run["roles"]["exposure"]["candidates"]] == ["m3:Q4.2"]
+    assert [c["key"] for c in run["roles"]["outcome"]["candidates"]] == ["m2:Q5.8"]
+
+
+def test_a_split_that_adds_a_word_falls_back_to_the_shared_pool(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A refused split leaves the route as it was, and says why."""
+    invented = json.dumps({"exposures": ["tobacco"], "outcomes": ["high blood pressure"]})
+    done, seen = _run_pair(tmp_path, monkeypatch,
+                           {"request": _SPLIT_REQ, "split": True},
+                           [invented, _PICK_FIRST, _PICK_FIRST])
+    run = done["run"]
+    assert run["split"]["status"] == "fallback"
+    assert "own words" in run["split"]["why"]
+    assert [q for q, _, _ in seen] == [_SPLIT_REQ], "only the shared pool was built"
+    for role in ("exposure", "outcome"):
+        assert [c["key"] for c in run["roles"][role]["candidates"]] == ["m3:Q2.1"]
+
+
+def test_split_is_off_unless_asked_for(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The site's route is unchanged until a clean fixture measures the split."""
+    done, seen = _run_pair(tmp_path, monkeypatch, {"request": _SPLIT_REQ},
+                           [_PICK_FIRST, _PICK_FIRST])
+    assert done["run"]["split"] == {"status": "off"}
+    assert [q for q, _, _ in seen] == [_SPLIT_REQ]
