@@ -36,7 +36,7 @@ import time
 from pathlib import Path
 
 from agent.backends import Reply
-from agent.sealed import CONFIG_DIR_ENV, DENY_TOOLS, SealedWorktree
+from agent.sealed import BUILTIN_TOOLS, CONFIG_DIR_ENV, DENY_TOOLS, SealedWorktree
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -177,6 +177,7 @@ class ClaudeCliBackend:
             "--strict-mcp-config",
             "--allowed-tools", allowed,
             "--disallowed-tools", ",".join(DENY),
+            "--tools", BUILTIN_TOOLS,
             "--max-turns", str(self.max_turns),
             "--output-format", "json",
         ]))
@@ -192,6 +193,7 @@ class ClaudeCliBackend:
             "--settings", str(self.settings),
             "--strict-mcp-config",
             "--disallowed-tools", ",".join(DENY),
+            "--tools", BUILTIN_TOOLS,
             "--output-format", "json",
         ]))
 

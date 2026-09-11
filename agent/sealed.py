@@ -67,6 +67,15 @@ SEALED_SETTINGS = {
 DENY_TOOLS = ["Bash", "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep",
               "WebSearch", "WebFetch", "Task", "TodoWrite", "SlashCommand"]
 
+#: Built-in tools a sealed run may use: none. Passed as `--tools`, which the CLI
+#: reads as the built-in tools to make available, "" meaning none. DENY_TOOLS
+#: alone stopped being enough: CLI 2.1.268 ships built-ins it never named
+#: (Agent, Skill, Workflow, ToolSearch, ListAgents), and a sealed probe on
+#: 2026-09-11 called ListAgents straight through the deny list. An allowlist of
+#: nothing cannot go stale when the CLI adds a tool. MCP tools are not built-ins:
+#: a probe the same day called registry_coverage with this set.
+BUILTIN_TOOLS = ""
+
 # Which Claude Code config directory a sealed run reads. Unset means the user's
 # default, which is what every run before 2026-09-08 used.
 #
@@ -323,13 +332,16 @@ class SealedWorktree:
 
     def base_argv(self, model: str) -> list[str]:
         """Flags every sealed invocation shares. `--strict-mcp-config` keeps any
-        globally configured MCP server out; the deny list keeps the model from
-        reaching the filesystem or the web instead of the environment.
+        globally configured MCP server out; `--tools ""` switches every built-in
+        off, so the model reaches the environment over MCP and nothing else. The
+        deny list stays as a second layer, not the seal: it names only the
+        built-ins that existed when it was written.
         """
         return ["claude", "-p", "--model", model,
                 "--settings", str(self.settings_path),
                 "--strict-mcp-config",
                 "--disallowed-tools", ",".join(DENY_TOOLS),
+                "--tools", BUILTIN_TOOLS,
                 "--output-format", "json"]
 
     def run(self, argv: list[str], timeout: float = 900.0) -> dict:
@@ -378,6 +390,7 @@ class SealedWorktree:
             "cwd_contains_project_code": False,
             "settings": SEALED_SETTINGS,
             "denied_tools": DENY_TOOLS,
+            "builtin_tools": BUILTIN_TOOLS,
             "strict_mcp_config": True,
             "mcp_servers": ["compass"],
             "mode": self.mode,

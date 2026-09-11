@@ -3010,3 +3010,62 @@ def test_without_the_override_the_seal_behaves_exactly_as_before(monkeypatch):
     with sealed_mod.SealedWorktree() as w:
         w.run(["claude", "-p", "x"])
     assert "CLAUDE_CONFIG_DIR" not in seen
+
+
+# --------------------------------------------------------------------------- #
+# the seal switches every built-in tool off, not just the ones it can name
+# --------------------------------------------------------------------------- #
+
+
+def test_a_sealed_run_switches_every_builtin_tool_off() -> None:
+    """A deny list goes stale when the CLI ships a tool; `--tools ""` does not."""
+    from agent.sealed import BUILTIN_TOOLS, SealedWorktree
+
+    assert BUILTIN_TOOLS == ""
+    with SealedWorktree() as w:
+        argv = w.base_argv("claude-haiku-4-5")
+        assert argv[argv.index("--tools") + 1] == ""
+        assert w.manifest()["builtin_tools"] == ""
+
+
+def test_the_specifier_backend_switches_every_builtin_tool_off(tmp_path: Path) -> None:
+    """Both CLI calls carry the same switch as the seal."""
+    import shutil
+
+    from agent.cli_backend import ClaudeCliBackend
+
+    seen: list[list[str]] = []
+
+    class NoSubprocess(ClaudeCliBackend):
+        """Records the argv instead of running `claude -p`."""
+
+        def _run(self, argv: list[str]) -> str:
+            seen.append(argv)
+            return "{}"
+
+    b = NoSubprocess(model="claude-haiku-4-5", tool_log_dir=tmp_path)
+    try:
+        b.reason("system", "prompt", ["resolve_variable"])
+        b.transduce("prompt")
+    finally:
+        shutil.rmtree(b.sandbox, ignore_errors=True)
+    assert len(seen) == 2
+    for argv in seen:
+        assert argv[argv.index("--tools") + 1] == "", argv
+
+
+def test_the_seal_check_catches_builtins_left_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The contamination check must see what the deny-list check could not."""
+    from agent import sealed
+    from benchmark import contamination_check as cc
+
+    assert cc.check_seal_config() == []
+    original = sealed.SealedWorktree.base_argv
+
+    def without_switch(self: sealed.SealedWorktree, model: str) -> list[str]:
+        argv = original(self, model)
+        i = argv.index("--tools")
+        return argv[:i] + argv[i + 2:]
+
+    monkeypatch.setattr(sealed.SealedWorktree, "base_argv", without_switch)
+    assert any("built-in tools" in b for b in cc.check_seal_config())

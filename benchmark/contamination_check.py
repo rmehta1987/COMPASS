@@ -1011,6 +1011,12 @@ def check_seal_config() -> list[str]:
         for t in ("Bash", "Read", "Glob", "Grep", "WebSearch", "WebFetch"):
             if t not in DENY_TOOLS:
                 bad.append(f"{t} is not denied")
+        # The check above could not see a built-in the deny list never named,
+        # which is how a sealed probe reached ListAgents on 2026-09-11.
+        argv = w.base_argv("claude-haiku-4-5")
+        if "--tools" not in argv or argv[argv.index("--tools") + 1] != "":
+            bad.append('built-in tools are not all switched off (--tools ""): '
+                       "a deny list misses built-ins added after it was written")
         if SEALED_SETTINGS.get("enabledPlugins") != {}:
             bad.append("plugins not disabled in sealed settings")
     return bad
