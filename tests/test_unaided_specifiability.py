@@ -654,3 +654,40 @@ def test_not_specifiable_splits_by_what_the_instrument_allows() -> None:
                            blocked.outcome_key) == NO_COHERENT_DESIGN
     with pytest.raises(ValueError, match="not an unaided verdict"):
         with_instrument("maybe", open_row.exposure_key, open_row.outcome_key)
+
+
+def test_the_out_directory_is_made_absolute() -> None:
+    """The probes export paths under it to an MCP server in a sealed temp cwd."""
+    from benchmark.unaided_specifiability import parse_args
+
+    assert parse_args(["--out", "some/relative/dir"]).out.is_absolute()
+
+
+def test_the_withholding_control_exports_an_absolute_tool_log(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """A relative tool-log path lands in the sealed cwd, and the counter reads 0.
+
+    Found 2026-09-11: the C18 sweep's withholding control failed on a run whose
+    attached arm plainly called the environment, because `--out` was relative.
+    """
+    import subprocess
+
+    from agent import sealed
+    from benchmark.unaided_specifiability import verify_withholding
+
+    exported: list[str] = []
+
+    def fake_run(argv: list[str], **kw: object) -> subprocess.CompletedProcess:
+        env = kw["env"]
+        assert isinstance(env, dict)
+        exported.append(env["COMPASS_TOOL_LOG"])
+        return subprocess.CompletedProcess(
+            argv, 0, json.dumps({"result": "NO TOOLS AVAILABLE."}), "")
+
+    monkeypatch.setattr(sealed.subprocess, "run", fake_run)
+    monkeypatch.setenv("COMPASS_TOOL_LOG", str(tmp_path / "unused.jsonl"))
+    monkeypatch.chdir(tmp_path)
+    with sealed.SealedWorktree(mode="benchmark") as wt:
+        verify_withholding(wt, "claude-haiku-4-5", Path("relative_out"))
+    assert len(exported) == 2
+    assert all(Path(p).is_absolute() for p in exported), exported

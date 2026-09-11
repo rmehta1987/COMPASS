@@ -763,7 +763,7 @@ def verify_withholding(worktree: Any, model: str = MODEL,
     out_dir.mkdir(parents=True, exist_ok=True)
     log = out_dir / "withholding_control.tool_log.jsonl"
     log.write_text("")
-    os.environ["COMPASS_TOOL_LOG"] = str(log)
+    os.environ["COMPASS_TOOL_LOG"] = str(log.resolve())
 
     withheld_text, withheld_line = probe_once(
         worktree, model, WITHHOLDING_PROBE, log, 0)
@@ -852,7 +852,7 @@ def probe_once(worktree: Any, model: str, prompt: str,
     tool_log.parent.mkdir(parents=True, exist_ok=True)
     # Set on the parent's environ because SealedWorktree.run copies os.environ
     # and takes no extra env; this module may not edit agent/sealed.py.
-    os.environ["COMPASS_TOOL_LOG"] = str(tool_log)
+    os.environ["COMPASS_TOOL_LOG"] = str(tool_log.resolve())
     before = _server_lines(tool_log)
     t0 = time.perf_counter()
     error = ""
@@ -1268,7 +1268,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     ap.add_argument("--min-specifiable", type=int,
                     default=DEFAULT_MIN_SPECIFIABLE)
     ap.add_argument("--out", type=Path, default=RUN_DIR)
-    return ap.parse_args(argv)
+    args = ap.parse_args(argv)
+    # Absolute, because the probes export paths under it to an MCP server that
+    # runs inside the sealed temporary cwd. A relative `--out` sent that
+    # server's tool log into the temporary directory, and the withholding
+    # control counted zero calls on a run that had made one (2026-09-11).
+    args.out = args.out.resolve()
+    return args
 
 
 def _pilot_specs(n: int, exclude: tuple[str, ...] = ()) -> list[PairSpec]:
