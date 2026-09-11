@@ -100,7 +100,7 @@ from benchmark.input_leakage import (  # noqa: E402
 from env import labels as LB  # noqa: E402
 from env import tools as T  # noqa: E402
 from generate import hybrid_ed as HY  # noqa: E402
-from generate.funnel import load_constructs, run  # noqa: E402
+from generate.funnel import DEFAULT_FRAME, FRAMES, load_constructs, walk  # noqa: E402
 
 #: Pool depths the hybrid renders, mirrored from `generate/hybrid_ed.py` so the
 #: scan covers every depth that ships rather than one of them.
@@ -685,11 +685,7 @@ def model_visible_surface(mode: Mode = "benchmark") -> dict[str, str]:
     """
     _, schemas = build_registry(mode)
     C, _ = load_constructs()
-    e = sorted([c for c in C.values() if c.module == "3"
-                and c.base_id.startswith("Q16.")], key=lambda c: c.base_id)
-    o = sorted([c for c in C.values() if c.module == "2"
-                and c.base_id.startswith("Q5.")], key=lambda c: c.base_id)
-    cands, _ = run(e, o)
+    cands, _ = walk(FRAMES[DEFAULT_FRAME], C)
 
     surface = {
         "system_prompt": SYSTEM,

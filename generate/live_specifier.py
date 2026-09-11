@@ -221,7 +221,15 @@ from agent.specifier import (  # noqa: E402
     specify,
     untraced_derivation_values,
 )
-from generate.funnel import Candidate, Construct, load_constructs, run  # noqa: E402
+from generate.funnel import (  # noqa: E402
+    DEFAULT_FRAME,
+    FRAMES,
+    Candidate,
+    Construct,
+    live_at,
+    load_constructs,
+    run,
+)
 
 
 def save_repairs(out: Path, attempt: Attempt, log_records: list[dict]) -> Path:
@@ -289,6 +297,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     ap.add_argument("model", nargs="?", default="claude-haiku-4-5")
     ap.add_argument("--exposure", help="run a STATED pair: exposure construct key")
     ap.add_argument("--outcome", help="run a STATED pair: outcome construct key")
+    ap.add_argument("--frame", default=DEFAULT_FRAME, choices=sorted(FRAMES),
+                    help="the named frame to walk (generate/funnel.py::FRAMES)")
+    ap.add_argument("--index", type=int, default=0,
+                    help="which live pair of the frame, in enumeration order")
     a = ap.parse_args(argv)
     if bool(a.exposure) != bool(a.outcome):
         ap.error("--exposure and --outcome are given together or not at all")
@@ -301,12 +313,8 @@ def main() -> None:
     k, model = args.k, args.model
 
     C, version = load_constructs()
-    exposures = sorted([c for c in C.values()
-                        if c.module == "3" and c.base_id.startswith("Q16.")],
-                       key=lambda c: c.base_id)
-    outcomes = sorted([c for c in C.values()
-                       if c.module == "2" and c.base_id.startswith("Q5.")],
-                      key=lambda c: c.base_id)
+    frame = FRAMES[args.frame]
+    exposures, outcomes = frame.sides(C)
     cands, counts = run(exposures, outcomes)
     if args.exposure:
         # STATED, not enumerated, and the identity says so. A pair named on the
@@ -316,8 +324,11 @@ def main() -> None:
                          outcome=C.get(args.outcome) or stand_in(args.outcome))
         screened_from, mode = 0, "externally_posed"
     else:
-        pair = next(c for c in cands if c.exposure.construct_key == "m3:Q16.1"
-                    and c.outcome.construct_key == "m2:Q5.8")
+        # T7: the frame is walked in enumeration order and `--index` says
+        # where. The pair used to be named here by hand, which is a second,
+        # value-based selection on top of the funnel's that no denominator
+        # recorded.
+        pair = live_at(cands, args.index)
         screened_from, mode = counts["enumerated"], "enumerated_screen"
 
     backend = ClaudeCliBackend(model=model, mode="benchmark")
@@ -326,6 +337,8 @@ def main() -> None:
     print(f"LIVE SPECIFIER   {backend.name}   k={k}   mode=benchmark")
     print(bar)
     print(f"  pair        {pair.pair_id}")
+    print(f"  frame       {frame.name}  {frame.digest(C, version)}  "
+          f"live index {'-' if args.exposure else args.index}")
     print(f"  dictionary  {version}   screened_from {screened_from} ({mode})")
     print("  running (each sample = 1 reasoning call w/ MCP tools + 1 transduction)\n")
 

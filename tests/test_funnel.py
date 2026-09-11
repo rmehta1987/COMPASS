@@ -132,3 +132,86 @@ def test_worked_examples_detectability_numbers_are_on_the_environments_curve() -
              for pt in estimate_detectability(baseline_prevalence=0.32)["sde_by_n"]}
     assert sde.value == curve[sde.at_n]
     assert p.falsifier_threshold.value > sde.value
+
+
+# --------------------------------------------------------------------------- #
+# T7: one named, hashed frame, walked in enumeration order
+# --------------------------------------------------------------------------- #
+
+
+def test_no_driver_builds_the_frame_by_hand() -> None:
+    """The frame was a list comprehension copied into every driver; now one."""
+    import ast
+
+    from generate.funnel import FRAMES
+
+    prefixes = {p for f in FRAMES.values()
+                for p in (f.exposure_prefix, f.outcome_prefix)}
+    drivers = [ROOT / "generate" / n for n in
+               ("live_specifier.py", "run_specifier.py", "worked_example.py")]
+    drivers.append(ROOT / "benchmark" / "contamination_check.py")
+    for path in drivers:
+        tree = ast.parse(path.read_text())
+        by_hand = [n.lineno for n in ast.walk(tree)
+                   if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                   and n.func.attr == "startswith" and n.args
+                   and isinstance(n.args[0], ast.Constant)
+                   and n.args[0].value in prefixes]
+        assert not by_hand, f"{path.name} builds a frame by hand at lines {by_hand}"
+
+
+def test_the_frame_digest_names_exactly_what_it_enumerates() -> None:
+    """Change a side, the build or the name, and the hash changes."""
+    import dataclasses
+
+    from generate.funnel import DEFAULT_FRAME, FRAMES
+
+    C, version = load_constructs()
+    frame = FRAMES[DEFAULT_FRAME]
+    d = frame.digest(C, version)
+    assert d == frame.digest(C, version) and len(d) == 12
+    exposures, _ = frame.sides(C)
+    fewer = {k: v for k, v in C.items() if k != exposures[0].construct_key}
+    assert frame.digest(fewer, version) != d
+    assert frame.digest(C, "another-build") != d
+    assert dataclasses.replace(frame, name="another").digest(C, version) != d
+
+
+def test_the_frame_is_walked_in_enumeration_order() -> None:
+    """The walk is the cartesian product in sorted order; nothing jumps ahead."""
+    import pytest
+
+    from generate.funnel import DEFAULT_FRAME, FRAMES, live_at, walk
+
+    C, _ = load_constructs()
+    frame = FRAMES[DEFAULT_FRAME]
+    cands, counts = walk(frame, C)
+    exposures, outcomes = frame.sides(C)
+    # Enumeration order is fixed by question id, not by whatever order the
+    # dictionary happens to load in.
+    for side in (exposures, outcomes):
+        assert [c.base_id for c in side] == sorted(c.base_id for c in side)
+    assert [c.pair_id for c in cands] == [
+        f"{e.construct_key} -> {o.construct_key}"
+        for e in exposures for o in outcomes if e.construct_key != o.construct_key]
+    assert counts["enumerated"] == len(cands)
+    live = [c for c in cands if c.state == "live"]
+    assert live_at(cands, 0) is live[0] and live_at(cands, len(live) - 1) is live[-1]
+    with pytest.raises(IndexError, match="live candidates"):
+        live_at(cands, len(live))
+
+
+def test_the_live_driver_walks_the_frame_rather_than_naming_a_pair() -> None:
+    """Its pair is a position in the walk, defaulting to the first."""
+    import ast
+    import inspect
+
+    from generate import live_specifier
+    from generate.funnel import DEFAULT_FRAME
+
+    args = live_specifier.parse_args([])
+    assert args.frame == DEFAULT_FRAME and args.index == 0
+    tree = ast.parse(inspect.getsource(live_specifier.main))
+    called = {n.func.id for n in ast.walk(tree)
+              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    assert "live_at" in called

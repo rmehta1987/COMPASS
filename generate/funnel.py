@@ -23,7 +23,9 @@ inference.
 
 from __future__ import annotations
 
+import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from itertools import product
 from pathlib import Path
@@ -243,3 +245,114 @@ def run(exposures, outcomes) -> tuple[list[Candidate], dict]:
         "requires_derivation": sum(1 for c in live if c.requires_derivation),
     }
     return cands, counts
+
+
+# --------------------------------------------------------------------------- #
+# T7: the frame is named and hashed, and it is walked in enumeration order
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True)
+class Frame:
+    """A named slice of the instrument that the funnel enumerates.
+
+    The frame decides every reported denominator (`run`'s `enumerated`), and it
+    used to be an unnamed list comprehension copied into every driver. Named
+    here, and hashed over the exact constructs it enumerates, a denominator can
+    say which frame it came from.
+
+    Attributes:
+        name: The frame's name, a key of `FRAMES`.
+        exposure_module: Module the exposures come from.
+        exposure_prefix: Question-id prefix the exposures share.
+        outcome_module: Module the outcomes come from.
+        outcome_prefix: Question-id prefix the outcomes share.
+    """
+
+    name: str
+    exposure_module: str
+    exposure_prefix: str
+    outcome_module: str
+    outcome_prefix: str
+
+    def sides(self, constructs: Mapping[str, Construct]
+              ) -> tuple[list[Construct], list[Construct]]:
+        """The frame's exposures and outcomes, each sorted by question id.
+
+        Args:
+            constructs: Construct keys to Construct, from `load_constructs`.
+
+        Returns:
+            `(exposures, outcomes)`, in the order `s1_enumerate` crosses them.
+        """
+        def pick(module: str, prefix: str) -> list[Construct]:
+            return sorted((c for c in constructs.values()
+                           if c.module == module and c.base_id.startswith(prefix)),
+                          key=lambda c: c.base_id)
+        return (pick(self.exposure_module, self.exposure_prefix),
+                pick(self.outcome_module, self.outcome_prefix))
+
+    def digest(self, constructs: Mapping[str, Construct], version: str) -> str:
+        """A hash of exactly what this frame enumerates, against which build.
+
+        Args:
+            constructs: Construct keys to Construct.
+            version: The dictionary's `version_hash`.
+
+        Returns:
+            Twelve hex characters. Any change to either side, the name or the
+            build changes them.
+        """
+        exposures, outcomes = self.sides(constructs)
+        payload = {"name": self.name, "dictionary_version": version,
+                   "exposures": [c.construct_key for c in exposures],
+                   "outcomes": [c.construct_key for c in outcomes]}
+        return hashlib.sha256(
+            json.dumps(payload, sort_keys=True).encode()).hexdigest()[:12]
+
+
+#: The frames a driver may walk, by name: the one definition every driver uses.
+FRAMES: dict[str, Frame] = {
+    "m3q16_x_m2q5": Frame("m3q16_x_m2q5", "3", "Q16.", "2", "Q5."),
+}
+
+#: The frame every driver built by hand before T7 named it.
+DEFAULT_FRAME = "m3q16_x_m2q5"
+
+
+def walk(frame: Frame, constructs: Mapping[str, Construct]
+         ) -> tuple[list[Candidate], dict]:
+    """The frame's candidates in enumeration order, with the funnel's counts.
+
+    Enumeration order is the only order. A driver that jumped to the pair it
+    found most promising would add a second, value-based selection on top of
+    the funnel's, one that no denominator records.
+
+    Args:
+        frame: The frame to walk.
+        constructs: Construct keys to Construct.
+
+    Returns:
+        `run`'s candidates and counts over the frame.
+    """
+    return run(*frame.sides(constructs))
+
+
+def live_at(cands: list[Candidate], index: int) -> Candidate:
+    """The `index`-th live candidate, counting in enumeration order.
+
+    Args:
+        cands: Candidates from `walk`, in its order.
+        index: Zero-based position among the live candidates.
+
+    Returns:
+        That candidate.
+
+    Raises:
+        IndexError: When the frame has fewer live candidates.
+    """
+    live = [c for c in cands if c.state == "live"]
+    if not 0 <= index < len(live):
+        raise IndexError(f"the frame has {len(live)} live candidates; "
+                         f"index {index} is outside it")
+    return live[index]
