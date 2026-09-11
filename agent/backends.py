@@ -49,6 +49,36 @@ class Backend(Protocol):
              seed: int | None = None, max_tokens: int = 2048) -> Reply: ...
 
 
+class CliBackend(Protocol):
+    """A backend that runs the tool loop itself, as headless `claude -p` does.
+
+    It is never asked to `chat`: the request -> tool -> response cycle happens
+    inside the CLI, so the specifier hands it the whole turn and reads the calls
+    back from the log its MCP server wrote. `drives_own_tool_loop` is the flag the
+    specifier branches on. Typed apart from `Backend` because the two share
+    nothing but `name`, and `specify` takes either.
+    """
+
+    name: str
+    drives_own_tool_loop: bool
+
+    def reason(self, system: str, prompt: str, tool_names: list[str]) -> Reply:
+        """Call 1: the whole turn, with tools reached over MCP."""
+        ...
+
+    def transduce(self, prompt: str) -> Reply:
+        """Call 2: no tools, one JSON object."""
+        ...
+
+    def read_tool_log(self) -> list[dict]:
+        """The calls the environment logged for the last reasoning call."""
+        ...
+
+
+#: What the specifier accepts: a chat backend it drives, or one that drives itself.
+AnyBackend = Backend | CliBackend
+
+
 # --------------------------------------------------------------------------- #
 # served model
 # --------------------------------------------------------------------------- #

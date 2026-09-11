@@ -266,7 +266,7 @@ class State:
         with self._retriever_lock:
             if self._retriever is None:
                 sys.path.insert(0, str(self.deploy_root))
-                from retriever import CompassRetriever
+                from retriever import CompassRetriever  # type: ignore[import-not-found]
 
                 self._retriever = CompassRetriever(root=self.deploy_root)
             return self._retriever
@@ -333,7 +333,7 @@ def _retrieve(state: State, body: dict[str, Any]) -> dict[str, Any]:
         RetrievalRequest,
         VariableRole,
     )
-    from template import covered
+    from template import covered  # type: ignore[import-not-found]
     req = RetrievalRequest(construct=query, role=VariableRole.EXPOSURE,
                            instances=list(body.get("instances") or []))
     rendered = req.to_query()
@@ -812,6 +812,9 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                     }
                     continue
                 pool = roles[role]
+                # `shared` is None only when both roles are pinned, and then
+                # `roles` is empty, so no loop pass reaches here without a pool.
+                assert pool is not None
                 # The role framing goes on the ASK, not the pool: one pool,
                 # two questions of it.
                 framed = PC.retrieval_contract(
@@ -1189,7 +1192,9 @@ def _load_job(state: State, ticket: str) -> dict[str, Any] | None:
     if not re.fullmatch(r"\d{6}-[0-9a-f]{6}", ticket):
         return None                      # not a ticket we ever issued
     try:
-        return json.loads(_job_path(state, ticket).read_text(encoding="utf-8"))
+        job: dict[str, Any] = json.loads(
+            _job_path(state, ticket).read_text(encoding="utf-8"))
+        return job
     except (OSError, ValueError):
         return None
 

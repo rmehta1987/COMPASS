@@ -82,12 +82,14 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol
 
+from typing_extensions import TypeIs
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from agent.backends import Backend, Reply
+from agent.backends import AnyBackend, CliBackend, Reply
 from agent.registry import build_registry
 from agent.schema import (
     REFUSAL_EVIDENCE,
@@ -737,7 +739,23 @@ def _unfence(text: str) -> str:
     return t.strip()
 
 
-def _reason(backend: Backend, pair, callables, schemas, seed, temperature):
+def _drives_own_loop(backend: AnyBackend) -> TypeIs[CliBackend]:
+    """Whether the backend runs the tool loop itself, as headless `claude -p` does.
+
+    The runtime test is the attribute the specifier has always read. The return
+    type is what lets mypy see that the CLI branch calls `reason` and `transduce`
+    and the other branch calls `chat`.
+
+    Args:
+        backend: The reasoning backend.
+
+    Returns:
+        True for a backend whose `drives_own_tool_loop` is set.
+    """
+    return bool(getattr(backend, "drives_own_tool_loop", False))
+
+
+def _reason(backend: AnyBackend, pair, callables, schemas, seed, temperature):
     """Call 1, and the authentic record of what the environment returned.
 
     Returns the analysis prose, the in-memory ToolLog the gate reads, the step
@@ -747,7 +765,7 @@ def _reason(backend: Backend, pair, callables, schemas, seed, temperature):
     agent/tool_authority.py to be authoritative with.
     """
     raw: list[dict] = []
-    if getattr(backend, "drives_own_tool_loop", False):
+    if _drives_own_loop(backend):
         # The CLI/MCP path runs the request -> tool -> response cycle itself. We
         # recover the call log from the file OUR mcp server wrote, so the gate
         # still inspects executed calls rather than anything the model claimed.
@@ -765,7 +783,7 @@ def _reason(backend: Backend, pair, callables, schemas, seed, temperature):
     steps = 0
 
     for steps in range(1, MAX_STEPS + 1):
-        r: Reply = backend.chat(messages, tools=schemas, temperature=temperature,
+        r = backend.chat(messages, tools=schemas, temperature=temperature,
                                 seed=seed, max_tokens=2048)
         if not r.tool_calls:
             return r.content, log, steps, raw
@@ -1197,7 +1215,7 @@ def _render_log(log: ToolLog, raw_log: list[dict] | None) -> str:
     return "\n".join(lines)
 
 
-def _emit(backend: Backend, schema: dict, body: str, seed: int | None,
+def _emit(backend: AnyBackend, schema: dict, body: str, seed: int | None,
           build: Callable[[dict], Any], fail_kind: str = "invalid_record",
           ) -> tuple[Any, str, str, int, str, list[dict]]:
     """Run one constrained emission with its bounded repair loop.
@@ -1226,14 +1244,14 @@ def _emit(backend: Backend, schema: dict, body: str, seed: int | None,
             "content": "You emit JSON matching a schema. Nothing else."},
            {"role": "user", "content": body}]
 
-    cli = getattr(backend, "drives_own_tool_loop", False)
+    cli = _drives_own_loop(backend)
     base = body + ("\n\n--- REQUIRED JSON SCHEMA ---\n"
                    + json.dumps(schema) if cli else "")
     prompt = base
     repairs: list[dict] = []
 
     for attempt in range(MAX_TRANSDUCE_ATTEMPTS):
-        if cli:
+        if _drives_own_loop(backend):
             r = backend.transduce(prompt)
             r = Reply(content=_unfence(r.content))
         else:
@@ -1347,7 +1365,7 @@ def _derivation_refs(node: object) -> list[DerivationRef]:
     return []
 
 
-def _transduce(backend: Backend, analysis: str, log: ToolLog, seed: int | None,
+def _transduce(backend: AnyBackend, analysis: str, log: ToolLog, seed: int | None,
                raw_log: list[dict] | None = None,
                identity: RunIdentity | None = None) -> Attempt:
     """Call 2, then identity, then tool authority, then validation, with repairs.
@@ -1394,7 +1412,7 @@ def _transduce(backend: Backend, analysis: str, log: ToolLog, seed: int | None,
                    gate="pass", seed=seed, attempts=spent, repairs=repairs)
 
 
-def _transduce_refusal(backend: Backend, analysis: str, log: ToolLog,
+def _transduce_refusal(backend: AnyBackend, analysis: str, log: ToolLog,
                        seed: int | None, pair: _Pair, verdict: Adjudication,
                        raw_log: list[dict] | None = None,
                        identity: RunIdentity | None = None) -> Attempt:
@@ -1460,7 +1478,7 @@ def _transduce_refusal(backend: Backend, analysis: str, log: ToolLog,
                    gate="refused", seed=seed, attempts=spent, repairs=repairs)
 
 
-def specify_once(backend: Backend, pair, *, mode="benchmark", seed=0,
+def specify_once(backend: AnyBackend, pair, *, mode="benchmark", seed=0,
                  temperature=0.0, identity: RunIdentity | None = None) -> Attempt:
     """One sample. The unit the k-fan-out repeats.
 
@@ -1642,7 +1660,7 @@ def _disclosure(p: ProtocolSpecification) -> int:
     return len(p.sought_covariates)
 
 
-def specify(backend: Backend, pair, *, k: int = 5, mode: str = "benchmark",
+def specify(backend: AnyBackend, pair, *, k: int = 5, mode: str = "benchmark",
             temperature: float = 0.7, parked_dir: Path | None = None,
             identity: RunIdentity | None = None) -> Result:
     """K samples of one pair. Deterministic everywhere except the sampling itself.
