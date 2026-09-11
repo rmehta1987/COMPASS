@@ -292,11 +292,33 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   decision: `_disclosure` was a raw count, so a padded twin beat an honest one, and the
   loser was dropped. Now `specifier::_twin_order` decides: any gap beats none, the count
   does not matter, then a hash of the record's content. Every losing twin is parked.
-- **C33 — `len(blocked_on)` ascending still charges disclosures other than gaps**
-  (user-level, taken up next by the user's choice). A stated falsifier threshold carries
-  the co-completion blocker, and admitting unknown coding carries `response_coding`, so the
-  sample that owns up can rank below a quiet one. After C28 it is the first term that
-  separates designs in the saved corpus.
+- **C33 — `len(blocked_on)` ascending still charges disclosures other than gaps.**
+  User-level. LEFT AS IS by the user, 2026-09-11, after three independent reviews
+  (enterprise account, opus). All three said to drop the blocker count AND the `status`
+  term, leaving `_rank` = access, `n_source`, hash. Checked in the code:
+  - The environment writes one blocker, `outcome_prevalence_unconfirmed`, on every record,
+    so it separates nothing. Every other member is the model's.
+  - `n_source` is `unknown` on both `estimate_n` branches, so today the blocker count is
+    the only term that separates designs.
+  - `blocked_on` and `falsifier_threshold` are outside `canonical_form`, so twins that
+    differ only in what they admit go to `_twin_order` and are not charged. The count
+    bites only when an admission comes with a canonical difference: clustering at the
+    community area plus its design-effect blocker, or `unreliable_coding` plus
+    `response_coding`.
+  - Dropping only the count would leave `status` as a yes/no penalty on any admission.
+    It is hidden today because every record is `draft`, and it would return the day the
+    counts arrive.
+  - No test varies `blocked_on` under `_rank`. `AGENTS.md` and `agent/schema.py` give
+    this term as a reason for "no `BlockedOn` member for disclosure", so a change must
+    reword both.
+  - Seed 1 claimed the access gate is the bigger lever. Wrong: `check_access` counts at
+    most three places against a budget of 3, so it refers only on an unknown key.
+- **C34 — leaving out a numeric falsifier threshold dodges a blocker and the only
+  quantitative check** (from the C33 reviews, not yet checked end to end). With no
+  `falsifier_threshold`, `_falsifier_is_detectable` does not run, and
+  `_a_threshold_on_an_unknown_n_discloses_it` forces nothing. The prompt says "An unstated
+  threshold is honest" (`agent/specifier.py`). The two records are twins, so neither is
+  charged at rank, but nothing rewards stating the checkable one.
 - **C26 — the offline concept-synonym column. LAST and gated.** An offline pass labels
   each wording as a second FTS5 column. Precondition (2) UNMET: the scan catches quotation
   and a label is paraphrase, so a planted framing must turn it RED in the same commit.
