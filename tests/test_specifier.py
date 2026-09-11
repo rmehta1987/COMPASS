@@ -488,8 +488,9 @@ def test_a_disclosing_sample_is_not_discarded_for_a_silent_twin(pair, record,
     assert res.selected is not None
     assert res.selected.sought_covariates, "the silent twin won"
     # Not merely "parked instead of deleted" — parked would still be a loss,
-    # because the run writes the winner. The disclosing record must WIN.
-    assert res.parked == []
+    # because the run writes the winner. The disclosing record must WIN. Since
+    # 2026-09-11 the silent twin is parked as the runner-up, never dropped.
+    assert [q.sought_covariates for q in res.parked] == [[]]
 
 
 def test_the_prompt_names_the_field_the_schema_gives_the_model(record):
@@ -3159,3 +3160,57 @@ def test_the_live_driver_finds_its_winner_through_winning_attempt() -> None:
     called = {n.func.id for n in ast.walk(tree)
               if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
     assert "winning_attempt" in called
+
+
+# --------------------------------------------------------------------------- #
+# same-design twins: any gap beats none, the count does not count, none dropped
+# --------------------------------------------------------------------------- #
+
+
+def _one_gap(record: dict, i: int) -> str:
+    """`record` with only the i-th gap of `_GAPS` written down."""
+    gaps = _with_gaps(record, len(_GAPS))["sought_covariates"]
+    return json.dumps({**record, "sought_covariates": gaps[i:i + 1]})
+
+
+def test_the_number_of_gaps_does_not_pick_a_twin(record: dict) -> None:
+    """Any gap beats none; one gap and three gaps are the same to selection."""
+    from agent.schema import ProtocolSpecification
+    silent, one, three = (ProtocolSpecification.model_validate(_with_gaps(record, n))
+                          for n in (0, 1, 3))
+    assert silent.record_hash() == one.record_hash() == three.record_hash()
+    assert SP._twin_order(one)[0] == SP._twin_order(three)[0]
+    assert SP._twin_order(one)[0] < SP._twin_order(silent)[0]
+
+
+@pytest.mark.parametrize("gaps", [(0, 1), (0, 2)])
+def test_twins_with_equal_gap_counts_are_not_decided_by_seed_order(
+        pair: tuple, record: dict, gaps: tuple[int, int]) -> None:
+    """Two twins, one gap each: the same one wins whichever seed spoke first.
+
+    Under the count rule a tie kept the first arrival and dropped the other,
+    so which gap reached the saved record was decided by seed order.
+    """
+    p, _, _ = pair
+    a, b = (_one_gap(record, i) for i in gaps)
+    picked = []
+    for first, second in ((a, b), (b, a)):
+        res = SP.specify(ScriptedBackend(_good_script(first) + _good_script(second)),
+                         p, k=2)
+        assert res.selected is not None
+        assert len(res.parked) == 1, "the losing twin was dropped, not parked"
+        picked.append(res.selected.sought_covariates[0].construct_sought)
+    assert picked[0] == picked[1], f"arrival order decided the twin: {picked}"
+
+
+def test_every_parked_twin_is_written_under_its_own_name(
+        pair: tuple, record: dict, tmp_path: Path) -> None:
+    """Twins share a record_hash, so a name built from it alone overwrote one."""
+    p, _, _ = pair
+    backend = ScriptedBackend(_good_script(json.dumps(record))
+                              + _good_script(_one_gap(record, 0))
+                              + _good_script(_one_gap(record, 1)))
+    res = SP.specify(backend, p, k=3, parked_dir=tmp_path)
+    assert res.selected is not None and res.selected.sought_covariates
+    assert len(res.parked) == 2
+    assert len(list(tmp_path.glob("*.json"))) == 2, "a parked twin overwrote another"

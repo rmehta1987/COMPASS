@@ -1578,7 +1578,8 @@ class Result:
     Attributes:
         selected: The winning protocol, or None. None whenever the environment
             ruled the pair unspecifiable, whatever the samples produced.
-        parked: The other distinct valid protocols, in rank order.
+        parked: Every other valid protocol in rank order, same-design twins
+            included (a twin follows the one it lost to).
         attempts: Every sample, valid or not.
         reason: The yield line and how selection went.
         refusal: The refusal the environment upheld, or None. All k refusals of
@@ -1649,19 +1650,41 @@ def _rank(p: ProtocolSpecification) -> tuple:
     )
 
 
-def _disclosure(p: ProtocolSpecification) -> int:
-    """How much a record discloses that its `record_hash` cannot see.
+def _record_digest(p: ProtocolSpecification, *, provenance: bool = True) -> str:
+    """A hash of the record's JSON, which `record_hash` deliberately is not.
+
+    Args:
+        p: A valid protocol.
+        provenance: Whether the digest covers `provenance`, which says who made
+            the record and how, not what it specifies.
+
+    Returns:
+        The SHA-256 hex digest.
+    """
+    body = p.model_dump_json() if provenance else p.model_dump_json(
+        exclude={"provenance"})
+    return hashlib.sha256(body.encode()).hexdigest()
+
+
+def _twin_order(p: ProtocolSpecification) -> tuple[int, str, str]:
+    """Order among same-design twins, which `record_hash` cannot tell apart.
 
     A pure function of the record, like every term of `_rank`, and used for the
-    same reason: nothing the model says about its own output may order it.
+    same reason: nothing the model says about its own output may order it. A
+    record that writes down any covariate gap beats one that writes down none,
+    and the number of gaps does not count: nothing checks a gap against the
+    log, so a count pays for padding (C28 follow-up, user decision 2026-09-11).
+    Then the record's content, so which seed wrote what cannot decide, and last
+    the whole record, so the order is total.
 
     Args:
         p: A valid protocol.
 
     Returns:
-        The number of sought-but-unresolved covariates recorded.
+        A sort key. The smallest is the twin selected; the rest are parked.
     """
-    return len(p.sought_covariates)
+    return (0 if p.sought_covariates else 1,
+            _record_digest(p, provenance=False), _record_digest(p))
 
 
 def specify(backend: AnyBackend, pair, *, k: int = 5, mode: str = "benchmark",
@@ -1686,7 +1709,7 @@ def specify(backend: AnyBackend, pair, *, k: int = 5, mode: str = "benchmark",
         k: Sample count, fixed by the caller and never by the model.
         mode: Registry mode.
         temperature: Sampling temperature, where the backend has one.
-        parked_dir: Where the losing distinct protocols are written.
+        parked_dir: Where every parked protocol is written, twins included.
         identity: The fields the driver owns.
 
     Returns:
@@ -1714,42 +1737,50 @@ def specify(backend: AnyBackend, pair, *, k: int = 5, mode: str = "benchmark",
                       f"it is valid and none was selected")
         return res
 
-    # NOT `setdefault`. `sought_covariates` is outside `canonical_form` on
-    # purpose (see schema::ProtocolSpecification.canonical_form), so a sample
-    # that records a covariate gap and a sample that stays silent about the same
-    # design hash IDENTICALLY. Under `setdefault` the first seed to arrive won
-    # and the other was dropped before `ordered` was ever built — and `parked` is
-    # `ordered[1:]`, over DISTINCT hashes, so the loser was not parked either. If
+    # NOT `setdefault`, and not a count. `sought_covariates` is outside
+    # `canonical_form` on purpose (see schema::ProtocolSpecification.canonical_form),
+    # so a sample that records a covariate gap and a sample that stays silent
+    # about the same design hash IDENTICALLY. Under `setdefault` the first seed
+    # to arrive won and the other was dropped before `_rank` ever saw it. If
     # seed 0 was silent, the disclosing sample vanished from the run entirely,
     # recreating the exact silence C24 exists to end: 20 of 21 saved protocols
-    # record no covariate gap. The tie-break is a pure function of the record.
-    by_hash: dict[str, ProtocolSpecification] = {}
+    # record no covariate gap. A gap COUNT replaced it, which paid for padding
+    # and fell back to seed order on equal counts, still dropping the loser. Now
+    # `_twin_order` picks the twin, and every other twin is parked.
+    twins: dict[str, dict[str, ProtocolSpecification]] = {}
     for a in attempts:
         prot = a.protocol
         if not a.ok or prot is None:
             continue
-        h = prot.record_hash()
-        held = by_hash.get(h)
-        if held is None or _disclosure(prot) > _disclosure(held):
-            by_hash[h] = prot
+        # Byte-identical records are one record, so only one of them is kept.
+        twins.setdefault(prot.record_hash(), {}).setdefault(
+            _record_digest(prot), prot)
 
-    if not by_hash:
+    if not twins:
         why = "; ".join(sorted({f"{a.gate}" for a in attempts}))
         r = Result(None, [], attempts, "")
         r.reason = (f"{r.yield_line}; no sample produced a valid record ({why})")
         return r
 
-    ordered = sorted(by_hash.values(), key=_rank)
-    winner, parked = ordered[0], ordered[1:]
+    heads: list[ProtocolSpecification] = []
+    others: list[ProtocolSpecification] = []
+    for group in twins.values():
+        head, *rest = sorted(group.values(), key=_twin_order)
+        heads.append(head)
+        others.extend(rest)
+    winner = min(heads, key=_rank)
+    parked = sorted([p for p in heads if p is not winner] + others,
+                    key=lambda p: (_rank(p), _twin_order(p)))
 
     if parked_dir:
         parked_dir.mkdir(parents=True, exist_ok=True)
         for p in parked:
-            (parked_dir / f"{p.protocol_id}.{p.record_hash()}.json").write_text(
-                p.model_dump_json(indent=2))
+            # The digest is in the name because twins share a record_hash.
+            name = f"{p.protocol_id}.{p.record_hash()}.{_record_digest(p)[:8]}.json"
+            (parked_dir / name).write_text(p.model_dump_json(indent=2))
 
     res = Result(winner, parked, attempts, "")
-    res.reason = (f"{res.yield_line}; {len(by_hash)} distinct of "
+    res.reason = (f"{res.yield_line}; {len(twins)} distinct of "
                   f"{sum(a.ok for a in attempts)} valid ({k} sampled); "
                   f"selected by access, estimability and blocker count, "
                   f"ties split by record hash")

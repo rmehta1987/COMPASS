@@ -284,14 +284,19 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   three said no: it is prose nothing checks, so "more gaps rank higher" picks padding and
   "fewer rank higher" rebuilds C28. The fix is neutral, not a win: the two records now tie,
   and the hash picks one.
-- **C28 follow-ups the reviews found, VERIFIED in the code 2026-09-11.** (a) `specify`'s
-  dedup keeps the first seed when two same-hash samples record equally many gaps. That is
-  seed order, which the Hard Constraint forbids. (b) `generate/live_specifier.py` copies
-  the FIRST same-hash attempt's tool log, audit and repairs beside the saved record. When a
-  disclosing twin beat a silent one, that is the wrong sample's. (c) USER-LEVEL:
-  `_disclosure` is a raw count, so a padded twin beats an honest one, and the honest one is
-  neither selected nor parked. (d) USER-LEVEL: `len(blocked_on)` ascending still charges
-  other disclosures, such as a stated threshold's co-completion blocker or `response_coding`.
+- **C28 follow-ups the reviews found, VERIFIED in the code 2026-09-11.** (a) RESOLVED:
+  `specify`'s dedup kept the first seed when two same-hash samples recorded equally many
+  gaps, which is seed order. (b) RESOLVED (`02cf793`): `generate/live_specifier.py` copied
+  the first same-hash attempt's tool log, audit and repairs beside the saved record, which
+  was the wrong sample's when a disclosing twin beat a silent one. (c) RESOLVED, user
+  decision: `_disclosure` was a raw count, so a padded twin beat an honest one, and the
+  loser was dropped. Now `specifier::_twin_order` decides: any gap beats none, the count
+  does not matter, then a hash of the record's content. Every losing twin is parked.
+- **C33 — `len(blocked_on)` ascending still charges disclosures other than gaps**
+  (user-level, taken up next by the user's choice). A stated falsifier threshold carries
+  the co-completion blocker, and admitting unknown coding carries `response_coding`, so the
+  sample that owns up can rank below a quiet one. After C28 it is the first term that
+  separates designs in the saved corpus.
 - **C26 — the offline concept-synonym column. LAST and gated.** An offline pass labels
   each wording as a second FTS5 column. Precondition (2) UNMET: the scan catches quotation
   and a label is paraphrase, so a planted framing must turn it RED in the same commit.

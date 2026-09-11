@@ -705,8 +705,8 @@ def test_recording_a_gap_does_not_change_the_design():
     one pair differing ONLY in whether they disclose a gap dedup to one, and
     something outside `canonical_form` has to pick the survivor. NOT hash order —
     equal hashes have no order, and this docstring said otherwise until the
-    behaviour below was measured. `specifier::specify` picks it, on
-    `specifier::_disclosure`; see
+    behaviour below was measured. `specifier::specify` picks it, by
+    `specifier::_twin_order`; see
     `test_specifier::test_a_disclosing_sample_is_not_discarded_for_a_silent_twin`.
     """
     a = p014()

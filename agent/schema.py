@@ -1532,8 +1532,8 @@ class ProtocolSpecification(BaseModel):
         # `setdefault`: whichever sample arrived first won, and because `parked`
         # iterates DISTINCT hashes the loser was not parked either, so a
         # disclosing sample behind a silent one left the run entirely. That is
-        # settled in `specifier::specify` by a tie-break on
-        # `specifier::_disclosure`, not here — folding the field into this dict
+        # settled in `specifier::specify` by `specifier::_twin_order`, not
+        # here — folding the field into this dict
         # would cost the three properties above.
         def cov(lst):
             return sorted((_ref_key(e.variable), e.role.value) for e in lst)
