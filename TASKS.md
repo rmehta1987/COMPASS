@@ -121,42 +121,24 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   absence are distinguishable in the response, and the surface change re-runs
   `benchmark.contamination_check`.
 
-- **C30 — what is unexpressible is two ESTIMANDS, not two items** (user-level; the fix is a
-  schema amendment or a stated convention, not a lane's).
-  🛑 Correction to a claim made on 2026-09-10 and withdrawn the same day: *"one exposure
-  against two outcomes is not expressible at any layer"* is **false as written**.
-  `agent/schema.py::DerivationRef.component_keys` is `list[VariableKey]` with
-  `min_length=1` and no upper bound, and it is the canonical specimen —
-  `tests/test_schema.py` `p014` carries a two-component outcome. `_ref_keys` already fans
-  those out into `design_keys`. What a record cannot carry is two **estimands**: a
-  derivation composes N items into ONE outcome, and only against a signed file
-  (`DerivationRef._matches_the_signature_it_names`).
-  The amendment is six fields, not one: `exposure: Ref`, `outcome: Ref`,
-  `expected_direction`, `falsifier` + `falsifier_threshold`, and
-  `estimability.smallest_detectable_effect` (one curve, one `at_n`, one
-  `asserted_baseline_prevalence` — by definition one outcome's reference-arm frequency).
-  Two validators become WRONG rather than broken: `_falsifier_is_detectable` would check
-  outcome B's threshold against outcome A's power, and `_no_covariate_repeats_an_anchor`
-  would forbid outcome A as a covariate in outcome B's model, which is legitimate.
-  🛑 The binding Hard Constraint is **not** the docstring rule — declaring a list needs no
-  banned content. It is `canonical_form`, which emits `"outcome": _ref_key(self.outcome)`
-  as a scalar; `record_hash` is a sha256 of that dict, `agent/specifier.py::_rank`'s final
-  term reads it, and every saved record carries the hash in its FILENAME — including the
-  `run/superseded/` pins §Testing Patterns requires stay under test. Two further holes
-  widening would open silently: `_all_variable_refs`'s `isinstance` guard skips a list, so
-  `_wording_is_verbatim` — the only check that `quoted_wording` is the instrument's text —
-  stops covering the outcome while still covering the exposure; and
-  `tool_authority.py::_ref_keys` returns `[]` for a list, dropping outcome keys out of
-  `design_keys` and past `_reject_uncovered`. The change also spans Lane A
-  (`schema.py`, `specifier.py`) and Lane B (`registry.py`, `tool_authority.py`), whose
-  prompt strings state the singular pair, so §Parallel Lanes and §Contamination Practice
-  both bind.
-  ACCEPT (convention reading): this file and `DESIGN.md` record that N outcomes are N
-  records sharing an exposure, and say how they are related — nothing carries that today.
-  ACCEPT (schema reading): all six fields move in one commit with their tests, the two
-  `isinstance` holes are closed with a seeded failure each, `RefusalReason` can name WHICH
-  anchor is unresolvable, `benchmark.contamination_check` re-runs, and `_rank`'s AST test
-  still passes.
+- **C30 — N outcomes are N records. DECIDED 2026-09-10 by the operator: the convention
+  reading, not the schema amendment.** A request naming one exposure against N outcomes
+  (or M exposures) is N×M records, one per enumerated pair, produced by the loop that
+  already exists (`generate/funnel.py::run` → `s1_enumerate(exposures, outcomes)`). It is
+  never one widened record. Recorded in `DESIGN.md` §2.
+  Why not widen: every per-record quantity is bound to one outcome.
+  `agent/schema.py::ProtocolSpecification.canonical_form` emits `"outcome"` as a scalar,
+  `record_hash` hashes that dict, and every saved record carries the hash in its FILENAME,
+  `run/superseded/` pins included; `_falsifier_is_detectable` checks one
+  `falsifier_threshold` against one outcome's detectability curve; the expected direction
+  is one pair's. Widening makes each of those per-outcome, which is N records inside one.
+  The full schema-reading analysis (six fields, the two `isinstance` holes widening would
+  open) is in `git show 934aebe:TASKS.md` if the question is ever reopened.
+  STILL OPEN, and small: no record names its siblings or the request it came from.
+  Siblings are grouped by the shared exposure anchor (`canonical_form()["exposure"]`,
+  equivalently the `protocol_id` prefix before `_to_`) within the one run or `serve/`
+  ticket that produced them. Splitting a prose request into its N pairs is C29-C's
+  splitter, not this item.
 
 - **C31 — `serve/`'s request-shaping defects, in the one part of the module no test
   reaches.** Found by adversarial review 2026-09-10; each re-checked by running it against

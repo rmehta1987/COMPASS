@@ -40,6 +40,14 @@ What the system is. Operating rules: `AGENTS.md`. Open work: `TASKS.md`.
 - **Unknowable quantities are admitted, not invented**: no analytic n, response coding or
   unverifiable prevalence — null plus a blocker (`benchmark/unearned_assertions.py`).
 - **Contamination is measured, not asserted clean**: three routes, only one closes (§5).
+- **One record, one estimand.** N outcomes against one exposure are N records, one per
+  enumerated pair, from the loop that already exists (`generate/funnel.py::run`), never
+  one widened record: `canonical_form`'s `outcome` and so `record_hash`, the expected
+  direction and `_falsifier_is_detectable`'s one threshold against one curve are all
+  defined for one outcome. Siblings are grouped by the shared exposure anchor
+  (`canonical_form()["exposure"]`) within the run or `serve/` ticket that produced them.
+  No record names its siblings, and nothing corrects for multiplicity across them.
+  Operator's decision, 2026-09-10 (`TASKS.md` C30).
 
 ## 3. Architecture
 ```
