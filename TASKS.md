@@ -97,7 +97,7 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   C30's convention each is N records, one per pair. The figure governing `_pair` as it
   ships is the 1×1 row: **0.600 shared against 0.825 oracle, on 40 requests** (24 and 33
   of 40). 0.32 is the all-shapes joint; quote it only with that beside it.
-  🛑 BLOCKER, and it is a request-set problem before it is a code problem: **split
+  WAS THE BLOCKER (resolved 2026-09-11 by the measurement below), a request-set problem before a code problem: **split
   accuracy is unmeasured and the oracle does not bound it.** `out/pool_coverage.json`'s
   split arms split on the fixture's own phrases — a perfect decomposition — and are a
   CEILING (0.71 at k=20, same total budget), read as `FUSION.md` §2 reads its 0.821 row.
@@ -115,6 +115,29 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   which is a MARGINAL; (iii) the split prompt joins `model_visible_surface` and
   `benchmark.contamination_check` re-runs; (iv) the prompt held fixed and shown stable
   under one wording perturbation (`AGENTS.md` §Verification Discipline).
+  C29-C MEASURED 2026-09-11 (loop item 11; the operator authorised building the splitter
+  that day). Contract `64e29fd` (`agent/prompt_contract.py::parse_split`: every entry is
+  the request's own words, in order), `/api/pair`'s opt-in `split` `2e63781`, harness
+  `762b733` (`benchmark/split_coverage.py`). ACCEPT: (i) DONE. 399 questions written by a
+  session that never saw the instrument; keys assigned afterwards by a second session in
+  compass-score (the operator's two-session protocol). 303 left the denominator because a
+  phrase has no instrument item; 96 scored (51 1×1, 24 1×2, 16 2×1, 5 2×2). (ii) DONE, as
+  `docs/loop-prompt.md` rewords it: all three arms on the SAME requests in the SAME run,
+  never against the biased fixture's 0.32 / 0.71. VERIFIED `python -m
+  benchmark.split_coverage`, k=20, claude-haiku-4-5 splitter: shared **39/96**, real split
+  **70/96**, oracle **71/96**. By shape (shared / split / oracle): 1×1 0.588 / 0.824 /
+  0.843; 1×2 0.208 / 0.583 / 0.583; 2×1 0.125 / 0.688 / 0.688; 2×2 0.400 / 0.600 / 0.600.
+  Split harm (shared covered, split lost) **5**, gain 36. 4 of the 5 are perfect splits
+  whose narrower per-phrase queries lost an item the oracle also misses, so at most 1 is a
+  wrong split. The route accepted 398 of 399 splits (1 unsplittable). (iii) DONE,
+  `64e29fd`. (iv) DONE: under one paraphrase of the guidance, identical coverage (70/96),
+  84 of 96 identical splits, 96 of 96 accepted. Caveats: one run, no seed; the labeler
+  gave ONE key per phrase, so coverage is a lower bound; the author had broad topic hints.
+  Artifacts outside the clone, `loop-snapshots/`: `split_coverage_2026-09-11.json`
+  (sha256 2e58e9ad…), `split_replies_2026-09-11.json`, `clean_split_requests_2026-09-11.json`,
+  and the `_perturbed` pair; the fixture is also at untracked `fixtures/clean_split_requests.json`.
+  STILL OPEN, and the operator's: `split` is off by default on the site's route. Turning
+  it on is a ship decision under FUSION §6's signed "ship nothing" recommendation.
 - C29 makes **C17 bigger, not smaller**: a splitter is a third model in one run and
   `agent/schema.py::Provenance.model_id` is one string.
 - **C29a — `absent` is defined as a claim the route cannot support.** Not blocked; smaller
