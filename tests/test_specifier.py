@@ -399,6 +399,56 @@ def test_recording_a_covariate_gap_does_not_rank_a_record_below_a_silent_one(rec
     assert SP._rank(silent) == SP._rank(disclosing)
 
 
+_GAPS = [
+    ("the respondent's own age at enrolment", ["age", "age at enrollment"]),
+    ("household income over the past year", ["income", "household income"]),
+    ("years of schooling the respondent completed", ["schooling", "years of education"]),
+]
+
+
+def _with_gaps(record: dict, n: int) -> dict:
+    """`record` with `n` distinct covariate gaps written down."""
+    return {**record, "sought_covariates": [{
+        "construct_sought": construct,
+        "search_phrases": phrases,
+        "why_rejected": ("what came back measures something else, so each "
+                         "candidate was refused."),
+        "exposes_the_estimate_to": ("residual confounding by a common cause of "
+                                    "both anchors."),
+    } for construct, phrases in _GAPS[:n]]}
+
+
+@pytest.mark.parametrize("n", [1, 2, 3])
+def test_no_number_of_recorded_gaps_moves_the_rank(record: dict, n: int) -> None:
+    """C28: a gap count is prose nothing checks, so no count of it may rank.
+
+    The test above compares no gap with one, so a term that only moved at two
+    ("two or more gaps rank higher") would pass it and still pay for padding.
+    """
+    from agent.schema import ProtocolSpecification
+    silent = ProtocolSpecification.model_validate(record)
+    disclosing = ProtocolSpecification.model_validate(_with_gaps(record, n))
+    assert len(disclosing.sought_covariates) == n
+    assert SP._rank(silent) == SP._rank(disclosing)
+
+
+@pytest.mark.parametrize("field", ["adjusted_covariates", "excluded_variables"])
+def test_a_wrong_construct_adjustment_does_not_outrank_a_recorded_gap(
+        record: dict, field: str) -> None:
+    """C28's own case: one sample uses a stand-in, its twin files the gap.
+
+    `_rank` used to count adjusted plus excluded covariates, so the sample that
+    adjusted for a wrong-construct key won outright. Now the two tie on every
+    term but the hash, which only makes the order total.
+    """
+    from agent.schema import ProtocolSpecification
+    stand_in = ProtocolSpecification.model_validate(record)
+    honest = ProtocolSpecification.model_validate(
+        {**_with_gaps(record, 1), field: record[field][:-1]})
+    assert stand_in.record_hash() != honest.record_hash()     # different designs
+    assert SP._rank(stand_in)[:-1] == SP._rank(honest)[:-1]
+
+
 def _disclosing(record: dict) -> str:
     """The same design as `record`, with a covariate gap written down."""
     return json.dumps({**record, "sought_covariates": [{

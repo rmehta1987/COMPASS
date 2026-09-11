@@ -1628,15 +1628,23 @@ def _rank(p: ProtocolSpecification) -> tuple:
     its own outputs on soundness has no measured skill at it, and a same-family
     judge inflates the scores of models that share its mistakes. What orders these
     is whether the access gate passed, whether the design is estimable, and how
-    much of the record is asserted rather than deferred.
+    many blockers the record carries.
     """
     from agent.schema import GateDecision, NSource
+    # NO COVARIATE COUNT (C28, user amendment 2026-09-11). A fifth term,
+    # -(len(adjusted_covariates) + len(excluded_variables)), paid a record for
+    # adjusting for a wrong-construct key over one that wrote the gap down in
+    # sought_covariates. It is gone, and sought_covariates is not a term either:
+    # it is model prose nothing checks against the log (agent/schema.py, "NOT
+    # CHECKED AGAINST THE TOOL LOG"), so more-ranks-higher selects padding and
+    # fewer-ranks-higher rebuilds C28. Three independent reviews reached that
+    # verdict. What this buys is neutrality, not a win: a wrong-construct record
+    # and an honest one that tie on the terms below are split by the hash.
     return (
         0 if p.access.decision is GateDecision.pass_ else 1,
         0 if p.estimability.n_source is not NSource.unknown else 1,
         len(p.blocked_on),
         0 if p.status is Status.ready_for_review else 1,
-        -(len(p.adjusted_covariates) + len(p.excluded_variables)),
         p.record_hash(),                      # total order, so ties are stable
     )
 
@@ -1743,5 +1751,6 @@ def specify(backend: AnyBackend, pair, *, k: int = 5, mode: str = "benchmark",
     res = Result(winner, parked, attempts, "")
     res.reason = (f"{res.yield_line}; {len(by_hash)} distinct of "
                   f"{sum(a.ok for a in attempts)} valid ({k} sampled); "
-                  f"selected by gate status then estimability")
+                  f"selected by access, estimability and blocker count, "
+                  f"ties split by record hash")
     return res

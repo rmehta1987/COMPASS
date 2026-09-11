@@ -277,11 +277,21 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   comprehension in both drivers (`generate/funnel.py`) that sets every reported
   denominator. ACCEPT: a named, hashed frame walked in enumeration order — value-based
   priority is a second selection effect. An m2×m2 frame would make it scorable.
-- **C28 — `_rank` pays a record to adjust a wrong key rather than disclose a gap**
-  (user-level, not a lane's). Its covariate-count term ranks a wrong-construct adjustment
-  above a gap filed in `sought_covariates`; pre-existing, not from C24. The honest sample
-  recovers only via an `EXCLUDED_ROLES` role fitting none, and `_rank` is under a Hard
-  Constraint and an AST test.
+- **C28 — RESOLVED 2026-09-11, user amendment.** `_rank`'s covariate-count term paid a
+  record for adjusting for a wrong-construct key over one that filed the gap in
+  `sought_covariates`. The term is removed. The user asked three independent reviews
+  (enterprise account, opus) whether `sought_covariates` should become a term instead. All
+  three said no: it is prose nothing checks, so "more gaps rank higher" picks padding and
+  "fewer rank higher" rebuilds C28. The fix is neutral, not a win: the two records now tie,
+  and the hash picks one.
+- **C28 follow-ups the reviews found, VERIFIED in the code 2026-09-11.** (a) `specify`'s
+  dedup keeps the first seed when two same-hash samples record equally many gaps. That is
+  seed order, which the Hard Constraint forbids. (b) `generate/live_specifier.py` copies
+  the FIRST same-hash attempt's tool log, audit and repairs beside the saved record. When a
+  disclosing twin beat a silent one, that is the wrong sample's. (c) USER-LEVEL:
+  `_disclosure` is a raw count, so a padded twin beats an honest one, and the honest one is
+  neither selected nor parked. (d) USER-LEVEL: `len(blocked_on)` ascending still charges
+  other disclosures, such as a stated threshold's co-completion blocker or `response_coding`.
 - **C26 — the offline concept-synonym column. LAST and gated.** An offline pass labels
   each wording as a second FTS5 column. Precondition (2) UNMET: the scan catches quotation
   and a label is paraphrase, so a planted framing must turn it RED in the same commit.

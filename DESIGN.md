@@ -185,7 +185,8 @@ Three routes by which a published analysis reaches the model. **Only one closes.
   through the CLI, no format tax. Never cite Haiku results for 8–27B models.
 - **The blocking external dependency is the module co-completion counts.** Without them
   every pair is `estimability=unknown`, `n_source` only `unknown`, nothing reaches
-  `ready_for_review`, and `_rank` falls through to covariate count then hash.
+  `ready_for_review`, and `_rank` falls through to blocker count then hash. It no longer
+  counts covariates (C28).
 - Outcome frequencies are the second ask of the study team; one delivery clears both.
 - **The survey platform is contested**: the operator states one platform, a cohort paper's
   Methods another. Ask; assert neither (`benchmark/leak_facts.py`).
