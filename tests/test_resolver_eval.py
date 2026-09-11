@@ -1170,3 +1170,77 @@ def test_the_critics_absent_is_scoped_to_what_it_was_shown() -> None:
     doc = " ".join((R.CriticVerdict.__doc__ or "").split())
     assert "none of the items shown measures this" in doc
     assert "codebook does not measure" not in doc
+
+
+# --------------------------------------------------------------------------- #
+# the website's resolver: one call per row, scored by the shared rule
+# --------------------------------------------------------------------------- #
+
+_EXACT = next(r for r in ROWS if r.kind == "exact" and r.gold)
+
+
+def _one_row(row: R.ResolverQuery) -> R.ResolverFixture:
+    return FX.model_copy(update={"queries": (row,)})
+
+
+def test_the_single_call_mode_asks_exactly_what_the_site_asks() -> None:
+    """One call per row, rendering the site's retrieval contract; the scope says n=1."""
+    from agent import prompt_contract as PC
+
+    seen: list[str] = []
+
+    def model(prompt: str) -> str:
+        seen.append(prompt)
+        return '{"verdict": "absent"}'
+
+    rep = R.evaluate_single(model, arm="frozen", fixture=_one_row(_EXACT))
+    pool = _EXACT.pool
+    want = PC.retrieval_contract(_EXACT.request, PC.candidates_from_keys(
+        pool, {k: R.candidate_facts(k) for k in pool})).render()
+    assert seen == [want], "the resolver must see the site's contract, once"
+    assert rep.model_calls == 1
+    assert "one index-selection call per row" in rep.scope
+    assert "shortlists per row" not in rep.scope
+    assert "n=1" in R.format_report(rep)
+
+
+def test_the_single_call_mode_scores_by_the_shared_answer_rule() -> None:
+    """The index resolves against the pool offered, then `score_query` decides."""
+    at = _EXACT.pool.index(_EXACT.gold[0]) + 1
+    other = 2 if at == 1 else 1
+    right = R.evaluate_single(
+        lambda _p: f'{{"verdict": "resolved", "indices": [{at}]}}',
+        arm="frozen", fixture=_one_row(_EXACT))
+    wrong = R.evaluate_single(
+        lambda _p: f'{{"verdict": "resolved", "indices": [{other}]}}',
+        arm="frozen", fixture=_one_row(_EXACT))
+    assert right.results[0].outcome == "correct"
+    assert wrong.results[0].outcome == "confident_wrong"
+
+
+def test_a_malformed_reply_blocks_its_row_and_the_run_continues() -> None:
+    """One bad reply must not discard the other rows' paid calls."""
+    rows = tuple(r for r in ROWS if r.gold)[:2]
+    fx = FX.model_copy(update={"queries": rows})
+    rep = R.evaluate_single(lambda _p: "not json", arm="frozen", fixture=fx)
+    assert len(rep.results) == 2 and len(rep.blocked) == 2 and not rep.scored
+    assert rep.model_calls == 2
+    empty = R.evaluate_single(lambda _p: "{}", fixture=fx, pool=lambda _q: ())
+    assert all(r.blocked and r.model_calls == 0 for r in empty.results)
+
+
+def test_the_command_line_runs_after_every_definition() -> None:
+    """The `__main__` guard is the module's last statement.
+
+    `python -m benchmark.resolver_eval` runs the guard when the interpreter
+    reaches it, so anything defined below it does not exist yet. The
+    single-call mode's first live run died on exactly that -- `candidate_facts`
+    sits below where the guard was -- while every import-based test passed,
+    because importing defines the whole module first.
+    """
+    import ast
+
+    tree = ast.parse((R.ROOT / "benchmark" / "resolver_eval.py").read_text())
+    last = tree.body[-1]
+    assert isinstance(last, ast.If) and "__main__" in ast.unparse(last.test), (
+        "the __main__ guard is not the module's last statement")

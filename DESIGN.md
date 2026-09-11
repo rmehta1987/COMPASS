@@ -88,7 +88,7 @@ enumeration (Python) -> one pair
 | `mcp/compass_server.py` | Tools over stdio JSON-RPC; logs calls WITH return values |
 | `agent/prompt_contract.py` | A model-visible surface as a typed record; selection by index |
 | `benchmark/` | Held-out keys, contamination check, `benchmark/retrieval_eval.py` gate |
-| `benchmark/resolver_eval.py` | Scores a prose resolver: k shortlists, one critic, 3 arms |
+| `benchmark/resolver_eval.py` | Scores the one prose resolver, the site's route (`evaluate_single`), against the `searched` control; the k-shortlist procedure stays as an alternative |
 | `benchmark/leak_facts.py` | Seal-probe key; platform spellings; the §7 contest |
 | `build_targets.py`, `encode_and_score.py` | Arm E's target builder (1,352 targets) and frozen-encoder driver; external drivers, excluded from the lint ceiling |
 | `src/` | The retrieval experiments: `compass_build.py` (1,353 targets), `compass_score.py`, `train.py`, `freeze_deploy.py`, characterisation and fusion scripts; not in this map's standards |

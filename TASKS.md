@@ -197,6 +197,17 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   resolver. Its rules are in `AGENTS.md` §Contamination Practice. ACCEPT:
   enumeration-built and prose-built prompts are byte-identical
   (`agent/specifier.py::user_prompt`).
+  RECONCILED with C29, the operator's decision of 2026-09-10: ONE resolver, the website's
+  route (the deployed retriever's pool from `serve/api.py::_role_candidates`, then one
+  `VariableSelection` call), and ONE control arm, `search_variables`.
+  `benchmark/resolver_eval.py` measures that route: the `deployed` pool arm and
+  `evaluate_single` (`--live --single`). VERIFIED 2026-09-11, claude-haiku-4-5, all 22
+  rows, one call per row, no seed so not reproducible: deployed **20/22** correct, the
+  lexical control **17/22**. The difference is three derive rows (GQ014, GQ015, GQ017);
+  both arms named one item on GQ021, the wording printed in three modules. Upper bounds
+  under the fixture's `KNOWN_BIAS`, n=22, one run: a direction, not an accuracy. The
+  k-shortlist procedure (`evaluate`) stays as a measured alternative, not a second
+  resolver. Reports kept outside the clone, `loop-snapshots/resolver_eval_single_*`.
 - C16 second acceptance: `benchmark/input_leakage.py` scans a SUBMITTED prompt with a
   red-turning positive control; its `environment_supplied` currently rests on enumeration
   choosing the pair.
