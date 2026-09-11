@@ -1501,3 +1501,23 @@ def test_every_refusal_outcome_entry_names_a_tool_the_reason_requires() -> None:
             assert tool in need, (
                 f"{reason}: REFUSAL_OUTCOMES names {tool!r}, which "
                 f"REFUSAL_EVIDENCE does not require, so the check never runs")
+
+
+def test_a_pair_a_model_proposed_names_its_resolver() -> None:
+    """C17: `model_id` names the Specifier alone, so a second model is named apart."""
+    from agent.schema import AnchorSource, ModelStage
+
+    base = dict(dictionary_version="v", module_version="m", prompt_hash="p",
+                model_id="claude-haiku-4-5")
+    with pytest.raises(ValidationError, match="must name the resolver"):
+        Provenance(**base, anchors_proposed_by="model")
+    ok = Provenance(**base, anchors_proposed_by="model",
+                    models={"resolver": "claude-sonnet-5"})
+    assert ok.models[ModelStage.resolver] == "claude-sonnet-5"
+    assert ok.anchors_proposed_by is AnchorSource.model
+    with pytest.raises(ValidationError):
+        Provenance(**base, models={"critic": "claude-sonnet-5"})   # no such stage
+    with pytest.raises(ValidationError, match="names no model"):
+        Provenance(**base, models={"splitter": " "})
+    # Anti-vacuity: a record made before the fields existed still validates.
+    assert Provenance(**base).anchors_proposed_by is None

@@ -105,9 +105,9 @@ from agent.tool_authority import (
     RunIdentity,
     apply_record_identity,
     apply_tool_authority,
+    identity_provenance,
 )
 from env.tools import ToolLog
-
 
 # THE PROMPT CONTRACT. Every prompt below is rendered through PromptTemplate,
 # and a template's variables are PARSED OUT OF ITS BODY — there is deliberately
@@ -1453,11 +1453,7 @@ def _transduce_refusal(backend: AnyBackend, analysis: str, log: ToolLog,
             prov = filled.get("provenance")
             filled["provenance"] = {
                 **(prov if isinstance(prov, dict) else {}),
-                "dictionary_version": identity.dictionary_version,
-                "module_version": identity.module_version,
-                "prompt_hash": identity.prompt_hash,
-                "model_id": identity.model_id,
-                **({"seed": identity.seed} if identity.seed is not None else {})}
+                **identity_provenance(identity)}
         return NotSpecifiable.model_validate(filled)
 
     schema = NotSpecifiable.model_json_schema()

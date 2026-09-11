@@ -660,6 +660,10 @@ class RunIdentity:
         selection_mode: How the pair reached the model. `enumerated_screen`
             whenever a funnel produced it.
         seed: The sample seed, where the backend has one.
+        models: C17. Every model besides the Specifier that shaped the record,
+            as `(stage, model id)` pairs; a tuple because the class is frozen.
+        anchors_proposed_by: Who proposed the pair's anchors -- `enumeration`,
+            `person` or `model` -- or None where it was not recorded.
     """
 
     protocol_id: str
@@ -670,6 +674,8 @@ class RunIdentity:
     screened_from: int
     selection_mode: str = "enumerated_screen"
     seed: int | None = None
+    models: tuple[tuple[str, str], ...] = ()
+    anchors_proposed_by: str | None = None
 
 
 def protocol_id_for(pair_id: str) -> str:
@@ -686,6 +692,35 @@ def protocol_id_for(pair_id: str) -> str:
     # and to every glob in this repo.
     return (pair_id.replace(":", "").replace(" -> ", "_to_")
             .replace(" ", "_").lower())
+
+
+def identity_provenance(identity: RunIdentity) -> dict[str, Any]:
+    """The provenance fields the driver owns, in one place for both record kinds.
+
+    `apply_record_identity` writes these over a protocol and
+    `agent/specifier.py::_transduce_refusal` over a refusal. Two hand-built dicts
+    were two places for a new field to reach one record kind and miss the other.
+
+    Args:
+        identity: What the driver knows about this run.
+
+    Returns:
+        The fields, with `seed` only when the backend has one.
+    """
+    prov: dict[str, Any] = {
+        "dictionary_version": identity.dictionary_version,
+        "module_version": identity.module_version,
+        "prompt_hash": identity.prompt_hash,
+        "model_id": identity.model_id,
+        # C17: stamped, never inherited from the transduction. A model that
+        # wrote its own `models` would be vouching for the stage that chose its
+        # inputs.
+        "models": dict(identity.models),
+        "anchors_proposed_by": identity.anchors_proposed_by,
+    }
+    if identity.seed is not None:
+        prov["seed"] = identity.seed
+    return prov
 
 
 def apply_record_identity(record: dict[str, Any],
@@ -723,12 +758,7 @@ def apply_record_identity(record: dict[str, Any],
     prov = out.get("provenance")
     if not isinstance(prov, dict):
         prov = out["provenance"] = {}
-    prov.update(dictionary_version=identity.dictionary_version,
-                module_version=identity.module_version,
-                prompt_hash=identity.prompt_hash,
-                model_id=identity.model_id)
-    if identity.seed is not None:
-        prov["seed"] = identity.seed
+    prov.update(identity_provenance(identity))
 
     sel = out.get("selection_rationale")
     if isinstance(sel, dict):

@@ -30,7 +30,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -712,6 +712,21 @@ class SelectionRationale(BaseModel):
         return self
 
 
+class AnchorSource(StrEnum):
+    """Who put the pair's two anchors in front of the Specifier."""
+
+    enumeration = "enumeration"
+    person = "person"
+    model = "model"
+
+
+class ModelStage(StrEnum):
+    """A stage that runs a model of its own, besides the Specifier."""
+
+    resolver = "resolver"
+    splitter = "splitter"
+
+
 class Provenance(BaseModel):
     """Without these an ablation cannot distinguish a component's effect from a
     prompt edit someone forgot about.
@@ -738,6 +753,41 @@ class Provenance(BaseModel):
                     "detected 55% of agent failures from the final artifact "
                     "alone and 82% with the trace, so the trace is published "
                     "beside the record — but it never enters the verdict path.")
+    anchors_proposed_by: AnchorSource | None = Field(
+        default=None,
+        description="Where the exposure and outcome came from: enumeration, a "
+                    "person, or a model. Filled in by the pipeline, not by you.")
+    models: dict[ModelStage, str] = Field(
+        default_factory=dict,
+        description="Other models used to build this record, by step. A "
+                    "resolver is a model that picked the exposure and outcome "
+                    "from a researcher's own words. A splitter is a model that "
+                    "broke one request into separate questions. Filled in by "
+                    "the pipeline, not by you.")
+
+    @model_validator(mode="after")
+    def _a_model_proposed_pair_names_its_resolver(self) -> Provenance:
+        """A record may not hide a second model behind `model_id` (C17).
+
+        The Haiku pin covers the Specifier, not a resolver, so a larger resolver
+        is legitimate and a record that hides it is not.
+
+        Returns:
+            The validated block.
+
+        Raises:
+            ValueError: If a model proposed the anchors and no resolver is
+                named, or a named stage carries no model id.
+        """
+        if (self.anchors_proposed_by is AnchorSource.model
+                and ModelStage.resolver not in self.models):
+            raise ValueError(
+                "anchors_proposed_by is model, so provenance.models must name "
+                "the resolver; model_id names only the Specifier")
+        empty = sorted(s.value for s, m in self.models.items() if not m.strip())
+        if empty:
+            raise ValueError(f"provenance.models names no model for {empty}")
+        return self
 
 
 class Status(str, Enum):

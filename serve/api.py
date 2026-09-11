@@ -1045,6 +1045,36 @@ def _first_json(text: str) -> str:
     raise ValueError("the model returned an unbalanced JSON object")
 
 
+#: What a model id may look like when a caller reports one.
+_MODEL_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,99}")
+
+
+def _resolver_model(body: dict[str, Any]) -> str | None:
+    """The model that proposed the anchors, when the caller says one did.
+
+    C17: a pair `/api/pair` proposed reaches `/api/specify` as two keys, and
+    without this the record would name the Specifier alone. The value lands in
+    the record's provenance, never in a prompt; it is still held to the shape of
+    a model id so a caller cannot write arbitrary text into a record.
+
+    Args:
+        body: The request.
+
+    Returns:
+        The model id, or None when the caller named none.
+
+    Raises:
+        ValueError: When the field is present but is not a model id.
+    """
+    raw = body.get("resolver_model")
+    if raw is None or raw == "":
+        return None
+    if not isinstance(raw, str) or not _MODEL_ID.fullmatch(raw):
+        raise ValueError("resolver_model must be a model id such as "
+                         "claude-haiku-4-5")
+    return raw
+
+
 def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
     """Run the real Specifier against headless `claude -p` on a posed pair.
 
@@ -1057,7 +1087,9 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
         state: Shared handles.
         body: The request, carrying `exposure`, `outcome` and optionally `k`,
             `model`, and `allow_unresolvable` to drive the refusal path with a
-            key the dictionary does not contain.
+            key the dictionary does not contain. `resolver_model` names the
+            model that proposed the anchors when they came from `/api/pair`,
+            so the record names it too (C17).
 
     Returns:
         The run: identity, per-sample gate values, and both outcome fields --
@@ -1097,6 +1129,7 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
 
     C, version = load_constructs()
     allow_unresolvable = bool(body.get("allow_unresolvable"))
+    resolver_model = _resolver_model(body)
     canonical: dict[str, str] = {}
     if not allow_unresolvable:
         exposure = _canonical_key(exposure, C, "exposure", canonical)
@@ -1125,8 +1158,10 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
     def _run() -> None:
         try:
             backend = ClaudeCliBackend(model=model, mode="benchmark")
-            identity = run_identity(pair, version, 0, backend.name,
-                                    "externally_posed")
+            identity = run_identity(
+                pair, version, 0, backend.name, "externally_posed",
+                models={"resolver": resolver_model} if resolver_model else None,
+                anchors_proposed_by="model" if resolver_model else "person")
             t0 = time.time()
             res = specify(backend, pair, k=k, mode="benchmark",
                           parked_dir=ROOT / "parked", identity=identity)

@@ -1144,3 +1144,29 @@ def test_both_prose_routes_state_the_scope_of_absent() -> None:
                   if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
         assert "_absence_scope" in called, (
             f"{fn.__name__} returns a verdict without saying what `absent` covers")
+
+
+def test_a_resolver_model_is_accepted_only_as_a_model_id() -> None:
+    """C17: it lands in a record, so it is held to the shape of a model id."""
+    from serve.api import _resolver_model
+
+    assert _resolver_model({}) is None
+    assert _resolver_model({"resolver_model": ""}) is None
+    assert _resolver_model({"resolver_model": "claude-haiku-4-5"}) == "claude-haiku-4-5"
+    for bad in ("x; rm -rf /", "a b", 7, "-leading-dash"):
+        with pytest.raises(ValueError, match="model id"):
+            _resolver_model({"resolver_model": bad})
+
+
+def test_specify_tells_run_identity_who_proposed_the_pair() -> None:
+    """The posed-pair route names the resolver when there was one."""
+    import ast
+    import inspect
+
+    from serve import api
+
+    tree = ast.parse(inspect.getsource(api._specify))
+    calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call)
+             and isinstance(n.func, ast.Name) and n.func.id == "run_identity"]
+    assert calls, "_specify no longer builds a run identity"
+    assert {"models", "anchors_proposed_by"} <= {k.arg for k in calls[0].keywords}

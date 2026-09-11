@@ -1836,6 +1836,51 @@ def test_the_wrapper_writes_the_denominator_the_model_skipped(pair):
     assert sel["screened_from"] == counts["enumerated"]
 
 
+def test_the_driver_names_every_model_and_who_proposed_the_pair(pair) -> None:
+    """C17: stamped by the driver; a transduction cannot vouch for its own inputs."""
+    from agent.schema import ProtocolSpecification
+    from agent.tool_authority import apply_record_identity
+
+    rec = {"provenance": {"models": {"resolver": "invented"},
+                          "anchors_proposed_by": "enumeration"}}
+    ident = _identity(pair, models=(("resolver", "claude-sonnet-5"),),
+                      anchors_proposed_by="model")
+    prov = apply_record_identity(rec, ident)["provenance"]
+    assert prov["models"] == {"resolver": "claude-sonnet-5"}
+    assert prov["anchors_proposed_by"] == "model"
+    # And the record refuses to stand when a model proposed it unnamed.
+    _, version, counts = pair
+    good = json.loads(fixture(version, counts["enumerated"]))
+    unnamed = apply_record_identity(good, _identity(pair, anchors_proposed_by="model"))
+    with pytest.raises(Exception, match="must name the resolver"):
+        ProtocolSpecification.model_validate(unnamed)
+
+
+def test_the_refusal_path_takes_its_provenance_from_the_same_helper() -> None:
+    """One dict for both record kinds, so a new field cannot reach only one."""
+    import ast
+
+    tree = ast.parse(inspect.getsource(SP._transduce_refusal))
+    called = {n.func.id for n in ast.walk(tree)
+              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    assert "identity_provenance" in called
+
+
+def test_run_identity_says_who_proposed_the_pair(pair) -> None:
+    """Enumerated pairs came from the funnel, stated ones from a person."""
+    from generate.live_specifier import run_identity
+
+    p, version, counts = pair
+    assert run_identity(p, version, counts["enumerated"], "m").anchors_proposed_by \
+        == "enumeration"
+    assert run_identity(p, version, 0, "m", "externally_posed").anchors_proposed_by \
+        == "person"
+    ident = run_identity(p, version, 0, "m", "externally_posed",
+                         models={"resolver": "r"}, anchors_proposed_by="model")
+    assert ident.models == (("resolver", "r"),)
+    assert ident.anchors_proposed_by == "model"
+
+
 def test_a_sample_carries_the_drivers_identity_end_to_end(pair):
     """The whole path, not just the helper."""
     p, version, counts = pair

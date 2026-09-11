@@ -39,7 +39,9 @@ from env import tools as T  # noqa: E402
 
 def run_identity(pair: object, version: str, screened_from: int,
                  model_id: str,
-                 selection_mode: str = "enumerated_screen") -> RunIdentity:
+                 selection_mode: str = "enumerated_screen",
+                 models: dict[str, str] | None = None,
+                 anchors_proposed_by: str | None = None) -> RunIdentity:
     """Assemble what the driver knows before the model is called.
 
     Every one of these was the empty string in the record of 2026-08-26, which
@@ -56,6 +58,11 @@ def run_identity(pair: object, version: str, screened_from: int,
             pair named on the command line, because a stated pair was screened
             from nothing and a denominator copied off an unrelated funnel run
             would be a fabricated one.
+        models: C17. Every model besides the Specifier that shaped the pair, by
+            stage -- `{"resolver": ...}` when a model proposed the anchors.
+        anchors_proposed_by: Who proposed the anchors. When omitted it follows
+            from `selection_mode`: the funnel enumerates, and any other mode is
+            a pair a person stated.
 
     Returns:
         The identity written over every sample of this run.
@@ -73,7 +80,10 @@ def run_identity(pair: object, version: str, screened_from: int,
         prompt_hash=prompt_hash(pair),
         model_id=model_id,
         screened_from=screened_from,
-        selection_mode=selection_mode)
+        selection_mode=selection_mode,
+        models=tuple(sorted((models or {}).items())),
+        anchors_proposed_by=anchors_proposed_by or (
+            "enumeration" if selection_mode == "enumerated_screen" else "person"))
 
 
 #: Anything shaped like a variable key, wherever it appears in a record. The
