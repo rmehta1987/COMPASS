@@ -337,6 +337,56 @@ def test_a_row_with_no_narrowing_arm_scores_none():
 SEARCHED_REACHABLE_FLOOR = 13
 
 
+#: Rows whose answer the deployed retriever's pool reaches at `_pair`'s k=20. A
+#: FLOOR: it may only rise. Measured 2026-09-10 on the build pinned in
+#: `tests/test_dictionary.py::BUILD_HASH`: 13 of 13, the answer at rank 1 on all
+#: 13 (the lexical arm: 7).
+DEPLOYED_REACHABLE_FLOOR = 13
+
+
+def test_the_deployed_arm_builds_its_pool_with_the_sites_own_function(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """One resolver: the arm CALLS `serve/api.py::_role_candidates`, not a copy.
+
+    It also takes its input from the request alone -- no oracle -- and records
+    a pool nothing can be cited from as empty rather than raising.
+    """
+    from agent import prompt_contract as PC
+    from serve import api
+
+    seen: list[tuple[str, int]] = []
+
+    def fake(_state: object, request: str, _role: str, k: int) -> dict:
+        seen.append((request, k))
+        return {"cands": PC.candidates_from_keys(["m3:Q4.2", "m2:Q5.8"])}
+
+    monkeypatch.setattr(api, "_role_candidates", fake)
+    monkeypatch.setattr(R, "_serve_state", lambda: None)
+    row = ROWS[0]
+    blinded = row.model_copy(update={"gold": (), "accept_keys": (),
+                                     "expected": "", "note": ""})
+    assert R.pool_deployed(row) == R.pool_deployed(blinded) == ("m3:Q4.2", "m2:Q5.8")
+    assert seen == [(row.request, R.DEPLOYED_K)] * 2
+    assert R.POOL_ARMS["deployed"] is R.pool_deployed
+
+    def uncitable(*_: object) -> dict:
+        raise ValueError("no candidate for the exposure could be bound to wording")
+
+    monkeypatch.setattr(api, "_role_candidates", uncitable)
+    assert R.pool_deployed(row) == ()
+
+
+def test_the_deployed_arm_reaches_the_answer_at_least_as_often_as_before() -> None:
+    """The shipped pool's reach, measured through the shipped bundle."""
+    if not (R.ROOT / "deploy" / "model" / "model.safetensors").exists():
+        pytest.skip("deploy/model/ is untracked; link it to measure the deployed arm")
+    report = R.evaluate_pools("deployed")
+    assert report.reachable >= DEPLOYED_REACHABLE_FLOOR, (
+        f"the deployed arm reaches {report.reachable} of {len(report.scored)} "
+        f"answers, below the floor of {DEPLOYED_REACHABLE_FLOOR}. Recall floors "
+        f"only rise.")
+
+
 def test_a_frozen_pool_always_contains_its_own_answer():
     report = R.evaluate_pools("frozen")
     assert report.reachable == len(report.scored)

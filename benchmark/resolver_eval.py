@@ -72,11 +72,12 @@ root.
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -556,12 +557,65 @@ def pool_whole_instrument(query: ResolverQuery) -> tuple[str, ...]:
     return tuple(str(e["key"]) for e in tools._load()["entries"])
 
 
+#: The website's pool depth: `serve/api.py::_pair`'s default k, the site's "Ask
+#: the pipeline" flow. `_resolve` defaults to 8; this arm measures the route the
+#: site calls.
+DEPLOYED_K = 20
+
+
+def pool_deployed(query: ResolverQuery, k: int = DEPLOYED_K) -> tuple[str, ...]:
+    """The shipped arm: the pool the website's prose routes offer.
+
+    C16 reconciled with C29, the operator's decision of 2026-09-10: the one
+    resolver is the website's route -- the deployed retriever's pool, then one
+    index-selection call -- and `pool_searched` is its one control arm. This arm
+    CALLS `serve/api.py::_role_candidates`, the function both routes build their
+    pool with, rather than re-deriving it, so a change to how the site builds a
+    pool reaches this measurement too.
+
+    Needs the deployed bundle, the untracked `deploy/model/` included. The
+    retriever's constructor raises on a missing or mis-hashed file rather than
+    returning a pool.
+
+    Args:
+        query: The fixture row. Only `request` is read.
+        k: Pool size.
+
+    Returns:
+        The citable candidate keys in rank order; empty when none can be cited.
+    """
+    from serve.api import _role_candidates
+
+    try:
+        pool = _role_candidates(_serve_state(), query.request, "exposure", k)
+    except ValueError:
+        # `_role_candidates` raises when no hit can be bound to wording. The
+        # site answers that with a 400; a measurement records an empty pool.
+        return ()
+    return tuple(c.key for c in pool["cands"])
+
+
+@functools.cache
+def _serve_state() -> Any:
+    """One `serve/api.py::State` for every row, so the encoder loads once.
+
+    Returns:
+        The state, over the repository's own `deploy/` bundle. `_role_candidates`
+        writes nothing, so the site and run directories it names are never made.
+    """
+    from serve.api import State
+
+    unused = ROOT / "run" / "serve-unused"
+    return State(ROOT / "deploy", unused, unused)
+
+
 #: The pool arms by name, for the CLI and for a report that has to say which one
 #: it measured. A figure without this name is not comparable to another.
 POOL_ARMS: dict[str, PoolFn] = {
     "frozen": pool_frozen,
     "searched": pool_searched,
     "instrument": pool_whole_instrument,
+    "deployed": pool_deployed,
 }
 
 
