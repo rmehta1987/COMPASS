@@ -1176,23 +1176,16 @@ NEGATIVE_CONTROL = PairSpec(
 
 
 def frame_pairs() -> list[PairSpec]:
-    """The 6x64 frame the live Specifier runs against, as probe specs.
+    """The frame the live Specifier walks, as probe specs.
 
     Returns:
-        Every live pair from `generate/funnel.py` over the same exposure and
-        outcome blocks `generate/live_specifier.py` uses, ordered as the funnel
-        emits them.
+        Every live pair of `generate/funnel.py::FRAMES[DEFAULT_FRAME]`, in the
+        enumeration order `walk` emits them.
     """
     sys.path.insert(0, str(ROOT))
-    from generate.funnel import load_constructs, run
+    from generate.funnel import DEFAULT_FRAME, FRAMES, load_constructs, walk
     c, _ = load_constructs()
-    exposures = sorted([x for x in c.values()
-                        if x.module == "3" and x.base_id.startswith("Q16.")],
-                       key=lambda x: x.base_id)
-    outcomes = sorted([x for x in c.values()
-                       if x.module == "2" and x.base_id.startswith("Q5.")],
-                      key=lambda x: x.base_id)
-    cands, _counts = run(exposures, outcomes)
+    cands, _counts = walk(FRAMES[DEFAULT_FRAME], c)
     return [PairSpec(x.exposure.construct_key, x.exposure.stem_text,
                      x.outcome.construct_key, x.outcome.stem_text,
                      requires_derivation=x.requires_derivation)

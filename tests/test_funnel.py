@@ -147,9 +147,11 @@ def test_no_driver_builds_the_frame_by_hand() -> None:
 
     prefixes = {p for f in FRAMES.values()
                 for p in (f.exposure_prefix, f.outcome_prefix)}
-    drivers = [ROOT / "generate" / n for n in
-               ("live_specifier.py", "run_specifier.py", "worked_example.py")]
-    drivers.append(ROOT / "benchmark" / "contamination_check.py")
+    # Every module, not a list of the copies someone remembered: a fifth copy
+    # in benchmark/unaided_specifiability.py outlived the first version of
+    # this test, which named four.
+    drivers = [p for d in ("generate", "benchmark", "serve")
+               for p in sorted((ROOT / d).glob("*.py")) if p.name != "funnel.py"]
     for path in drivers:
         tree = ast.parse(path.read_text())
         by_hand = [n.lineno for n in ast.walk(tree)

@@ -87,7 +87,14 @@ from benchmark.cohort_papers import (  # noqa: E402
     KNOWN_DUPLICATES,
     CohortPaper,
 )
-from generate.funnel import Candidate, Construct, load_constructs, run  # noqa: E402
+from generate.funnel import (  # noqa: E402
+    DEFAULT_FRAME,
+    FRAMES,
+    Candidate,
+    Construct,
+    load_constructs,
+    walk,
+)
 
 #: The longest phrase compared. Four covers every distinctive construction in the
 #: bibliography's design lines — "seven linked community characteristics",
@@ -344,23 +351,17 @@ def scan_prompt(pair_id: str, prompt: str,
 
 
 def enumerated_pairs() -> list[Candidate]:
-    """Every live pair the current frame produces.
+    """Every pair the current frame produces.
 
-    The frame is `generate/funnel.py`'s 6x64 comprehension, duplicated here from
-    `contamination_check.model_visible_surface` rather than imported because that
-    function samples ONE pair for the surface hash and this check needs all of
-    them. When T7 gives the frame an author and a hash, both should read it from
-    there instead.
+    The frame is `generate/funnel.py::FRAMES[DEFAULT_FRAME]`, the one named and
+    hashed definition every driver walks (T7). This module used to carry its own
+    copy of the comprehension, pending exactly that.
 
     Returns:
-        The funnel's live candidates, in enumeration order.
+        The funnel's candidates over the frame, in enumeration order.
     """
     C, _ = load_constructs()
-    e = sorted([c for c in C.values() if c.module == "3"
-                and c.base_id.startswith("Q16.")], key=lambda c: c.base_id)
-    o = sorted([c for c in C.values() if c.module == "2"
-                and c.base_id.startswith("Q5.")], key=lambda c: c.base_id)
-    cands, _ = run(e, o)
+    cands, _ = walk(FRAMES[DEFAULT_FRAME], C)
     return cands
 
 
