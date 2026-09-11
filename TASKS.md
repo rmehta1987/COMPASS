@@ -261,6 +261,13 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
 - **C18 sweep unrun** (pilot only). `rescore`/`--repartition` re-derives the partition
   from persisted records with no model call, so its threshold is revisable for free.
   ACCEPT: a sweep run with the threshold fixed before it.
+  PRE-REGISTERED 2026-09-11, committed before any sweep call (loop): threshold
+  `min_specifiable` = **1 of k = 5** responses (the module default, the pilot's value);
+  model claude-haiku-4-5; rubric `694100e1ea900ddb`; frame `m3q16_x_m2q5` (digest
+  `241d604e339a`, all 256 live pairs) on dictionary `3dc8415eccfe`; both controls and the
+  withholding check. Command: `python -m benchmark.unaided_specifiability --controls
+  --verify-withholding --pilot 256 --out run/unaided_sweep_2026-09-11`. Another
+  threshold may be reported only as a `--repartition` beside this one, never instead.
 - **T4 — `--system-prompt` in place of `--append-system-prompt`.** `agent/cli_backend.py`
   appends, so the Specifier reasons inside Claude Code's persona. UNVERIFIED whether
   replacing it breaks MCP tool-calling. ACCEPT: one cheap Haiku call under it invoking
