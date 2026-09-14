@@ -40,17 +40,28 @@ from benchmark.contamination_check import WITHHELD_MODULES  # noqa: E402
 PREVALENCE_KEY = "benchmark.prevalence_key"
 LEAK_FACTS = "benchmark.leak_facts"
 
-# The guards may only name a module the gate agrees is withheld. Asserted at
-# import so a rename in WITHHELD_MODULES cannot leave a guard that skips on a
-# module nobody holds out -- which would be an unconditional skip wearing a
-# condition.
-assert {PREVALENCE_KEY, LEAK_FACTS} <= WITHHELD_MODULES, (
-    f"a guard names a module WITHHELD_MODULES does not: "
-    f"{{PREVALENCE_KEY, LEAK_FACTS}} - {WITHHELD_MODULES}")
+
+def _importable(module: str) -> bool:
+    """Whether a module can be imported here. No validation, on purpose.
+
+    The guards below are built at import time, so anything that can raise here
+    costs every test in every file that imports this module -- 98 of them, as
+    three collection errors naming this file rather than the defect. So the
+    "is it really withheld?" check lives in `tests/test_withheld.py`, where its
+    red state costs one test and names what drifted. `present` is the
+    validating form, for callers that want the error.
+
+    Args:
+        module: Dotted module name.
+
+    Returns:
+        True when the module is importable.
+    """
+    return importlib.util.find_spec(module) is not None
 
 
 def present(module: str) -> bool:
-    """Whether a withheld module can be imported in this clone.
+    """Whether a WITHHELD module can be imported in this clone.
 
     Args:
         module: Dotted module name. Must be one `WITHHELD_MODULES` names, so
@@ -66,7 +77,7 @@ def present(module: str) -> bool:
         raise ValueError(
             f"{module!r} is not withheld. Only {sorted(WITHHELD_MODULES)} may "
             f"turn a failure into a skip; everything else is a real defect.")
-    return importlib.util.find_spec(module) is not None
+    return _importable(module)
 
 
 def _guard(module: str) -> pytest.MarkDecorator:
@@ -80,7 +91,7 @@ def _guard(module: str) -> pytest.MarkDecorator:
         a pass.
     """
     return pytest.mark.skipif(
-        not present(module),
+        not _importable(module),
         reason=(f"{module} is withheld from this clone, so this did not run. "
                 f"NOT a pass -- run it where the key lives."))
 
@@ -91,5 +102,8 @@ needs_prevalence_key = _guard(PREVALENCE_KEY)
 #: Needs the held-out leak-fact and platform-name key.
 needs_leak_facts = _guard(LEAK_FACTS)
 
-#: True when this clone holds both keys, so a whole-suite claim can say so.
-WITHHELD_PRESENT = all(present(m) for m in (PREVALENCE_KEY, LEAK_FACTS))
+#: Every module a guard here may name. `tests/test_withheld.py` asserts this
+#: against `WITHHELD_MODULES`, so a guard cannot come to name a module the
+#: contamination gate does not hold out -- which would be an unconditional skip
+#: wearing a condition.
+GUARDED_MODULES = (PREVALENCE_KEY, LEAK_FACTS)

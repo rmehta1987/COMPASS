@@ -1,0 +1,139 @@
+"""Pins for `tests/withheld.py` — the mechanism that decides what does not run.
+
+Written 2026-09-14 after review found the guard module had no test at all,
+which is the wrong shape for a thing that can silence 45 contamination tests.
+`benchmark/contamination_check.py`'s skip semantics carry nine tests; its pytest
+counterpart carried none, and the one artefact that would have supplied the
+"this is not a pass" half was dead code.
+
+The asymmetry that motivates the ceiling below: `AGENTS.md` §Verify current
+state makes a FALLING test count a stop condition, and turning a failure into a
+skip leaves the collected count untouched. So the stop condition is blind to
+this class of change by construction, and a one-line module-level `pytestmark`
+could silence a whole file without tripping anything. The guarded count is
+therefore a ratchet in its own right, in the direction skips should travel.
+"""
+from __future__ import annotations
+
+import ast
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from benchmark.contamination_check import WITHHELD_MODULES  # noqa: E402
+from tests import withheld  # noqa: E402
+
+#: Guarded tests may only become FEWER. Direction, not a target: every guard is
+#: a contamination test that does not run in the clone where prompts and
+#: conventions are edited, so the honest move is always to split a test until
+#: its key-free half runs here. Read from this module, never from a document
+#: (`AGENTS.md` §Testing Patterns). Was 45 when the guards landed; 42 after the
+#: 11 over-guarded tests were split. Lowering it is progress; raising it is a
+#: review failure.
+GUARD_CEILING = 42
+
+
+def _guard_decorations() -> dict[str, int]:
+    """Count `@needs_*` decorations per test file, by parsing rather than grep.
+
+    A `pytestmark` assignment silences a whole module with no decorator to
+    count, so that is looked for separately and treated as a hard failure.
+
+    Returns:
+        Mapping of file name to number of guard DECORATIONS. A test needing
+        both keys carries two, and counts twice: it is two pieces of coverage
+        that do not run here.
+    """
+    out: dict[str, int] = {}
+    for path in sorted((ROOT / "tests").glob("test_*.py")):
+        tree = ast.parse(path.read_text())
+        n = 0
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                n += sum(1 for d in node.decorator_list
+                         if isinstance(d, ast.Name) and d.id.startswith("needs_"))
+        if n:
+            out[path.name] = n
+    return out
+
+
+def test_the_guards_name_only_modules_the_gate_holds_out() -> None:
+    """A guard on a module nobody withholds is an unconditional skip.
+
+    This is the check that used to live as a module-level `assert` inside
+    `tests/withheld.py`. It moved here because an import-time failure there
+    cost 98 collected tests across three collection errors naming the wrong
+    file; here its red state costs one test and names what drifted.
+    """
+    drifted = set(withheld.GUARDED_MODULES) - WITHHELD_MODULES
+    assert not drifted, (
+        f"these guards name modules WITHHELD_MODULES does not hold out: "
+        f"{sorted(drifted)}. A skipif on a module that is always present is a "
+        f"skip with no condition.")
+
+
+def test_only_a_withheld_module_can_excuse_a_failure() -> None:
+    """`present` refuses to launder an ordinary broken import into a skip."""
+    with pytest.raises(ValueError, match="not withheld"):
+        withheld.present("numpy")
+    for module in withheld.GUARDED_MODULES:
+        assert isinstance(withheld.present(module), bool)
+
+
+def test_a_skip_says_what_did_not_run_and_that_it_is_not_a_pass() -> None:
+    """The reason is the only thing an operator sees, so it has to say both.
+
+    `pytest -q` prints a count and no reasons, which is why `AGENTS.md`
+    §Verify current state now passes `-ra`.
+    """
+    for mark in (withheld.needs_prevalence_key, withheld.needs_leak_facts):
+        reason = mark.kwargs["reason"]
+        assert "withheld from this clone" in reason
+        assert "NOT a pass" in reason, (
+            "a skip that does not say it is not a pass is how 'could not "
+            "detect X' becomes 'X is absent'")
+
+
+def test_no_module_silences_itself_wholesale() -> None:
+    """A module-level `pytestmark` is a one-line, uncounted mass skip.
+
+    The decorator ceiling cannot see one, so it is banned outright: if a whole
+    file genuinely needs a key, that is worth stating test by test.
+    """
+    offenders = []
+    for path in sorted((ROOT / "tests").glob("test_*.py")):
+        tree = ast.parse(path.read_text())
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and any(
+                    isinstance(t, ast.Name) and t.id == "pytestmark"
+                    for t in node.targets):
+                offenders.append(path.name)
+    assert not offenders, (
+        f"{offenders} silence every test in the file from one line, which no "
+        f"count in this file can see. Guard the tests individually.")
+
+
+def test_the_number_of_guarded_tests_only_falls() -> None:
+    """The ratchet. A rising guarded count is coverage leaving this clone."""
+    per_file = _guard_decorations()
+    total = sum(per_file.values())
+    assert total <= GUARD_CEILING, (
+        f"guarded tests rose {GUARD_CEILING} -> {total} ({per_file}). Each one "
+        f"is a contamination test that does not run where prompts are edited. "
+        f"Split the test so its key-free half runs here, rather than guarding "
+        f"the whole of it.")
+    if total < GUARD_CEILING:
+        print(f"\nGUARD_CEILING can be lowered to {total}")
+
+
+def test_the_ceiling_is_not_vacuous() -> None:
+    """A ceiling over zero guards would pass forever and mean nothing."""
+    per_file = _guard_decorations()
+    assert per_file, (
+        "no guarded tests found at all. Either the guards are gone -- in which "
+        "case lower GUARD_CEILING to 0 and delete this -- or the AST walk "
+        "stopped matching the decorator, and the ratchet is now blind.")

@@ -97,7 +97,6 @@ def _a_construct_key() -> str:
     pytest.skip("no construct/group key found to test with")
 
 
-@needs_prevalence_key
 def test_there_is_only_one_word_test_in_the_repository():
     """The drift this replaces was invisible to the test written to catch it.
 
@@ -105,6 +104,14 @@ def test_there_is_only_one_word_test_in_the_repository():
     raising MIN_CONTENT_WORD from 4 to 5 in one copy left all 348 tests green —
     it pinned the shared bug. Extraction is the fix; this asserts the extraction
     holds rather than comparing two implementations again.
+
+    UNGUARDED, and split from the behavioural check below on 2026-09-14. Every
+    assertion here is structural — one function object, and the absence of two
+    constants — and needs no answer key. Guarding the whole test put the ONLY
+    enforcement of the extraction back where it was before extraction: nowhere
+    that a lane re-adding a local constant would notice. That is the identical
+    drift this test exists to catch, so of all 45 guarded tests this was the
+    worst one to lose here.
     """
     import benchmark.tier_gate as tg
     from benchmark import instrument_terms
@@ -115,7 +122,13 @@ def test_there_is_only_one_word_test_in_the_repository():
         "tier_gate grew a local word-length constant again")
     assert not hasattr(sc, "MIN_CONTENT_WORD"), (
         "scorability grew a local word-length constant again")
-    # And the behaviour they must share, on the case that exposed the bug.
+
+
+@needs_prevalence_key
+def test_the_one_word_test_behaves_the_same_on_every_paper():
+    """The behaviour the two copies must share, on the case that exposed the bug."""
+    from benchmark import instrument_terms
+
     for paper in COHORT_PAPERS:
         assert (outcomes_absent_from_instrument(paper)
                 == instrument_terms.terms_absent_from_instrument(

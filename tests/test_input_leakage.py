@@ -46,14 +46,27 @@ def test_no_enumerated_prompt_contains_a_papers_answer(pairs):
      ("the analysis used weighted quantile sum regression, WQS", "design_phrase"),
      ("the realised analytic sample was 5,096 participants", "analytic_n"),
      ("published in Circ Cardiovasc Qual Outcomes", "venue")])
-@needs_prevalence_key
-def test_the_input_scan_catches_a_planted_answer(planted, field):
+def test_the_input_scan_catches_a_planted_answer(planted, field, monkeypatch):
     """A scan that has never failed is not known to work — once per field.
 
     Four fields, four separate mechanisms: an id match, a phrase match against
     the derived answer-only set, a numeral match in both written forms, and a
     venue string. A single control would have left three of them untested.
+
+    UNGUARDED, with a stand-in rather than a skip. `scan_prompt` derives
+    prevalence tokens from the held-out key at its tail, which made all four of
+    these controls skip in every clone but the scoring one -- four anti-vacuity
+    probes lost to a dependency none of them uses. None of the planted strings
+    is a prevalence figure, and each assertion names the field it expects, so an
+    empty token set can neither create nor destroy the hit under test. This is
+    the pattern `tests/test_specifier.py::test_an_errored_seal_probe_never
+    _scores_clean` already uses for the other withheld key.
+
+    The stand-in is NOT a general substitute for the guard: a
+    negative-direction assertion ("nothing is reported") would pass vacuously
+    with an empty key, which is why the scan-clean tests keep the skip.
     """
+    monkeypatch.setattr(IL, "_prevalence_tokens", lambda: set())
     hits = IL.scan_prompt("PAIR-control", f"PAIR x\n  {planted}")
     assert any(h.field == field for h in hits), (field, hits)
 
@@ -133,15 +146,18 @@ def test_a_missing_dictionary_raises_rather_than_reading_as_empty(monkeypatch):
         IL.instrument_text.cache_clear()
 
 
-@needs_prevalence_key
-def test_the_environment_forced_fields_are_named_and_not_scored(pairs):
+def test_the_environment_forced_fields_are_named(pairs):
     """The partition C12 needs, computed rather than asserted.
 
     The enumeration chose the pair, so both anchors, their wording and their
-    member keys are in every prompt by construction. They are NOT leaks — but a
+    member keys are in every prompt by construction. They are NOT leaks -- but a
     "percent of design recovered" score that counts exposure and outcome
     identification is scoring the funnel, not the model, and this is where that
     is written down.
+
+    Key-free half, split 2026-09-14. `environment_supplied` reads the pair, not
+    the answer key; only the "and not scored" half below needs it. This is the
+    only assertion in the tree that names the eight forced fields.
     """
     supplied = IL.environment_supplied(pairs[0])
     assert set(supplied) == {
@@ -153,8 +169,16 @@ def test_the_environment_forced_fields_are_named_and_not_scored(pairs):
         for v in values:
             if v:
                 assert v in prompt, f"{field} claims {v!r} is in the prompt"
-    # And none of them is reported as a leak, in either direction.
-    assert not IL.scan_prompt(pairs[0].pair_id, prompt)
+
+
+@needs_prevalence_key
+def test_the_environment_forced_fields_are_not_scored(pairs):
+    """And none of them is reported as a leak, in either direction.
+
+    Guarded: this is a negative-direction assertion, so an empty stand-in for
+    the prevalence key would make it pass vacuously.
+    """
+    assert not IL.scan_prompt(pairs[0].pair_id, user_prompt(pairs[0]))
 
 
 def test_the_holdout_placement_holds_for_this_key_too():
@@ -184,6 +208,19 @@ def test_a_paper_token_in_the_pair_half_is_found_on_every_pair(monkeypatch):
     assert {h.field for h in hits} == {"design_phrase"}
 
 
+def test_the_template_seams_other_half_is_on_the_marker_scan():
+    """The seam this pair defines: the template side belongs to `MARKERS`.
+
+    Key-free half, split 2026-09-14. The input scan deliberately does not read
+    the template, on the argument that the marker scan does -- so if the token
+    left `MARKERS` the seam would have a hole and neither scan would own it.
+    This is the only assertion in the tree that checks that half.
+    """
+    from benchmark.contamination_check import MARKERS
+
+    assert "E2SFCA" in MARKERS, "the other half of the seam is gone"
+
+
 @needs_prevalence_key
 def test_a_paper_token_in_the_template_is_the_marker_scans_job(monkeypatch):
     """Filter 2 hands off; it does not silently swallow.
@@ -203,7 +240,7 @@ def test_a_paper_token_in_the_template_is_the_marker_scans_job(monkeypatch):
     IL.answer_only_phrases.cache_clear()
     try:
         assert not [h for h in IL.scan_frame() if h.field == "design_phrase"]
-        assert "E2SFCA" in MARKERS, "the other half of the seam is gone"
+        assert MARKERS, "the marker list is the other half of this seam"
     finally:
         IL.template_text.cache_clear()
         IL.answer_only_phrases.cache_clear()

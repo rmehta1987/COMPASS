@@ -48,6 +48,11 @@ SCANNED = ("curated", "env", "agent")
 # acceptance so a later edit to MARKERS cannot quietly drop one of them.
 ACCEPTANCE_MARKERS = ("2836", "PM2.5", "NO2", "WQS", "MAPSCorps")
 
+# Analytic n below the four-digit rule. Named once and shared by the pair of
+# tests that need them, so "not on the build-failing scan" and "adjudicated
+# somewhere" cannot drift onto different figures.
+SHORT_ANALYTIC_N = ("648", "244", "641", "928", "125", "602")
+
 # Occurrences that must stay, with the reason and an EXACT count.
 #
 # agent/sealed.py is the one file where these strings are load-bearing. A seal
@@ -679,6 +684,20 @@ def test_a_question_id_is_not_read_as_a_published_prevalence():
         "a variable key is being reported as a published prevalence figure")
 
 
+def test_the_prevalence_key_is_not_in_a_scanned_directory():
+    """Where the key is NOT, which is answerable without holding it.
+
+    Split 2026-09-14 for the same reason as the `leak_facts` pair: every
+    assertion here is about placement, and placement is the control. Symmetry
+    matters -- the `leak_facts` half was split and this one was not, which is
+    how an ad-hoc guard becomes an inconsistent one.
+    """
+    for d in SCANNED:
+        assert not (ROOT / d / "prevalence_key.py").exists()
+    assert "prevalence_key" not in (ROOT / "env" / "tools.py").read_text()
+    assert not CC.check_holdout_not_reachable()
+
+
 @needs_prevalence_key
 def test_the_prevalence_key_is_held_out_like_every_other_answer_key():
     """It is paper content, so curated/, env/ and agent/ are all forbidden."""
@@ -921,6 +940,23 @@ def test_a_paper_derived_bound_may_never_set_the_environments_floor():
         tier("whatever_seems_reasonable")
 
 
+def test_every_clustering_finding_reports_none():
+    """`benchmark/unearned_assertions.py` is present, so this needs no key.
+
+    Split 2026-09-14. The convention's clustering parameter is authored, not
+    taken from a paper, and this records that every surveyed paper reports none.
+    Only the cross-check against the held-out paper inventory needs the key.
+    """
+    from benchmark.unearned_assertions import CLUSTERING_PARAMETERS
+    assert CLUSTERING_PARAMETERS, "an empty survey asserts nothing"
+    for pmid, finding in CLUSTERING_PARAMETERS.items():
+        assert finding.startswith("reports none"), (pmid, finding)
+    # The near miss is called out by name. 38715087 reports an intraclass
+    # correlation of 0.72 that is a DEVICE REPRODUCIBILITY coefficient, and it
+    # is exactly the number a later reader would grab by mistake.
+    assert "DEVICE REPRODUCIBILITY" in CLUSTERING_PARAMETERS["38715087"]
+
+
 @needs_prevalence_key
 def test_no_cohort_paper_supplies_a_clustering_parameter():
     """The negative result, recorded so it is not rediscovered.
@@ -935,12 +971,6 @@ def test_no_cohort_paper_supplies_a_clustering_parameter():
     from benchmark.unearned_assertions import CLUSTERING_PARAMETERS
     assert set(CLUSTERING_PARAMETERS) == set(RETRIEVABILITY), (
         "the clustering survey and the paper inventory disagree")
-    for pmid, finding in CLUSTERING_PARAMETERS.items():
-        assert finding.startswith("reports none"), (pmid, finding)
-    # The near miss is called out by name. 38715087 reports an intraclass
-    # correlation of 0.72 that is a DEVICE REPRODUCIBILITY coefficient, and it
-    # is exactly the number a later reader would grab by mistake.
-    assert "DEVICE REPRODUCIBILITY" in CLUSTERING_PARAMETERS["38715087"]
 
 
 def test_the_unearned_table_indexes_the_class_and_marks_what_is_open():
@@ -993,8 +1023,7 @@ def test_the_unearned_index_is_held_out_like_the_other_keys():
 # the platform class — detection by membership, not by a believed-right answer
 # --------------------------------------------------------------------------- #
 
-@needs_leak_facts
-def test_no_platform_name_is_observable_to_the_model():
+def test_the_word_platform_is_not_observable_to_the_model():
     """The premise the whole platform scorer rests on, pinned as a ratchet.
 
     The user's instruction is that the survey platform must not be observable to
@@ -1003,12 +1032,37 @@ def test_no_platform_name_is_observable_to_the_model():
     unearned BECAUSE the environment supplies none; if one ever entered the
     surface that argument would silently become false and the scorer would start
     reporting echoes as findings.
+
+    UNGUARDED, and split from the keyed scan below on 2026-09-14. This half
+    needs no answer key -- it is a substring scan over the assembled surface --
+    and it is the only assertion in the tree that the bare word is absent. It
+    was briefly skipped along with its keyed sibling, which put the ratchet off
+    in every clone except the one that never sees a prompt edit. The clone where
+    `env/tools.py` and the prompts are WRITTEN is exactly where this has to run.
     """
     surface = CC.model_visible_surface("benchmark")
-    assert not CC.check_no_platform_name_in_surface(surface)
     blob = "\n".join(surface.values()).lower()
     assert "survey platform" not in blob
     assert "platform" not in blob
+
+
+@needs_leak_facts
+def test_no_platform_name_is_observable_to_the_model():
+    """The same premise against the held-out list of actual product names."""
+    assert not CC.check_no_platform_name_in_surface(
+        CC.model_visible_surface("benchmark"))
+
+
+def test_the_generic_survey_vocabulary_is_present():
+    """The environment's own words must still be there.
+
+    Key-free half, split 2026-09-14. `generic` being PRESENT is what makes the
+    scan above a ratchet rather than a tautology: a surface that said nothing
+    about surveys at all would pass it trivially.
+    """
+    blob = "\n".join(CC.model_visible_surface("benchmark").values()).lower()
+    for generic in ("survey", "instrument", "codebook", "questionnaire"):
+        assert generic in blob, f"{generic!r} should be legitimately present"
 
 
 @needs_leak_facts
@@ -1448,6 +1502,23 @@ def test_the_capture_fails_loudly_when_the_emission_loop_stops_sending(monkeypat
         CC._second_call_surface()
 
 
+def test_the_second_call_carries_no_markers_of_its_own():
+    """The C3 partition's floor and marker scan, neither of which needs a key.
+
+    Split 2026-09-14. The parent test below was guarded on `prevalence_key`
+    while also needing `leak_facts`, so in a clone holding one and not the other
+    it would ERROR rather than skip. It also carried this partition's only
+    anti-vacuity floor (`AGENTS.md` §Testing Patterns wants a floor per
+    partition), and a floor that only runs where the answer key lives is no
+    floor in the clone doing the editing.
+    """
+    surface = CC.model_visible_surface("benchmark")
+    second = {k: v for k, v in surface.items() if k.startswith("transduce")}
+    assert len(second) >= 7, sorted(second)
+    assert not CC.check_markers(second)
+
+
+@needs_leak_facts
 @needs_prevalence_key
 def test_the_second_call_carries_no_study_content_of_its_own():
     """The same assertion Lane A pinned in its own file, now where it belongs.
@@ -1519,6 +1590,22 @@ def test_no_marker_is_instrument_content():
         f"fires on the questionnaire cannot distinguish a leak from a question")
 
 
+def test_the_short_analytic_n_are_not_on_the_build_failing_scan():
+    """A three-digit numeral may not fail a build; that is the cry-wolf rule.
+
+    Key-free half, split 2026-09-14. `MARKERS` fails the build on a match, so a
+    short n there stops a build on a coincidence. `602` joined this list on
+    2026-09-02: it had been grandfathered into `MARKERS` on the ground that it
+    had never fired, and then arm D rendered the instrument as a 1,400-item
+    numbered list and it fired on a POSITION -- the same collision C32 is about.
+    This is the half that must run where `MARKERS` is EDITED; the sibling below
+    checks the same figures are adjudicated somewhere, which needs the key.
+    """
+    for short in SHORT_ANALYTIC_N:
+        assert short not in MARKERS, (
+            f"{short} is a three-digit numeral on a build-failing scan")
+
+
 @needs_leak_facts
 def test_the_short_analytic_n_are_adjudicable_and_not_a_build_failure():
     """Where a numeric coincidence goes: the probe scorer, not the scan.
@@ -1534,14 +1621,19 @@ def test_the_short_analytic_n_are_adjudicable_and_not_a_build_failure():
     from benchmark.leak_facts import LEAK_FACTS
 
     scored = {pat for f in LEAK_FACTS for pat in f.patterns}
-    # `602` joined this list on 2026-09-02. It had been grandfathered into
-    # MARKERS on the ground that it had never fired; arm D renders the
-    # instrument as a 1,400-item numbered list and it fired on a POSITION,
-    # which is the cry-wolf failure the four-digit rule exists to prevent.
-    for short in ("648", "244", "641", "928", "125", "602"):
+    for short in SHORT_ANALYTIC_N:
         assert short in scored, f"{short} is scored nowhere"
-        assert short not in MARKERS, (
-            f"{short} is a three-digit numeral on a build-failing scan")
+
+
+def test_the_recruitment_figure_is_not_a_bare_numeral_on_the_marker_scan():
+    """`8000` is a port number, so the bare figure may not fail a build.
+
+    Key-free half, split 2026-09-14. The `RUNNING.md` count is the reason the
+    rule exists -- the numeral occurs there four times, as a port, beside 8080,
+    11434 and 1234 -- and neither assertion needs the answer key.
+    """
+    assert "8000" not in MARKERS and "8,000" not in MARKERS
+    assert (ROOT / "agent" / "RUNNING.md").read_text().count("8000") == 4
 
 
 @needs_leak_facts
@@ -1558,10 +1650,8 @@ def test_the_recruitment_figure_is_phrase_bounded_because_8000_is_a_port():
     """
     from benchmark.leak_facts import LEAK_FACTS
 
-    assert "8000" not in MARKERS and "8,000" not in MARKERS
     scored = {pat for f in LEAK_FACTS for pat in f.patterns}
     assert "8,000 participants" in scored and "8000 participants" in scored
-    assert (ROOT / "agent" / "RUNNING.md").read_text().count("8000") == 4
 
 
 @needs_leak_facts
