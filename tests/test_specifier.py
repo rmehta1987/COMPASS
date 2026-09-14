@@ -3055,14 +3055,13 @@ def test_without_the_override_the_seal_behaves_exactly_as_before(monkeypatch):
     whose verdict moves with the shell it was launched from is not a
     measurement of the code.
 
-    What that inheritance means for the seal's MANIFEST is a separate and real
-    problem, recorded in `TASKS.md`: `agent/sealed.py::config_dir` does not
-    consult the inherited variable, so it can name a directory the child does
-    not read. This test deliberately does not assert either way on that -- it
-    pins only the documented guarantee, that the seal injects nothing of its
-    own.
+    This pins only that the seal injects nothing of its own. That the
+    MANIFEST names the directory the child actually receives is the separate
+    guarantee of
+    `test_the_manifest_names_the_config_dir_the_child_actually_reads`, which
+    was written on 2026-09-14 when this test's original form surfaced the
+    defect behind it.
     """
-    import os
     import subprocess as sp
 
     from agent import sealed as sealed_mod
@@ -3073,14 +3072,111 @@ def test_without_the_override_the_seal_behaves_exactly_as_before(monkeypatch):
         seen.update(kw.get("env") or {})
         return sp.CompletedProcess(argv, 0, stdout='{"result":"ok"}', stderr="")
 
+    # A SENTINEL, not whatever the operator's shell happens to hold. Until
+    # 2026-09-14 this partition was supplied by the environment: on a machine
+    # with nothing set the assertion compared None to None and discriminated
+    # nothing at all.
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", "/inherited/by/the/caller")
     monkeypatch.delenv(sealed_mod.CONFIG_DIR_ENV, raising=False)
     monkeypatch.setattr(sealed_mod.subprocess, "run", fake_run)
     with sealed_mod.SealedWorktree() as w:
         w.run(["claude", "-p", "x"])
     assert seen, "the fake never ran, so this asserts nothing"
-    assert seen.get("CLAUDE_CONFIG_DIR") == os.environ.get("CLAUDE_CONFIG_DIR"), (
+    assert seen.get("CLAUDE_CONFIG_DIR") == "/inherited/by/the/caller", (
         "with the override unset the seal must neither add nor change "
         "CLAUDE_CONFIG_DIR; the child gets whatever the parent had.")
+
+
+def _config_dir_the_child_receives(monkeypatch) -> tuple[str, str]:
+    """Run a sealed call and return (what the manifest says, what the child got).
+
+    Args:
+        monkeypatch: The fixture, with the environment already arranged.
+
+    Returns:
+        The manifest's `claude_config_dir`, and the `CLAUDE_CONFIG_DIR` the
+        child process was handed — falling back to `~/.claude`, which is what
+        the CLI opens when the variable is absent.
+    """
+    import subprocess as sp
+    from pathlib import Path
+
+    from agent import sealed as sealed_mod
+    seen: dict[str, str] = {}
+
+    def fake_run(argv: list[str], **kw: object) -> sp.CompletedProcess:
+        """Capture the environment instead of launching anything."""
+        seen.update(kw.get("env") or {})
+        return sp.CompletedProcess(argv, 0, stdout='{"result":"ok"}', stderr="")
+
+    monkeypatch.setattr(sealed_mod.subprocess, "run", fake_run)
+    with sealed_mod.SealedWorktree() as w:
+        w.run(["claude", "-p", "x"])
+        reported = w.manifest()["claude_config_dir"]
+    assert seen, "the fake never ran, so this asserts nothing"
+    return reported, seen.get("CLAUDE_CONFIG_DIR") or str(Path.home() / ".claude")
+
+
+@pytest.mark.parametrize(("override", "inherited"), [
+    # The case that was broken: this project sets nothing, the operator's shell
+    # does. Claude Code's enterprise install exports CLAUDE_CONFIG_DIR.
+    (None, "/inherited/by/the/caller"),
+    # The opt-in override wins over an inherited value.
+    ("/the/override", "/inherited/by/the/caller"),
+    # Override only.
+    ("/the/override", None),
+    # Neither: the CLI's own default, which the manifest must also name.
+    (None, None),
+])
+def test_the_manifest_names_the_config_dir_the_child_actually_reads(
+        override, inherited, monkeypatch):
+    """The seal's disclosure must describe the run that happened.
+
+    `manifest`, `_claude_md_sources` and `reachable_skills` all resolve through
+    `config_dir`, while `run` builds the child environment as `{**os.environ,
+    ...}`. Until 2026-09-14 `config_dir` consulted only this project's own
+    override, so an inherited `CLAUDE_CONFIG_DIR` silently won and the manifest
+    audited a directory the run never opened. MEASURED on the training machine:
+    the manifest named `~/.claude` with two reachable skills while the child
+    read `~/.claude-enterprise`, which has none.
+
+    A manifest is the seal's only honest output — the seal is never perfect, so
+    what it says remained reachable IS the control. Describing the wrong
+    directory is worse than describing none, because it reads as a finding.
+    """
+    from agent import sealed as sealed_mod
+
+    for name, value in ((sealed_mod.CONFIG_DIR_ENV, override),
+                        (sealed_mod.CLI_CONFIG_DIR_ENV, inherited)):
+        if value is None:
+            monkeypatch.delenv(name, raising=False)
+        else:
+            monkeypatch.setenv(name, value)
+
+    reported, received = _config_dir_the_child_receives(monkeypatch)
+    assert reported == received, (
+        f"the manifest says the sealed run read {reported!r} and the child "
+        f"was handed {received!r}. Every reachability claim in the manifest "
+        f"is computed over the first and is therefore about a directory that "
+        f"was not in play.")
+
+
+def test_the_reachability_claims_follow_the_same_directory(monkeypatch, tmp_path):
+    """`reachable_skills` must read the dir the child reads, not a guess.
+
+    The seal does not suppress skills -- a skill's description enters the
+    model's context whether or not it is invoked -- so this list is a
+    contamination disclosure, not a diagnostic.
+    """
+    from agent import sealed as sealed_mod
+
+    (tmp_path / "skills" / "planted-skill").mkdir(parents=True)
+    monkeypatch.delenv(sealed_mod.CONFIG_DIR_ENV, raising=False)
+    monkeypatch.setenv(sealed_mod.CLI_CONFIG_DIR_ENV, str(tmp_path))
+    assert sealed_mod.config_dir() == tmp_path
+    assert "planted-skill" in sealed_mod.reachable_skills(), (
+        "a skill sitting in the directory the child opens was not reported as "
+        "reachable, so the manifest understates what the model can see.")
 
 
 def test_the_override_is_the_only_thing_that_sets_the_config_dir(monkeypatch):

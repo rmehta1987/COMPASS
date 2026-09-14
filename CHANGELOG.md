@@ -53,6 +53,19 @@ their owning modules, never from here.
   `tests/test_withheld.py::GUARD_CEILING`. A module-level `pytestmark` is banned: no
   decorator count can see one, and `AGENTS.md`'s falling-test-count stop condition is
   blind to a skip by construction.
+- **The seal's manifest now names the config directory the sealed child actually reads.**
+  `agent/sealed.py::config_dir` resolved `COMPASS_CLAUDE_CONFIG_DIR` else `~/.claude` and
+  never consulted the inherited `CLAUDE_CONFIG_DIR`, while `SealedWorktree.run` builds the
+  child environment as `{**os.environ, ...}` — so whatever the caller's shell exported won,
+  and Claude Code's enterprise install exports one. The manifest, `_claude_md_sources` and
+  `reachable_skills` therefore audited a directory the run never opened. Measured on the
+  training machine before the fix: two skills reported reachable in a directory the child
+  did not read, none in the one it did. The seal was tighter than claimed, so nothing
+  leaked — but a manifest is the seal's only honest output, and describing the wrong
+  directory reads as a finding. Resolution order is now the child's own, run behaviour is
+  unchanged, and the guarantee is pinned implementation-independently: the manifest must
+  equal what `run` hands the child
+  (`tests/test_specifier.py::test_the_manifest_names_the_config_dir_the_child_actually_reads`).
 - **A test whose verdict moved with the operator's shell** (`3c187af`).
   `tests/test_specifier.py::test_without_the_override_the_seal_behaves_exactly_as_before`
   asserted `"CLAUDE_CONFIG_DIR" not in seen`, conflating "the seal added it" with "it is

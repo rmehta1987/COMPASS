@@ -348,13 +348,13 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   cannot go red** under the current shape of `main()`: `require_complete` is read only
   inside `if skipped:`. It guards a future implementation that errors on the flag, which is
   worth something, but it is not a measurement of today's code.
-- **The seal test's discriminating partition comes from the operator's shell.**
-  `test_without_the_override_the_seal_behaves_exactly_as_before` compares the child's
-  `CLAUDE_CONFIG_DIR` against `os.environ`'s; with the variable unset that is `None ==
-  None`. A `monkeypatch.setenv` of a sentinel would make it shell-independent. Related: the
-  case that was failing was rewritten to match the code rather than pinned — `AGENTS.md`
-  §Testing Patterns says pin a failing case, never delete it, and no `xfail` was left
-  behind for the manifest defect recorded below.
+- **A failing case was rewritten to match the code rather than pinned.**
+  `test_without_the_override_the_seal_behaves_exactly_as_before` was red on 2026-09-14 and
+  was rewritten; `AGENTS.md` §Testing Patterns says pin a failing case, never delete it,
+  and it moves to `run/superseded/` and stays under test. No `xfail` was left behind. The
+  defect it was pointing at is now fixed and covered, so nothing is unenforced — but the
+  rule was not followed, and `run/superseded/` is itself untracked (see the dead-reference
+  row above). Decide whether that rule survives Phase 5 in its current form.
 - **`tests/withheld.py` pulls the whole `contamination_check` import graph into
   `tests/test_scorability.py`** to read one `frozenset` of two strings. That module imports
   `agent.prompt_contract`, `agent.specifier`, `agent.registry`, `benchmark.resolver_eval`,
@@ -368,29 +368,6 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   scan's partition between exempt positions and scanned typed facts is validated on a
   shape that never ships. Pre-existing scan-fidelity gap, now load-bearing for the C32
   exemption. ACCEPT: the surface renders one production-shaped pool beside the catalogue.
-- 🛑 **The seal manifest can name a config directory the sealed child does not read.**
-  Found 2026-09-14 while making the suite green. `agent/sealed.py::config_dir` resolves
-  `COMPASS_CLAUDE_CONFIG_DIR` else `~/.claude`, and consults the INHERITED
-  `CLAUDE_CONFIG_DIR` not at all -- but `SealedWorktree.run` builds the child environment
-  as `{**os.environ, ...}`, so the CLI reads the inherited value whenever the operator's
-  shell exports one and the override is unset. Claude Code's enterprise install exports
-  it. So `manifest()`'s `claude_config_dir`, `_claude_md_sources` and `reachable_skills`
-  can all audit the wrong directory, and the module's own comment gives the argument
-  against exactly this ("hardcoding `~/.claude` here would report on a directory the run
-  does not read").
-  VERIFIED 2026-09-14 on this machine, `python -c` against `agent.sealed`: manifest says
-  `/home/mehta5/.claude` with `skills_reachable` `['adversarial-review',
-  'plugin:sparkrun']`; the child reads `/home/mehta5/.claude-enterprise`, which has no
-  `skills/`, no `plugins/cache/` and no `CLAUDE.md`. Today the seal is therefore TIGHTER
-  than the manifest claims and nothing leaked -- but the audit is unsound in the other
-  direction too, and an over-reporting manifest is not a control.
-  🛑 A fix changes a contamination control and the numbers `check_seal_config` and
-  `seal_hash` are computed from, so it is a USER decision, not a lane's. The narrow
-  candidate: `config_dir()` returns the directory the child will actually read
-  (`COMPASS_CLAUDE_CONFIG_DIR` > inherited `CLAUDE_CONFIG_DIR` > `~/.claude`), which
-  changes no run behaviour, only what the manifest reports.
-  ACCEPT: a test that sets an inherited `CLAUDE_CONFIG_DIR` with the override unset and
-  asserts the manifest names the directory `run` passes to the child; seeded red first.
 - `surface_hash` is computed and never asserted; the operator has decided it should be
   deleted outright. ACCEPT: `benchmark/contamination_check.py::main` does not compute it.
 - The C24 commit messages state a false mechanism ("hash order picks the survivor"); the

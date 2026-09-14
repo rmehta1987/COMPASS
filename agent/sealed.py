@@ -90,15 +90,47 @@ BUILTIN_TOOLS = ""
 # ADDITIONAL settings, so setting enabledPlugins there does not unset the user's.
 CONFIG_DIR_ENV = "COMPASS_CLAUDE_CONFIG_DIR"
 
+#: The variable the CLI itself reads. `run` inherits the caller's environment
+#: wholesale, so whatever this holds is what the sealed child opens -- whether
+#: or not this project put it there.
+CLI_CONFIG_DIR_ENV = "CLAUDE_CONFIG_DIR"
+
 
 def config_dir() -> Path:
     """The Claude Code config directory a sealed run reads.
 
+    Resolved in the order the CHILD resolves it, which is the whole point:
+    this feeds `manifest`, `_claude_md_sources` and `reachable_skills`, and a
+    manifest describing a directory the run never opened is not a disclosure.
+
+    Until 2026-09-14 this consulted `COMPASS_CLAUDE_CONFIG_DIR` and nothing
+    else, while `SealedWorktree.run` builds the child environment as
+    `{**os.environ, ...}` -- so an inherited `CLAUDE_CONFIG_DIR` silently won.
+    Claude Code's enterprise install exports one. MEASURED on the training
+    machine that day, override unset: the manifest named `~/.claude` and
+    reported `skills_reachable` `['adversarial-review', 'plugin:sparkrun']`,
+    while the child read `~/.claude-enterprise`, which holds no `skills/`, no
+    `plugins/cache/` and no `CLAUDE.md`. The seal was TIGHTER than the manifest
+    claimed, so nothing leaked -- but the error runs both ways, and a skill's
+    description enters the model's context whether or not it is ever invoked.
+
+    The module already carried the argument against this, in
+    `_claude_md_sources`: hardcoding a directory "would report on a directory
+    the run does not read". That reasoning was applied to this project's own
+    override and not to the CLI's.
+
     Returns:
-        The override named by `COMPASS_CLAUDE_CONFIG_DIR`, else `~/.claude`.
+        `COMPASS_CLAUDE_CONFIG_DIR` if set, else an inherited
+        `CLAUDE_CONFIG_DIR`, else `~/.claude`.
     """
     override = os.environ.get(CONFIG_DIR_ENV)
-    return Path(override) if override else Path.home() / ".claude"
+    if override:
+        return Path(override)
+    # NOT a second override: this project sets nothing here. It is the value
+    # the child will inherit, read so the manifest reports it rather than
+    # guessing past it.
+    inherited = os.environ.get(CLI_CONFIG_DIR_ENV)
+    return Path(inherited) if inherited else Path.home() / ".claude"
 
 
 def reachable_skills() -> list[str]:
