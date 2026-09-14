@@ -336,6 +336,38 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   `tests/test_env_tools.py::test_no_tool_accepts_a_parameter_it_ignores`.
 - `benchmark/contamination_check.py::check_seal_config` checks what the seal denies, never
   that `agent/sealed.py::SealedWorktree.base_argv` carries no `--mcp-config`.
+- **No test drives a contamination section that can actually SKIP.**
+  `tests/test_contamination_skip.py` plants its skips on `check_provenance`, which imports
+  nothing and can never raise `ModuleNotFoundError`. The only two sections that really
+  skip are `check_no_platform_name_in_surface` and `check_no_prevalence_figure_in_surface`.
+  The status logic is well covered; the real skip PATH is not, so moving either import to
+  module scope would break it with every test green. Pre-existing, inherited from the
+  2026-09-10 tests. ACCEPT: one test that lets a genuinely-skipping section raise for
+  real, seeded by wrapping its import.
+- **`tests/test_contamination_skip.py::test_require_complete_does_not_turn_a_clean_run_red`
+  cannot go red** under the current shape of `main()`: `require_complete` is read only
+  inside `if skipped:`. It guards a future implementation that errors on the flag, which is
+  worth something, but it is not a measurement of today's code.
+- **The seal test's discriminating partition comes from the operator's shell.**
+  `test_without_the_override_the_seal_behaves_exactly_as_before` compares the child's
+  `CLAUDE_CONFIG_DIR` against `os.environ`'s; with the variable unset that is `None ==
+  None`. A `monkeypatch.setenv` of a sentinel would make it shell-independent. Related: the
+  case that was failing was rewritten to match the code rather than pinned — `AGENTS.md`
+  §Testing Patterns says pin a failing case, never delete it, and no `xfail` was left
+  behind for the manifest defect recorded below.
+- **`tests/withheld.py` pulls the whole `contamination_check` import graph into
+  `tests/test_scorability.py`** to read one `frozenset` of two strings. That module imports
+  `agent.prompt_contract`, `agent.specifier`, `agent.registry`, `benchmark.resolver_eval`,
+  `benchmark.retrieval_eval` and more at module scope, so an import-time error in a Lane A
+  file now turns every `tests/test_scorability.py` test into a collection error. It is also
+  the coupling `benchmark/scorability.py`'s deferred imports exist to avoid. ACCEPT:
+  `WITHHELD_MODULES` moves to a leaf module both can read, with the gate importing it.
+- **The scanned `retrieval_prompt` is not the shape production sends.** The scan renders
+  the whole catalogue with no per-key `facts`; `serve/api.py::_role_candidates` sends a
+  top-k pool with `module` and `roster_family_size` on every candidate. So the marker
+  scan's partition between exempt positions and scanned typed facts is validated on a
+  shape that never ships. Pre-existing scan-fidelity gap, now load-bearing for the C32
+  exemption. ACCEPT: the surface renders one production-shaped pool beside the catalogue.
 - 🛑 **The seal manifest can name a config directory the sealed child does not read.**
   Found 2026-09-14 while making the suite green. `agent/sealed.py::config_dir` resolves
   `COMPASS_CLAUDE_CONFIG_DIR` else `~/.claude`, and consults the INHERITED

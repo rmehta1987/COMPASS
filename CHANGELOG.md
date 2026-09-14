@@ -16,42 +16,51 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ## 2026-09-14
 
-- **The suite is green in the working clone: 956 passed, 45 skipped, 0 failed.** It was
-  47 failed / 943 passed. The 45 tests that need `benchmark/prevalence_key.py` or
-  `benchmark/leak_facts.py` now SKIP behind guards in `tests/withheld.py`, whose skippable
-  set is imported from `benchmark.contamination_check::WITHHELD_MODULES` rather than
-  retyped, so a real missing dependency still fails. Nothing was deleted and the collected
-  count rose (990 -> 1001). Same rule as the gate's exit status, and the same reason.
-- **A test whose verdict moved with the operator's shell.**
-  `tests/test_specifier.py::test_without_the_override_the_seal_behaves_exactly_as_before`
-  asserted `"CLAUDE_CONFIG_DIR" not in seen`, which conflated "the seal added it" with "it
-  is there at all" -- `SealedWorktree.run` builds the child environment from `os.environ`,
-  and Claude Code's enterprise install exports that variable. Now asserted against the
-  parent's value, with a new pair pinning that the opt-in override beats an inherited one.
-  It surfaced a real defect in the seal's MANIFEST, left open and unfixed as a user
-  decision: see `TASKS.md` §Known-open defects.
+Phase 1 of the refocus: make the two progress signals mean something. Landed in three
+commits, then corrected in three more after an adversarial review found two of the three
+original claims unenforced. Counts, ceilings and the guarded-test ratchet are read from
+their owning modules, never from here.
 
+- **The contamination gate's exit status splits three ways** (`8c5f0fd`, enforced in
+  `bec33d1`), so it can be read in the clone where prompts are edited rather than being
+  permanently red there: clean-and-complete, a section FAILED, or none failed and one or
+  more SKIPPED for a withheld answer key. A failure always outranks a skip.
+  `--require-complete` demands that every section ran and `--live` implies it, because a
+  pre-benchmark gate cannot accept "I could not see everything" — review found a `--live`
+  run reporting merely-incomplete with both answer-key scans unrun and no seal probe
+  scored. The run prints which gate it applied; before, a skipping run's output was
+  byte-identical whichever status it returned. Semantics and status constant:
+  `benchmark/contamination_check.py::EXIT_INCOMPLETE`; pinned against the literal in
+  `tests/test_contamination_skip.py`, because asserting `rc == EXIT_INCOMPLETE` was
+  self-referential and let the whole split revert with a green suite.
 - **C32 closed — the marker scan tells a figure the surface CARRIES from a position the
-  harness GENERATED** (`de559e9`, bounded in a follow-up). Numeric markers at or below the
-  offered-candidate count collide with a position, so the retrieval prompt's
-  `"index": <n>` field made the scan report a marker in the model-visible surface. No
-  marker was pruned; the scan was partitioned instead.
+  harness GENERATED** (`de559e9`, bounded in `b795dee`). Numeric markers at or below the
+  offered-candidate count collide with a position, so the retrieval prompt's `index` field
+  made the scan report a marker. No marker was pruned; the scan was partitioned.
   `benchmark/contamination_check.py::_without_harness_indices` reproduces in the scanner
-  the invariant `agent/prompt_contract.py::SelectionContract.__post_init__` already
-  enforces — a digit run is exempt only as part of an unbroken `1..n` run, line-anchored,
-  separator free of newlines, followed by the sibling field `Candidate.as_dict` renders
-  next — and fails CLOSED on anything else. The exempted character count is printed beside
-  `surface_hash`, which is computed before the mask. Counts and the colliding set are
-  derived in `tests/test_contamination_surface.py`, never pinned.
-
-- **The contamination gate's exit status splits three ways** so it can be read in the clone
-  where prompts are edited: `0` complete and clean, `1` a section FAILED, `2` none failed
-  and one or more SKIPPED for a withheld module. A failure outranks a skip, so nothing is
-  laundered into `2`; `--require-complete` collapses a skip back onto `1` and is what a
-  benchmark run passes. The "a skipped section is not a clean one" banner is unchanged --
-  it was the only load-bearing part of the old conflation. Status constant, semantics and
-  the seeded direction: `benchmark/contamination_check.py::EXIT_INCOMPLETE` and
-  `tests/test_contamination_skip.py`.
+  the `1..n` invariant `agent/prompt_contract.py::SelectionContract.__post_init__` already
+  enforces, and fails CLOSED on anything else. The first version was unbounded and
+  swallowed a PMID, a published analytic n and a newline form anywhere in any surface. The
+  exempted character count is printed beside `surface_hash`, which is computed before the
+  mask.
+- **The suite is green where the work happens** (`3c187af`, corrected in `7d74e0f`). Tests
+  needing `benchmark/prevalence_key.py` or `benchmark/leak_facts.py` now SKIP behind
+  guards in `tests/withheld.py`, whose skippable set comes from the gate's own
+  `WITHHELD_MODULES` so the two cannot drift; it was 47 failed, and 45 of those were this.
+  Review then found 11 of the guarded tests carried assertions answerable WITHOUT the key
+  — including the only assertion in the tree that the word "platform" is absent from the
+  model-visible surface — so those are split, and the guard's own use is ratcheted in
+  `tests/test_withheld.py::GUARD_CEILING`. A module-level `pytestmark` is banned: no
+  decorator count can see one, and `AGENTS.md`'s falling-test-count stop condition is
+  blind to a skip by construction.
+- **A test whose verdict moved with the operator's shell** (`3c187af`).
+  `tests/test_specifier.py::test_without_the_override_the_seal_behaves_exactly_as_before`
+  asserted `"CLAUDE_CONFIG_DIR" not in seen`, conflating "the seal added it" with "it is
+  there at all" — `SealedWorktree.run` builds the child environment from `os.environ`, and
+  Claude Code's enterprise install exports that variable. Now asserted against the
+  parent's value, paired with a test that the opt-in override beats an inherited one. It
+  surfaced a real defect in the seal's MANIFEST, left open as a user decision:
+  `TASKS.md` §Known-open defects.
 
 ## 2026-09-03
 
