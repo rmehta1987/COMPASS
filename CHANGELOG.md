@@ -16,6 +16,50 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ## 2026-09-14
 
+Phase 2 of the refocus: a measurement that runs without an answer key or a domain expert,
+and the scaffolding for a worked rediscovery up to the rows the operator owns. Every
+number below is a first reading for the record, not a floor — re-run the module, never
+quote a figure from here.
+
+- **`benchmark/design_quality.py` — a groundedness dashboard over the pipeline's own
+  records** (`c8c681f`). Every other measurement in `benchmark/` was blocked on somebody
+  else's artifact, so "is this getting better" had no answer. This reads what is already
+  computed: validation as the filter, `agent/schema.py::REFUSAL_EVIDENCE` /
+  `REFUSAL_OUTCOMES` for which lookups a refusal needs, `env/tools.py::resolve_variable`
+  for live key resolution, and `unaided_specifiability::with_instrument` for the
+  instrument split. `agent/specifier.py::_rank` is untouched. A dashboard and not a gate:
+  no floor, no ratchet, no exit code tied to a number, because the corpus is whatever has
+  been run and a threshold over it would pin today's corpus.
+- Three reporting rules it exists to keep, each with a seeded mutation behind it. The
+  denominator is printed and not implied — every glob match gets a disposition and the
+  listing names it, because `pathlib.Path.glob` keeps the dotfiles a shell `run/*.json`
+  drops and `run/` holds pinned failing records saved as dotfiles for exactly that
+  reason. An empty denominator renders `--`, never `0%`. And a refusal with no tool log
+  beside it is `unmeasurable`, never a failure.
+- The one that needed a third state: a cited `registry_coverage` call. The log always
+  records `ok` and the specifier stamps the emptiness it read out of the payload, so
+  equality with the cited outcome fails on an honest refusal while presence-only would
+  claim a check that did not happen. `CALLED` is neither, and is reported separately.
+- **`benchmark/rediscovery.py` — C12's ACCEPT criterion made runnable, and the
+  side-by-side** (`1e59dc8`). `--validate` resolves every asserted `EXPOSURE_KEYS` key
+  live and names the key that failed; `--pmid P --record F` prints a paper's recorded
+  design beside a `ProtocolSpecification`, field by field, assembled from the three places
+  the project already keeps that content and storing none of it. It is NOT a rediscovery
+  score — that is `TASKS.md` C21 stage (i) — and emits no total: two key columns compare
+  mechanically, everything else reports `REVIEW`. Four comparison states, not two, and the
+  unreadable-column branch survived the first seeding pass green, which is precisely the
+  case the distinction exists for. Exit 2 when the outcome key is withheld, 1 on a
+  complaint; a failure outranks an incomplete run. Named in
+  `contamination_check.py::check_holdout_not_reachable`.
+- **The C12 chain is PARKED, not cancelled** (`TASKS.md` §PARKED). Four items sat behind
+  an artifact no session could produce, while nothing measured progress in the meantime.
+  The apparatus is intact and unparking means filling the key; expert ratings are parked
+  with it. The n=1–3 worked rediscovery is the live item in their place.
+- `tests/test_withheld.py::GUARD_CEILING` caught the first attempt at the
+  count-moves-when-a-row-lands test: two more guarded tests is two more pieces of coverage
+  leaving the clone where prompts are edited. The claim is split three ways instead, and
+  only the middle link is guarded.
+
 Phase 1 of the refocus: make the two progress signals mean something. Landed in three
 commits, then corrected in three more after an adversarial review found two of the three
 original claims unenforced. Counts, ceilings and the guarded-test ratchet are read from

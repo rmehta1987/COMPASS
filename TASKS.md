@@ -3,45 +3,24 @@ Open work only; merged history is `CHANGELOG.md`, rules `AGENTS.md`, design limi
 `DESIGN.md` §7. Read every count from the module owning it, never here. Acceptance is
 testable; seed its failure first.
 
-## Open — the C12 chain
-- **C12 — the held-out answer key over the full bibliography**, `benchmark/` only; the
-  binding constraint on everything scorable. Blocker:
-  `benchmark/scorability.py::EXPOSURE_KEYS` is empty. 🛑 Its key FORM is settled by the
-  user — explicit `unknown` plus a named blocker; reopening is a user conversation, not a
-  lane decision.
-- C12 consequences to inherit: `status_counts` unmoved, C6 has no scorable pair, C21 gains
-  a second blocker.
-- C12 slices: `benchmark/prevalence_key.py` (role-tagged rows, no exposure field) and
-  `benchmark/cohort_papers.py` (one design line each). Owed per paper: covariates, model
-  form, method tokens, n, tier, and the partition of `DESIGN.md` §6. ACCEPT: every paper
-  has a key row carrying that tag, no asserted key fails to resolve live via
-  `env/tools.py::resolve_variable`, and `status_counts` recomputes from the module.
-- **C6 — redesign the recall probe, run it once.** BLOCKED on C12. The existing probe is
-  unidentified: its fingerprint list is shared with at least two other papers and is a
-  public municipal data menu, and its framing phrase is the paper's title. ACCEPT:
-  published-outcome arms vs same-region controls of equal or higher literature density,
-  plus a cue-wording ablation, arms fixed first (`agent/sealed.py::score`).
-- C6 is ONE-SHOT — run it last, before the `linked:` registry is populated; population
-  destroys its refusal arms and `benchmark/calibration_set.py`'s `registry_empty` arm. The
-  `clinical`/`lab`/`ehr` arms survive.
-- C6 second blocker: `benchmark/unaided_specifiability.py::NOT_SPECIFIABLE` conflates
-  "needs the instrument" with "no coherent design at all", so C6's arms need a
-  designable-WITH-instrument check. BUILT 2026-09-11 (loop): 
-  `benchmark/unaided_specifiability.py::with_instrument` splits `NOT_SPECIFIABLE`
-  into `NEEDS_INSTRUMENT` and `NO_COHERENT_DESIGN` using
-  `benchmark/calibration_set.py::_evaluate`, the calibration set's own environment
-  ruling, and reproduces every calibration row's verdict. C6 itself stays BLOCKED on C12.
-- **C13 — prune published pairs from the generation frame.** BLOCKED on C12. Filter at
-  `generate/funnel.py::s2_prune` on the key's construct-key pairs, never in a prompt.
-  VERIFIED none is in the current frame, so it binds only once the frame widens. ACCEPT: a
-  seeded published pair is pruned.
-- **C21 — does model ranking predict REDISCOVERY?** BLOCKED on C12, which alone does not
-  unblock it: no rediscovery scorer exists anywhere. `agent/specifier.py::_rank`'s
-  docstring claims no skill on SOUNDNESS; say which claim you test. ACCEPT, staged: (i) a
-  `benchmark/` rediscovery metric with tests, scoring a protocol against a key row; (ii)
-  ≥1 CONFIRMED pair with k samples; (iii) a named correlation statistic, k and pair count
-  fixed BEFORE the run. Cross-family is not optional (`DESIGN.md` §8); rewriting `_rank`
-  is a user-level amendment.
+## Open — the worked rediscovery, n=1–3
+- **T2-rows — paste 1–3 rows into `benchmark/scorability.py::EXPOSURE_KEYS`.** 🛑 USER
+  ONLY. No agent writes a row and no agent reads a paper to check one; the key FORM is
+  settled and reopening it is a user conversation. Pick papers whose exposure and outcome
+  plainly sit in the codebook. The scaffolding is built and waiting: `python -m
+  benchmark.rediscovery` runs C12's ACCEPT criterion over the column — every asserted key
+  resolves live `unique` through `env/tools.py::resolve_variable` — and names the key that
+  failed; `--pmid P --record F` prints the paper's recorded design beside a
+  `ProtocolSpecification`, field by field. ACCEPT: `validate_exposure_keys` returns
+  nothing, and `status_counts` reports a non-zero `confirmed` in the scoring clone.
+- T2 is the manuscript's worked example and the demo. It is NOT the rediscovery metric:
+  that is C21 stage (i) and stays PARKED below. The side-by-side emits no total on
+  purpose — a match rate over a design line's method token and a `model_spec.form` has no
+  defensible denominator.
+- Read `benchmark/design_quality.py` every iteration meanwhile. It needs no key, no paper
+  and no expert, and it is a dashboard and not a gate: no floor, no ratchet, no exit code
+  tied to a number. Its first reading is in `CHANGELOG.md`; never quote a number from
+  there, re-run it.
 
 ## Open — retrieval, in order
 
@@ -310,6 +289,59 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   label is neither study-team-sourced nor a design choice, so no
   `benchmark/unearned_assertions.py::PROVENANCE_TIERS` tier or `origin` value fits
   (`DESIGN.md` §5.2). Bring a measured benefit and a re-runnable benchmark.
+
+## PARKED — the full-bibliography key and its chain
+Parked by the operator on 2026-09-14. **Nothing here is cancelled and nothing is
+deleted**; the apparatus stays intact and unparking means filling the key. The reason is
+scope, not doubt: C12 was scoped to the FULL bibliography and fenced as user-only, so four
+items sat behind an artifact no session could produce while the project had no progress
+signal it could read in the meantime. The n=1–3 worked rediscovery above replaces it as the
+live item and `benchmark/design_quality.py` replaces it as the iteration measurement.
+**While parked, nothing below blocks anything.**
+
+Parked with it, and for the same reason plus one of its own: **expert ratings**, the third
+tier of the 2026-09-14 three-tier evaluation decision. The operator has no access to domain
+experts until much later, which is why the dashboard exists.
+
+### The chain, as it stood when it was parked
+- **C12 — the held-out answer key over the full bibliography**, `benchmark/` only; the
+  binding constraint on everything scorable. Blocker:
+  `benchmark/scorability.py::EXPOSURE_KEYS` is empty. 🛑 Its key FORM is settled by the
+  user — explicit `unknown` plus a named blocker; reopening is a user conversation, not a
+  lane decision.
+- C12 consequences to inherit: `status_counts` unmoved, C6 has no scorable pair, C21 gains
+  a second blocker.
+- C12 slices: `benchmark/prevalence_key.py` (role-tagged rows, no exposure field) and
+  `benchmark/cohort_papers.py` (one design line each). Owed per paper: covariates, model
+  form, method tokens, n, tier, and the partition of `DESIGN.md` §6. ACCEPT: every paper
+  has a key row carrying that tag, no asserted key fails to resolve live via
+  `env/tools.py::resolve_variable`, and `status_counts` recomputes from the module.
+- **C6 — redesign the recall probe, run it once.** PARKED WITH C12. The existing probe is
+  unidentified: its fingerprint list is shared with at least two other papers and is a
+  public municipal data menu, and its framing phrase is the paper's title. ACCEPT:
+  published-outcome arms vs same-region controls of equal or higher literature density,
+  plus a cue-wording ablation, arms fixed first (`agent/sealed.py::score`).
+- C6 is ONE-SHOT — run it last, before the `linked:` registry is populated; population
+  destroys its refusal arms and `benchmark/calibration_set.py`'s `registry_empty` arm. The
+  `clinical`/`lab`/`ehr` arms survive.
+- C6 second blocker: `benchmark/unaided_specifiability.py::NOT_SPECIFIABLE` conflates
+  "needs the instrument" with "no coherent design at all", so C6's arms need a
+  designable-WITH-instrument check. BUILT 2026-09-11 (loop): 
+  `benchmark/unaided_specifiability.py::with_instrument` splits `NOT_SPECIFIABLE`
+  into `NEEDS_INSTRUMENT` and `NO_COHERENT_DESIGN` using
+  `benchmark/calibration_set.py::_evaluate`, the calibration set's own environment
+  ruling, and reproduces every calibration row's verdict. C6 itself stays parked with C12.
+- **C13 — prune published pairs from the generation frame.** PARKED WITH C12. Filter at
+  `generate/funnel.py::s2_prune` on the key's construct-key pairs, never in a prompt.
+  VERIFIED none is in the current frame, so it binds only once the frame widens. ACCEPT: a
+  seeded published pair is pruned.
+- **C21 — does model ranking predict REDISCOVERY?** PARKED WITH C12, which alone would not
+  unblock it: no rediscovery scorer exists anywhere. `agent/specifier.py::_rank`'s
+  docstring claims no skill on SOUNDNESS; say which claim you test. ACCEPT, staged: (i) a
+  `benchmark/` rediscovery metric with tests, scoring a protocol against a key row; (ii)
+  ≥1 CONFIRMED pair with k samples; (iii) a named correlation statistic, k and pair count
+  fixed BEFORE the run. Cross-family is not optional (`DESIGN.md` §8); rewriting `_rank`
+  is a user-level amendment.
 
 ## Deferred by the user, 2026-08-28
 - C8 offline literature corpus; C9 retrieval tools as post-generation annotation; C10
