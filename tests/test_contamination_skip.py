@@ -173,10 +173,24 @@ def test_a_genuinely_missing_module_still_stops_the_live_probes(
 # did not become a way to read an unrun section as a pass.
 
 
-def _all_sections_clean(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Force every section clean, so only the planted condition moves the status."""
+def _all_sections_clean(monkeypatch: pytest.MonkeyPatch,
+                        ran: list[str] | None = None) -> None:
+    """Force every section clean, so only the planted condition moves the status.
+
+    Args:
+        monkeypatch: The fixture.
+        ran: If given, each stub appends its own name, so a caller can put a
+            floor under "every section ran".
+    """
+    def stub(name: str):  # noqa: ANN202 -- a monkeypatch shim
+        def check(*a: object, **k: object) -> list[str]:
+            if ran is not None:
+                ran.append(name)
+            return []
+        return check
+
     for name in _SECTIONS:
-        monkeypatch.setattr(cc, name, lambda *a, **k: [])
+        monkeypatch.setattr(cc, name, stub(name))
     monkeypatch.setattr(sys, "argv", ["contamination_check"])
 
 
@@ -191,11 +205,20 @@ def _skip_one_section(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_a_complete_clean_run_exits_zero(monkeypatch: pytest.MonkeyPatch,
                                          capsys: pytest.CaptureFixture[str]) -> None:
-    """The only status that is a pass, and it requires every section to have run."""
-    _all_sections_clean(monkeypatch)
+    """The only status that is a pass, and it requires every section to have run.
+
+    With a floor, because every section is stubbed: without it this passes if
+    `main()` iterated NO sections at all (`AGENTS.md` §Testing Patterns, a floor
+    per partition).
+    """
+    ran: list[str] = []
+    _all_sections_clean(monkeypatch, ran)
     rc = cc.main()
     capsys.readouterr()
     assert rc == 0
+    assert len(ran) == len(_SECTIONS), (
+        f"only {len(ran)} of {len(_SECTIONS)} sections ran, so a status of 0 "
+        f"says less than it appears to: {sorted(set(_SECTIONS) - set(ran))}")
 
 
 def test_a_skip_alone_exits_two_and_not_one(
@@ -205,10 +228,19 @@ def test_a_skip_alone_exits_two_and_not_one(
     _skip_one_section(monkeypatch)
     rc = cc.main()
     out = capsys.readouterr().out
-    assert rc == cc.EXIT_INCOMPLETE, (
+    # Against the LITERAL, not against the constant. Asserting `rc ==
+    # cc.EXIT_INCOMPLETE` is self-referential: review found that setting
+    # `EXIT_INCOMPLETE = 1` left every test in this block green, silently
+    # reverting the whole split to the two-way semantics it replaced. An
+    # unenforced guarantee is this codebase's recurring defect.
+    assert cc.EXIT_INCOMPLETE == 2, (
+        "the incomplete status is part of this command's interface; moving it "
+        "is a change callers must see, not an implementation detail.")
+    assert rc == 2, (
         "every section that ran was clean and one SKIPPED. That is neither a "
         "pass nor a failure, and collapsing it onto 1 is what made this gate "
         "unreadable in the clone where the edits happen.")
+    assert rc != 1, "incomplete must be distinguishable from broken"
     assert rc != 0, "a skipped section is still not a clean one"
     assert "A skipped section is not a clean one." in out, (
         "the banner is the load-bearing part of the old conflation and stays "
@@ -257,3 +289,48 @@ def test_require_complete_does_not_turn_a_clean_run_red(
     rc = cc.main()
     capsys.readouterr()
     assert rc == 0
+
+
+def test_a_live_run_demands_that_every_section_ran(
+        monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """`--live` is the pre-benchmark gate, so it may not accept incomplete.
+
+    Review found the hole this closes: a `--live` run in a clone without the
+    answer keys returned `EXIT_INCOMPLETE` with the two answer-key scans unrun
+    AND no seal probe scored -- the probes were printed for a human to read,
+    never verdicted, and `failed` stayed 0 because `r["probes"]` was empty. A
+    caller reading "only 1 is a failure" would have green-lit that run.
+    """
+    _live_run_without_the_scorer(monkeypatch, "benchmark.leak_facts")
+    rc = cc.main()
+    out = capsys.readouterr().out
+    assert "SKIP  live seal probes" in out
+    assert rc == 1, (
+        "a --live run skipped the seal scoring and reported merely incomplete. "
+        "--live must imply --require-complete.")
+
+
+def test_the_run_says_which_gate_it_applied(
+        monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """Stdout must distinguish the strict gate from the permissive one.
+
+    `AGENTS.md` §Verification Discipline takes "command + real output" as the
+    evidence that a gate ran. Before this, a skipping run printed byte-identical
+    output whether it returned 1 or 2, so a pasted transcript could not show
+    which gate had been satisfied.
+    """
+    _all_sections_clean(monkeypatch)
+    _skip_one_section(monkeypatch)
+    cc.main()
+    permissive = capsys.readouterr().out
+
+    _all_sections_clean(monkeypatch)
+    _skip_one_section(monkeypatch)
+    monkeypatch.setattr(sys, "argv", ["contamination_check", "--require-complete"])
+    cc.main()
+    strict = capsys.readouterr().out
+
+    assert permissive != strict, (
+        "the two gates produce identical output, so the exit status is the "
+        "only place the difference exists and a transcript cannot show it.")
+    assert "permissive" in permissive and "strict" in strict

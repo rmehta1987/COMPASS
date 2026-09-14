@@ -177,7 +177,10 @@ FUSION Recommendation 1.
    ids in a commit trailer.
 7. If the diff touches a prompt, a convention, an `agent/schema.py` docstring,
    `env/tools.py` or `agent/prompt_contract.py`: run `benchmark.contamination_check`,
-   require exit 0, print `surface_hash`, and **do not** treat a moved hash as failure.
+   require exit **0 or 2** — 2 means every section that RAN was clean and an answer-key
+   module is withheld from this clone, which is the normal state here and cannot be
+   fixed by any diff; 1 means a section FAILED and is a stop. Print `surface_hash` and
+   the exempt-character count, and **do not** treat a moved hash as failure.
 8. Refuse a diff constructing `ClaudeCliBackend(` without an explicit `model=` — it
    defaults to sonnet and the in-pipeline Specifier is `claude-haiku-4-5`.
 

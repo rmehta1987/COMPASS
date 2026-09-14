@@ -3,6 +3,13 @@
     ./.venv/bin/python -m benchmark.contamination_check          # offline, free
     ./.venv/bin/python -m benchmark.contamination_check --live   # + seal probes (costs)
 
+EXIT STATUS. 0 every section RAN and was clean; 1 a section FAILED; 2 none failed
+and one or more SKIPPED because an answer-key module is withheld from this clone.
+A failure always outranks a skip, so nothing is laundered into 2. Only 0 is a
+pass. `--require-complete` collapses 2 onto 1, for a caller that must demand
+every section ran; `--live` implies it, because a pre-benchmark gate cannot
+accept "I could not see everything".
+
 WHY A SEPARATE COMMAND AND NOT JUST TESTS. The tests check surfaces one at a
 time and only when someone runs pytest. This assembles the ACTUAL bytes the model
 receives — system prompt, user prompt, the JSON schema pasted into the
@@ -1272,7 +1279,15 @@ def main() -> int:
     # three-way status is for the clone where the code is WRITTEN, which never
     # has the key and so could never reach 0 -- a permanently red signal says
     # nothing about the edit that was just made.
-    require_complete = "--require-complete" in sys.argv
+    # `--live` IMPLIES it. AGENTS.md makes `--live` the gate before a benchmark
+    # run, and review found that a `--live` run in a clone without the keys
+    # returned 2 with the two answer-key scans unrun AND no seal probe scored --
+    # the probes were printed for a human, never verdicted. A pre-benchmark gate
+    # that accepts "nothing I could see is wrong, and I could not see
+    # everything" is the conflation this status split was meant to end, not
+    # reproduce.
+    require_complete = ("--require-complete" in sys.argv
+                        or "--live" in sys.argv)
     surface = model_visible_surface()
     blob = "\n".join(f"{k}\n{v}" for k, v in sorted(surface.items()))
     surface_hash = hashlib.sha256(blob.encode()).hexdigest()[:16]
@@ -1315,6 +1330,13 @@ def main() -> int:
     # before the mask cannot (`_masked_index_chars`).
     print(f"  index exempt   {_masked_index_chars(surface):,} chars "
           f"(candidate positions, not scanned for markers)")
+    # AGENTS.md §Verification Discipline takes "command + real output" as the
+    # evidence a gate ran. Without this, stdout is byte-identical whether a
+    # skipping run returns 1 or 2, so the reader of a pasted transcript cannot
+    # tell which gate was satisfied.
+    gate = ("strict (every section must run)" if require_complete
+            else "permissive (a skip exits 2)")
+    print(f"  mode           {gate}{', live seal probes' if live else ''}")
     print(f"  surfaces       {len(surface)} "
           f"({sum(1 for k in surface if k.startswith('tool:'))} are tool return values)")
     print()

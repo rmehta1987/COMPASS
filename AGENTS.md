@@ -126,6 +126,11 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 ## Contamination Practice
 - Run `benchmark.contamination_check` after editing a prompt, a convention, an
   `agent/schema.py` docstring or `env/tools.py`; `--live` before any benchmark run.
+- Exit 0 is the only pass: 1 a section FAILED, 2 none failed and one or more SKIPPED for
+  a withheld answer key. 2 is the normal state in every clone but the scoring one, so
+  read it as "nothing visible is wrong and I could not see everything". A failure always
+  outranks a skip. `--require-complete` collapses 2 onto 1 and `--live` implies it
+  (`benchmark/contamination_check.py::EXIT_INCOMPLETE`, `tests/test_contamination_skip.py`).
 - Read a red section by meaning: `every registry tool sampled` = an unscanned tool return;
   `markers` / `prevalence figures` / `survey platform` = paper content is model-reachable;
   `held-out registry unreachable` = an answer key reached a tool path.
@@ -188,13 +193,16 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 
 ## Verify current state
 ```bash
-./.venv/bin/python -m pytest tests/ -q
+./.venv/bin/python -m pytest tests/ -q -ra
 ./.venv/bin/ruff check .
 ./.venv/bin/mypy
 ./.venv/bin/python build.py | head -1
 ./.venv/bin/python -m benchmark.retrieval_eval
 ./.venv/bin/python -m benchmark.contamination_check
 ```
+- `contamination_check` exits 2 in this clone and that is not a failure; only 1 is. Pass
+  `--require-complete` when every section must run. `pytest -ra` prints the reason each
+  skip gives — a skipped test is not a passing one (`tests/withheld.py`).
 - Run all six from the repo root, paste real output, and trust no number in any document.
   In the public tree only `ruff check .` runs: `pytest`, `mypy` and `pydantic` are
   undeclared and not installed, `build.py` needs the withheld `raw/`, and the two
