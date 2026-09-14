@@ -16,12 +16,44 @@ testable; seed its failure first.
 > Three papers have a CONFIRMED outcome and exactly one blocker,
 > `exposure_key_column_missing`: 36065817, 37252073, 36702470. **That blocker overstates
 > them.** All three exposures are area-level, and all three are false survivors of the
-> word test that `benchmark/scorability.py`'s own docstring already names. VERIFIED
-> 2026-09-14 with `search_variables` on each exposure term: the best hits are the
-> survey-link question, drinking-water source, caregiver status and the UChicago Medical
-> Center items — no survey key exists to paste. Their real blocker is `linked:`, declared
-> EMPTY and blocked on `area_measure_inventory`, a study-team delivery of the same class
-> as the Qualtrics exports (§Blocked on a person).
+> word test that `benchmark/scorability.py`'s own docstring already names.
+>
+> **Three things were conflated here on first reading; keep them apart.**
+> (1) CAN A PROTOCOL NAME AN AREA EXPOSURE? **Yes, today.**
+> `agent/schema.py::AreaMeasureRef` is a first-class `Ref` kind carrying `measure_id`,
+> `source`, `grain` and `entity` and NO registry key —
+> `benchmark/calibration_set.py` calls it "the schema's DESIGNED path for a linked
+> measure", and two signed conventions govern it
+> (`curated/conventions/place_vs_person_claims.md`, `adjustment_set_area_exposure.md`).
+> (2) CAN THE ANSWER KEY RECORD ONE? **No, and this is the blocker.**
+> `EXPOSURE_KEYS` is `dict[str, tuple[str, ...]]` — key strings only — and an area
+> measure has none, so an entire `Ref` kind the schema supports is unrepresentable in the
+> scoring column. `_confirm_keys` compounds it: CONFIRMED requires
+> `resolve_variable(key) == "unique"`, which no area measure can ever return. So these
+> three stay `exposure_key_column_missing` however carefully anyone fills the column.
+> (3) DOES THE LINKED DATA EXIST FOR THIS COHORT? **Unknown.** `linked:` is declared
+> EMPTY, blocked on `area_measure_inventory` — a study-team delivery of the same class as
+> the Qualtrics exports (§Blocked on a person).
+>
+> Only (3) is a delivery. (2) is a defect in this repository and is filed below.
+>
+> **Say this precisely — the construct is not absent, the paper's MEASURE is.** VERIFIED
+> 2026-09-14 by `browse_variables` and `search_variables`: the instrument carries a
+> self-reported analogue of each of the three. Healthcare access is dense — `m1:Q2.8`
+> usual source of care, all 22 wordings of `m2:Q3`, `m2:Q4.7#1_3` could not get an
+> appointment or referral, `m2:Q4.9`/`Q4.10` needed care and did not get it, `m2:Q4.17`–
+> `Q4.22` cost burden, `m2:Q2.5` coverage gaps — and `m3:Q16.x` carries perceived
+> neighbourhood crime and cohesion. None of them is the paper's exposure: E2SFCA is a
+> supply-side spatial index over travel-time catchments, and an atlas characteristic is a
+> measured area attribute; the survey items are REALISED and PERCEIVED access, a
+> different estimand and differently confounded. Substituting one is what
+> `env/tools.py::resolve_variable` forbids in its own log. This is the dangerous kind of
+> near-miss — substantively plausible, unlike `household PM2.5` surviving on
+> *household*.
+>
+> Corollary for the product, not the benchmark: a defensible study of self-reported
+> healthcare access -> hypertension control IS specifiable from this codebook, and is a
+> second `compass ask` demo alongside the tobacco/marijuana -> prostate cancer one.
 >
 > So **no reachable row exists today**, and pasting one is not the unblock. Read this
 > beside §PARKED: C12 is not parked because nobody got to it, it is parked because the
@@ -374,12 +406,24 @@ experts until much later, which is why the dashboard exists.
   C9 reopens, its conditions are in `DESIGN.md` §6.
 
 ## Known-open defects, no task yet
-- **`EXPOSURE_KEYS`'s implemented type cannot express its own settled key form.** C12
-  records the form as "explicit `unknown` plus a named blocker", and
+- **`EXPOSURE_KEYS`'s implemented type cannot express its own settled key form, NOR an
+  entire `Ref` kind the schema supports.** Two faults in one type.
+  (a) C12 records the form as "explicit `unknown` plus a named blocker", and
   `benchmark/scorability.py::EXPOSURE_KEYS` is `dict[str, tuple[str, ...]]` — a bare key
-  tuple with no slot for either. So a paper whose exposure the instrument provably cannot
-  carry has no way to say so, and reads as an unfilled row. Changing the form is a user
-  conversation, not a lane decision.
+  tuple with no slot for either, so a provably-uncarryable exposure reads as an unfilled
+  row. (b) `agent/schema.py::AreaMeasureRef` names an area exposure with NO registry key,
+  and a column of key strings cannot hold one — so the three papers whose exposures the
+  schema can express are exactly the three the scorer can never confirm.
+  `scorability.py::_confirm_keys` seals it: CONFIRMED demands
+  `resolve_variable(...) == "unique"`, unreachable for an area measure by construction.
+  A fix has to say what evidence confirms an area-measure side, which is a design
+  question. Changing the form is a user conversation, not a lane decision.
+- ~~`key_does_not_resolve` covers two problems.~~ **FIXED 2026-09-14.** It fired both
+  when a supplied key was rejected and when no key existed to reject — asserting a failed
+  lookup that never happened. MEASURED: 38397711 and 38961645 both reported it with
+  `outcome_keys_on_record` returning ZERO. Split into
+  `benchmark/scorability.py::NO_KEY_ROW_FOR_THIS_PAPER`, with four key-free tests on
+  `_side` and three seeded mutations.
 - **`scorability.py` refutes an outcome on evidence it has no counterpart for on the
   exposure side.** `OUTCOME_NOT_IN_THE_INSTRUMENT` comes from the prevalence key's
   `instrument_region`; the exposure side has no such column, so the strongest thing it can
