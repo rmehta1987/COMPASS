@@ -26,7 +26,11 @@ testable; seed its failure first.
   `clinical`/`lab`/`ehr` arms survive.
 - C6 second blocker: `benchmark/unaided_specifiability.py::NOT_SPECIFIABLE` conflates
   "needs the instrument" with "no coherent design at all", so C6's arms need a
-  designable-WITH-instrument check. It exists nowhere; build it first.
+  designable-WITH-instrument check. BUILT 2026-09-11 (loop): 
+  `benchmark/unaided_specifiability.py::with_instrument` splits `NOT_SPECIFIABLE`
+  into `NEEDS_INSTRUMENT` and `NO_COHERENT_DESIGN` using
+  `benchmark/calibration_set.py::_evaluate`, the calibration set's own environment
+  ruling, and reproduces every calibration row's verdict. C6 itself stays BLOCKED on C12.
 - **C13 — prune published pairs from the generation frame.** BLOCKED on C12. Filter at
   `generate/funnel.py::s2_prune` on the key's construct-key pairs, never in a prompt.
   VERIFIED none is in the current frame, so it binds only once the frame widens. ACCEPT: a
@@ -92,7 +96,12 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   takes the pool and another is absent entirely (67 of 68 failures), or the blended vector
   matches neither (1 of 68). The fixture is composed to FAVOUR one ranking and inherits
   `retrieval_queries.json::KNOWN_BIAS`, so 0.32 is an upper bound.
-  🛑 BLOCKER, and it is a request-set problem before it is a code problem: **split
+  C29-B RESTATED 2026-09-11 (loop item 10), counted from `out/pool_coverage.json`: 60 of
+  those 100 requests (30 1×2, 20 2×1, 10 2×2) are shapes no single record carries; under
+  C30's convention each is N records, one per pair. The figure governing `_pair` as it
+  ships is the 1×1 row: **0.600 shared against 0.825 oracle, on 40 requests** (24 and 33
+  of 40). 0.32 is the all-shapes joint; quote it only with that beside it.
+  WAS THE BLOCKER (resolved 2026-09-11 by the measurement below), a request-set problem before a code problem: **split
   accuracy is unmeasured and the oracle does not bound it.** `out/pool_coverage.json`'s
   split arms split on the fixture's own phrases — a perfect decomposition — and are a
   CEILING (0.71 at k=20, same total budget), read as `FUSION.md` §2 reads its 0.821 row.
@@ -106,10 +115,33 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   keys, authored WITHOUT sight of the gold wording — no oracle in the measurement
   (`AGENTS.md` §Testing Patterns) — reporting gold-excluded beside recall; (ii) end-to-end
   coverage under a real splitter reported against `out/pool_coverage.json`'s shared row
-  (0.32) and its oracle row (0.71), not against `out/fusion_pool_depth.json`'s 0.942,
+  (0.32; 0.600 at 1×1) and its oracle row (0.71; 0.825 at 1×1), not against `out/fusion_pool_depth.json`'s 0.942,
   which is a MARGINAL; (iii) the split prompt joins `model_visible_surface` and
   `benchmark.contamination_check` re-runs; (iv) the prompt held fixed and shown stable
   under one wording perturbation (`AGENTS.md` §Verification Discipline).
+  C29-C MEASURED 2026-09-11 (loop item 11; the operator authorised building the splitter
+  that day). Contract `64e29fd` (`agent/prompt_contract.py::parse_split`: every entry is
+  the request's own words, in order), `/api/pair`'s opt-in `split` `2e63781`, harness
+  `762b733` (`benchmark/split_coverage.py`). ACCEPT: (i) DONE. 399 questions written by a
+  session that never saw the instrument; keys assigned afterwards by a second session in
+  compass-score (the operator's two-session protocol). 303 left the denominator because a
+  phrase has no instrument item; 96 scored (51 1×1, 24 1×2, 16 2×1, 5 2×2). (ii) DONE, as
+  `docs/loop-prompt.md` rewords it: all three arms on the SAME requests in the SAME run,
+  never against the biased fixture's 0.32 / 0.71. VERIFIED `python -m
+  benchmark.split_coverage`, k=20, claude-haiku-4-5 splitter: shared **39/96**, real split
+  **70/96**, oracle **71/96**. By shape (shared / split / oracle): 1×1 0.588 / 0.824 /
+  0.843; 1×2 0.208 / 0.583 / 0.583; 2×1 0.125 / 0.688 / 0.688; 2×2 0.400 / 0.600 / 0.600.
+  Split harm (shared covered, split lost) **5**, gain 36. 4 of the 5 are perfect splits
+  whose narrower per-phrase queries lost an item the oracle also misses, so at most 1 is a
+  wrong split. The route accepted 398 of 399 splits (1 unsplittable). (iii) DONE,
+  `64e29fd`. (iv) DONE: under one paraphrase of the guidance, identical coverage (70/96),
+  84 of 96 identical splits, 96 of 96 accepted. Caveats: one run, no seed; the labeler
+  gave ONE key per phrase, so coverage is a lower bound; the author had broad topic hints.
+  Artifacts outside the clone, `loop-snapshots/`: `split_coverage_2026-09-11.json`
+  (sha256 2e58e9ad…), `split_replies_2026-09-11.json`, `clean_split_requests_2026-09-11.json`,
+  and the `_perturbed` pair; the fixture is also at untracked `fixtures/clean_split_requests.json`.
+  STILL OPEN, and the operator's: `split` is off by default on the site's route. Turning
+  it on is a ship decision under FUSION §6's signed "ship nothing" recommendation.
 - C29 makes **C17 bigger, not smaller**: a splitter is a third model in one run and
   `agent/schema.py::Provenance.model_id` is one string.
 - **C29a — `absent` is defined as a claim the route cannot support.** Not blocked; smaller
@@ -120,43 +152,32 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   *the cohort does not measure X* when it does. ACCEPT: a pool miss and an instrument
   absence are distinguishable in the response, and the surface change re-runs
   `benchmark.contamination_check`.
+  DONE 2026-09-10 (loop item 6). `absent` is defined on the items listed, not the
+  codebook, in `VariableSelection`, `RETRIEVAL_GUIDANCE` and
+  `benchmark/resolver_eval.py::CriticVerdict`; both `serve/` prose routes return
+  `absent_scope`, naming the k shown and saying the instrument was not searched.
+  RE-BASELINE: `benchmark/resolver_eval.py`'s critic prompt changed with it, so no
+  resolver_eval result from before this commit is comparable to one after. None is
+  quoted in any document (searched 2026-09-10); the next run is the new baseline.
 
-- **C30 — what is unexpressible is two ESTIMANDS, not two items** (user-level; the fix is a
-  schema amendment or a stated convention, not a lane's).
-  🛑 Correction to a claim made on 2026-09-10 and withdrawn the same day: *"one exposure
-  against two outcomes is not expressible at any layer"* is **false as written**.
-  `agent/schema.py::DerivationRef.component_keys` is `list[VariableKey]` with
-  `min_length=1` and no upper bound, and it is the canonical specimen —
-  `tests/test_schema.py` `p014` carries a two-component outcome. `_ref_keys` already fans
-  those out into `design_keys`. What a record cannot carry is two **estimands**: a
-  derivation composes N items into ONE outcome, and only against a signed file
-  (`DerivationRef._matches_the_signature_it_names`).
-  The amendment is six fields, not one: `exposure: Ref`, `outcome: Ref`,
-  `expected_direction`, `falsifier` + `falsifier_threshold`, and
-  `estimability.smallest_detectable_effect` (one curve, one `at_n`, one
-  `asserted_baseline_prevalence` — by definition one outcome's reference-arm frequency).
-  Two validators become WRONG rather than broken: `_falsifier_is_detectable` would check
-  outcome B's threshold against outcome A's power, and `_no_covariate_repeats_an_anchor`
-  would forbid outcome A as a covariate in outcome B's model, which is legitimate.
-  🛑 The binding Hard Constraint is **not** the docstring rule — declaring a list needs no
-  banned content. It is `canonical_form`, which emits `"outcome": _ref_key(self.outcome)`
-  as a scalar; `record_hash` is a sha256 of that dict, `agent/specifier.py::_rank`'s final
-  term reads it, and every saved record carries the hash in its FILENAME — including the
-  `run/superseded/` pins §Testing Patterns requires stay under test. Two further holes
-  widening would open silently: `_all_variable_refs`'s `isinstance` guard skips a list, so
-  `_wording_is_verbatim` — the only check that `quoted_wording` is the instrument's text —
-  stops covering the outcome while still covering the exposure; and
-  `tool_authority.py::_ref_keys` returns `[]` for a list, dropping outcome keys out of
-  `design_keys` and past `_reject_uncovered`. The change also spans Lane A
-  (`schema.py`, `specifier.py`) and Lane B (`registry.py`, `tool_authority.py`), whose
-  prompt strings state the singular pair, so §Parallel Lanes and §Contamination Practice
-  both bind.
-  ACCEPT (convention reading): this file and `DESIGN.md` record that N outcomes are N
-  records sharing an exposure, and say how they are related — nothing carries that today.
-  ACCEPT (schema reading): all six fields move in one commit with their tests, the two
-  `isinstance` holes are closed with a seeded failure each, `RefusalReason` can name WHICH
-  anchor is unresolvable, `benchmark.contamination_check` re-runs, and `_rank`'s AST test
-  still passes.
+- **C30 — N outcomes are N records. DECIDED 2026-09-10 by the operator: the convention
+  reading, not the schema amendment.** A request naming one exposure against N outcomes
+  (or M exposures) is N×M records, one per enumerated pair, produced by the loop that
+  already exists (`generate/funnel.py::run` → `s1_enumerate(exposures, outcomes)`). It is
+  never one widened record. Recorded in `DESIGN.md` §2.
+  Why not widen: every per-record quantity is bound to one outcome.
+  `agent/schema.py::ProtocolSpecification.canonical_form` emits `"outcome"` as a scalar,
+  `record_hash` hashes that dict, and every saved record carries the hash in its FILENAME,
+  `run/superseded/` pins included; `_falsifier_is_detectable` checks one
+  `falsifier_threshold` against one outcome's detectability curve; the expected direction
+  is one pair's. Widening makes each of those per-outcome, which is N records inside one.
+  The full schema-reading analysis (six fields, the two `isinstance` holes widening would
+  open) is in `git show 934aebe:TASKS.md` if the question is ever reopened.
+  STILL OPEN, and small: no record names its siblings or the request it came from.
+  Siblings are grouped by the shared exposure anchor (`canonical_form()["exposure"]`,
+  equivalently the `protocol_id` prefix before `_to_`) within the one run or `serve/`
+  ticket that produced them. Splitting a prose request into its N pairs is C29-C's
+  splitter, not this item.
 
 - **C31 — `serve/`'s request-shaping defects, in the one part of the module no test
   reaches.** Found by adversarial review 2026-09-10; each re-checked by running it against
@@ -176,6 +197,25 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   ACCEPT: a test per item, each seeded red first; (a) and (b) either enforced or the
   docstring corrected to what the code does.
 
+- **C32 — the marker scan fires on a candidate INDEX.** Found 2026-09-10, the first
+  finding the 0d fix made observable: until the deferred imports landed,
+  `benchmark.contamination_check` could not run outside the scoring clone at all, so this
+  had never been seen. `MARKERS` holds 69 tokens, 28 of them purely numeric; exactly one,
+  `1092`, falls in 1..1353, which is the candidate-index range
+  `agent/prompt_contract.py` numbers its offers with. The retrieval prompt therefore
+  contains the literal `"index": 1092` and the scan reports a marker in the
+  model-visible surface. It is a FALSE POSITIVE today and the only non-withheld failure
+  in the whole suite (`tests/test_specifier.py::test_contamination_check_passes_offline`).
+  The mechanism is general: any numeric marker <= the corpus size collides, and offering
+  candidates by index is a Hard Constraint, so neither side can simply give way.
+  🛑 Do not "fix" it by deleting `1092` from `MARKERS` — the marker set is re-derived, not
+  inherited (`AGENTS.md` §Contamination Practice), and dropping a real published figure to
+  silence a scan is the failure mode the section exists to prevent.
+  ACCEPT: the scan distinguishes a marker in CONTENT from a marker in structural
+  scaffolding it emitted itself, with a seeded failure proving it still fires when `1092`
+  appears in a wording rather than an index; and the suite's only non-withheld failure
+  clears.
+
 ## Blocked on a person, not a task
 
 - **The two Qualtrics exports — response options and survey flow.** Without them
@@ -189,6 +229,17 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   resolver. Its rules are in `AGENTS.md` §Contamination Practice. ACCEPT:
   enumeration-built and prose-built prompts are byte-identical
   (`agent/specifier.py::user_prompt`).
+  RECONCILED with C29, the operator's decision of 2026-09-10: ONE resolver, the website's
+  route (the deployed retriever's pool from `serve/api.py::_role_candidates`, then one
+  `VariableSelection` call), and ONE control arm, `search_variables`.
+  `benchmark/resolver_eval.py` measures that route: the `deployed` pool arm and
+  `evaluate_single` (`--live --single`). VERIFIED 2026-09-11, claude-haiku-4-5, all 22
+  rows, one call per row, no seed so not reproducible: deployed **20/22** correct, the
+  lexical control **17/22**. The difference is three derive rows (GQ014, GQ015, GQ017);
+  both arms named one item on GQ021, the wording printed in three modules. Upper bounds
+  under the fixture's `KNOWN_BIAS`, n=22, one run: a direction, not an accuracy. The
+  k-shortlist procedure (`evaluate`) stays as a measured alternative, not a second
+  resolver. Reports kept outside the clone, `loop-snapshots/resolver_eval_single_*`.
 - C16 second acceptance: `benchmark/input_leakage.py` scans a SUBMITTED prompt with a
   red-turning positive control; its `environment_supplied` currently rests on enumeration
   choosing the pair.
@@ -210,6 +261,13 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
 - **C18 sweep unrun** (pilot only). `rescore`/`--repartition` re-derives the partition
   from persisted records with no model call, so its threshold is revisable for free.
   ACCEPT: a sweep run with the threshold fixed before it.
+  PRE-REGISTERED 2026-09-11, committed before any sweep call (loop): threshold
+  `min_specifiable` = **1 of k = 5** responses (the module default, the pilot's value);
+  model claude-haiku-4-5; rubric `694100e1ea900ddb`; frame `m3q16_x_m2q5` (digest
+  `241d604e339a`, all 256 live pairs) on dictionary `3dc8415eccfe`; both controls and the
+  withholding check. Command: `python -m benchmark.unaided_specifiability --controls
+  --verify-withholding --pilot 256 --out run/unaided_sweep_2026-09-11`. Another
+  threshold may be reported only as a `--repartition` beside this one, never instead.
 - **T4 — `--system-prompt` in place of `--append-system-prompt`.** `agent/cli_backend.py`
   appends, so the Specifier reasons inside Claude Code's persona. UNVERIFIED whether
   replacing it breaks MCP tool-calling. ACCEPT: one cheap Haiku call under it invoking
@@ -219,11 +277,48 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   comprehension in both drivers (`generate/funnel.py`) that sets every reported
   denominator. ACCEPT: a named, hashed frame walked in enumeration order — value-based
   priority is a second selection effect. An m2×m2 frame would make it scorable.
-- **C28 — `_rank` pays a record to adjust a wrong key rather than disclose a gap**
-  (user-level, not a lane's). Its covariate-count term ranks a wrong-construct adjustment
-  above a gap filed in `sought_covariates`; pre-existing, not from C24. The honest sample
-  recovers only via an `EXCLUDED_ROLES` role fitting none, and `_rank` is under a Hard
-  Constraint and an AST test.
+- **C28 — RESOLVED 2026-09-11, user amendment.** `_rank`'s covariate-count term paid a
+  record for adjusting for a wrong-construct key over one that filed the gap in
+  `sought_covariates`. The term is removed. The user asked three independent reviews
+  (enterprise account, opus) whether `sought_covariates` should become a term instead. All
+  three said no: it is prose nothing checks, so "more gaps rank higher" picks padding and
+  "fewer rank higher" rebuilds C28. The fix is neutral, not a win: the two records now tie,
+  and the hash picks one.
+- **C28 follow-ups the reviews found, VERIFIED in the code 2026-09-11.** (a) RESOLVED:
+  `specify`'s dedup kept the first seed when two same-hash samples recorded equally many
+  gaps, which is seed order. (b) RESOLVED (`02cf793`): `generate/live_specifier.py` copied
+  the first same-hash attempt's tool log, audit and repairs beside the saved record, which
+  was the wrong sample's when a disclosing twin beat a silent one. (c) RESOLVED, user
+  decision: `_disclosure` was a raw count, so a padded twin beat an honest one, and the
+  loser was dropped. Now `specifier::_twin_order` decides: any gap beats none, the count
+  does not matter, then a hash of the record's content. Every losing twin is parked.
+- **C33 — `len(blocked_on)` ascending still charges disclosures other than gaps.**
+  User-level. LEFT AS IS by the user, 2026-09-11, after three independent reviews
+  (enterprise account, opus). All three said to drop the blocker count AND the `status`
+  term, leaving `_rank` = access, `n_source`, hash. Checked in the code:
+  - The environment writes one blocker, `outcome_prevalence_unconfirmed`, on every record,
+    so it separates nothing. Every other member is the model's.
+  - `n_source` is `unknown` on both `estimate_n` branches, so today the blocker count is
+    the only term that separates designs.
+  - `blocked_on` and `falsifier_threshold` are outside `canonical_form`, so twins that
+    differ only in what they admit go to `_twin_order` and are not charged. The count
+    bites only when an admission comes with a canonical difference: clustering at the
+    community area plus its design-effect blocker, or `unreliable_coding` plus
+    `response_coding`.
+  - Dropping only the count would leave `status` as a yes/no penalty on any admission.
+    It is hidden today because every record is `draft`, and it would return the day the
+    counts arrive.
+  - No test varies `blocked_on` under `_rank`. `AGENTS.md` and `agent/schema.py` give
+    this term as a reason for "no `BlockedOn` member for disclosure", so a change must
+    reword both.
+  - Seed 1 claimed the access gate is the bigger lever. Wrong: `check_access` counts at
+    most three places against a budget of 3, so it refers only on an unknown key.
+- **C34 — leaving out a numeric falsifier threshold dodges a blocker and the only
+  quantitative check** (from the C33 reviews, not yet checked end to end). With no
+  `falsifier_threshold`, `_falsifier_is_detectable` does not run, and
+  `_a_threshold_on_an_unknown_n_discloses_it` forces nothing. The prompt says "An unstated
+  threshold is honest" (`agent/specifier.py`). The two records are twins, so neither is
+  charged at rank, but nothing rewards stating the checkable one.
 - **C26 — the offline concept-synonym column. LAST and gated.** An offline pass labels
   each wording as a second FTS5 column. Precondition (2) UNMET: the scan catches quotation
   and a label is paraphrase, so a planted framing must turn it RED in the same commit.

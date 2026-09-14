@@ -74,6 +74,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import string
 import sys
 from collections.abc import Callable
@@ -81,15 +82,18 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol
 
+from typing_extensions import TypeIs
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from agent.backends import Backend, Reply
+from agent.backends import AnyBackend, CliBackend, Reply
 from agent.registry import build_registry
 from agent.schema import (
     REFUSAL_EVIDENCE,
+    DerivationRef,
     NotSpecifiable,
     ProtocolSpecification,
     RefusalEvidence,
@@ -101,9 +105,9 @@ from agent.tool_authority import (
     RunIdentity,
     apply_record_identity,
     apply_tool_authority,
+    identity_provenance,
 )
 from env.tools import ToolLog
-
 
 # THE PROMPT CONTRACT. Every prompt below is rendered through PromptTemplate,
 # and a template's variables are PARSED OUT OF ITS BODY — there is deliberately
@@ -690,6 +694,14 @@ class Attempt:
     #: Transduction attempts spent, and the raw object the last one emitted.
     attempts: int = 0
     rejected: str | None = None
+    #: C19. Every rejected transduction and the error it was shown, kept on a
+    #: PASS too. A repair error can quote a signed file -- the derivation
+    #: validator names its `component_keys` -- so a repaired record
+    #: can carry a value no tool returned, and discarding the repairs on
+    #: success left that value with no visible source.
+    repairs: list[dict] = field(default_factory=list)
+    #: The sample's tool calls with their return values, for the same trace.
+    raw_log: list[dict] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -727,7 +739,23 @@ def _unfence(text: str) -> str:
     return t.strip()
 
 
-def _reason(backend: Backend, pair, callables, schemas, seed, temperature):
+def _drives_own_loop(backend: AnyBackend) -> TypeIs[CliBackend]:
+    """Whether the backend runs the tool loop itself, as headless `claude -p` does.
+
+    The runtime test is the attribute the specifier has always read. The return
+    type is what lets mypy see that the CLI branch calls `reason` and `transduce`
+    and the other branch calls `chat`.
+
+    Args:
+        backend: The reasoning backend.
+
+    Returns:
+        True for a backend whose `drives_own_tool_loop` is set.
+    """
+    return bool(getattr(backend, "drives_own_tool_loop", False))
+
+
+def _reason(backend: AnyBackend, pair, callables, schemas, seed, temperature):
     """Call 1, and the authentic record of what the environment returned.
 
     Returns the analysis prose, the in-memory ToolLog the gate reads, the step
@@ -737,7 +765,7 @@ def _reason(backend: Backend, pair, callables, schemas, seed, temperature):
     agent/tool_authority.py to be authoritative with.
     """
     raw: list[dict] = []
-    if getattr(backend, "drives_own_tool_loop", False):
+    if _drives_own_loop(backend):
         # The CLI/MCP path runs the request -> tool -> response cycle itself. We
         # recover the call log from the file OUR mcp server wrote, so the gate
         # still inspects executed calls rather than anything the model claimed.
@@ -755,7 +783,7 @@ def _reason(backend: Backend, pair, callables, schemas, seed, temperature):
     steps = 0
 
     for steps in range(1, MAX_STEPS + 1):
-        r: Reply = backend.chat(messages, tools=schemas, temperature=temperature,
+        r = backend.chat(messages, tools=schemas, temperature=temperature,
                                 seed=seed, max_tokens=2048)
         if not r.tool_calls:
             return r.content, log, steps, raw
@@ -1187,9 +1215,9 @@ def _render_log(log: ToolLog, raw_log: list[dict] | None) -> str:
     return "\n".join(lines)
 
 
-def _emit(backend: Backend, schema: dict, body: str, seed: int | None,
+def _emit(backend: AnyBackend, schema: dict, body: str, seed: int | None,
           build: Callable[[dict], Any], fail_kind: str = "invalid_record",
-          ) -> tuple[Any, str, str, int, str]:
+          ) -> tuple[Any, str, str, int, str, list[dict]]:
     """Run one constrained emission with its bounded repair loop.
 
     Shared by the protocol and the refusal transductions. Extracted rather than
@@ -1207,36 +1235,42 @@ def _emit(backend: Backend, schema: dict, body: str, seed: int | None,
         fail_kind: The gate value to report when the whole budget is spent.
 
     Returns:
-        `(record, error, kind, attempts_spent, last_rejected_text)`. `record` is
-        None exactly when the budget was spent without a valid one.
+        `(record, error, kind, attempts_spent, last_rejected_text, repairs)`.
+        `record` is None exactly when the budget was spent without a valid one.
+        `repairs` holds every rejected attempt with the error it was shown,
+        whether or not a later attempt passed.
     """
     msg = [{"role": "system",
             "content": "You emit JSON matching a schema. Nothing else."},
            {"role": "user", "content": body}]
 
-    cli = getattr(backend, "drives_own_tool_loop", False)
+    cli = _drives_own_loop(backend)
     base = body + ("\n\n--- REQUIRED JSON SCHEMA ---\n"
                    + json.dumps(schema) if cli else "")
     prompt = base
+    repairs: list[dict] = []
 
     for attempt in range(MAX_TRANSDUCE_ATTEMPTS):
-        if cli:
+        if _drives_own_loop(backend):
             r = backend.transduce(prompt)
             r = Reply(content=_unfence(r.content))
         else:
             r = backend.chat(msg, guided_json=schema, temperature=0.0, seed=seed,
                              max_tokens=4096)
         try:
-            return build(json.loads(r.content)), "", "pass", attempt + 1, r.content
+            rec = build(json.loads(r.content))
+            return rec, "", "pass", attempt + 1, r.content, repairs
         except GateMismatch as exc:
             err, kind = str(exc)[:1800], "gate_field_mismatch"
         except (ValidationError, ValueError) as exc:
             err, kind = str(exc)[:1800], fail_kind
+        repairs.append({"attempt": attempt + 1, "kind": kind, "error": err,
+                        "rejected": r.content})
         if attempt == MAX_TRANSDUCE_ATTEMPTS - 1:
             # The object that was rejected, kept. Without it a failed live run
             # reports a validator name and nothing to read it against, and
             # diagnosing one costs another paid run.
-            return None, err, kind, attempt + 1, r.content
+            return None, err, kind, attempt + 1, r.content, repairs
         # THE PREVIOUS ATTEMPT ITSELF, not just the error. Found 2026-08-26 by
         # running the live driver twice: `claude -p` is a fresh session per call,
         # so on this branch the model was handed "your previous attempt was
@@ -1260,7 +1294,78 @@ def _emit(backend: Backend, schema: dict, body: str, seed: int | None,
     raise AssertionError("unreachable: the loop returns on its last pass")
 
 
-def _transduce(backend: Backend, analysis: str, log: ToolLog, seed: int | None,
+#: The derivation validator's own sentence, parsed back out of a kept repair.
+_DECLARED_KEYS = re.compile(
+    r"derivation '([^']+)' declares component_keys (\[[^\]]*\])")
+
+
+def untraced_derivation_values(record: BaseModel, raw_log: list[dict],
+                               repairs: list[dict]) -> list[str]:
+    """Derivation key sets in a record that no tool returned and no repair showed.
+
+    C19. `DerivationRef._matches_the_signature_it_names` quotes the signed file's
+    `component_keys` in its error, so a repair can hand the model a derivation's
+    membership that no tool in its log returned -- observed live with
+    `get_derivation` never called. The keys were right; their channel was
+    invisible, because `_emit` discarded the repairs of a sample that went on to
+    pass. So each reference's key set must match a `get_derivation` return for
+    that id in the sample's own log, or a kept repair error that quotes it.
+
+    The unit is not checked: `agent/tool_authority.py::_restate_derivation_units`
+    stamps it from the signed file before validation, so it never passes
+    through the model at all.
+
+    Args:
+        record: A validated protocol or refusal.
+        raw_log: The sample's tool calls with their return values.
+        repairs: The sample's rejected transductions, each with its error.
+
+    Returns:
+        One line per reference whose key set traces nowhere; empty when all do.
+    """
+    fetched = [e.get("result") for e in raw_log if e.get("tool") == "get_derivation"]
+    quoted: list[tuple[str, set[str]]] = []
+    for r in repairs:
+        for line in str(r.get("error", "")).splitlines():
+            # pydantic appends `[type=..., input_value={...}]`, the rejected
+            # object's own repr. A list the model wrote itself is not a list the
+            # repair showed it, so only the message before that counts.
+            said = line.split(" [type=", 1)[0]
+            quoted += [(did, set(re.findall(r"'([^']*)'", keys)))
+                       for did, keys in _DECLARED_KEYS.findall(said)]
+    out = []
+    for ref in _derivation_refs(record):
+        want = set(ref.component_keys)
+        in_log = any(isinstance(f, dict) and f.get("derivation_id") == ref.derivation_id
+                     and set(f.get("component_keys", [])) == want for f in fetched)
+        if not in_log and (ref.derivation_id, want) not in quoted:
+            out.append(f"{ref.derivation_id}: component_keys {sorted(want)} were "
+                       f"returned by no get_derivation call and shown by no repair")
+    return out
+
+
+def _derivation_refs(node: object) -> list[DerivationRef]:
+    """Every `DerivationRef` anywhere inside a record.
+
+    Args:
+        node: A model, list, dict or leaf.
+
+    Returns:
+        The references, in field order.
+    """
+    if isinstance(node, DerivationRef):
+        return [node]
+    if isinstance(node, BaseModel):
+        return [r for name in type(node).model_fields
+                for r in _derivation_refs(getattr(node, name))]
+    if isinstance(node, list | tuple):
+        return [r for item in node for r in _derivation_refs(item)]
+    if isinstance(node, dict):
+        return [r for item in node.values() for r in _derivation_refs(item)]
+    return []
+
+
+def _transduce(backend: AnyBackend, analysis: str, log: ToolLog, seed: int | None,
                raw_log: list[dict] | None = None,
                identity: RunIdentity | None = None) -> Attempt:
     """Call 2, then identity, then tool authority, then validation, with repairs.
@@ -1297,15 +1402,17 @@ def _transduce(backend: Backend, analysis: str, log: ToolLog, seed: int | None,
     schema = ProtocolSpecification.model_json_schema()
     body = _template("TRANSDUCE").render(
         analysis=analysis, toollog=_render_log(log, raw_log))
-    rec, err, kind, spent, rejected = _emit(backend, schema, body, seed, build)
+    rec, err, kind, spent, rejected, repairs = _emit(backend, schema, body, seed,
+                                                     build)
     if rec is None:
         return Attempt(analysis=analysis, tool_names=log.names, gate=kind,
-                       error=err, seed=seed, attempts=spent, rejected=rejected)
+                       error=err, seed=seed, attempts=spent, rejected=rejected,
+                       repairs=repairs)
     return Attempt(protocol=rec, analysis=analysis, tool_names=log.names,
-                   gate="pass", seed=seed, attempts=spent)
+                   gate="pass", seed=seed, attempts=spent, repairs=repairs)
 
 
-def _transduce_refusal(backend: Backend, analysis: str, log: ToolLog,
+def _transduce_refusal(backend: AnyBackend, analysis: str, log: ToolLog,
                        seed: int | None, pair: _Pair, verdict: Adjudication,
                        raw_log: list[dict] | None = None,
                        identity: RunIdentity | None = None) -> Attempt:
@@ -1346,11 +1453,7 @@ def _transduce_refusal(backend: Backend, analysis: str, log: ToolLog,
             prov = filled.get("provenance")
             filled["provenance"] = {
                 **(prov if isinstance(prov, dict) else {}),
-                "dictionary_version": identity.dictionary_version,
-                "module_version": identity.module_version,
-                "prompt_hash": identity.prompt_hash,
-                "model_id": identity.model_id,
-                **({"seed": identity.seed} if identity.seed is not None else {})}
+                **identity_provenance(identity)}
         return NotSpecifiable.model_validate(filled)
 
     schema = NotSpecifiable.model_json_schema()
@@ -1361,16 +1464,17 @@ def _transduce_refusal(backend: Backend, analysis: str, log: ToolLog,
             "finding": verdict.finding,
             "blocked_on": list(verdict.blocked_on),
             "evidence": [e.model_dump() for e in verdict.evidence]}, indent=1))
-    rec, err, kind, spent, rejected = _emit(backend, schema, body, seed, build,
-                                            fail_kind="invalid_refusal")
+    rec, err, kind, spent, rejected, repairs = _emit(
+        backend, schema, body, seed, build, fail_kind="invalid_refusal")
     if rec is None:
         return Attempt(analysis=analysis, tool_names=log.names, gate=kind,
-                       error=err, seed=seed, attempts=spent, rejected=rejected)
+                       error=err, seed=seed, attempts=spent, rejected=rejected,
+                       repairs=repairs)
     return Attempt(refusal=rec, analysis=analysis, tool_names=log.names,
-                   gate="refused", seed=seed, attempts=spent)
+                   gate="refused", seed=seed, attempts=spent, repairs=repairs)
 
 
-def specify_once(backend: Backend, pair, *, mode="benchmark", seed=0,
+def specify_once(backend: AnyBackend, pair, *, mode="benchmark", seed=0,
                  temperature=0.0, identity: RunIdentity | None = None) -> Attempt:
     """One sample. The unit the k-fan-out repeats.
 
@@ -1451,6 +1555,7 @@ def specify_once(backend: Backend, pair, *, mode="benchmark", seed=0,
                        replace(identity, seed=seed) if identity else None)
     a.steps = steps
     a.tool_log_path = path
+    a.raw_log = raw
     a.claimed_reason = claimed
     return a
 
@@ -1473,7 +1578,8 @@ class Result:
     Attributes:
         selected: The winning protocol, or None. None whenever the environment
             ruled the pair unspecifiable, whatever the samples produced.
-        parked: The other distinct valid protocols, in rank order.
+        parked: Every other valid protocol in rank order, same-design twins
+            included (a twin follows the one it lost to).
         attempts: Every sample, valid or not.
         reason: The yield line and how selection went.
         refusal: The refusal the environment upheld, or None. All k refusals of
@@ -1523,35 +1629,65 @@ def _rank(p: ProtocolSpecification) -> tuple:
     its own outputs on soundness has no measured skill at it, and a same-family
     judge inflates the scores of models that share its mistakes. What orders these
     is whether the access gate passed, whether the design is estimable, and how
-    much of the record is asserted rather than deferred.
+    many blockers the record carries.
     """
     from agent.schema import GateDecision, NSource
+    # NO COVARIATE COUNT (C28, user amendment 2026-09-11). A fifth term,
+    # -(len(adjusted_covariates) + len(excluded_variables)), paid a record for
+    # adjusting for a wrong-construct key over one that wrote the gap down in
+    # sought_covariates. It is gone, and sought_covariates is not a term either:
+    # it is model prose nothing checks against the log (agent/schema.py, "NOT
+    # CHECKED AGAINST THE TOOL LOG"), so more-ranks-higher selects padding and
+    # fewer-ranks-higher rebuilds C28. Three independent reviews reached that
+    # verdict. What this buys is neutrality, not a win: a wrong-construct record
+    # and an honest one that tie on the terms below are split by the hash.
     return (
         0 if p.access.decision is GateDecision.pass_ else 1,
         0 if p.estimability.n_source is not NSource.unknown else 1,
         len(p.blocked_on),
         0 if p.status is Status.ready_for_review else 1,
-        -(len(p.adjusted_covariates) + len(p.excluded_variables)),
         p.record_hash(),                      # total order, so ties are stable
     )
 
 
-def _disclosure(p: ProtocolSpecification) -> int:
-    """How much a record discloses that its `record_hash` cannot see.
+def _record_digest(p: ProtocolSpecification, *, provenance: bool = True) -> str:
+    """A hash of the record's JSON, which `record_hash` deliberately is not.
+
+    Args:
+        p: A valid protocol.
+        provenance: Whether the digest covers `provenance`, which says who made
+            the record and how, not what it specifies.
+
+    Returns:
+        The SHA-256 hex digest.
+    """
+    body = p.model_dump_json() if provenance else p.model_dump_json(
+        exclude={"provenance"})
+    return hashlib.sha256(body.encode()).hexdigest()
+
+
+def _twin_order(p: ProtocolSpecification) -> tuple[int, str, str]:
+    """Order among same-design twins, which `record_hash` cannot tell apart.
 
     A pure function of the record, like every term of `_rank`, and used for the
-    same reason: nothing the model says about its own output may order it.
+    same reason: nothing the model says about its own output may order it. A
+    record that writes down any covariate gap beats one that writes down none,
+    and the number of gaps does not count: nothing checks a gap against the
+    log, so a count pays for padding (C28 follow-up, user decision 2026-09-11).
+    Then the record's content, so which seed wrote what cannot decide, and last
+    the whole record, so the order is total.
 
     Args:
         p: A valid protocol.
 
     Returns:
-        The number of sought-but-unresolved covariates recorded.
+        A sort key. The smallest is the twin selected; the rest are parked.
     """
-    return len(p.sought_covariates)
+    return (0 if p.sought_covariates else 1,
+            _record_digest(p, provenance=False), _record_digest(p))
 
 
-def specify(backend: Backend, pair, *, k: int = 5, mode: str = "benchmark",
+def specify(backend: AnyBackend, pair, *, k: int = 5, mode: str = "benchmark",
             temperature: float = 0.7, parked_dir: Path | None = None,
             identity: RunIdentity | None = None) -> Result:
     """K samples of one pair. Deterministic everywhere except the sampling itself.
@@ -1573,7 +1709,7 @@ def specify(backend: Backend, pair, *, k: int = 5, mode: str = "benchmark",
         k: Sample count, fixed by the caller and never by the model.
         mode: Registry mode.
         temperature: Sampling temperature, where the backend has one.
-        parked_dir: Where the losing distinct protocols are written.
+        parked_dir: Where every parked protocol is written, twins included.
         identity: The fields the driver owns.
 
     Returns:
@@ -1601,42 +1737,51 @@ def specify(backend: Backend, pair, *, k: int = 5, mode: str = "benchmark",
                       f"it is valid and none was selected")
         return res
 
-    # NOT `setdefault`. `sought_covariates` is outside `canonical_form` on
-    # purpose (see schema::ProtocolSpecification.canonical_form), so a sample
-    # that records a covariate gap and a sample that stays silent about the same
-    # design hash IDENTICALLY. Under `setdefault` the first seed to arrive won
-    # and the other was dropped before `ordered` was ever built — and `parked` is
-    # `ordered[1:]`, over DISTINCT hashes, so the loser was not parked either. If
+    # NOT `setdefault`, and not a count. `sought_covariates` is outside
+    # `canonical_form` on purpose (see schema::ProtocolSpecification.canonical_form),
+    # so a sample that records a covariate gap and a sample that stays silent
+    # about the same design hash IDENTICALLY. Under `setdefault` the first seed
+    # to arrive won and the other was dropped before `_rank` ever saw it. If
     # seed 0 was silent, the disclosing sample vanished from the run entirely,
     # recreating the exact silence C24 exists to end: 20 of 21 saved protocols
-    # record no covariate gap. The tie-break is a pure function of the record.
-    by_hash: dict[str, ProtocolSpecification] = {}
+    # record no covariate gap. A gap COUNT replaced it, which paid for padding
+    # and fell back to seed order on equal counts, still dropping the loser. Now
+    # `_twin_order` picks the twin, and every other twin is parked.
+    twins: dict[str, dict[str, ProtocolSpecification]] = {}
     for a in attempts:
         prot = a.protocol
         if not a.ok or prot is None:
             continue
-        h = prot.record_hash()
-        held = by_hash.get(h)
-        if held is None or _disclosure(prot) > _disclosure(held):
-            by_hash[h] = prot
+        # Byte-identical records are one record, so only one of them is kept.
+        twins.setdefault(prot.record_hash(), {}).setdefault(
+            _record_digest(prot), prot)
 
-    if not by_hash:
+    if not twins:
         why = "; ".join(sorted({f"{a.gate}" for a in attempts}))
         r = Result(None, [], attempts, "")
         r.reason = (f"{r.yield_line}; no sample produced a valid record ({why})")
         return r
 
-    ordered = sorted(by_hash.values(), key=_rank)
-    winner, parked = ordered[0], ordered[1:]
+    heads: list[ProtocolSpecification] = []
+    others: list[ProtocolSpecification] = []
+    for group in twins.values():
+        head, *rest = sorted(group.values(), key=_twin_order)
+        heads.append(head)
+        others.extend(rest)
+    winner = min(heads, key=_rank)
+    parked = sorted([p for p in heads if p is not winner] + others,
+                    key=lambda p: (_rank(p), _twin_order(p)))
 
     if parked_dir:
         parked_dir.mkdir(parents=True, exist_ok=True)
         for p in parked:
-            (parked_dir / f"{p.protocol_id}.{p.record_hash()}.json").write_text(
-                p.model_dump_json(indent=2))
+            # The digest is in the name because twins share a record_hash.
+            name = f"{p.protocol_id}.{p.record_hash()}.{_record_digest(p)[:8]}.json"
+            (parked_dir / name).write_text(p.model_dump_json(indent=2))
 
     res = Result(winner, parked, attempts, "")
-    res.reason = (f"{res.yield_line}; {len(by_hash)} distinct of "
+    res.reason = (f"{res.yield_line}; {len(twins)} distinct of "
                   f"{sum(a.ok for a in attempts)} valid ({k} sampled); "
-                  f"selected by gate status then estimability")
+                  f"selected by access, estimability and blocker count, "
+                  f"ties split by record hash")
     return res

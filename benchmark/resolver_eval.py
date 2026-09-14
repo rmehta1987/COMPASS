@@ -72,11 +72,12 @@ root.
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -190,7 +191,8 @@ class CriticVerdict(BaseModel):
             member would be wrong; `derive` when no item measures this and it
             must be computed from others; `ambiguous` when several candidates are
             genuinely different variables and the wording cannot say which is
-            meant; `absent` when the codebook does not measure this at all.
+            meant; `absent` when none of the items shown measures this -- a
+            claim about the shortlists, not the codebook.
         items: The items the verdict names — one for `resolved`, any member of
             the family for `family`, the inputs for `derive`, empty otherwise.
         recipe: How to compute the value, when the verdict is `derive`.
@@ -555,12 +557,65 @@ def pool_whole_instrument(query: ResolverQuery) -> tuple[str, ...]:
     return tuple(str(e["key"]) for e in tools._load()["entries"])
 
 
+#: The website's pool depth: `serve/api.py::_pair`'s default k, the site's "Ask
+#: the pipeline" flow. `_resolve` defaults to 8; this arm measures the route the
+#: site calls.
+DEPLOYED_K = 20
+
+
+def pool_deployed(query: ResolverQuery, k: int = DEPLOYED_K) -> tuple[str, ...]:
+    """The shipped arm: the pool the website's prose routes offer.
+
+    C16 reconciled with C29, the operator's decision of 2026-09-10: the one
+    resolver is the website's route -- the deployed retriever's pool, then one
+    index-selection call -- and `pool_searched` is its one control arm. This arm
+    CALLS `serve/api.py::_role_candidates`, the function both routes build their
+    pool with, rather than re-deriving it, so a change to how the site builds a
+    pool reaches this measurement too.
+
+    Needs the deployed bundle, the untracked `deploy/model/` included. The
+    retriever's constructor raises on a missing or mis-hashed file rather than
+    returning a pool.
+
+    Args:
+        query: The fixture row. Only `request` is read.
+        k: Pool size.
+
+    Returns:
+        The citable candidate keys in rank order; empty when none can be cited.
+    """
+    from serve.api import _role_candidates
+
+    try:
+        pool = _role_candidates(_serve_state(), query.request, "exposure", k)
+    except ValueError:
+        # `_role_candidates` raises when no hit can be bound to wording. The
+        # site answers that with a 400; a measurement records an empty pool.
+        return ()
+    return tuple(c.key for c in pool["cands"])
+
+
+@functools.cache
+def _serve_state() -> Any:
+    """One `serve/api.py::State` for every row, so the encoder loads once.
+
+    Returns:
+        The state, over the repository's own `deploy/` bundle. `_role_candidates`
+        writes nothing, so the site and run directories it names are never made.
+    """
+    from serve.api import State
+
+    unused = ROOT / "run" / "serve-unused"
+    return State(ROOT / "deploy", unused, unused)
+
+
 #: The pool arms by name, for the CLI and for a report that has to say which one
 #: it measured. A figure without this name is not comparable to another.
 POOL_ARMS: dict[str, PoolFn] = {
     "frozen": pool_frozen,
     "searched": pool_searched,
     "instrument": pool_whole_instrument,
+    "deployed": pool_deployed,
 }
 
 
@@ -1552,12 +1607,7 @@ class ResolverReport:
             f"pool arm        {self.arm}",
             f"prompt arm      {self.prompt_arm}",
             f"model           {self.model_name}",
-            f"samples         {self.n_samples} shortlists per row, then one "
-            f"critic over their union; a critic may request more, granted by "
-            f"rule up to {MAX_SAMPLES} per row",
-            f"drawn           {self.shortlists_drawn} shortlists over "
-            f"{len(self.results)} rows; {self.extra_requests} row(s) asked for "
-            f"extras and {self.extra_grants} were granted",
+            *self._procedure(),
             f"sampling        {self.sampling_note}",
             f"rows            {len(self.results)} in the fixture; "
             f"{len(self.scored)} scored, {len(self.blocked)} blocked",
@@ -1566,6 +1616,28 @@ class ResolverReport:
             f"dictionary      build/dictionary.json {self.dictionary_version}",
             f"answer rule     {self.answer_rule}",
         ])
+
+
+    def _procedure(self) -> list[str]:
+        """The two scope lines that say how the verdicts were drawn.
+
+        Returns:
+            The lines, worded for the procedure this report actually ran.
+        """
+        if self.prompt_arm == SINGLE_CALL_ARM:
+            return [
+                "samples         none: one index-selection call per row over "
+                "the pool, as serve/api.py::_resolve makes it; n=1 by design, "
+                "every proposal confirmed by a human downstream",
+                f"drawn           {self.model_calls} call(s) over "
+                f"{len(self.results)} rows"]
+        return [
+            f"samples         {self.n_samples} shortlists per row, then one "
+            f"critic over their union; a critic may request more, granted by "
+            f"rule up to {MAX_SAMPLES} per row",
+            f"drawn           {self.shortlists_drawn} shortlists over "
+            f"{len(self.results)} rows; {self.extra_requests} row(s) asked for "
+            f"extras and {self.extra_grants} were granted"]
 
 
 #: What `evaluate` records about sampling when the caller says nothing. Names the
@@ -1726,6 +1798,142 @@ def _run_row(model: ModelFn, query: ResolverQuery, pool: tuple[str, ...],
         extra_requested=asked,
         extra_granted=granted, agreed=agreed, verdict=verdict, outcome=outcome,
         narrow_outcome=narrow, repaired=repaired, blocked="", errors=errors)
+
+
+# --------------------------------------------------------------------------- #
+# the website's resolver: one call, as serve/ makes it
+# --------------------------------------------------------------------------- #
+
+#: The prompt arm a single-call report carries. Not in `RESOLVER_PROMPT_ARMS`:
+#: those are critic prompts inside the k-shortlist procedure, and this is a
+#: different procedure.
+SINGLE_CALL_ARM = "single_call"
+
+#: What a single-call report records about sampling.
+SINGLE_SAMPLING_NOTE = (
+    "one `claude -p` call per row, as the site makes it. The CLI exposes no "
+    "seed and no temperature, so a rerun may not repeat a verdict.")
+
+
+def resolve_once(model: ModelFn, query: ResolverQuery,
+                 pool: Sequence[str]) -> CriticVerdict:
+    """The website's resolver on one row: one call over the pool, no critic.
+
+    C16 reconciled with C29, the operator's decision of 2026-09-10: the one
+    resolver is the route `serve/api.py::_resolve` runs --
+    `agent/prompt_contract.py::retrieval_contract` over the pool, one
+    `VariableSelection` back, indices resolved against what was offered. This
+    renders that contract with the request and scores the verdict by the same
+    rule as every other arm.
+
+    One difference, named rather than hidden: the site takes each candidate's
+    module and family size from the retriever's hit, and this takes the
+    candidate facts from the dictionary (`candidate_facts`), as every arm here
+    does, so the deployed and lexical arms are offered identical facts.
+
+    Args:
+        model: The model call.
+        query: The fixture row.
+        pool: The candidate keys, in the order to offer them.
+
+    Returns:
+        The verdict, its indices resolved to items.
+
+    Raises:
+        ValueError: If the reply holds no valid `VariableSelection`.
+    """
+    surface = contract.retrieval_contract(
+        query.request, contract.candidates_from_keys(
+            pool, {k: candidate_facts(k) for k in pool}))
+    chosen = _parse(model(surface.render()), contract.VariableSelection)
+    return CriticVerdict(
+        verdict=chosen.verdict,
+        items=_items_from_indices(surface, chosen.indices),
+        recipe=chosen.recipe, missing_dimension=chosen.missing_dimension,
+        reason=chosen.reason)
+
+
+def _single_result(query: ResolverQuery, pool: Sequence[str], calls: int,
+                   verdict: CriticVerdict | None, outcome: Outcome | None,
+                   blocked: str, errors: tuple[str, ...] = ()) -> QueryResult:
+    """One single-call row, with the shortlist fields at their no-shortlist values.
+
+    Args:
+        query: The fixture row.
+        pool: The candidates offered.
+        calls: Model calls the row made.
+        verdict: What came back, or None when the row was blocked.
+        outcome: The score, or None when the row was blocked.
+        blocked: Why the row was not scored, or empty.
+        errors: The failed call's message, when there was one.
+
+    Returns:
+        The row's result.
+    """
+    return QueryResult(
+        id=query.id, kind=query.kind, tier=query.tier, pool_size=len(pool),
+        answer=answer_line(query), samples_drawn=0, model_calls=calls,
+        extra_requested=0, extra_granted=0, agreed=None, verdict=verdict,
+        outcome=outcome, narrow_outcome=None, repaired=False, blocked=blocked,
+        errors=errors)
+
+
+def evaluate_single(model: ModelFn, arm: str = "deployed",
+                    fixture: ResolverFixture | None = None,
+                    pool: PoolFn | None = None, model_name: str = "unnamed",
+                    sampling_note: str = SINGLE_SAMPLING_NOTE) -> ResolverReport:
+    """Score the website's resolver as it ships: one call per row, n=1.
+
+    `evaluate` refuses n=1 because a prose resolver may not start UNCONFIRMED
+    on one sample (`AGENTS.md` §Contamination Practice): the critic's only
+    evidence of an underdetermined request is disagreement between shortlists.
+    The site's route is confirmed -- every proposal goes to a human, who picks
+    the anchor (`serve/api.py`'s `not_a_selection`) -- so it is scored as it
+    ships, and the report's scope says n=1 and why.
+
+    Args:
+        model: The model call.
+        arm: The pool arm's name. `deployed` is the site's pool; `searched` is
+            the control.
+        fixture: A pre-loaded fixture; the committed one when omitted.
+        pool: The pool callable. `POOL_ARMS[arm]` when omitted.
+        model_name: What to record as having answered.
+        sampling_note: How the calls were drawn.
+
+    Returns:
+        The report, one result per fixture row. A reply holding no valid object
+        BLOCKS its row rather than ending the run: one malformed reply should
+        not discard the other rows' paid calls.
+    """
+    fx = fixture if fixture is not None else load_fixture()
+    fn = pool if pool is not None else POOL_ARMS[arm]
+    results: list[QueryResult] = []
+    depth = len(tools.LOG.calls)
+    try:
+        for q in fx.queries:
+            keys = fn(q)
+            if not keys:
+                results.append(_single_result(
+                    q, keys, 0, None, None,
+                    "the pool arm produced no candidates for this row"))
+                continue
+            try:
+                verdict = resolve_once(model, q, keys)
+            except ValueError as exc:
+                results.append(_single_result(
+                    q, keys, 1, None, None,
+                    "the one call returned no usable object", (str(exc)[:300],)))
+                continue
+            results.append(_single_result(
+                q, keys, 1, verdict, score_query(q, verdict, keys), ""))
+    finally:
+        del tools.LOG.calls[depth:]
+    return ResolverReport(
+        arm=arm, prompt_arm=SINGLE_CALL_ARM, model_name=model_name, n_samples=1,
+        fixture_path=_fixture_label(FIXTURE),
+        dictionary_version=tools.dictionary_version(),
+        known_bias=fx.known_bias, answer_rule=fx.answer_rule,
+        results=tuple(results), sampling_note=sampling_note)
 
 
 # --------------------------------------------------------------------------- #
@@ -1943,6 +2151,9 @@ def _main(argv: Sequence[str] | None = None) -> int:
                          f"{MIN_SAMPLES}")
     ap.add_argument("--rows", default="",
                     help="comma-separated row ids, for a pilot over a subset")
+    ap.add_argument("--single", action="store_true",
+                    help="with --live, score the website's one-call resolver "
+                         "instead of the k-shortlist procedure")
     args = ap.parse_args(argv)
 
     if not args.live:
@@ -1956,14 +2167,15 @@ def _main(argv: Sequence[str] | None = None) -> int:
         fixture = fixture.model_copy(
             update={"queries": tuple(by_id[r] for r in wanted)})
     model, note = live_model(args.model)
+    if args.single:
+        print(format_report(evaluate_single(
+            model, arm=args.arm, fixture=fixture, model_name=args.model)))
+        return 0
     print(format_report(evaluate(
         model, arm=args.arm, n_samples=args.samples, fixture=fixture,
         model_name=args.model, sampling_note=note)))
     return 0
 
-
-if __name__ == "__main__":
-    raise SystemExit(_main())
 
 
 # --------------------------------------------------------------------------- #
@@ -2134,3 +2346,7 @@ def _items_from_indices(surface: contract.SelectionContract,
             continue
         out.append(ResolvedItem(key=cited.key, wording=cited.wording))
     return tuple(out)
+
+
+if __name__ == "__main__":
+    raise SystemExit(_main())

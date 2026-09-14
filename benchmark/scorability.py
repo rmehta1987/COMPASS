@@ -85,7 +85,6 @@ from typing import NamedTuple
 
 from benchmark.cohort_papers import COHORT_PAPERS, CohortPaper
 from benchmark.instrument_terms import terms_absent_from_instrument
-from benchmark.prevalence_key import PREVALENCE_KEY
 from benchmark.tier_gate import outcome_terms
 from env.tools import resolve_variable
 
@@ -211,6 +210,14 @@ def outcome_keys_on_record(pmid: str) -> tuple[str, ...]:
         rows, empty when the key records none. Not yet evidence: `_confirm_keys`
         decides which of these resolve.
     """
+    # Deferred, not module-level: `benchmark/prevalence_key.py` is the held-out
+    # answer key and is withheld from every clone but the scoring one. At module
+    # scope this import took `benchmark.contamination_check` -- the MANDATORY gate
+    # after any prompt or convention edit -- down with ModuleNotFoundError on every
+    # other clone, so the check could not run where the code it checks is written.
+    # The function that needs the key still raises there; nothing else does.
+    from benchmark.prevalence_key import PREVALENCE_KEY
+
     return tuple(sorted({
         row.instrument_key for row in PREVALENCE_KEY
         if row.pmid == pmid and row.instrument_key
@@ -253,6 +260,14 @@ def outcome_reachable_in_instrument(pmid: str) -> bool | None:
         outcome row for this paper — absence of evidence, which may not be read
         as refutation.
     """
+    # Deferred, not module-level: `benchmark/prevalence_key.py` is the held-out
+    # answer key and is withheld from every clone but the scoring one. At module
+    # scope this import took `benchmark.contamination_check` -- the MANDATORY gate
+    # after any prompt or convention edit -- down with ModuleNotFoundError on every
+    # other clone, so the check could not run where the code it checks is written.
+    # The function that needs the key still raises there; nothing else does.
+    from benchmark.prevalence_key import PREVALENCE_KEY
+
     # A null region is dropped rather than counted as unreachable: the field is
     # Optional in the key, and reading "not recorded" as "not in the instrument"
     # would refute a paper on a blank cell. All 41 rows carry one today.

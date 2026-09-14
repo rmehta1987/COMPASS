@@ -551,6 +551,66 @@ def pair_verdict(responses: list[ResponseVerdict],
     return SPECIFIABLE if n >= min_specifiable else NOT_SPECIFIABLE
 
 
+#: C6's two readings of a pair the unaided arm could not specify.
+#: `NOT_SPECIFIABLE` alone conflates them (`TASKS.md` C6, second blocker): a pair
+#: that needs the instrument, and a pair that has no coherent design at all.
+NEEDS_INSTRUMENT = "needs_instrument"
+NO_COHERENT_DESIGN = "no_coherent_design"
+
+
+def instrument_blocker(exposure_key: str, outcome_key: str) -> str | None:
+    """What stops this pair having a design even WITH the instrument, or None.
+
+    Reuses `benchmark/calibration_set.py::_evaluate`, the environment ruling the
+    calibration set is built on, which reads the real tools live, rather than a
+    second copy of its four gates. A key the dictionary does not hold is a
+    blocker too: `_evaluate` refuses to reason about an invented key.
+
+    Args:
+        exposure_key: The exposure anchor.
+        outcome_key: The outcome anchor.
+
+    Returns:
+        The blocker's name (a `RefusalReason` value, or `unresolvable`), or None
+        when the environment finds nothing that stops a design.
+    """
+    from benchmark.calibration_set import _evaluate
+
+    try:
+        verdict = _evaluate(exposure_key, outcome_key)
+    except ValueError:
+        return "unresolvable"
+    return verdict.reason.value if verdict.reason is not None else None
+
+
+def with_instrument(unaided: str, exposure_key: str, outcome_key: str) -> str:
+    """Split an unaided verdict by whether the instrument makes the pair designable.
+
+    Deterministic and model-free: the unaided rubric's verdict, then the
+    environment's ruling on the pair. A pair the unaided arm specified stays
+    `SPECIFIABLE`; one it could not becomes `NEEDS_INSTRUMENT` when the
+    environment finds no blocker, and `NO_COHERENT_DESIGN` when it names one.
+
+    Args:
+        unaided: `SPECIFIABLE` or `NOT_SPECIFIABLE`, from `pair_verdict`.
+        exposure_key: The exposure anchor.
+        outcome_key: The outcome anchor.
+
+    Returns:
+        `SPECIFIABLE`, `NEEDS_INSTRUMENT` or `NO_COHERENT_DESIGN`.
+
+    Raises:
+        ValueError: If `unaided` is not one of the two unaided verdicts.
+    """
+    if unaided == SPECIFIABLE:
+        return SPECIFIABLE
+    if unaided != NOT_SPECIFIABLE:
+        raise ValueError(f"not an unaided verdict: {unaided!r}")
+    if instrument_blocker(exposure_key, outcome_key) is None:
+        return NEEDS_INSTRUMENT
+    return NO_COHERENT_DESIGN
+
+
 # --------------------------------------------------------------------------- #
 # the runner
 # --------------------------------------------------------------------------- #
@@ -703,7 +763,7 @@ def verify_withholding(worktree: Any, model: str = MODEL,
     out_dir.mkdir(parents=True, exist_ok=True)
     log = out_dir / "withholding_control.tool_log.jsonl"
     log.write_text("")
-    os.environ["COMPASS_TOOL_LOG"] = str(log)
+    os.environ["COMPASS_TOOL_LOG"] = str(log.resolve())
 
     withheld_text, withheld_line = probe_once(
         worktree, model, WITHHOLDING_PROBE, log, 0)
@@ -715,6 +775,7 @@ def verify_withholding(worktree: Any, model: str = MODEL,
         out = worktree.run(argv, timeout=300)
     except Exception as exc:
         error = f"{type(exc).__name__}: {exc}"[:800]
+        out = getattr(exc, "payload", out)
     attached_calls = _server_lines(log) - before
     attached_line = {
         "record": "invocation", "response_index": 1,
@@ -791,7 +852,7 @@ def probe_once(worktree: Any, model: str, prompt: str,
     tool_log.parent.mkdir(parents=True, exist_ok=True)
     # Set on the parent's environ because SealedWorktree.run copies os.environ
     # and takes no extra env; this module may not edit agent/sealed.py.
-    os.environ["COMPASS_TOOL_LOG"] = str(tool_log)
+    os.environ["COMPASS_TOOL_LOG"] = str(tool_log.resolve())
     before = _server_lines(tool_log)
     t0 = time.perf_counter()
     error = ""
@@ -800,8 +861,10 @@ def probe_once(worktree: Any, model: str, prompt: str,
         out = worktree.run(argv, timeout=300)
     except Exception as exc:
         # Persisted rather than raised: a live run costs a model call, and
-        # diagnosing why one failed must not cost a second one.
+        # diagnosing why one failed must not cost a second one. A reported
+        # error carries the CLI's reply, so `is_error`, turns and cost survive.
         error = f"{type(exc).__name__}: {exc}"[:800]
+        out = getattr(exc, "payload", out)
     text = str(out.get("result", "")).strip()
     line = {
         "record": "invocation",
@@ -1113,23 +1176,16 @@ NEGATIVE_CONTROL = PairSpec(
 
 
 def frame_pairs() -> list[PairSpec]:
-    """The 6x64 frame the live Specifier runs against, as probe specs.
+    """The frame the live Specifier walks, as probe specs.
 
     Returns:
-        Every live pair from `generate/funnel.py` over the same exposure and
-        outcome blocks `generate/live_specifier.py` uses, ordered as the funnel
-        emits them.
+        Every live pair of `generate/funnel.py::FRAMES[DEFAULT_FRAME]`, in the
+        enumeration order `walk` emits them.
     """
     sys.path.insert(0, str(ROOT))
-    from generate.funnel import load_constructs, run
+    from generate.funnel import DEFAULT_FRAME, FRAMES, load_constructs, walk
     c, _ = load_constructs()
-    exposures = sorted([x for x in c.values()
-                        if x.module == "3" and x.base_id.startswith("Q16.")],
-                       key=lambda x: x.base_id)
-    outcomes = sorted([x for x in c.values()
-                       if x.module == "2" and x.base_id.startswith("Q5.")],
-                      key=lambda x: x.base_id)
-    cands, _counts = run(exposures, outcomes)
+    cands, _counts = walk(FRAMES[DEFAULT_FRAME], c)
     return [PairSpec(x.exposure.construct_key, x.exposure.stem_text,
                      x.outcome.construct_key, x.outcome.stem_text,
                      requires_derivation=x.requires_derivation)
@@ -1212,7 +1268,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     ap.add_argument("--min-specifiable", type=int,
                     default=DEFAULT_MIN_SPECIFIABLE)
     ap.add_argument("--out", type=Path, default=RUN_DIR)
-    return ap.parse_args(argv)
+    args = ap.parse_args(argv)
+    # Absolute, because the probes export paths under it to an MCP server that
+    # runs inside the sealed temporary cwd. A relative `--out` sent that
+    # server's tool log into the temporary directory, and the withholding
+    # control counted zero calls on a run that had made one (2026-09-11).
+    args.out = args.out.resolve()
+    return args
 
 
 def _pilot_specs(n: int, exclude: tuple[str, ...] = ()) -> list[PairSpec]:

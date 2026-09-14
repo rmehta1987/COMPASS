@@ -80,14 +80,20 @@ the retriever needs `torch`, `transformers` 5.x and `safetensors`; the pipeline'
 | `out/fusion_task1_overlap.json`, `out/qx_task2_paired.json`, `out/qx_task3_abstention.json` | Per-row retrieval artifacts that quote gold stems; withdrawn from git on 2026-09-03 (merged to `main` 2026-09-04). Their figures are in `FUSION.md`, `QUERY_EXPANSION.md` and the tracked smoke report; checksums in `PROVENANCE.md`. **They remain in history from 73f796b / 8f1d9fb (these three) and e446cf8 (`deploy/targets.json`) until the operator rewrites it or makes the repository private.** |
 | `run/`, `runs/`, `out/` otherwise | Run records, tool logs, checkpoints and score artifacts (`PROVENANCE.md` lists the cited ones with checksums). |
 | `benchmark/prevalence_key.py` | The held-out answer key for outcome prevalence. |
+| `benchmark/leak_facts.py` | The seal-probe answer key. Withheld from 2026-09-04: it stores sixteen papers' realised analytic n as literal match patterns (`2,836`, `5,096`, `2,387`, `602`, …), which is a paper finding held as a value rather than an import of one. It reached `main` through `b3d818d` before that was recognised. Both keys live on the orphan branch `scoring-key`. |
 | `tests/resolver_eval_v2.jsx` | A browser harness with ~508 candidate wordings frozen inline. |
 | `references/astro_agents_reference.pdf`, `asttroagent.png` | Third-party paper and figure, not republished. |
 | `deploy/model/` | 134.2 MB fine-tuned checkpoint directory (`model.safetensors` 133.5 MB, over GitHub's file limit); not wording. |
 
 **Consequence:** a fresh clone cannot build the dictionary, cannot run the retrieval or
-resolver evaluations, cannot import the two `benchmark/` modules that import the withheld
-key at module level (`scorability.py`, `input_leakage.py`; `contamination_check.py` imports
-it inside a function and fails at the call), and cannot re-freeze `deploy/`. Of the six commands in `AGENTS.md` §Verify current state only `ruff check .`
+resolver evaluations, cannot import the two `benchmark/` modules that import
+`prevalence_key.py` at module level (`scorability.py`, `input_leakage.py`; and
+`tier_gate.py` transitively, through `instrument_terms.py` -> `input_leakage.py`, though it
+names the key nowhere in its own source), and cannot re-freeze `deploy/`. Three further
+call sites fail only when reached, because they import inside a function:
+`contamination_check.py` for both keys, and `agent/sealed.py::score` for `leak_facts.py`.
+Under plain `pytest` the module-level cases INTERRUPT COLLECTION, so a fresh clone runs no
+tests at all rather than all but those. Of the six commands in `AGENTS.md` §Verify current state only `ruff check .`
 runs here. A clone can run the deployed retriever and its acceptance test once the two
 files above are copied.
 

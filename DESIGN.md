@@ -40,6 +40,14 @@ What the system is. Operating rules: `AGENTS.md`. Open work: `TASKS.md`.
 - **Unknowable quantities are admitted, not invented**: no analytic n, response coding or
   unverifiable prevalence — null plus a blocker (`benchmark/unearned_assertions.py`).
 - **Contamination is measured, not asserted clean**: three routes, only one closes (§5).
+- **One record, one estimand.** N outcomes against one exposure are N records, one per
+  enumerated pair, from the loop that already exists (`generate/funnel.py::run`), never
+  one widened record: `canonical_form`'s `outcome` and so `record_hash`, the expected
+  direction and `_falsifier_is_detectable`'s one threshold against one curve are all
+  defined for one outcome. Siblings are grouped by the shared exposure anchor
+  (`canonical_form()["exposure"]`) within the run or `serve/` ticket that produced them.
+  No record names its siblings, and nothing corrects for multiplicity across them.
+  Operator's decision, 2026-09-10 (`TASKS.md` C30).
 
 ## 3. Architecture
 ```
@@ -80,7 +88,7 @@ enumeration (Python) -> one pair
 | `mcp/compass_server.py` | Tools over stdio JSON-RPC; logs calls WITH return values |
 | `agent/prompt_contract.py` | A model-visible surface as a typed record; selection by index |
 | `benchmark/` | Held-out keys, contamination check, `benchmark/retrieval_eval.py` gate |
-| `benchmark/resolver_eval.py` | Scores a prose resolver: k shortlists, one critic, 3 arms |
+| `benchmark/resolver_eval.py` | Scores the one prose resolver, the site's route (`evaluate_single`), against the `searched` control; the k-shortlist procedure stays as an alternative |
 | `benchmark/leak_facts.py` | Seal-probe key; platform spellings; the §7 contest |
 | `build_targets.py`, `encode_and_score.py` | Arm E's target builder (1,352 targets) and frozen-encoder driver; external drivers, excluded from the lint ceiling |
 | `src/` | The retrieval experiments: `compass_build.py` (1,353 targets), `compass_score.py`, `train.py`, `freeze_deploy.py`, characterisation and fusion scripts; not in this map's standards |
@@ -177,7 +185,8 @@ Three routes by which a published analysis reaches the model. **Only one closes.
   through the CLI, no format tax. Never cite Haiku results for 8–27B models.
 - **The blocking external dependency is the module co-completion counts.** Without them
   every pair is `estimability=unknown`, `n_source` only `unknown`, nothing reaches
-  `ready_for_review`, and `_rank` falls through to covariate count then hash.
+  `ready_for_review`, and `_rank` falls through to blocker count then hash. It no longer
+  counts covariates (C28).
 - Outcome frequencies are the second ask of the study team; one delivery clears both.
 - **The survey platform is contested**: the operator states one platform, a cohort paper's
   Methods another. Ask; assert neither (`benchmark/leak_facts.py`).

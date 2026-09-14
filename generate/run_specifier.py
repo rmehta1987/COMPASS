@@ -47,7 +47,7 @@ from agent.schema import (  # noqa: E402
     VariableRef,
 )
 from agent.specifier import MAX_TRANSDUCE_ATTEMPTS, specify  # noqa: E402
-from generate.funnel import load_constructs, run  # noqa: E402
+from generate.funnel import DEFAULT_FRAME, FRAMES, load_constructs, run  # noqa: E402
 from generate.live_specifier import run_identity  # noqa: E402
 
 DICT = json.loads((ROOT / "build" / "dictionary.json").read_text())
@@ -258,13 +258,10 @@ def demo_script(good: str, shuffled: str) -> list[Reply]:
 
 def main() -> None:
     C, version = load_constructs()
-    exposures = sorted([c for c in C.values()
-                        if c.module == "3" and c.base_id.startswith("Q16.")],
-                       key=lambda c: c.base_id)
-    outcomes = sorted([c for c in C.values()
-                       if c.module == "2" and c.base_id.startswith("Q5.")],
-                      key=lambda c: c.base_id)
+    exposures, outcomes = FRAMES[DEFAULT_FRAME].sides(C)
     cands, counts = run(exposures, outcomes)
+    # The scripted demo's fixture record is for this pair, so it is named here.
+    # A LIVE run walks the frame in enumeration order (`live_specifier`).
     pair = next(c for c in cands if c.exposure.construct_key == "m3:Q16.1"
                 and c.outcome.construct_key == "m2:Q5.8")
 

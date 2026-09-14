@@ -399,6 +399,56 @@ def test_recording_a_covariate_gap_does_not_rank_a_record_below_a_silent_one(rec
     assert SP._rank(silent) == SP._rank(disclosing)
 
 
+_GAPS = [
+    ("the respondent's own age at enrolment", ["age", "age at enrollment"]),
+    ("household income over the past year", ["income", "household income"]),
+    ("years of schooling the respondent completed", ["schooling", "years of education"]),
+]
+
+
+def _with_gaps(record: dict, n: int) -> dict:
+    """`record` with `n` distinct covariate gaps written down."""
+    return {**record, "sought_covariates": [{
+        "construct_sought": construct,
+        "search_phrases": phrases,
+        "why_rejected": ("what came back measures something else, so each "
+                         "candidate was refused."),
+        "exposes_the_estimate_to": ("residual confounding by a common cause of "
+                                    "both anchors."),
+    } for construct, phrases in _GAPS[:n]]}
+
+
+@pytest.mark.parametrize("n", [1, 2, 3])
+def test_no_number_of_recorded_gaps_moves_the_rank(record: dict, n: int) -> None:
+    """C28: a gap count is prose nothing checks, so no count of it may rank.
+
+    The test above compares no gap with one, so a term that only moved at two
+    ("two or more gaps rank higher") would pass it and still pay for padding.
+    """
+    from agent.schema import ProtocolSpecification
+    silent = ProtocolSpecification.model_validate(record)
+    disclosing = ProtocolSpecification.model_validate(_with_gaps(record, n))
+    assert len(disclosing.sought_covariates) == n
+    assert SP._rank(silent) == SP._rank(disclosing)
+
+
+@pytest.mark.parametrize("field", ["adjusted_covariates", "excluded_variables"])
+def test_a_wrong_construct_adjustment_does_not_outrank_a_recorded_gap(
+        record: dict, field: str) -> None:
+    """C28's own case: one sample uses a stand-in, its twin files the gap.
+
+    `_rank` used to count adjusted plus excluded covariates, so the sample that
+    adjusted for a wrong-construct key won outright. Now the two tie on every
+    term but the hash, which only makes the order total.
+    """
+    from agent.schema import ProtocolSpecification
+    stand_in = ProtocolSpecification.model_validate(record)
+    honest = ProtocolSpecification.model_validate(
+        {**_with_gaps(record, 1), field: record[field][:-1]})
+    assert stand_in.record_hash() != honest.record_hash()     # different designs
+    assert SP._rank(stand_in)[:-1] == SP._rank(honest)[:-1]
+
+
 def _disclosing(record: dict) -> str:
     """The same design as `record`, with a covariate gap written down."""
     return json.dumps({**record, "sought_covariates": [{
@@ -438,8 +488,9 @@ def test_a_disclosing_sample_is_not_discarded_for_a_silent_twin(pair, record,
     assert res.selected is not None
     assert res.selected.sought_covariates, "the silent twin won"
     # Not merely "parked instead of deleted" — parked would still be a loss,
-    # because the run writes the winner. The disclosing record must WIN.
-    assert res.parked == []
+    # because the run writes the winner. The disclosing record must WIN. Since
+    # 2026-09-11 the silent twin is parked as the runner-up, never dropped.
+    assert [q.sought_covariates for q in res.parked] == [[]]
 
 
 def test_the_prompt_names_the_field_the_schema_gives_the_model(record):
@@ -499,6 +550,85 @@ def test_a_repairable_record_is_repaired_within_the_budget(pair):
     a = SP.specify_once(backend, p, seed=0)
     assert a.ok, a.error
     assert a.attempts == 3
+
+
+def _repaired_through_the_validator(
+        pair: tuple) -> tuple[SP.Attempt, list[str], str]:
+    """A sample whose derivation key set reached it only through a repair.
+
+    The scripted reasoning never calls `get_derivation`, the first transduction
+    drops one component key, and the validator's error quotes the signed list:
+    the live observation C19 records. (Not the unit: tool authority stamps that
+    from the signed file, so it never passes through the model.)
+
+    Args:
+        pair: The module's `(pair, version, counts)` fixture.
+
+    Returns:
+        The attempt, the signed key list and the rejected first transduction.
+    """
+    p, version, counts = pair
+    good = json.loads(fixture(version, counts["enumerated"]))
+    signed = good["exposure"]["component_keys"]
+    wrong = json.dumps({**good, "exposure": {**good["exposure"],
+                                             "component_keys": signed[:-1]}})
+    backend = ScriptedBackend(
+        [Reply(tool_calls=REASON_CALLS_A), Reply(tool_calls=REASON_CALLS_B),
+         Reply(content=ANALYSIS), Reply(content=wrong),
+         Reply(content=json.dumps(good))])
+    return SP.specify_once(backend, p, seed=0), signed, wrong
+
+
+def test_every_derivation_value_traces_to_the_log_or_a_kept_repair(
+        pair: tuple) -> None:
+    """C19: a value no tool returned is accounted for only if its repair is kept.
+
+    `_emit` kept the rejected object only when the whole budget was spent, so a
+    record that passed on its second attempt carried the signed key set with no
+    trace of where it came from.
+    """
+    a, signed, wrong = _repaired_through_the_validator(pair)
+    assert a.ok, a.error
+    assert "get_derivation" not in a.tool_names, "the script must not fetch it"
+    assert [r["rejected"] for r in a.repairs] == [wrong]
+    assert str(signed) in a.repairs[0]["error"]
+    assert SP.untraced_derivation_values(a.protocol, a.raw_log, a.repairs) == []
+    # Anti-vacuity: the repair is the ONLY source. Without it the key set traces
+    # nowhere, which is exactly the record C19 observed live.
+    lost = SP.untraced_derivation_values(a.protocol, a.raw_log, [])
+    assert len(lost) == 1 and "social_cohesion_scale" in lost[0], lost
+    # The sentence inside pydantic's `input_value` repr is the model's own
+    # writing, not something a repair showed it.
+    echoed = [{"error": "Value error, bad [type=value_error, input_value=\"derivation "
+                        f"'social_cohesion_scale' declares component_keys {signed}\"]"}]
+    assert SP.untraced_derivation_values(a.protocol, a.raw_log, echoed) == lost
+
+
+def test_a_derivation_the_sample_fetched_traces_to_its_own_log(pair: tuple) -> None:
+    """The other half: a key set `get_derivation` returned needs no repair."""
+    p, version, counts = pair
+    fetch = [*REASON_CALLS_A, tool_call(
+        "get_derivation", {"derivation_id": "social_cohesion_scale"}, "c4b")]
+    backend = ScriptedBackend(
+        [Reply(tool_calls=fetch), Reply(tool_calls=REASON_CALLS_B),
+         Reply(content=ANALYSIS), Reply(content=fixture(version, counts["enumerated"]))])
+    a = SP.specify_once(backend, p, seed=0)
+    assert a.ok, a.error
+    assert a.repairs == []
+    assert SP.untraced_derivation_values(a.protocol, a.raw_log, []) == []
+
+
+def test_the_live_driver_writes_the_repairs_beside_the_record(
+        pair: tuple, tmp_path: Path) -> None:
+    """The trace needs the repairs on disk: `Attempt` does not outlive the run."""
+    from generate.live_specifier import save_repairs
+
+    a, _, wrong = _repaired_through_the_validator(pair)
+    saved = save_repairs(tmp_path / "P-x.abc123.json", a, a.raw_log)
+    assert saved.name == "P-x.abc123.repairs.json"
+    data = json.loads(saved.read_text())
+    assert [r["rejected"] for r in data["repairs"]] == [wrong]
+    assert data["untraced"] == []
 
 
 # --------------------------------------------------------------------------- #
@@ -687,6 +817,43 @@ def test_the_seal_is_hashed_for_provenance():
         assert len(a.manifest()["seal_hash"]) == 16
 
 
+def test_both_cli_calls_replace_the_system_prompt_rather_than_append(
+        tmp_path: Path) -> None:
+    """T4: the Specifier's instructions replace Claude Code's own system prompt.
+
+    `--append-system-prompt` left the Specifier reasoning inside the CLI's
+    coding-assistant persona. VERIFIED live 2026-09-10 on claude-haiku-4-5:
+    under `--system-prompt` the reply carried a canary word the system prompt
+    demanded, and the model still called `mcp__compass__resolve_variable`. So
+    the flag is read -- unlike `--append-system-prompt-file`, which this CLI
+    accepts and ignores -- and MCP tool calling survives the swap.
+    """
+    import shutil
+
+    from agent.cli_backend import ClaudeCliBackend
+
+    seen: list[list[str]] = []
+
+    class NoSubprocess(ClaudeCliBackend):
+        """Records the argv instead of running `claude -p`."""
+
+        def _run(self, argv: list[str]) -> str:
+            seen.append(argv)
+            return "{}"
+
+    b = NoSubprocess(model="claude-haiku-4-5", tool_log_dir=tmp_path)
+    try:
+        b.reason("SPECIFIER SYSTEM", "prompt", ["resolve_variable"])
+        b.transduce("prompt")
+    finally:
+        shutil.rmtree(b.sandbox, ignore_errors=True)
+    assert len(seen) == 2
+    for argv in seen:
+        assert "--append-system-prompt" not in argv, argv
+        assert "--system-prompt" in argv, argv
+    assert seen[0][seen[0].index("--system-prompt") + 1] == "SPECIFIER SYSTEM"
+
+
 def test_headless_backend_denies_every_context_bypassing_builtin():
     from agent.cli_backend import DENY
     for t in ("Bash", "Read", "Glob", "Grep", "WebSearch", "WebFetch", "Task"):
@@ -708,6 +875,64 @@ def test_seal_probe_reads_the_answer_not_the_formatting():
         assert not _answered_yes(t), f"false leak on {t!r}"
     for t in leaked:
         assert _answered_yes(t), f"missed leak in {t!r}"
+
+
+#: C27. `result` strings a `claude -p` can carry on exit 0 with `is_error` set.
+#: Each opens with a denial, so each used to score `clean` and vouch for a seal
+#: that no probe had actually tested.
+_CLI_ERROR_RESULTS = ["I cannot answer that.",
+                      "Not logged in · Please run /login",
+                      "No response from the API: the request timed out"]
+
+
+def _cli_exits_zero_with(monkeypatch: pytest.MonkeyPatch, result: str) -> None:
+    import subprocess
+
+    from agent import sealed
+    payload = json.dumps({"type": "result", "subtype": "success", "is_error": True,
+                          "result": result, "num_turns": 1, "total_cost_usd": 0.0})
+    monkeypatch.setattr(sealed.subprocess, "run", lambda argv, **k:
+                        subprocess.CompletedProcess(argv, 0, payload, ""))
+
+
+@pytest.mark.parametrize("result", _CLI_ERROR_RESULTS)
+def test_a_cli_error_on_exit_zero_raises_with_its_payload(
+        monkeypatch: pytest.MonkeyPatch, result: str) -> None:
+    """Exit 0 is not success: `run` checks `is_error` as `cli_backend._run` does."""
+    from agent.sealed import SealedRunError, SealedWorktree
+    _cli_exits_zero_with(monkeypatch, result)
+    with SealedWorktree() as w, pytest.raises(SealedRunError) as e:
+        w.run([*w.base_argv("claude-haiku-4-5"), "probe"])
+    assert e.value.payload["result"] == result, "the reply must survive the raise"
+
+
+@pytest.mark.parametrize("result", _CLI_ERROR_RESULTS)
+def test_an_errored_seal_probe_never_scores_clean(
+        monkeypatch: pytest.MonkeyPatch, result: str) -> None:
+    """An errored probe never scores `clean`, the precondition every run asserts.
+
+    A probe that never reached a model has established nothing about the seal.
+    """
+    import types
+
+    from agent import sealed
+    assert sealed._answered_no(result), (
+        f"{result!r} does not open with a denial, so it could never have scored "
+        "clean and this case cannot show the hole")
+    # The held-out fact list is withheld from most clones. An empty stand-in
+    # lets `score` run everywhere, and these strings name no fact in any clone.
+    facts = types.ModuleType("benchmark.leak_facts")
+    facts.LEAK_CHANNELS = frozenset()  # type: ignore[attr-defined]
+    facts.facts_in = lambda text, echoed_from="": []  # type: ignore[attr-defined]
+    facts.platforms_in = lambda text, echoed_from="": []  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "benchmark.leak_facts", facts)
+    _cli_exits_zero_with(monkeypatch, result)
+    with sealed.SealedWorktree() as w:
+        try:
+            r = w.verify()
+        except sealed.SealedRunError:
+            return
+    assert not r["clean"], f"an errored probe scored clean: {r['probes']}"
 
 
 # --------------------------------------------------------------------------- #
@@ -1660,6 +1885,51 @@ def test_the_wrapper_writes_the_denominator_the_model_skipped(pair):
     sel = apply_record_identity(rec, _identity(pair))["selection_rationale"]
     assert sel["selection_mode"] == "enumerated_screen"
     assert sel["screened_from"] == counts["enumerated"]
+
+
+def test_the_driver_names_every_model_and_who_proposed_the_pair(pair) -> None:
+    """C17: stamped by the driver; a transduction cannot vouch for its own inputs."""
+    from agent.schema import ProtocolSpecification
+    from agent.tool_authority import apply_record_identity
+
+    rec = {"provenance": {"models": {"resolver": "invented"},
+                          "anchors_proposed_by": "enumeration"}}
+    ident = _identity(pair, models=(("resolver", "claude-sonnet-5"),),
+                      anchors_proposed_by="model")
+    prov = apply_record_identity(rec, ident)["provenance"]
+    assert prov["models"] == {"resolver": "claude-sonnet-5"}
+    assert prov["anchors_proposed_by"] == "model"
+    # And the record refuses to stand when a model proposed it unnamed.
+    _, version, counts = pair
+    good = json.loads(fixture(version, counts["enumerated"]))
+    unnamed = apply_record_identity(good, _identity(pair, anchors_proposed_by="model"))
+    with pytest.raises(Exception, match="must name the resolver"):
+        ProtocolSpecification.model_validate(unnamed)
+
+
+def test_the_refusal_path_takes_its_provenance_from_the_same_helper() -> None:
+    """One dict for both record kinds, so a new field cannot reach only one."""
+    import ast
+
+    tree = ast.parse(inspect.getsource(SP._transduce_refusal))
+    called = {n.func.id for n in ast.walk(tree)
+              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    assert "identity_provenance" in called
+
+
+def test_run_identity_says_who_proposed_the_pair(pair) -> None:
+    """Enumerated pairs came from the funnel, stated ones from a person."""
+    from generate.live_specifier import run_identity
+
+    p, version, counts = pair
+    assert run_identity(p, version, counts["enumerated"], "m").anchors_proposed_by \
+        == "enumeration"
+    assert run_identity(p, version, 0, "m", "externally_posed").anchors_proposed_by \
+        == "person"
+    ident = run_identity(p, version, 0, "m", "externally_posed",
+                         models={"resolver": "r"}, anchors_proposed_by="model")
+    assert ident.models == (("resolver", "r"),)
+    assert ident.anchors_proposed_by == "model"
 
 
 def test_a_sample_carries_the_drivers_identity_end_to_end(pair):
@@ -2791,3 +3061,156 @@ def test_without_the_override_the_seal_behaves_exactly_as_before(monkeypatch):
     with sealed_mod.SealedWorktree() as w:
         w.run(["claude", "-p", "x"])
     assert "CLAUDE_CONFIG_DIR" not in seen
+
+
+# --------------------------------------------------------------------------- #
+# the seal switches every built-in tool off, not just the ones it can name
+# --------------------------------------------------------------------------- #
+
+
+def test_a_sealed_run_switches_every_builtin_tool_off() -> None:
+    """A deny list goes stale when the CLI ships a tool; `--tools ""` does not."""
+    from agent.sealed import BUILTIN_TOOLS, SealedWorktree
+
+    assert BUILTIN_TOOLS == ""
+    with SealedWorktree() as w:
+        argv = w.base_argv("claude-haiku-4-5")
+        assert argv[argv.index("--tools") + 1] == ""
+        assert w.manifest()["builtin_tools"] == ""
+
+
+def test_the_specifier_backend_switches_every_builtin_tool_off(tmp_path: Path) -> None:
+    """Both CLI calls carry the same switch as the seal."""
+    import shutil
+
+    from agent.cli_backend import ClaudeCliBackend
+
+    seen: list[list[str]] = []
+
+    class NoSubprocess(ClaudeCliBackend):
+        """Records the argv instead of running `claude -p`."""
+
+        def _run(self, argv: list[str]) -> str:
+            seen.append(argv)
+            return "{}"
+
+    b = NoSubprocess(model="claude-haiku-4-5", tool_log_dir=tmp_path)
+    try:
+        b.reason("system", "prompt", ["resolve_variable"])
+        b.transduce("prompt")
+    finally:
+        shutil.rmtree(b.sandbox, ignore_errors=True)
+    assert len(seen) == 2
+    for argv in seen:
+        assert argv[argv.index("--tools") + 1] == "", argv
+
+
+def test_the_seal_check_catches_builtins_left_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The contamination check must see what the deny-list check could not."""
+    from agent import sealed
+    from benchmark import contamination_check as cc
+
+    assert cc.check_seal_config() == []
+    original = sealed.SealedWorktree.base_argv
+
+    def without_switch(self: sealed.SealedWorktree, model: str) -> list[str]:
+        argv = original(self, model)
+        i = argv.index("--tools")
+        return argv[:i] + argv[i + 2:]
+
+    monkeypatch.setattr(sealed.SealedWorktree, "base_argv", without_switch)
+    assert any("built-in tools" in b for b in cc.check_seal_config())
+
+
+# --------------------------------------------------------------------------- #
+# the saved record gets its own sample's log, not a same-hash twin's
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize("silent_first", [True, False])
+def test_the_live_driver_audits_the_selected_record_against_its_own_attempt(
+        pair: tuple, record: dict, silent_first: bool) -> None:
+    """A silent twin and a disclosing twin hash alike; only one produced the record.
+
+    The driver matched the winner by `record_hash`, so with the silent twin
+    first it copied the silent twin's tool log, audit and repairs beside the
+    disclosing record that won.
+    """
+    from generate.live_specifier import winning_attempt
+
+    p, _, _ = pair
+    silent, disclosing = json.dumps(record), _disclosing(record)
+    order = [silent, disclosing] if silent_first else [disclosing, silent]
+    backend = ScriptedBackend(_good_script(order[0]) + _good_script(order[1]))
+    res = SP.specify(backend, p, k=2)
+    assert res.selected is not None and res.selected.sought_covariates
+    win = winning_attempt(res)
+    assert win is not None and win.protocol is res.selected
+    assert win.protocol.sought_covariates, "the driver picked the silent twin's attempt"
+
+
+def test_the_live_driver_finds_its_winner_through_winning_attempt() -> None:
+    """The lookup lives in one tested place, not inline in main."""
+    import ast
+    import inspect
+
+    from generate import live_specifier
+
+    tree = ast.parse(inspect.getsource(live_specifier.main))
+    called = {n.func.id for n in ast.walk(tree)
+              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    assert "winning_attempt" in called
+
+
+# --------------------------------------------------------------------------- #
+# same-design twins: any gap beats none, the count does not count, none dropped
+# --------------------------------------------------------------------------- #
+
+
+def _one_gap(record: dict, i: int) -> str:
+    """`record` with only the i-th gap of `_GAPS` written down."""
+    gaps = _with_gaps(record, len(_GAPS))["sought_covariates"]
+    return json.dumps({**record, "sought_covariates": gaps[i:i + 1]})
+
+
+def test_the_number_of_gaps_does_not_pick_a_twin(record: dict) -> None:
+    """Any gap beats none; one gap and three gaps are the same to selection."""
+    from agent.schema import ProtocolSpecification
+    silent, one, three = (ProtocolSpecification.model_validate(_with_gaps(record, n))
+                          for n in (0, 1, 3))
+    assert silent.record_hash() == one.record_hash() == three.record_hash()
+    assert SP._twin_order(one)[0] == SP._twin_order(three)[0]
+    assert SP._twin_order(one)[0] < SP._twin_order(silent)[0]
+
+
+@pytest.mark.parametrize("gaps", [(0, 1), (0, 2)])
+def test_twins_with_equal_gap_counts_are_not_decided_by_seed_order(
+        pair: tuple, record: dict, gaps: tuple[int, int]) -> None:
+    """Two twins, one gap each: the same one wins whichever seed spoke first.
+
+    Under the count rule a tie kept the first arrival and dropped the other,
+    so which gap reached the saved record was decided by seed order.
+    """
+    p, _, _ = pair
+    a, b = (_one_gap(record, i) for i in gaps)
+    picked = []
+    for first, second in ((a, b), (b, a)):
+        res = SP.specify(ScriptedBackend(_good_script(first) + _good_script(second)),
+                         p, k=2)
+        assert res.selected is not None
+        assert len(res.parked) == 1, "the losing twin was dropped, not parked"
+        picked.append(res.selected.sought_covariates[0].construct_sought)
+    assert picked[0] == picked[1], f"arrival order decided the twin: {picked}"
+
+
+def test_every_parked_twin_is_written_under_its_own_name(
+        pair: tuple, record: dict, tmp_path: Path) -> None:
+    """Twins share a record_hash, so a name built from it alone overwrote one."""
+    p, _, _ = pair
+    backend = ScriptedBackend(_good_script(json.dumps(record))
+                              + _good_script(_one_gap(record, 0))
+                              + _good_script(_one_gap(record, 1)))
+    res = SP.specify(backend, p, k=3, parked_dir=tmp_path)
+    assert res.selected is not None and res.selected.sought_covariates
+    assert len(res.parked) == 2
+    assert len(list(tmp_path.glob("*.json"))) == 2, "a parked twin overwrote another"

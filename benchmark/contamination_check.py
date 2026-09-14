@@ -69,10 +69,17 @@ import hashlib
 import json
 import re
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, NamedTuple
 
 ROOT = Path(__file__).resolve().parent.parent
+
+#: Modules held out of every clone but the scoring one. A section that needs one
+#: SKIPS loudly and makes the exit status non-zero; it never counts as clean.
+#: Named explicitly rather than caught broadly, so a genuine missing dependency
+#: still takes the run down instead of being reported as a withheld-key skip.
+WITHHELD_MODULES = frozenset({"benchmark.prevalence_key", "benchmark.leak_facts"})
 sys.path.insert(0, str(ROOT))
 
 import agent.prompt_contract as PC  # noqa: E402
@@ -93,7 +100,7 @@ from benchmark.input_leakage import (  # noqa: E402
 from env import labels as LB  # noqa: E402
 from env import tools as T  # noqa: E402
 from generate import hybrid_ed as HY  # noqa: E402
-from generate.funnel import load_constructs, run  # noqa: E402
+from generate.funnel import DEFAULT_FRAME, FRAMES, load_constructs, walk  # noqa: E402
 
 #: Pool depths the hybrid renders, mirrored from `generate/hybrid_ed.py` so the
 #: scan covers every depth that ships rather than one of them.
@@ -594,6 +601,15 @@ def _catalogue_surface() -> dict[str, str]:
             catalogue=LB.render_catalogue(cat)),
         "arm_d_selection_schema": json.dumps(
             PC.VariableSelection.model_json_schema()),
+        # `serve/api.py::_resolve` renders THIS surface for a researcher's prose,
+        # so it is model-visible and joins the scan (`AGENTS.md`: a prose
+        # resolver's prompt and schema join `model_visible_surface`). The
+        # request itself is the caller's own words and varies per call; what is
+        # scanned is the standing text around it, which is what this project
+        # authors and can contaminate. A fixed placeholder stands in for the
+        # request so the surface is reproducible.
+        "retrieval_prompt": PC.retrieval_contract(
+            "<the researcher's request, supplied per call>", cands).render(),
     }
 
 
@@ -643,6 +659,21 @@ def _rewrite_surface() -> dict[str, str]:
     return out
 
 
+def _split_surface() -> dict[str, str]:
+    """C29-C's splitter: a prompt that carries no instrument wording by design.
+
+    It reads the researcher's sentence and nothing else, and that is a claim
+    about the text, which is what this scan checks.
+
+    Returns:
+        The rendered prompt, with a placeholder request, and its schema.
+    """
+    from agent.prompt_contract import RequestSplit, split_prompt
+
+    return {"split_prompt": split_prompt("<the researcher's request>"),
+            "split_schema": json.dumps(RequestSplit.model_json_schema())}
+
+
 def model_visible_surface(mode: Mode = "benchmark") -> dict[str, str]:
     """Every byte the model receives, keyed by where it comes from.
 
@@ -654,11 +685,7 @@ def model_visible_surface(mode: Mode = "benchmark") -> dict[str, str]:
     """
     _, schemas = build_registry(mode)
     C, _ = load_constructs()
-    e = sorted([c for c in C.values() if c.module == "3"
-                and c.base_id.startswith("Q16.")], key=lambda c: c.base_id)
-    o = sorted([c for c in C.values() if c.module == "2"
-                and c.base_id.startswith("Q5.")], key=lambda c: c.base_id)
-    cands, _ = run(e, o)
+    cands, _ = walk(FRAMES[DEFAULT_FRAME], C)
 
     surface = {
         "system_prompt": SYSTEM,
@@ -681,6 +708,8 @@ def model_visible_surface(mode: Mode = "benchmark") -> dict[str, str]:
         # The hybrid's pool prompt: a different renderer, so a scan over arm D's
         # catalogue is not a scan over this.
         **_hybrid_surface(),
+        # C29-C's splitter, which runs before retrieval on the site's route.
+        **_split_surface(),
     }
     # Tool RETURN VALUES. Generated, not stored — a file grep cannot see these.
     # The whole return is scanned, not a chosen field: `get_design_convention`
@@ -982,6 +1011,12 @@ def check_seal_config() -> list[str]:
         for t in ("Bash", "Read", "Glob", "Grep", "WebSearch", "WebFetch"):
             if t not in DENY_TOOLS:
                 bad.append(f"{t} is not denied")
+        # The check above could not see a built-in the deny list never named,
+        # which is how a sealed probe reached ListAgents on 2026-09-11.
+        argv = w.base_argv("claude-haiku-4-5")
+        if "--tools" not in argv or argv[argv.index("--tools") + 1] != "":
+            bad.append('built-in tools are not all switched off (--tools ""): '
+                       "a deny list misses built-ins added after it was written")
         if SEALED_SETTINGS.get("enabledPlugins") != {}:
             bad.append("plugins not disabled in sealed settings")
     return bad
@@ -1096,19 +1131,19 @@ def main() -> int:
     blob = "\n".join(f"{k}\n{v}" for k, v in sorted(surface.items()))
     surface_hash = hashlib.sha256(blob.encode()).hexdigest()[:16]
 
-    sections = {
+    sections: dict[str, Callable[[], list[str]]] = {
         # First, because a marker verdict over a partial surface is worth less
         # than it reads, and this is the section that says whether it is partial.
-        "every registry tool sampled": check_tool_coverage(),
-        "markers in model-visible surface": check_markers(surface),
+        "every registry tool sampled": lambda: check_tool_coverage(),
+        "markers in model-visible surface": lambda: check_markers(surface),
         # The INSTRUMENT side of the marker audit. check_markers asks whether a
         # marker reached the model; this asks whether a marker was ever a fair
         # thing to scan for. Both are needed: a marker that matches the
         # questionnaire makes the section above fire on the study's own work.
         "markers are not instrument content":
-            check_markers_are_not_instrument_content(),
+            lambda: check_markers_are_not_instrument_content(),
         "published prevalence figures in surface":
-            check_no_prevalence_figure_in_surface(surface),
+            lambda: check_no_prevalence_figure_in_surface(surface),
         # The INPUT side, added 2026-08-28 (C2). Every section above scans what
         # the environment says to the model; this one asks whether the question
         # already contains its own answer. A benchmark can be broken before the
@@ -1116,12 +1151,12 @@ def main() -> int:
         # authority gate, the refusal gate and the marker scan all pass a model
         # that read the answer out of its own prompt.
         "input does not contain the answer":
-            check_input_does_not_contain_the_answer(),
+            lambda: check_input_does_not_contain_the_answer(),
         "survey platform named in surface":
-            check_no_platform_name_in_surface(surface),
-        "convention provenance": check_provenance(),
-        "seal configuration": check_seal_config(),
-        "held-out registry unreachable": check_holdout_not_reachable(),
+            lambda: check_no_platform_name_in_surface(surface),
+        "convention provenance": lambda: check_provenance(),
+        "seal configuration": lambda: check_seal_config(),
+        "held-out registry unreachable": lambda: check_holdout_not_reachable(),
     }
 
     print("=" * 74)
@@ -1132,17 +1167,52 @@ def main() -> int:
           f"({sum(1 for k in surface if k.startswith('tool:'))} are tool return values)")
     print()
     failed = 0
-    for name, problems in sections.items():
+    skipped: list[str] = []
+    for name, run_section in sections.items():
+        try:
+            problems = run_section()
+        except ModuleNotFoundError as exc:
+            # ONLY the withheld answer key, and ONLY as a loud skip. Every other
+            # import error is a real failure and must still take the run down.
+            # A skipped section is NOT a clean one (`AGENTS.md` §Verification
+            # Discipline: "could not detect X" is never "X is absent"), so this
+            # prints SKIP, is listed again at the end, and makes the exit status
+            # non-zero so no gate can read a partial run as a pass.
+            if exc.name not in WITHHELD_MODULES:
+                raise
+            skipped.append(name)
+            print(f"  SKIP  {name}")
+            print(f"          {exc.name} is withheld from this clone, so this "
+                  f"section did not run. NOT a pass.")
+            continue
         print(f"  {'FAIL' if problems else 'ok  '}  {name}")
         for p in problems:
             print(f"          {p}")
         failed += len(problems)
 
     if live:
-        from agent.sealed import CLEAN, SealedWorktree
+        from agent.sealed import CLEAN, PROBES, SealedWorktree
         print("\n  live seal probes (Haiku 4.5):")
         with SealedWorktree() as w:
-            r = w.verify(model="claude-haiku-4-5")
+            try:
+                r = w.verify(model="claude-haiku-4-5")
+            except ModuleNotFoundError as exc:
+                # The probes can run here; only their scorer is withheld. Until
+                # 2026-09-11 this crashed, which hid the answers as well, and
+                # the answers are the part a person can still read. Same rule as
+                # the sections above: a loud skip and a non-zero exit, never a pass.
+                if exc.name not in WITHHELD_MODULES:
+                    raise
+                skipped.append("live seal probes")
+                print("  SKIP  live seal probes")
+                print(f"          {exc.name} is withheld from this clone, so no "
+                      f"answer was scored. NOT a pass. Unscored, for a person:")
+                for n, q in PROBES:
+                    out = w.run([*w.base_argv("claude-haiku-4-5"), q], timeout=240)
+                    print(f"    ????  {n}")
+                    print(f"          {str(out.get('result', '')).strip()[:400]}"
+                          .replace("\n", " "))
+                r = {"probes": {}}
             for n, p in r["probes"].items():
                 tag = {"clean": "ok  ", "leaked": "LEAK",
                        "inconclusive": "????"}[p["verdict"]]
@@ -1168,8 +1238,20 @@ def main() -> int:
         print("\n  live seal probes SKIPPED — pass --live before a benchmark run.")
 
     print()
+    if skipped:
+        print(f"  {len(skipped)} section(s) DID NOT RUN, because a withheld "
+              f"module is absent from this clone:")
+        for name in skipped:
+            print(f"      {name}")
+        print("  A skipped section is not a clean one. This exit status is "
+              "non-zero on")
+        print("  purpose: run the check where the key lives before a benchmark "
+              "run, and")
+        print("  never read this as a pass.")
     if failed:
         print(f"  {failed} problem(s). Do not run a benchmark until these are clear.")
+    elif skipped:
+        print("  Every section that RAN was clean.")
     else:
         print("  clean. Record surface_hash with the run.")
         print("\n  NOT CHECKED, and not checkable here: a curated sentence a")
@@ -1180,7 +1262,7 @@ def main() -> int:
         print("  it reached a saved record. The control is a human re-reading")
         print("  every curated sentence against the paper record. Nothing above")
         print("  substitutes for that, and no check added here would.")
-    return 1 if failed else 0
+    return 1 if (failed or skipped) else 0
 
 
 if __name__ == "__main__":

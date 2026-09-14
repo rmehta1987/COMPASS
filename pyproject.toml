@@ -93,3 +93,16 @@ ignore_errors = true
 # import site, which is a new error rather than a suppressed one.
 ignore_missing_imports = true
 follow_imports = "skip"
+
+# The two held-out answer keys. Both live on the orphan branch `scoring-key` and
+# are ABSENT here by design: prevalence_key.py was never on main, leak_facts.py
+# was withheld in 37a37dd. mypy reports `import-not-found` at the five sites that
+# import them — 5 errors against a ceiling of 59 that measures code, not the
+# holdout. Suppressing the missing import is the whole entry: `ignore_errors` is
+# deliberately NOT set, so either key is type-checked normally if restored for
+# scoring and this override goes quiet on its own. Delete it only if the keys
+# move back onto this branch permanently, which would mean the split is over.
+[[tool.mypy.overrides]]
+module = ["benchmark.prevalence_key", "benchmark.leak_facts"]
+ignore_missing_imports = true
+follow_imports = "skip"

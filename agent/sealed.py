@@ -67,6 +67,15 @@ SEALED_SETTINGS = {
 DENY_TOOLS = ["Bash", "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep",
               "WebSearch", "WebFetch", "Task", "TodoWrite", "SlashCommand"]
 
+#: Built-in tools a sealed run may use: none. Passed as `--tools`, which the CLI
+#: reads as the built-in tools to make available, "" meaning none. DENY_TOOLS
+#: alone stopped being enough: CLI 2.1.268 ships built-ins it never named
+#: (Agent, Skill, Workflow, ToolSearch, ListAgents), and a sealed probe on
+#: 2026-09-11 called ListAgents straight through the deny list. An allowlist of
+#: nothing cannot go stale when the CLI adds a tool. MCP tools are not built-ins:
+#: a probe the same day called registry_coverage with this set.
+BUILTIN_TOOLS = ""
+
 # Which Claude Code config directory a sealed run reads. Unset means the user's
 # default, which is what every run before 2026-09-08 used.
 #
@@ -271,6 +280,25 @@ def score(text: str, question: str = "") -> tuple[str, list[str]]:
     return (CLEAN, []) if _answered_no(text) else (INCONCLUSIVE, [])
 
 
+class SealedRunError(RuntimeError):
+    """`claude -p` exited 0 but set `is_error`, so its `result` is not an answer.
+
+    The CLI reports its own failures (login, quota, an API error) as a `result`
+    string on a zero exit status. The payload travels with the exception so a
+    caller that persists a failed call's cost and turns keeps them.
+    """
+
+    def __init__(self, payload: dict) -> None:
+        """Keep the CLI's whole reply beside the message.
+
+        Args:
+            payload: The parsed JSON the CLI wrote.
+        """
+        super().__init__(f"claude -p reported an error: "
+                         f"{str(payload.get('result'))[:800]}")
+        self.payload = payload
+
+
 class SealedWorktree:
     """Disposable cwd for one headless run. Use as a context manager."""
 
@@ -304,16 +332,32 @@ class SealedWorktree:
 
     def base_argv(self, model: str) -> list[str]:
         """Flags every sealed invocation shares. `--strict-mcp-config` keeps any
-        globally configured MCP server out; the deny list keeps the model from
-        reaching the filesystem or the web instead of the environment.
+        globally configured MCP server out; `--tools ""` switches every built-in
+        off, so the model reaches the environment over MCP and nothing else. The
+        deny list stays as a second layer, not the seal: it names only the
+        built-ins that existed when it was written.
         """
         return ["claude", "-p", "--model", model,
                 "--settings", str(self.settings_path),
                 "--strict-mcp-config",
                 "--disallowed-tools", ",".join(DENY_TOOLS),
+                "--tools", BUILTIN_TOOLS,
                 "--output-format", "json"]
 
     def run(self, argv: list[str], timeout: float = 900.0) -> dict:
+        """Run one `claude -p` invocation inside the seal.
+
+        Args:
+            argv: The full command line, usually `base_argv(model) + [prompt]`.
+            timeout: Seconds to allow.
+
+        Returns:
+            The parsed JSON the CLI wrote, or `{"result": text}` for text output.
+
+        Raises:
+            RuntimeError: If the CLI exited non-zero.
+            SealedRunError: If the CLI exited 0 but reported `is_error`.
+        """
         env = {**os.environ, "COMPASS_MODE": self.mode}
         env.pop("CLAUDE_PROJECT_DIR", None)
         if os.environ.get(CONFIG_DIR_ENV):
@@ -323,9 +367,16 @@ class SealedWorktree:
         if p.returncode != 0:
             raise RuntimeError(f"claude -p exited {p.returncode}: {p.stderr[:1200]}")
         try:
-            return json.loads(p.stdout)
+            out: dict = json.loads(p.stdout)
         except json.JSONDecodeError:
             return {"result": p.stdout.strip()}
+        # An error string is not an answer, and several open with a denial --
+        # "Not logged in" -- which `score` reads as a clean NO. A probe that
+        # never ran would then vouch for the seal. `agent/cli_backend.py::_run`
+        # has always checked this; the seal did not.
+        if out.get("is_error"):
+            raise SealedRunError(out)
+        return out
 
     # ----------------------------------------------------------------- #
 
@@ -339,6 +390,7 @@ class SealedWorktree:
             "cwd_contains_project_code": False,
             "settings": SEALED_SETTINGS,
             "denied_tools": DENY_TOOLS,
+            "builtin_tools": BUILTIN_TOOLS,
             "strict_mcp_config": True,
             "mcp_servers": ["compass"],
             "mode": self.mode,

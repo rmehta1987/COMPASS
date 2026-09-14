@@ -30,7 +30,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -508,6 +508,23 @@ class FalsifierThreshold(BaseModel):
 
 
 class NSource(str, Enum):
+    """Where an analytic n came from, or why there is none.
+
+    These four were bare values with nothing saying what they mean, and the
+    word "estimability" is used for two different things in this project: the
+    funnel tags a PAIR `estimable` or `unknown` -- asking whether a count could
+    ever be worked out -- while this says where a count that exists came FROM.
+    A reader who met both met one word and two vocabularies.
+
+    computed_from_counts -- derived from the study's own exported counts.
+    synthetic_cohort     -- from a simulated cohort, never from participants.
+    published_paper      -- carried over from a published figure, which is a
+                            claim about that paper and not about this study.
+    unknown              -- no count is available and none is invented. Paired
+                            with a null `analytic_n`, which the validator on
+                            `Estimability` enforces in both directions.
+    """
+
     computed_from_counts = "computed_from_counts"
     synthetic_cohort = "synthetic_cohort"
     published_paper = "published_paper"
@@ -695,6 +712,21 @@ class SelectionRationale(BaseModel):
         return self
 
 
+class AnchorSource(StrEnum):
+    """Who put the pair's two anchors in front of the Specifier."""
+
+    enumeration = "enumeration"
+    person = "person"
+    model = "model"
+
+
+class ModelStage(StrEnum):
+    """A stage that runs a model of its own, besides the Specifier."""
+
+    resolver = "resolver"
+    splitter = "splitter"
+
+
 class Provenance(BaseModel):
     """Without these an ablation cannot distinguish a component's effect from a
     prompt edit someone forgot about.
@@ -721,6 +753,41 @@ class Provenance(BaseModel):
                     "detected 55% of agent failures from the final artifact "
                     "alone and 82% with the trace, so the trace is published "
                     "beside the record — but it never enters the verdict path.")
+    anchors_proposed_by: AnchorSource | None = Field(
+        default=None,
+        description="Where the exposure and outcome came from: enumeration, a "
+                    "person, or a model. Filled in by the pipeline, not by you.")
+    models: dict[ModelStage, str] = Field(
+        default_factory=dict,
+        description="Other models used to build this record, by step. A "
+                    "resolver is a model that picked the exposure and outcome "
+                    "from a researcher's own words. A splitter is a model that "
+                    "broke one request into separate questions. Filled in by "
+                    "the pipeline, not by you.")
+
+    @model_validator(mode="after")
+    def _a_model_proposed_pair_names_its_resolver(self) -> Provenance:
+        """A record may not hide a second model behind `model_id` (C17).
+
+        The Haiku pin covers the Specifier, not a resolver, so a larger resolver
+        is legitimate and a record that hides it is not.
+
+        Returns:
+            The validated block.
+
+        Raises:
+            ValueError: If a model proposed the anchors and no resolver is
+                named, or a named stage carries no model id.
+        """
+        if (self.anchors_proposed_by is AnchorSource.model
+                and ModelStage.resolver not in self.models):
+            raise ValueError(
+                "anchors_proposed_by is model, so provenance.models must name "
+                "the resolver; model_id names only the Specifier")
+        empty = sorted(s.value for s, m in self.models.items() if not m.strip())
+        if empty:
+            raise ValueError(f"provenance.models names no model for {empty}")
+        return self
 
 
 class Status(str, Enum):
@@ -1465,8 +1532,8 @@ class ProtocolSpecification(BaseModel):
         # `setdefault`: whichever sample arrived first won, and because `parked`
         # iterates DISTINCT hashes the loser was not parked either, so a
         # disclosing sample behind a silent one left the run entirely. That is
-        # settled in `specifier::specify` by a tie-break on
-        # `specifier::_disclosure`, not here — folding the field into this dict
+        # settled in `specifier::specify` by `specifier::_twin_order`, not
+        # here — folding the field into this dict
         # would cost the three properties above.
         def cov(lst):
             return sorted((_ref_key(e.variable), e.role.value) for e in lst)

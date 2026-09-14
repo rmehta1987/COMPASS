@@ -42,7 +42,7 @@ from agent.schema import (  # noqa: E402
     VariableRef,
 )
 from env.tools import estimate_detectability  # noqa: E402
-from generate.funnel import load_constructs, run  # noqa: E402
+from generate.funnel import DEFAULT_FRAME, FRAMES, load_constructs, run  # noqa: E402
 
 DICT = json.loads((ROOT / "build" / "dictionary.json").read_text())
 WORDING = {e["key"]: e["question_text"] for e in DICT["entries"]}
@@ -66,13 +66,8 @@ def main() -> ProtocolSpecification:
     """
     C, version = load_constructs()
 
-    # ----- the frame: one curated slice, not the whole instrument ------------ #
-    exposures = sorted([c for c in C.values()
-                        if c.module == "3" and c.base_id.startswith("Q16.")],
-                       key=lambda c: c.base_id)
-    outcomes = sorted([c for c in C.values()
-                       if c.module == "2" and c.base_id.startswith("Q5.")],
-                      key=lambda c: c.base_id)
+    # ----- the frame: one curated slice, named in generate/funnel.py -------- #
+    exposures, outcomes = FRAMES[DEFAULT_FRAME].sides(C)
 
     cands, counts = run(exposures, outcomes)
 

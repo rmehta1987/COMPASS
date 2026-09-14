@@ -24,6 +24,27 @@ answer key, and you author prompts and docstrings — reading it is the channel,
 session does not close it. If `benchmark.contamination_check` will not run, that is
 **task 0d below**, not a reason to go and get the key.
 
+## Clone setup: which artifacts may be symlinked, and which may NOT
+
+🛑 **`build/` and `run/` must be REAL COPIES in the loop clone, never symlinks.**
+`tests/test_dictionary.py::test_build_is_deterministic` runs `build.py` as a subprocess
+with `cwd=ROOT`, and `build.py` writes `dictionary.json`, `version.json` and four CSVs
+into `ROOT/"build"`. Through a symlink that write lands in the clone the link points at.
+Observed 2026-09-10: two suite runs in the loop clone rewrote
+`/home/mehta5/compass-gen/build/` — harmless that time because the rules were unmutated
+and the hash stayed `3dc8415eccfe`, but `CLAUDE.md` requires re-running the build between
+seeding a `build.py` mutation and testing it, and that sequence would have written a
+MUTATED dictionary into the generation clone. Git cannot see it: the artifact is
+untracked and outside the tree. `build.py::_version_hash`'s own docstring says it was
+extracted so a test could ask what a rule edit does to the hash *without* running a build
+"which would write `build/`" — and this test does exactly that.
+
+Read-only paths may stay symlinks: `raw/`, `benchmark/fixtures/`, `deploy/targets.json`,
+and the root `targets.json` / `dictionary.json` / `retrieval_queries.json`.
+
+Also set `user.name` and `user.email` **in the clone** — COMPASS sets them locally, not
+globally, so a fresh clone cannot commit at all until you do.
+
 ## Baseline, measured in the loop clone 2026-09-10
 
 Read your own floor on iteration 1 and compare to these; do not inherit a number from
@@ -47,22 +68,33 @@ makes the primary gate runnable at all.**
 Do exactly one item per iteration, in this order. Skip nothing silently: if an item is
 blocked, say so, record why, and move to the next.
 
-**Tier 0 — preconditions. No code, no measurement. Stop and ask the operator for each.**
-- 0a  Assign `serve/` to a lane in `AGENTS.md` §Parallel Lanes; record the branch in
-      `TASKS.md` and `CHANGELOG.md`. It is in no lane today, so C29/C29a/C31 cannot be
-      dispatched under the rules and would collide on `prompt_contract.py` and `_pair`.
-- 0b  Get the user amendment for the build-hash move R3 and C26 both require.
-- 0c  Decide C31(c) as a **docstring correction**, not by rendering `role`. Rendering it
-      changes every query, fails `deploy/smoke_test.py`, and voids the 0.942 parity gate
-      that both `out/*.json` rest on.
-- 0d  Defer the two module-level key imports —
-      `benchmark/input_leakage.py`'s `from benchmark.prevalence_key import PREVALENCE_KEY`
-      and the same line in `benchmark/scorability.py` — into the functions that use them,
-      and make `contamination_check`'s sections build lazily so a missing key **skips one
-      section and reports it skipped** instead of taking the command down.
-      (`contamination_check.py::check_no_prevalence_figure_in_surface` already defers its
-      own.) With a seeded failure in the same commit. This is what makes every later
-      contamination gate runnable without the key.
+**Tier 0 — preconditions. Status as of 2026-09-10; do not re-do the DONE ones.**
+- 0a  **NOT BLOCKING — note only.** `serve/` is in no lane (`AGENTS.md` §Parallel Lanes),
+      so it may not be dispatched to parallel lanes. This loop is SERIAL — one item per
+      iteration — so nothing can collide and the rule's purpose is not engaged. Do not
+      stop for it. It must be settled before anyone dispatches lanes again; the collision
+      it guards is C29a (`agent/prompt_contract.py`, Lane A) against C29/C31
+      (`serve/api.py`, unassigned).
+- 0b  **GRANTED by the operator 2026-09-10: the build hash may move to whatever value is
+      necessary.** Not needed yet, and the premise was inverted — MEASURED the same day
+      with `build.py::_version_hash`, baseline reproducing `3dc8415eccfe` exactly: adding
+      a column INSIDE `build()` does **not** move the hash, because `build` is in
+      `_NOT_HASHED` as a DECLARED GAP and its source never enters the payload. What does
+      move it: adding a name to `_HASHED_SOURCES` (→ `622d09c5da95`), bumping
+      `BUILD_RULES_VERSION` (→ `340acb97f4bd`), editing a hashed regex (→ `4e1dd2ac4310`).
+      `AGENTS.md`'s "any column … moves `version_hash` on its own" is false as written.
+      When you reach R3 or C26, state which of those you are doing and update ALL NINE
+      live pins (six `EXPECTED_HASH` guards in `src/`, three test constants), leaving the
+      two historical mentions in `agent/query_rewrite.py` alone. Stop and confirm the
+      blast radius on `deploy/` first — `deploy/manifest.json::dictionary_version_hash`
+      and the 0.942 parity gate both artifacts rest on.
+- 0c  **DONE** — `5cb989e`. `_role_candidates`'s docstring corrected to what the code
+      does, with `test_the_role_never_reaches_the_encoder` pinning it. `role` is NOT
+      rendered; do not make it render.
+- 0d  **DONE** — `27b6949`. The two withheld imports are deferred, `main`'s sections are
+      lazy, and a section whose module is missing SKIPs loudly with a non-zero exit.
+      `benchmark.contamination_check` now runs everywhere; `pytest tests/` collects 917
+      where it could not collect at all before.
 
 **Tier 1 — cheap, unblocked, each gates something unrepeatable**
 - 1  C27 — must precede C6. C6 is one-shot and C27 is a defect in its scorer.

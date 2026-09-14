@@ -10,6 +10,7 @@ Rationale, measurements and prior-art comparison: docs/adr/003-index-selection.m
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal, get_args
@@ -240,8 +241,10 @@ class VariableSelection(BaseModel):
             request spans a whole repeated family and one member would be wrong;
             `derive` when no item measures this and it must be computed;
             `ambiguous` when candidates are genuinely different variables and
-            the wording cannot say which is meant; `absent` when the codebook
-            does not measure this.
+            the wording cannot say which is meant; `absent` when none of the
+            items listed measures this. That is a claim about the list, not
+            the codebook: a list drawn from a larger codebook can miss an item
+            the codebook has.
         indices: The selected `index` values — one for `resolved`, one member
             for `family`, the inputs for `derive`, empty otherwise.
         recipe: How to compute the value, when the verdict is `derive`.
@@ -264,8 +267,9 @@ class VariableSelection(BaseModel):
 #: positives in 21 rows, every unpinnable request answered with one confident
 #: item.
 RETRIEVAL_GUIDANCE = (
-    "Decide what kind of answer this request has in the survey codebook "
-    "below. You have each item's wording and named facts about it; you do not "
+    "Decide what kind of answer this request has among the survey codebook "
+    "items listed below. You have each item's wording and named facts about "
+    "it; you do not "
     "have response options, value labels, skip logic or any data. If "
     "separating two candidates would need a fact you were not given, that is "
     "`ambiguous`, not a close call. Do not pick one to be helpful.\n\n"
@@ -317,3 +321,146 @@ def catalogue_contract(candidates: Sequence[Candidate]) -> SelectionContract:
         refusal="absent",
         candidates=tuple(candidates),
     )
+
+
+# --------------------------------------------------------------------------- #
+# C29-C: split a request into its constructs before anything is retrieved
+# --------------------------------------------------------------------------- #
+
+# `RequestSplit`'s docstring is prompt text: `split_prompt` puts
+# `model_json_schema()` into the prompt, so no study design, exposure, outcome,
+# paper count, cohort figure or prevalence may appear in it. This note sits out
+# here rather than in the docstring so the model does not read it.
+
+
+class RequestSplit(BaseModel):
+    """The separate things a question is about, in the question's own words.
+
+    Attributes:
+        exposures: Each exposure the question names, in its own words.
+        outcomes: Each outcome the question names, in its own words.
+        unsplittable: True when the question does not name both an exposure
+            and an outcome.
+    """
+
+    exposures: tuple[str, ...] = ()
+    outcomes: tuple[str, ...] = ()
+    unsplittable: bool = False
+
+
+#: The splitter's standing instructions, in the wording the operator chose on
+#: 2026-09-11. It reads the researcher's sentence and nothing else: no
+#: candidate list and no instrument wording reach this call.
+SPLIT_GUIDANCE = (
+    "Before anything is looked up, list the separate things this question is "
+    "about.\n\n"
+    "An exposure is something whose effect the researcher wants to know about, "
+    "such as a habit or a condition. An outcome is something that might be "
+    "affected by it.\n\n"
+    "Write one entry for each separate thing. Two things joined by \"and\" are "
+    "two entries.\n\n"
+    "Use only the question's own words, in the order it uses them. You may "
+    "leave words out, but never add a word or change one.\n\n"
+    "If the question does not name both an exposure and an outcome, set "
+    "`unsplittable` to true and leave both lists empty.")
+
+
+class SplitRejected(ValueError):
+    """A split the harness will not use, and why."""
+
+
+def split_prompt(request: str) -> str:
+    """The splitter's prompt for one request.
+
+    Args:
+        request: What the researcher asked for, in their words.
+
+    Returns:
+        The prompt: the request, the guidance, and the answer schema.
+    """
+    return "\n".join([
+        f'A researcher asked: "{request}"',
+        "",
+        SPLIT_GUIDANCE,
+        "",
+        "Return one JSON object matching this schema and nothing else:",
+        json.dumps(RequestSplit.model_json_schema()),
+    ])
+
+
+def _words(text: str) -> list[str]:
+    """The words of a text, case-folded, with punctuation dropped.
+
+    Args:
+        text: Any text.
+
+    Returns:
+        Its words in order.
+    """
+    return re.findall(r"[\w'-]+", text.casefold())
+
+
+def _in_order(entry: str, request: str) -> bool:
+    """Whether every word of `entry` appears in `request`, in the same order.
+
+    The guidance lets the splitter leave words out but never add or change one,
+    so an entry is a subsequence of the request's words, not merely a run of
+    them.
+
+    Args:
+        entry: One entry the splitter returned.
+        request: The request it was made from.
+
+    Returns:
+        True when the entry has at least one word and all of them occur in the
+        request in order.
+    """
+    want = _words(entry)
+    words = iter(_words(request))
+    return bool(want) and all(w in words for w in want)
+
+
+def parse_split(request: str, raw: str) -> RequestSplit:
+    """Read a splitter reply and refuse any split the request does not support.
+
+    THE WORD RULE IS WHAT MAKES THIS SAFE TO RETRIEVE ON. Every entry must be
+    made of the request's own words in the request's order, so the splitter can
+    drop words and cut the sentence up but cannot introduce one: no paraphrase,
+    no synonym, and no instrument wording it happens to remember. That is
+    checked here, in Python, rather than asked for in the prompt and trusted.
+
+    Args:
+        request: The request the split was made from.
+        raw: The model's reply, which may carry a fence or prose around the
+            object.
+
+    Returns:
+        The split.
+
+    Raises:
+        SplitRejected: When the reply holds no object, an entry adds, changes
+            or reorders a word, one entry is named as both kinds, or the lists
+            and `unsplittable` disagree. pydantic's `ValidationError` is also a
+            `ValueError`, so a caller catching that catches every refusal.
+    """
+    text = raw.replace("```json", "").replace("```", "").strip()
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        raise SplitRejected(f"no JSON object in the reply: {text[:120]!r}")
+    split = RequestSplit.model_validate(json.loads(text[start:end + 1]))
+    invented = [p for p in (*split.exposures, *split.outcomes)
+                if not _in_order(p, request)]
+    if invented:
+        raise SplitRejected(
+            f"not in the question's own words, in order: {invented}")
+    both = ({tuple(_words(p)) for p in split.exposures}
+            & {tuple(_words(p)) for p in split.outcomes})
+    if both:
+        raise SplitRejected("named as both exposure and outcome: "
+                            f"{sorted(' '.join(b) for b in both)}")
+    if split.unsplittable and (split.exposures or split.outcomes):
+        raise SplitRejected("unsplittable, yet entries were listed")
+    if not split.unsplittable and not (split.exposures and split.outcomes):
+        raise SplitRejected("an exposure and an outcome are both needed "
+                            "unless the request is unsplittable")
+    return split

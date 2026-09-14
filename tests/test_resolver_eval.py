@@ -337,6 +337,56 @@ def test_a_row_with_no_narrowing_arm_scores_none():
 SEARCHED_REACHABLE_FLOOR = 13
 
 
+#: Rows whose answer the deployed retriever's pool reaches at `_pair`'s k=20. A
+#: FLOOR: it may only rise. Measured 2026-09-10 on the build pinned in
+#: `tests/test_dictionary.py::BUILD_HASH`: 13 of 13, the answer at rank 1 on all
+#: 13 (the lexical arm: 7).
+DEPLOYED_REACHABLE_FLOOR = 13
+
+
+def test_the_deployed_arm_builds_its_pool_with_the_sites_own_function(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """One resolver: the arm CALLS `serve/api.py::_role_candidates`, not a copy.
+
+    It also takes its input from the request alone -- no oracle -- and records
+    a pool nothing can be cited from as empty rather than raising.
+    """
+    from agent import prompt_contract as PC
+    from serve import api
+
+    seen: list[tuple[str, int]] = []
+
+    def fake(_state: object, request: str, _role: str, k: int) -> dict:
+        seen.append((request, k))
+        return {"cands": PC.candidates_from_keys(["m3:Q4.2", "m2:Q5.8"])}
+
+    monkeypatch.setattr(api, "_role_candidates", fake)
+    monkeypatch.setattr(R, "_serve_state", lambda: None)
+    row = ROWS[0]
+    blinded = row.model_copy(update={"gold": (), "accept_keys": (),
+                                     "expected": "", "note": ""})
+    assert R.pool_deployed(row) == R.pool_deployed(blinded) == ("m3:Q4.2", "m2:Q5.8")
+    assert seen == [(row.request, R.DEPLOYED_K)] * 2
+    assert R.POOL_ARMS["deployed"] is R.pool_deployed
+
+    def uncitable(*_: object) -> dict:
+        raise ValueError("no candidate for the exposure could be bound to wording")
+
+    monkeypatch.setattr(api, "_role_candidates", uncitable)
+    assert R.pool_deployed(row) == ()
+
+
+def test_the_deployed_arm_reaches_the_answer_at_least_as_often_as_before() -> None:
+    """The shipped pool's reach, measured through the shipped bundle."""
+    if not (R.ROOT / "deploy" / "model" / "model.safetensors").exists():
+        pytest.skip("deploy/model/ is untracked; link it to measure the deployed arm")
+    report = R.evaluate_pools("deployed")
+    assert report.reachable >= DEPLOYED_REACHABLE_FLOOR, (
+        f"the deployed arm reaches {report.reachable} of {len(report.scored)} "
+        f"answers, below the floor of {DEPLOYED_REACHABLE_FLOOR}. Recall floors "
+        f"only rise.")
+
+
 def test_a_frozen_pool_always_contains_its_own_answer():
     report = R.evaluate_pools("frozen")
     assert report.reachable == len(report.scored)
@@ -1113,3 +1163,84 @@ def test_the_structured_arm_cannot_request_more_samples_and_says_so():
                         sampling_note="scripted", prompt_arm="structured")
     assert report.extra_requests == 0
     assert report.results[0].samples_drawn == 2
+
+
+def test_the_critics_absent_is_scoped_to_what_it_was_shown() -> None:
+    """C29a: the critic sees the union of the shortlists, not the codebook."""
+    doc = " ".join((R.CriticVerdict.__doc__ or "").split())
+    assert "none of the items shown measures this" in doc
+    assert "codebook does not measure" not in doc
+
+
+# --------------------------------------------------------------------------- #
+# the website's resolver: one call per row, scored by the shared rule
+# --------------------------------------------------------------------------- #
+
+_EXACT = next(r for r in ROWS if r.kind == "exact" and r.gold)
+
+
+def _one_row(row: R.ResolverQuery) -> R.ResolverFixture:
+    return FX.model_copy(update={"queries": (row,)})
+
+
+def test_the_single_call_mode_asks_exactly_what_the_site_asks() -> None:
+    """One call per row, rendering the site's retrieval contract; the scope says n=1."""
+    from agent import prompt_contract as PC
+
+    seen: list[str] = []
+
+    def model(prompt: str) -> str:
+        seen.append(prompt)
+        return '{"verdict": "absent"}'
+
+    rep = R.evaluate_single(model, arm="frozen", fixture=_one_row(_EXACT))
+    pool = _EXACT.pool
+    want = PC.retrieval_contract(_EXACT.request, PC.candidates_from_keys(
+        pool, {k: R.candidate_facts(k) for k in pool})).render()
+    assert seen == [want], "the resolver must see the site's contract, once"
+    assert rep.model_calls == 1
+    assert "one index-selection call per row" in rep.scope
+    assert "shortlists per row" not in rep.scope
+    assert "n=1" in R.format_report(rep)
+
+
+def test_the_single_call_mode_scores_by_the_shared_answer_rule() -> None:
+    """The index resolves against the pool offered, then `score_query` decides."""
+    at = _EXACT.pool.index(_EXACT.gold[0]) + 1
+    other = 2 if at == 1 else 1
+    right = R.evaluate_single(
+        lambda _p: f'{{"verdict": "resolved", "indices": [{at}]}}',
+        arm="frozen", fixture=_one_row(_EXACT))
+    wrong = R.evaluate_single(
+        lambda _p: f'{{"verdict": "resolved", "indices": [{other}]}}',
+        arm="frozen", fixture=_one_row(_EXACT))
+    assert right.results[0].outcome == "correct"
+    assert wrong.results[0].outcome == "confident_wrong"
+
+
+def test_a_malformed_reply_blocks_its_row_and_the_run_continues() -> None:
+    """One bad reply must not discard the other rows' paid calls."""
+    rows = tuple(r for r in ROWS if r.gold)[:2]
+    fx = FX.model_copy(update={"queries": rows})
+    rep = R.evaluate_single(lambda _p: "not json", arm="frozen", fixture=fx)
+    assert len(rep.results) == 2 and len(rep.blocked) == 2 and not rep.scored
+    assert rep.model_calls == 2
+    empty = R.evaluate_single(lambda _p: "{}", fixture=fx, pool=lambda _q: ())
+    assert all(r.blocked and r.model_calls == 0 for r in empty.results)
+
+
+def test_the_command_line_runs_after_every_definition() -> None:
+    """The `__main__` guard is the module's last statement.
+
+    `python -m benchmark.resolver_eval` runs the guard when the interpreter
+    reaches it, so anything defined below it does not exist yet. The
+    single-call mode's first live run died on exactly that -- `candidate_facts`
+    sits below where the guard was -- while every import-based test passed,
+    because importing defines the whole module first.
+    """
+    import ast
+
+    tree = ast.parse((R.ROOT / "benchmark" / "resolver_eval.py").read_text())
+    last = tree.body[-1]
+    assert isinstance(last, ast.If) and "__main__" in ast.unparse(last.test), (
+        "the __main__ guard is not the module's last statement")

@@ -39,7 +39,9 @@ from env import tools as T  # noqa: E402
 
 def run_identity(pair: object, version: str, screened_from: int,
                  model_id: str,
-                 selection_mode: str = "enumerated_screen") -> RunIdentity:
+                 selection_mode: str = "enumerated_screen",
+                 models: dict[str, str] | None = None,
+                 anchors_proposed_by: str | None = None) -> RunIdentity:
     """Assemble what the driver knows before the model is called.
 
     Every one of these was the empty string in the record of 2026-08-26, which
@@ -56,6 +58,11 @@ def run_identity(pair: object, version: str, screened_from: int,
             pair named on the command line, because a stated pair was screened
             from nothing and a denominator copied off an unrelated funnel run
             would be a fabricated one.
+        models: C17. Every model besides the Specifier that shaped the pair, by
+            stage -- `{"resolver": ...}` when a model proposed the anchors.
+        anchors_proposed_by: Who proposed the anchors. When omitted it follows
+            from `selection_mode`: the funnel enumerates, and any other mode is
+            a pair a person stated.
 
     Returns:
         The identity written over every sample of this run.
@@ -73,7 +80,10 @@ def run_identity(pair: object, version: str, screened_from: int,
         prompt_hash=prompt_hash(pair),
         model_id=model_id,
         screened_from=screened_from,
-        selection_mode=selection_mode)
+        selection_mode=selection_mode,
+        models=tuple(sorted((models or {}).items())),
+        anchors_proposed_by=anchors_proposed_by or (
+            "enumeration" if selection_mode == "enumerated_screen" else "person"))
 
 
 #: Anything shaped like a variable key, wherever it appears in a record. The
@@ -206,8 +216,66 @@ def ref(r: object) -> str:
     if isinstance(did, str):
         return f"derivation:{did}"
     return f"area:{getattr(r, 'measure_id', r)}"
-from agent.specifier import specify  # noqa: E402
-from generate.funnel import Candidate, Construct, load_constructs, run  # noqa: E402
+from agent.specifier import (  # noqa: E402
+    Attempt,
+    Result,
+    specify,
+    untraced_derivation_values,
+)
+from generate.funnel import (  # noqa: E402
+    DEFAULT_FRAME,
+    FRAMES,
+    Candidate,
+    Construct,
+    live_at,
+    load_constructs,
+    run,
+)
+
+
+def winning_attempt(res: Result) -> Attempt | None:
+    """The attempt that produced the selected record, found by identity.
+
+    Not by `record_hash`. `sought_covariates` sits outside `canonical_form`, so a
+    silent sample and its disclosing twin hash identically, and a hash match
+    returned whichever arrived first. When the disclosing twin won, the saved
+    record got the silent twin's tool log, audit and repairs. `specify` selects
+    an attempt's own protocol object, so identity names exactly one attempt.
+
+    Args:
+        res: What `specify` returned.
+
+    Returns:
+        The attempt whose protocol was selected, or None if none was.
+    """
+    if res.selected is None:
+        return None
+    return next((a for a in res.attempts if a.protocol is res.selected), None)
+
+
+def save_repairs(out: Path, attempt: Attempt, log_records: list[dict]) -> Path:
+    """Persist a record's repair history beside it, with what traces nowhere.
+
+    C19. A repair error can quote a signed file, so a record that passed on a
+    later attempt can carry a value no tool in its log returned. The record's
+    own tool log is already copied beside it; without the repairs next to it,
+    such a value has no visible source, and `Attempt` does not outlive the run.
+
+    Args:
+        out: The record's path; the history is written beside it.
+        attempt: The sample that produced the record.
+        log_records: The record's own tool log, parsed.
+
+    Returns:
+        The path written.
+    """
+    record = attempt.protocol if attempt.protocol is not None else attempt.refusal
+    untraced = (untraced_derivation_values(record, log_records, attempt.repairs)
+                if record is not None else [])
+    saved = out.with_suffix(".repairs.json")
+    saved.write_text(json.dumps({"repairs": attempt.repairs, "untraced": untraced},
+                                indent=2))
+    return saved
 
 
 def stand_in(key: str) -> Construct:
@@ -250,6 +318,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     ap.add_argument("model", nargs="?", default="claude-haiku-4-5")
     ap.add_argument("--exposure", help="run a STATED pair: exposure construct key")
     ap.add_argument("--outcome", help="run a STATED pair: outcome construct key")
+    ap.add_argument("--frame", default=DEFAULT_FRAME, choices=sorted(FRAMES),
+                    help="the named frame to walk (generate/funnel.py::FRAMES)")
+    ap.add_argument("--index", type=int, default=0,
+                    help="which live pair of the frame, in enumeration order")
     a = ap.parse_args(argv)
     if bool(a.exposure) != bool(a.outcome):
         ap.error("--exposure and --outcome are given together or not at all")
@@ -262,12 +334,8 @@ def main() -> None:
     k, model = args.k, args.model
 
     C, version = load_constructs()
-    exposures = sorted([c for c in C.values()
-                        if c.module == "3" and c.base_id.startswith("Q16.")],
-                       key=lambda c: c.base_id)
-    outcomes = sorted([c for c in C.values()
-                       if c.module == "2" and c.base_id.startswith("Q5.")],
-                      key=lambda c: c.base_id)
+    frame = FRAMES[args.frame]
+    exposures, outcomes = frame.sides(C)
     cands, counts = run(exposures, outcomes)
     if args.exposure:
         # STATED, not enumerated, and the identity says so. A pair named on the
@@ -277,8 +345,11 @@ def main() -> None:
                          outcome=C.get(args.outcome) or stand_in(args.outcome))
         screened_from, mode = 0, "externally_posed"
     else:
-        pair = next(c for c in cands if c.exposure.construct_key == "m3:Q16.1"
-                    and c.outcome.construct_key == "m2:Q5.8")
+        # T7: the frame is walked in enumeration order and `--index` says
+        # where. The pair used to be named here by hand, which is a second,
+        # value-based selection on top of the funnel's that no denominator
+        # recorded.
+        pair = live_at(cands, args.index)
         screened_from, mode = counts["enumerated"], "enumerated_screen"
 
     backend = ClaudeCliBackend(model=model, mode="benchmark")
@@ -287,6 +358,8 @@ def main() -> None:
     print(f"LIVE SPECIFIER   {backend.name}   k={k}   mode=benchmark")
     print(bar)
     print(f"  pair        {pair.pair_id}")
+    print(f"  frame       {frame.name}  {frame.digest(C, version)}  "
+          f"live index {'-' if args.exposure else args.index}")
     print(f"  dictionary  {version}   screened_from {screened_from} ({mode})")
     print("  running (each sample = 1 reasoning call w/ MCP tools + 1 transduction)\n")
 
@@ -336,15 +409,20 @@ def main() -> None:
         # The refusing sample's OWN log, copied beside the record, for the same
         # reason the protocol path does it: a record auditable only against
         # whichever log was last written is not auditable.
-        src = next((a.tool_log_path for a in res.attempts
+        won = next((a for a in res.attempts
                     if a.refusal is not None and a.tool_log_path
                     and a.refusal.record_hash() == r.record_hash()), None)
+        src = won.tool_log_path if won else None
         recs: list[dict] = []
         if src and Path(src).exists():
             saved = out.with_suffix(".tool_log.jsonl")
             shutil.copyfile(src, saved)
             print(f"  tool log      {saved.relative_to(ROOT)}   (this record's own log)")
             recs = [json.loads(x) for x in saved.read_text().splitlines() if x.strip()]
+        if won is not None:
+            rp = save_repairs(out, won, recs)
+            print(f"  repairs       {rp.relative_to(ROOT)}   "
+                  f"({len(won.repairs)} rejected before this record)")
         stated = {pair.exposure.construct_key, pair.outcome.construct_key,
                   *pair.exposure.member_keys, *pair.outcome.member_keys}
         refusal_audit(r, stated, recs)
@@ -365,14 +443,19 @@ def main() -> None:
     # the two together. Without this the record is auditable only against
     # whatever happened to be in run/tool_log.jsonl last, which is how an earlier
     # session came to report 28 tool calls for a record that made none of them.
-    src = next((a.tool_log_path for a in res.attempts
-                if a.protocol is not None and a.tool_log_path
-                and a.protocol.record_hash() == p.record_hash()), None)
+    win = winning_attempt(res)
+    src = win.tool_log_path if win else None
+    log_recs: list[dict] = []
     if src and Path(src).exists():
         saved = out.with_suffix(".tool_log.jsonl")
         shutil.copyfile(src, saved)
         print(f"  tool log      {saved.relative_to(ROOT)}   (this record's own log)")
-        audit(p, [json.loads(x) for x in saved.read_text().splitlines() if x.strip()])
+        log_recs = [json.loads(x) for x in saved.read_text().splitlines() if x.strip()]
+        audit(p, log_recs)
+    if win is not None:
+        rp = save_repairs(out, win, log_recs)
+        print(f"  repairs       {rp.relative_to(ROOT)}   "
+              f"({len(win.repairs)} rejected before this record)")
     print(f"  {p.protocol_id}  {p.record_hash()}  status={p.status.value}")
     ex = ref(p.exposure)
     print(f"  question      {p.question[:70]}")

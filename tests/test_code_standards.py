@@ -60,8 +60,14 @@ def _tool(name: str) -> Path | None:
 # a.protocol to a local and cleared two pre-existing union-attr errors).
 # Three lanes moved these two numbers; none of their individual counts was
 # the right one, which is why this is re-measured at merge and not relayed.
+#
+# LOWERED 2026-09-11, mypy 59 -> 54, operator-approved: `specify()` was typed to
+# take a chat `Backend` that `ClaudeCliBackend` is not, which cost three
+# attr-defined errors in agent/specifier.py and one arg-type in each driver.
+# `agent/backends.py::CliBackend` and `specifier::_drives_own_loop` type the two
+# paths apart. (27b6949 had raised the count 59 -> 62; bee2890 restored it.)
 RUFF_CEILING: int = 232
-MYPY_CEILING: int = 59
+MYPY_CEILING: int = 54
 
 
 def _count(argv: list[str]) -> int:
@@ -105,6 +111,24 @@ def test_mypy_count_does_not_increase() -> None:
         f"return on code you add or materially edit.")
     if n < MYPY_CEILING:
         print(f"\nMYPY_CEILING can be lowered to {n}")
+
+
+def test_serve_type_checks_clean() -> None:
+    """`serve/` is outside mypy's `files`, so the ceiling above never sees it.
+
+    The first import of `serve.api` from inside `files` -- the resolver
+    benchmark's deployed pool arm -- would have pulled ten old errors into that
+    count. They were fixed first, and this keeps `serve/` clean whether or not
+    anything in `files` imports it.
+    """
+    mypy: Path | None = _tool("mypy")
+    if mypy is None:
+        pytest.skip("mypy not installed: pip install ruff mypy")
+    out: str = subprocess.run(
+        [str(mypy), "serve"], cwd=ROOT, capture_output=True, text=True).stdout
+    errors = [ln for ln in out.splitlines()
+              if ln.startswith("serve/") and ": error:" in ln]
+    assert not errors, "serve/ has type errors:\n" + "\n".join(errors)
 
 
 def test_google_docstring_convention_is_configured() -> None:

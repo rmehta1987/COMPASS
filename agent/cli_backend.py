@@ -36,7 +36,7 @@ import time
 from pathlib import Path
 
 from agent.backends import Reply
-from agent.sealed import CONFIG_DIR_ENV, DENY_TOOLS, SealedWorktree
+from agent.sealed import BUILTIN_TOOLS, CONFIG_DIR_ENV, DENY_TOOLS, SealedWorktree
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -152,7 +152,9 @@ class ClaudeCliBackend:
         """Call 1. Tools available via MCP; every built-in denied.
 
         Args:
-            system: The Specifier's system prompt, appended to the CLI's own.
+            system: The Specifier's system prompt. It REPLACES the CLI's own
+                (`--system-prompt`), so the Specifier does not reason inside
+                Claude Code's coding-assistant persona.
             prompt: The stated pair and what to establish about it.
             tool_names: The registry's tool names for this mode; anything not
                 listed cannot be reached at the process boundary.
@@ -169,12 +171,13 @@ class ClaudeCliBackend:
         return Reply(content=self._run([
             "claude", "-p", prompt,
             "--model", self.model,
-            "--append-system-prompt", system,
+            "--system-prompt", system,
             "--mcp-config", str(self.mcp_config),
             "--settings", str(self.settings),
             "--strict-mcp-config",
             "--allowed-tools", allowed,
             "--disallowed-tools", ",".join(DENY),
+            "--tools", BUILTIN_TOOLS,
             "--max-turns", str(self.max_turns),
             "--output-format", "json",
         ]))
@@ -184,12 +187,13 @@ class ClaudeCliBackend:
         return Reply(content=self._run([
             "claude", "-p", prompt,
             "--model", self.model,
-            "--append-system-prompt",
+            "--system-prompt",
             "You emit one JSON object matching the requested schema and nothing "
             "else. No prose, no markdown fence, no commentary.",
             "--settings", str(self.settings),
             "--strict-mcp-config",
             "--disallowed-tools", ",".join(DENY),
+            "--tools", BUILTIN_TOOLS,
             "--output-format", "json",
         ]))
 
