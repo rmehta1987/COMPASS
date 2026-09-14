@@ -157,8 +157,10 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 - Two lanes lowering one ratchet: neither value is right; re-derive on merge (`73e55b4`).
 - Before accepting a lane's report, run the suite, `ruff`, `mypy` and the contamination
   check in its worktree yourself, and re-derive its load-bearing claims.
-- Cold critic on a different model family from the builder; re-derive its claims too. A
-  critic's "does not reproduce" is a claim, not a result.
+- Run a cold critic; any model, the builder's own family included (operator amendment,
+  2026-09-14 — the different-family requirement is withdrawn). Re-derive its claims: on
+  2026-09-14 three of a 15-finding review's claims were wrong on checking, including two
+  measured counts. A critic's "does not reproduce" is a claim, not a result.
 - Build orchestration is not runtime orchestration — no model drives `agent/specifier.py`.
 - Cost is not a constraint: never skip a live run to save money, and do not ask to spend.
 ### Roles
@@ -166,7 +168,6 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 |---|---|
 | Orchestrator, Lane A (specifier core), Lane B (environment) | `claude-opus-5` |
 | Lane C (funnel, drivers) | `claude-sonnet-5` |
-| Cold critic after each merge | `claude-fable-5` |
 | In-pipeline Specifier and seal probes | `claude-haiku-4-5` |
 
 - Files: A = `agent/specifier.py schema.py tool_authority.py cli_backend.py backends.py
