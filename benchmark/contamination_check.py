@@ -1185,8 +1185,14 @@ def check_holdout_not_reachable() -> list[str]:
     # `scorability.py` joined on 2026-08-28: it derives exposure and outcome
     # terms from the bibliography's design lines, so a copy of it under curated/
     # would put a published pairing on a globbed tool path.
+    # `rediscovery.py` joined on 2026-09-14: it ASSEMBLES a paper's recorded
+    # design — the bibliography's line, its printed n, and both key columns —
+    # into one object and prints it. It stores none of that, which is why it is
+    # not a key; it is named here anyway, because what a copy of it under
+    # curated/ would put on a tool path is the same content either way.
     for key in ("leak_facts.py", "prevalence_key.py", "unearned_assertions.py",
-                "cohort_papers.py", "input_leakage.py", "scorability.py"):
+                "cohort_papers.py", "input_leakage.py", "scorability.py",
+                "rediscovery.py"):
         for d in ("curated", "env", "agent"):
             if (ROOT / d / key).exists():
                 bad.append(f"{d}/{key} exists — an answer key belongs under "
