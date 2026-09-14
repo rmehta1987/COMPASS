@@ -1120,13 +1120,29 @@ def check_no_prevalence_figure_in_surface(
             if re.search(rf"(?<![\d.Q]){re.escape(tok)}(?![\d])", text)]
 
 
+#: Exit status for a run where every section that RAN was clean but at least one
+#: SKIPPED because a withheld module is absent. Distinct from `1` so a clone
+#: without the answer key can tell "I broke something" from "the key isn't
+#: here"; both stay non-zero, so neither reads as a pass. `--require-complete`
+#: collapses it back to `1`, which is what a benchmark run passes.
+EXIT_INCOMPLETE = 2
+
+
 def main() -> int:
     """Assemble the model-visible surface, scan it, and report.
 
     Returns:
-        0 when every section is clean, 1 otherwise, for use as an exit status.
+        `0` when every section RAN and was clean, `1` when a section FAILED,
+        and `EXIT_INCOMPLETE` when none failed but one or more SKIPPED for a
+        withheld module. With `--require-complete`, a skip returns `1` too.
+        A skip is never `0`: see the banner this prints.
     """
     live = "--live" in sys.argv
+    # A benchmark run passes this and gets one bit back: clean, or not. The
+    # three-way status is for the clone where the code is WRITTEN, which never
+    # has the key and so could never reach 0 -- a permanently red signal says
+    # nothing about the edit that was just made.
+    require_complete = "--require-complete" in sys.argv
     surface = model_visible_surface()
     blob = "\n".join(f"{k}\n{v}" for k, v in sorted(surface.items()))
     surface_hash = hashlib.sha256(blob.encode()).hexdigest()[:16]
@@ -1262,7 +1278,11 @@ def main() -> int:
         print("  it reached a saved record. The control is a human re-reading")
         print("  every curated sentence against the paper record. Nothing above")
         print("  substitutes for that, and no check added here would.")
-    return 1 if (failed or skipped) else 0
+    if failed:
+        return 1
+    if skipped:
+        return 1 if require_complete else EXIT_INCOMPLETE
+    return 0
 
 
 if __name__ == "__main__":

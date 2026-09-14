@@ -161,3 +161,99 @@ def test_a_genuinely_missing_module_still_stops_the_live_probes(
     _live_run_without_the_scorer(monkeypatch, "numpy")
     with pytest.raises(ModuleNotFoundError, match="numpy"):
         cc.main()
+
+
+# --- The three-way exit status -------------------------------------------
+#
+# A skip and a failure were one exit status until 2026-09-14, and in the clone
+# where prompts and conventions are EDITED a skip is unavoidable: the withheld
+# modules are never there. So the gate was permanently red and the red carried
+# no information -- "I just broke something" was indistinguishable from "the
+# answer key does not live here". These pin the distinction, and pin that it
+# did not become a way to read an unrun section as a pass.
+
+
+def _all_sections_clean(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Force every section clean, so only the planted condition moves the status."""
+    for name in _SECTIONS:
+        monkeypatch.setattr(cc, name, lambda *a, **k: [])
+    monkeypatch.setattr(sys, "argv", ["contamination_check"])
+
+
+def _skip_one_section(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make `check_provenance` raise for a withheld module, as a real clone does."""
+    def explode() -> list[str]:
+        raise ModuleNotFoundError("No module named 'benchmark.prevalence_key'",
+                                  name="benchmark.prevalence_key")
+
+    monkeypatch.setattr(cc, "check_provenance", explode)
+
+
+def test_a_complete_clean_run_exits_zero(monkeypatch: pytest.MonkeyPatch,
+                                         capsys: pytest.CaptureFixture[str]) -> None:
+    """The only status that is a pass, and it requires every section to have run."""
+    _all_sections_clean(monkeypatch)
+    rc = cc.main()
+    capsys.readouterr()
+    assert rc == 0
+
+
+def test_a_skip_alone_exits_two_and_not_one(
+        monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """Incomplete has its own status, so a clone without the key can read it."""
+    _all_sections_clean(monkeypatch)
+    _skip_one_section(monkeypatch)
+    rc = cc.main()
+    out = capsys.readouterr().out
+    assert rc == cc.EXIT_INCOMPLETE, (
+        "every section that ran was clean and one SKIPPED. That is neither a "
+        "pass nor a failure, and collapsing it onto 1 is what made this gate "
+        "unreadable in the clone where the edits happen.")
+    assert rc != 0, "a skipped section is still not a clean one"
+    assert "A skipped section is not a clean one." in out, (
+        "the banner is the load-bearing part of the old conflation and stays "
+        "verbatim; the exit status is what changed.")
+
+
+def test_a_failure_outranks_a_skip(monkeypatch: pytest.MonkeyPatch,
+                                   capsys: pytest.CaptureFixture[str]) -> None:
+    """A planted marker reads as FAILED even in a clone that also skips.
+
+    This is the direction that matters. `2` means "nothing I can see is wrong,
+    and I could not see everything"; if a real problem could be laundered into
+    it by an unrelated withheld module, the new status would be worse than the
+    conflation it replaced.
+    """
+    _all_sections_clean(monkeypatch)
+    _skip_one_section(monkeypatch)
+    monkeypatch.setattr(cc, "check_markers",
+                        lambda *a, **k: ["planted: PM2.5 reached the model"])
+    rc = cc.main()
+    out = capsys.readouterr().out
+    assert "planted" in out
+    assert rc == 1, (
+        "a section FAILED and a section skipped, and the run reported "
+        "incomplete instead of broken.")
+
+
+def test_require_complete_collapses_a_skip_back_onto_one(
+        monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """What a benchmark run passes: only a complete clean run is acceptable."""
+    _all_sections_clean(monkeypatch)
+    _skip_one_section(monkeypatch)
+    monkeypatch.setattr(sys, "argv", ["contamination_check", "--require-complete"])
+    rc = cc.main()
+    capsys.readouterr()
+    assert rc == 1, (
+        "--require-complete exists so a benchmark gate can demand that every "
+        "section RAN. It must not distinguish incomplete from broken.")
+
+
+def test_require_complete_does_not_turn_a_clean_run_red(
+        monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """The flag tightens what counts as a pass; it does not invent a failure."""
+    _all_sections_clean(monkeypatch)
+    monkeypatch.setattr(sys, "argv", ["contamination_check", "--require-complete"])
+    rc = cc.main()
+    capsys.readouterr()
+    assert rc == 0

@@ -14,6 +14,17 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ---
 
+## 2026-09-14
+
+- **The contamination gate's exit status splits three ways** so it can be read in the clone
+  where prompts are edited: `0` complete and clean, `1` a section FAILED, `2` none failed
+  and one or more SKIPPED for a withheld module. A failure outranks a skip, so nothing is
+  laundered into `2`; `--require-complete` collapses a skip back onto `1` and is what a
+  benchmark run passes. The "a skipped section is not a clean one" banner is unchanged --
+  it was the only load-bearing part of the old conflation. Status constant, semantics and
+  the seeded direction: `benchmark/contamination_check.py::EXIT_INCOMPLETE` and
+  `tests/test_contamination_skip.py`.
+
 ## 2026-09-03
 
 - **Two trees merged into one public repository** (2ede8f7). The pipeline mirror was
