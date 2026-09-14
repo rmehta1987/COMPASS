@@ -31,16 +31,18 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
   It surfaced a real defect in the seal's MANIFEST, left open and unfixed as a user
   decision: see `TASKS.md` §Known-open defects.
 
-- **C32 closed — the marker scan tells a figure it CARRIES from a position it GENERATED.**
-  `MARKERS` holds 28 purely numeric tokens and exactly one falls inside the candidate-index
-  range, so the retrieval prompt's `"index": <n>` field made the scan report a marker in
-  the model-visible surface. `1092` was NOT pruned from `MARKERS`; the scan was partitioned
-  instead. The exemption is only the integer after a quoted `index` key, is sound because
-  `agent/prompt_contract.py::SelectionContract.__post_init__` raises unless the indices are
-  exactly 1..n in order, and takes its field name from the dataclass so a rename breaks it
-  loudly. `benchmark/contamination_check.py::_without_harness_indices`, pinned four ways in
-  `tests/test_contamination_surface.py` including `1092` planted in a wording. Seeded three
-  ways: no mask, any integer field, every digit run.
+- **C32 closed — the marker scan tells a figure the surface CARRIES from a position the
+  harness GENERATED** (`de559e9`, bounded in a follow-up). Numeric markers at or below the
+  offered-candidate count collide with a position, so the retrieval prompt's
+  `"index": <n>` field made the scan report a marker in the model-visible surface. No
+  marker was pruned; the scan was partitioned instead.
+  `benchmark/contamination_check.py::_without_harness_indices` reproduces in the scanner
+  the invariant `agent/prompt_contract.py::SelectionContract.__post_init__` already
+  enforces — a digit run is exempt only as part of an unbroken `1..n` run, line-anchored,
+  separator free of newlines, followed by the sibling field `Candidate.as_dict` renders
+  next — and fails CLOSED on anything else. The exempted character count is printed beside
+  `surface_hash`, which is computed before the mask. Counts and the colliding set are
+  derived in `tests/test_contamination_surface.py`, never pinned.
 
 - **The contamination gate's exit status splits three ways** so it can be read in the clone
   where prompts are edited: `0` complete and clean, `1` a section FAILED, `2` none failed

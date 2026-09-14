@@ -35,6 +35,7 @@ import agent.specifier as SP  # noqa: E402
 import benchmark.contamination_check as CC  # noqa: E402
 from agent.registry import build_registry  # noqa: E402
 from benchmark.contamination_check import MARKERS  # noqa: E402
+from env import labels as LB  # noqa: E402
 from env.tools import DETECTABILITY_N_GRID, estimate_detectability  # noqa: E402
 from tests.withheld import needs_leak_facts, needs_prevalence_key  # noqa: E402
 
@@ -1217,77 +1218,130 @@ def test_a_marker_planted_in_the_refusal_prompt_is_caught(monkeypatch):
 # C32 — a marker in CONTENT versus a position the harness numbered
 # --------------------------------------------------------------------------- #
 #
-# `MARKERS` holds 28 purely numeric tokens and exactly one, `1092`, falls inside
-# the candidate-index range, so the retrieval prompt carries the literal
-# `"index": 1092` and the scan reported a marker in the model-visible surface.
-# A false positive, and general: every numeric marker at or below the corpus
-# size collides with a position. Both sides are fixed — offering candidates by
-# index is a Hard Constraint, and `MARKERS` is re-derived rather than pruned, so
-# deleting `1092` to silence this is forbidden. These pin the partition instead:
-# the position is exempt, everything the surface CARRIES is not.
+# Numeric markers at or below the number of offered candidates collide with a
+# position, so the retrieval prompt's `"index": <n>` field made the scan report
+# a marker in the model-visible surface. A false positive. Both sides are fixed
+# — offering candidates by index is a Hard Constraint, and `MARKERS` is
+# re-derived rather than pruned, so deleting the colliding figure to silence
+# this is forbidden. These pin the partition instead.
+#
+# The exemption reproduces, in the scanner, the invariant the renderer already
+# enforces: `SelectionContract.__post_init__` raises unless the indices are
+# exactly 1..n in order. So the tests below are mostly about what is NOT
+# exempt. A first version of this masked any digits after a quoted `index` key
+# anywhere in any surface; `"index": <a PMID>` and `"index":\n<a published n>`
+# were both silently swallowed, in a contamination control, and nothing here
+# noticed. Measured and fixed 2026-09-14.
 
 
-def test_the_masked_field_is_the_one_the_harness_actually_emits():
-    """The exemption is derived from the dataclass, not typed beside it.
+def _collides_with_a_position() -> list[str]:
+    """Numeric markers that fall inside the offered-candidate range.
 
-    A rename in `agent/prompt_contract.py::Candidate` must break this, not
-    leave a mask pointing at a field name nothing renders any more — which
-    would restore the false positive silently.
+    Derived, not pinned. The exemption's justification is that exactly this set
+    is unscannable inside a rendered candidate block, so the set has to be
+    recomputed rather than asserted: a paper joining the bibliography with a
+    small analytic n widens it, and that must be visible here rather than
+    discovered by a false negative.
+
+    Returns:
+        The colliding markers, smallest first.
     """
+    n = len(LB.build_catalogue().options)
+    return sorted(
+        (m for m in MARKERS
+         if CC._NUMERIC_MARKER.match(m) and int(m.replace(",", "")) <= n),
+        key=lambda m: int(m.replace(",", "")))
+
+
+def _candidate_block(index: int, wording: str) -> str:
+    """One candidate as the contract renders it, for planting.
+
+    Args:
+        index: The value to put in the position field.
+        wording: The wording field's contents.
+
+    Returns:
+        The two rendered lines, indented as `json.dumps(..., indent=1)` emits.
+    """
+    idx, sib = CC._candidate_fields()
+    return f'  "{idx}": {index},\n  "{sib}": "{wording}"'
+
+
+def test_the_masked_fields_are_the_ones_the_harness_actually_emits():
+    """The exemption is derived from the contract, not typed beside it.
+
+    Both names matter: the position field, and the sibling the pattern anchors
+    on. A rename must follow rather than leave a mask keyed on a field nothing
+    renders — which would restore the false positive silently.
+    """
+    idx, sib = CC._candidate_fields()
     rendered = PC.Candidate(index=7, key="k", wording="w").as_dict()
-    assert CC._INDEX_FIELD in rendered
-    assert rendered[CC._INDEX_FIELD] == 7, (
-        "the masked field must be the integer POSITION. Masking a field that "
+    assert rendered[idx] == 7, (
+        "the masked field must be the integer POSITION; masking a field that "
         "carries anything else would blind the scan to content.")
+    assert list(rendered).index(sib) == list(rendered).index(idx) + 1, (
+        "the pattern anchors on the field rendered directly after the "
+        "position. If that is no longer the case the anchor matches nothing "
+        "and the C32 false positive is back.")
 
 
-def test_a_candidate_index_is_not_read_as_a_published_n():
-    """The C32 false positive itself, pinned rather than pruned from MARKERS."""
-    surface = CC.model_visible_surface()
-    prompt = surface["retrieval_prompt"]
-    # Anti-vacuity: this passes for the right reason only while the literal is
-    # really there. If the renderer stops numbering candidates this way the pin
-    # must fail loudly rather than quietly assert nothing.
-    assert '"index": 1092' in prompt, (
-        "the surface no longer carries the collision this test exists for; "
-        "re-derive the partition rather than keeping a pin that proves nothing.")
-    assert "1092" in MARKERS, (
-        "`1092` is a published analytic n and is re-derived, never pruned to "
-        "silence a scan (TASKS.md C32).")
+def test_a_candidate_position_is_not_read_as_a_published_figure():
+    """The C32 false positive itself, pinned rather than pruned from MARKERS.
+
+    The colliding marker is DERIVED, so this does not pin today's corpus
+    (`AGENTS.md` §Testing Patterns). If nothing collides any more the partition
+    is untested rather than passing, and says so.
+    """
+    colliding = _collides_with_a_position()
+    if not colliding:
+        pytest.skip("no numeric marker currently collides with a position; "
+                    "the exemption is untested, not vindicated")
+    prompt = CC.model_visible_surface()["retrieval_prompt"]
+    idx, _ = CC._candidate_fields()
+    planted = [m for m in colliding if f'"{idx}": {m}' in prompt]
+    assert planted, (
+        f"none of the colliding markers {colliding} appears as a position in "
+        f"the scanned prompt, so this proves nothing. Re-derive the partition.")
     assert not CC.check_markers({"retrieval_prompt": prompt}), (
         "the scan fired on a position the harness generated with "
         "`enumerate(keys, start=1)`, not on anything the surface carries.")
 
 
-def test_the_index_exemption_does_not_cover_a_wording():
-    """C32's ACCEPT criterion: it still fires when `1092` is CONTENT.
+def test_the_exemption_does_not_cover_a_wording():
+    """C32's ACCEPT criterion: it still fires when the figure is CONTENT.
 
     Rendered through the real contract, so the exemption is tested against the
     structure it actually exempts rather than a string this test invented.
     """
+    colliding = _collides_with_a_position()
+    if not colliding:
+        pytest.skip("no numeric marker currently collides with a position")
+    marker = colliding[0]
+    at = int(marker.replace(",", ""))
     # Indices must be 1..n in order (`SelectionContract.__post_init__`), so the
-    # planted wording sits at position 1092 and its own index is in the same
-    # prompt. The scan must fire on one and not the other.
+    # planted wording sits at the colliding position and its own index is in
+    # the same prompt. The scan must fire on one and not the other.
     filler = tuple(PC.Candidate(index=i, key=f"k{i}", wording=f"item {i}")
-                   for i in range(1, 1092))
+                   for i in range(1, at))
     planted = PC.Candidate(
-        index=1092, key="k1092",
-        wording="the comparable published analysis reported 1092 participants")
+        index=at, key=f"k{at}",
+        wording=f"the comparable published analysis reported {marker} people")
     text = PC.retrieval_contract("a request", (*filler, planted)).render()
-    assert '"index": 1092' in text, "the collision must be present to be tested"
+    idx, _ = CC._candidate_fields()
+    assert f'"{idx}": {at}' in text, "the collision must be present to be tested"
     hits = CC.check_markers({"planted_wording": text})
-    assert any("1092" in h for h in hits), (
-        "`1092` appeared in a wording, in the same prompt as its own index, "
-        "and the scan stayed silent. The exemption is supposed to be the "
-        "position and nothing else.")
+    assert any(marker in h for h in hits), (
+        f"{marker!r} appeared in a wording, in the same prompt as its own "
+        f"index, and the scan stayed silent. The exemption is supposed to be "
+        f"the position and nothing else.")
 
 
 def test_the_exemption_is_the_position_and_not_every_integer_field():
     """A numeric fact under its own typed name is content and stays scanned.
 
-    `Candidate.facts` render as sibling JSON fields beside `index`. A mask that
-    blanked any integer value, or keyed on shape rather than on the field name,
-    would swallow them too.
+    `Candidate.facts` render as sibling JSON fields beside the position. A mask
+    that blanked any integer value, or keyed on shape rather than on the field
+    name, would swallow them too.
     """
     text = PC.retrieval_contract("a request", (
         PC.Candidate(index=1, key="k1", wording="item one",
@@ -1296,6 +1350,90 @@ def test_the_exemption_is_the_position_and_not_every_integer_field():
     assert any("2836" in h for h in hits), (
         "a published n arrived as a typed fact and was masked as though it "
         "were a candidate position.")
+
+
+@pytest.mark.parametrize(("name", "planted"), [
+    # An index can never exceed the candidate count, so an 8-digit run after
+    # the position key is provably content. It is also a PMID in MARKERS.
+    ("a bare pmid", '{"index": 32938600, "wording": "x"}'),
+    # A published analytic n in a JSON snippet a tool return or a convention
+    # could carry. Not line-anchored, no sibling after it.
+    ("an inline figure", 'see {"index": 2836} in the api docs'),
+    # `\s*` used to cross newlines, so this was masked. `json.dumps` cannot
+    # emit it, which makes it authored content by construction.
+    ("the newline form", '"index":\n2836'),
+    # Candidate-SHAPED, but not a run starting at 1, so no real contract
+    # rendered it: `__post_init__` would have raised.
+    ("a lone fake block", '  "index": 2836,\n  "wording": "x"'),
+    ("a fake block after a real one",
+     '  "index": 1,\n  "wording": "a"\n  "index": 32938600,\n  "wording": "b"'),
+])
+def test_a_figure_dressed_as_a_position_is_still_scanned(name, planted):
+    """The exemption fails CLOSED on anything it does not recognise.
+
+    Each of these was silently swallowed by the first version of the mask,
+    which matched any digits after a quoted `index` key in any surface. A
+    contamination control that exempts text it cannot prove the harness
+    generated is not a control.
+    """
+    hits = CC.check_markers({f"tool:fake({name})": planted})
+    assert hits, (
+        f"{name} passed the marker scan. The exemption may only cover a digit "
+        f"run that is part of an unbroken 1..n candidate block, line-anchored "
+        f"and followed by its sibling field.")
+
+
+def test_each_anchor_narrows_the_exemption_on_its_own():
+    """The three anchors are defence in depth, so each is isolated here.
+
+    Seeding found that they cover each other: removing the sibling-field
+    lookahead, or letting the separator cross a newline again, reddened NO test
+    because the line anchor and the 1..n rule caught those cases anyway. Mutual
+    redundancy is the right shape for a contamination control, but a guarantee
+    with no failing seed is an unenforced one (`AGENTS.md` §Testing Patterns).
+    So these assert on the exempted-character count, which isolates each anchor
+    without needing a marker-valued position.
+    """
+    idx, sib = CC._candidate_fields()
+
+    # 1. The sibling field must follow. Same shape, different neighbour.
+    wrong_sibling = f'  "{idx}": 1,\n  "notes": "a"'
+    assert CC._masked_index_chars({"x": wrong_sibling}) == 0, (
+        "a position-shaped line was exempted without the sibling field the "
+        "contract always renders next.")
+    right_sibling = f'  "{idx}": 1,\n  "{sib}": "a"'
+    assert CC._masked_index_chars({"x": right_sibling}) == 1
+
+    # 2. The separator may hold no newline. `json.dumps` never emits this, so
+    #    only an author can, which makes it content by construction.
+    across_newline = f'  "{idx}":\n 1,\n  "{sib}": "a"'
+    assert CC._masked_index_chars({"x": across_newline}) == 0, (
+        "the separator crossed a newline, which is how `\"index\":\\n2836` "
+        "used to be swallowed.")
+
+    # 3. The key must start its line, so inline JSON is not a candidate block.
+    inline = f'see {{"{idx}": 1,\n  "{sib}": "a"}} in the docs'
+    assert CC._masked_index_chars({"x": inline}) == 0, (
+        "an inline position was exempted; that is the form a tool return or a "
+        "convention would carry.")
+
+
+def test_a_genuine_block_is_still_exempt_and_the_count_is_reported():
+    """The other half: a real rendered block must not fire, and must be counted.
+
+    `surface_hash` is computed before the mask, so the exempted character count
+    is the only printed number that moves when the exemption widens.
+    """
+    cands = tuple(PC.Candidate(index=i, key=f"k{i}", wording=f"item {i}")
+                  for i in range(1, 4))
+    text = PC.retrieval_contract("a request", cands).render()
+    assert not CC.check_markers({"genuine": text})
+    surface = {"genuine": text}
+    # Three positions, one digit each.
+    assert CC._masked_index_chars(surface) == 3, (
+        "the reported exemption size does not match what was masked, so the "
+        "printed number would not move when the exemption grows.")
+    assert CC._masked_index_chars({"nothing": "no candidate block here"}) == 0
 
 
 def test_the_capture_fails_loudly_when_the_emission_loop_stops_sending(monkeypatch):

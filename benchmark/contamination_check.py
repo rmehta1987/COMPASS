@@ -70,6 +70,7 @@ import json
 import re
 import sys
 from collections.abc import Callable
+from functools import cache
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -911,46 +912,89 @@ def check_markers(surface: dict[str, str]) -> list[str]:
 #: a figure is a number rather than a substring; everything else is a name.
 _NUMERIC_MARKER = re.compile(r"^[\d,]+$")
 
-#: The field name `agent/prompt_contract.py::Candidate.as_dict` gives the
-#: harness-generated position. DERIVED from the dataclass rather than typed
-#: here: renaming the field must break this loudly, not leave an exemption
-#: pointing at a name nothing emits any more.
-_INDEX_FIELD = next(
-    k for k, v in PC.Candidate(index=1, key="", wording="").as_dict().items()
-    if isinstance(v, int))
+@cache
+def _candidate_fields() -> tuple[str, str]:
+    """The index field and the field rendered immediately after it.
 
-#: `"index": 1092,` in the rendered candidate block. Matches the quoted key and
-#: its integer value and nothing else, so the digits masked are only ever a
-#: position.
-_HARNESS_INDEX = re.compile(rf'"{re.escape(_INDEX_FIELD)}":\s*\d+')
+    DERIVED from `agent/prompt_contract.py::Candidate.as_dict` rather than typed
+    here, so the exemption cannot outlive the shape it excuses. A rename does
+    not break this -- it follows, which is the behaviour wanted; what it must
+    never do is keep masking a field name nothing emits any more.
+
+    LAZY, not module-level, and it passes non-empty placeholders. Both are
+    deliberate. `benchmark/input_leakage.py::_prevalence_tokens` records what a
+    module-scope dependency in this file costs: it took the MANDATORY gate down
+    on import in every clone where the code it checks is written. An import-time
+    failure here would break every importer of this module, not just the scan --
+    `tests/withheld.py` and `benchmark/scorability.py` among them. And
+    `AGENTS.md` §Hard Constraints says a bare key is unrepresentable, so
+    `Candidate` validating a non-empty `key`/`wording` is a plausible next
+    hardening; probing it with `""` would have made that hardening fatal here.
+
+    Returns:
+        `(index_field, sibling_field)` as `as_dict` orders them.
+
+    Raises:
+        StopIteration: If `as_dict` renders no integer field, meaning the
+            contract's shape moved and the exemption must be re-derived.
+    """
+    rendered = PC.Candidate(index=1, key="k", wording="w").as_dict()
+    order = list(rendered)
+    index_field = next(k for k, v in rendered.items() if isinstance(v, int))
+    return index_field, order[order.index(index_field) + 1]
+
+
+@cache
+def _harness_index_re() -> re.Pattern[str]:
+    r"""One rendered candidate's position line, anchored on its own siblings.
+
+    Three anchors, each removing a way for content to be mistaken for a
+    position: the line must START with the quoted index key (`json.dumps(...,
+    indent=1)` always puts it there), the separator may contain no newline, and
+    the digits must be FOLLOWED by the sibling field `as_dict` renders next. A
+    bare `"index": 2836` in a tool return, a convention or a schema description
+    therefore stays scanned, and so does the newline form `"index":\n2836`.
+
+    Returns:
+        The compiled pattern, group 1 the key and group 2 the digits.
+    """
+    index_field, sibling = _candidate_fields()
+    return re.compile(
+        rf'(?m)^([ \t]*"{re.escape(index_field)}":[ \t]*)(\d+)'
+        rf'(?=,[ \t]*\r?\n[ \t]*"{re.escape(sibling)}")')
 
 
 def _without_harness_indices(text: str) -> str:
-    """Blank the candidate positions the harness itself numbered.
+    r"""Blank the candidate positions the harness itself numbered.
 
-    C32, found 2026-09-10. `MARKERS` holds 28 purely numeric tokens and exactly
-    one, `1092`, falls inside the candidate-index range, so the retrieval prompt
-    carries the literal `"index": 1092` and the scan reported a marker in the
-    model-visible surface. It was a false positive, and the mechanism is
-    general: every numeric marker at or below the corpus size collides with a
-    position, forever. Offering candidates by index is a Hard Constraint and
-    re-deriving `MARKERS` rather than pruning it is a rule, so neither side can
-    give way — the scan has to tell a figure it CARRIES from a position it
-    GENERATED.
+    C32, found 2026-09-10. Every numeric marker at or below the number of
+    offered candidates collides with a position, so the retrieval prompt's
+    `"index": <n>` field made the scan report a marker in the model-visible
+    surface. It was a false positive. Offering candidates by index is a Hard
+    Constraint and re-deriving `MARKERS` rather than pruning it is a rule, so
+    neither side can give way -- the scan has to tell a figure the surface
+    CARRIES from a position the harness GENERATED.
 
-    What makes that sound rather than convenient:
+    What makes that sound rather than convenient is that this reproduces, in the
+    scanner, the invariant the renderer already enforces.
     `agent/prompt_contract.py::SelectionContract.__post_init__` raises unless
-    the indices are exactly `1..n` in order, and
-    `agent/prompt_contract.py::candidates_from_keys` builds them with
-    `enumerate(keys, start=1)`. The value is therefore a position in the offered
-    list and cannot be paper-derived. Per-key `facts` render under their own
-    typed names and stay scanned; so does every `wording`.
+    the indices are exactly `1..n` in order, and `candidates_from_keys` builds
+    them with `enumerate(keys, start=1)`. So a digit run is exempt only when it
+    is part of an unbroken run starting at 1 -- exactly what a real contract
+    emits and what content cannot imitate by accident. A number that merely
+    LOOKS like a position, in a block that is not a rendered candidate list, is
+    left in place and scanned. Anything unrecognised fails CLOSED: the mask
+    declines to remove it.
 
-    The mask is deliberately the narrowest thing that works. It removes the
-    digits after a quoted `index` key and nothing else, so a marker in a
-    wording, in prose, in a list literal or in any other field still fires
-    (`tests/test_contamination_surface.py` plants each form, and
-    `test_the_index_exemption_does_not_cover_a_wording` plants `1092` itself).
+    Bounded three further ways by `_harness_index_re`, and unbounded in none:
+    the key must start its line, the separator may hold no newline, and the
+    sibling field `as_dict` renders next must follow. Measured 2026-09-14
+    against the assembled surface: `"index": 32938600` (a `MARKERS` PMID),
+    `"index": 2836` (a published analytic n) and `"index":\n2836` all survive
+    the mask and fire the scan; the 1,400 real positions in `retrieval_prompt`
+    do not. Per-key `facts` render under their own typed names and stay scanned;
+    so does every `wording`. `tests/test_contamination_surface.py` plants each
+    of those forms.
 
     Args:
         text: One surface's text.
@@ -958,7 +1002,44 @@ def _without_harness_indices(text: str) -> str:
     Returns:
         The text with harness-emitted index values removed.
     """
-    return _HARNESS_INDEX.sub(f'"{_INDEX_FIELD}": ', text)
+    exempt: list[re.Match[str]] = []
+    run: list[re.Match[str]] = []
+    for m in _harness_index_re().finditer(text):
+        value = int(m.group(2))
+        if value == 1:
+            # A block starts here. Anything before it that did not form a run
+            # was never a rendered candidate list and stays scanned.
+            run = [m]
+        elif run and value == int(run[-1].group(2)) + 1:
+            run.append(m)
+        else:
+            run = []
+            continue
+        exempt.append(m)
+    # Right to left, so an earlier span's offsets survive a later edit.
+    for m in reversed(exempt):
+        text = text[:m.start(2)] + text[m.end(2):]
+    return text
+
+
+def _masked_index_chars(surface: dict[str, str]) -> int:
+    """How many characters the index exemption removes from the whole surface.
+
+    Printed beside `surface_hash`, which is computed over the UNMASKED blob. The
+    two together are what makes a widening exemption visible: `AGENTS.md`
+    §Contamination Practice warns that a capture returning less shrinks the
+    scanned surface while every printed number moves like normal drift, and
+    without this the marker verdict would be formed over text no printed number
+    describes.
+
+    Args:
+        surface: Output of `model_visible_surface`.
+
+    Returns:
+        Total characters removed before the marker scan.
+    """
+    return sum(len(v) - len(_without_harness_indices(v))
+               for v in surface.values())
 
 
 def _marker_hit(marker: str, text: str) -> bool:
@@ -1228,6 +1309,12 @@ def main() -> int:
     print("CONTAMINATION CHECK")
     print("=" * 74)
     print(f"  surface_hash   {surface_hash}   ({len(blob):,} chars the model can see)")
+    # `surface_hash` is over the UNMASKED blob; the marker scan exempts the
+    # candidate positions the harness numbered. Printed so that widening the
+    # exemption moves a number an operator can see, which a hash computed
+    # before the mask cannot (`_masked_index_chars`).
+    print(f"  index exempt   {_masked_index_chars(surface):,} chars "
+          f"(candidate positions, not scanned for markers)")
     print(f"  surfaces       {len(surface)} "
           f"({sum(1 for k in surface if k.startswith('tool:'))} are tool return values)")
     print()
