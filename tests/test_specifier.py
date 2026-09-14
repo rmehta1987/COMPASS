@@ -3045,7 +3045,24 @@ def test_without_the_override_the_seal_behaves_exactly_as_before(monkeypatch):
 
     Opt-in by design: enabling the override must be a deliberate act and never
     a default, so an unset variable adds nothing to the child environment.
+
+    Asserted against the PARENT's value rather than against absence. Until
+    2026-09-14 this read `"CLAUDE_CONFIG_DIR" not in seen`, which conflated
+    "the seal added it" with "it is there at all": `run` builds the child
+    environment as `{**os.environ, ...}`, so an operator whose own shell
+    exports `CLAUDE_CONFIG_DIR` -- Claude Code's enterprise install does --
+    failed this test while the code was behaving exactly as documented. A test
+    whose verdict moves with the shell it was launched from is not a
+    measurement of the code.
+
+    What that inheritance means for the seal's MANIFEST is a separate and real
+    problem, recorded in `TASKS.md`: `agent/sealed.py::config_dir` does not
+    consult the inherited variable, so it can name a directory the child does
+    not read. This test deliberately does not assert either way on that -- it
+    pins only the documented guarantee, that the seal injects nothing of its
+    own.
     """
+    import os
     import subprocess as sp
 
     from agent import sealed as sealed_mod
@@ -3060,7 +3077,37 @@ def test_without_the_override_the_seal_behaves_exactly_as_before(monkeypatch):
     monkeypatch.setattr(sealed_mod.subprocess, "run", fake_run)
     with sealed_mod.SealedWorktree() as w:
         w.run(["claude", "-p", "x"])
-    assert "CLAUDE_CONFIG_DIR" not in seen
+    assert seen, "the fake never ran, so this asserts nothing"
+    assert seen.get("CLAUDE_CONFIG_DIR") == os.environ.get("CLAUDE_CONFIG_DIR"), (
+        "with the override unset the seal must neither add nor change "
+        "CLAUDE_CONFIG_DIR; the child gets whatever the parent had.")
+
+
+def test_the_override_is_the_only_thing_that_sets_the_config_dir(monkeypatch):
+    """The seal's one write to `CLAUDE_CONFIG_DIR` is the opt-in override.
+
+    The pair to the test above, and the half that absence used to cover: an
+    inherited value must be OVERRIDDEN when the override is set, not merged
+    with or deferred to. Seeded by dropping the assignment in `run`.
+    """
+    import subprocess as sp
+
+    from agent import sealed as sealed_mod
+    seen: dict[str, str] = {}
+
+    def fake_run(argv: list[str], **kw: object) -> sp.CompletedProcess:
+        """Capture the environment instead of launching anything."""
+        seen.update(kw.get("env") or {})
+        return sp.CompletedProcess(argv, 0, stdout='{"result":"ok"}', stderr="")
+
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", "/an/inherited/dir")
+    monkeypatch.setenv(sealed_mod.CONFIG_DIR_ENV, "/the/override")
+    monkeypatch.setattr(sealed_mod.subprocess, "run", fake_run)
+    with sealed_mod.SealedWorktree() as w:
+        w.run(["claude", "-p", "x"])
+    assert seen.get("CLAUDE_CONFIG_DIR") == "/the/override", (
+        "an inherited CLAUDE_CONFIG_DIR won over the explicit override, so a "
+        "sealed run would read a directory nobody chose for it.")
 
 
 # --------------------------------------------------------------------------- #

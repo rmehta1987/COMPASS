@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT))
 import benchmark.input_leakage as IL  # noqa: E402
 from agent.specifier import user_prompt  # noqa: E402
 from benchmark.cohort_papers import COHORT_PAPERS  # noqa: E402
+from tests.withheld import needs_prevalence_key  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -27,6 +28,7 @@ def pairs() -> list:
     return IL.enumerated_pairs()
 
 
+@needs_prevalence_key
 def test_no_enumerated_prompt_contains_a_papers_answer(pairs):
     """The acceptance: 384 pairs against sixteen papers, statically.
 
@@ -44,6 +46,7 @@ def test_no_enumerated_prompt_contains_a_papers_answer(pairs):
      ("the analysis used weighted quantile sum regression, WQS", "design_phrase"),
      ("the realised analytic sample was 5,096 participants", "analytic_n"),
      ("published in Circ Cardiovasc Qual Outcomes", "venue")])
+@needs_prevalence_key
 def test_the_input_scan_catches_a_planted_answer(planted, field):
     """A scan that has never failed is not known to work — once per field.
 
@@ -130,6 +133,7 @@ def test_a_missing_dictionary_raises_rather_than_reading_as_empty(monkeypatch):
         IL.instrument_text.cache_clear()
 
 
+@needs_prevalence_key
 def test_the_environment_forced_fields_are_named_and_not_scored(pairs):
     """The partition C12 needs, computed rather than asserted.
 
@@ -164,6 +168,7 @@ def test_the_holdout_placement_holds_for_this_key_too():
     assert not check_holdout_not_reachable()
 
 
+@needs_prevalence_key
 def test_a_paper_token_in_the_pair_half_is_found_on_every_pair(monkeypatch):
     """The end-to-end seed, over the frame rather than one hand-built string.
 
@@ -179,6 +184,7 @@ def test_a_paper_token_in_the_pair_half_is_found_on_every_pair(monkeypatch):
     assert {h.field for h in hits} == {"design_phrase"}
 
 
+@needs_prevalence_key
 def test_a_paper_token_in_the_template_is_the_marker_scans_job(monkeypatch):
     """Filter 2 hands off; it does not silently swallow.
 

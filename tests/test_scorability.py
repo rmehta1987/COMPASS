@@ -12,12 +12,14 @@ import pytest
 from benchmark import scorability as sc
 from benchmark.cohort_papers import COHORT_PAPERS, CohortPaper
 from benchmark.tier_gate import outcomes_absent_from_instrument
+from tests.withheld import needs_prevalence_key
 
 
 def _paper(pmid: str) -> CohortPaper:
     return next(p for p in COHORT_PAPERS if p.pmid == pmid)
 
 
+@needs_prevalence_key
 def test_word_presence_alone_can_never_make_a_paper_scorable():
     """The central guarantee: no confirmed key, no scorable paper.
 
@@ -39,6 +41,7 @@ def test_word_presence_alone_can_never_make_a_paper_scorable():
                 f"test on 'household' alone.")
 
 
+@needs_prevalence_key
 def test_a_populated_exposure_key_is_what_flips_a_paper(monkeypatch):
     """Seeded failure, the positive half: fill C12's column and it works.
 
@@ -56,6 +59,7 @@ def test_a_populated_exposure_key_is_what_flips_a_paper(monkeypatch):
     assert row.blockers == ()
 
 
+@needs_prevalence_key
 def test_a_key_that_does_not_resolve_confirms_nothing(monkeypatch):
     """Seeded failure, the negative half: a plausible key is not a resolved key.
 
@@ -69,6 +73,7 @@ def test_a_key_that_does_not_resolve_confirms_nothing(monkeypatch):
     assert sc.KEY_DOES_NOT_RESOLVE in row.exposure.blockers, row.exposure
 
 
+@needs_prevalence_key
 def test_a_key_that_names_a_construct_is_not_a_confirmed_variable(monkeypatch):
     """A battery id is a stem, and a protocol may never name a stem.
 
@@ -92,6 +97,7 @@ def _a_construct_key() -> str:
     pytest.skip("no construct/group key found to test with")
 
 
+@needs_prevalence_key
 def test_there_is_only_one_word_test_in_the_repository():
     """The drift this replaces was invisible to the test written to catch it.
 
@@ -116,6 +122,7 @@ def test_there_is_only_one_word_test_in_the_repository():
                     sc.scorability_for(paper).outcome.terms)), paper.pmid
 
 
+@needs_prevalence_key
 def test_the_cohort_profile_has_no_exposure_and_says_so():
     """A descriptive paper is not an analysis, and must not read as refuted."""
     row = sc.scorability_for(_paper("32938600"))
@@ -124,6 +131,7 @@ def test_the_cohort_profile_has_no_exposure_and_says_so():
     assert row.status == sc.UNDETERMINED
 
 
+@needs_prevalence_key
 def test_every_paper_gets_a_verdict_and_a_reason():
     """No silent pass: a paper that is not confirmed must name a blocker."""
     report = sc.scorability_report()
@@ -143,6 +151,7 @@ def test_scorability_is_named_in_the_holdout_registry():
         "under curated/ or agent/ would go undetected")
 
 
+@needs_prevalence_key
 def test_a_covariate_key_is_not_outcome_evidence():
     """A paper is not confirmed on a variable it adjusted for.
 
@@ -168,6 +177,7 @@ def test_a_covariate_key_is_not_outcome_evidence():
             f"evidence")
 
 
+@needs_prevalence_key
 def test_either_side_refuted_makes_the_whole_paper_refuted():
     """The aggregation rule, which no test constrained.
 
@@ -184,6 +194,7 @@ def test_either_side_refuted_makes_the_whole_paper_refuted():
         "instrument and no answer key repairs that")
 
 
+@needs_prevalence_key
 def test_a_resolved_key_on_an_absent_side_still_refutes(monkeypatch):
     """Refutation is checked before confirmation, and that was a comment only.
 
@@ -200,6 +211,7 @@ def test_a_resolved_key_on_an_absent_side_still_refutes(monkeypatch):
     assert "residential greenspace" in row.exposure.absent_terms
 
 
+@needs_prevalence_key
 def test_a_paper_the_instrument_carries_is_not_refuted_by_how_it_was_measured():
     """`ascertainment` is not `instrument_region`, and confusing them refutes wrongly.
 
@@ -218,6 +230,7 @@ def test_a_paper_the_instrument_carries_is_not_refuted_by_how_it_was_measured():
     assert sc.scorability_for(_paper("38961645")).status != sc.REFUTED
 
 
+@needs_prevalence_key
 def test_every_instrument_region_parses():
     """A new region value must not default silently to unreachable.
 

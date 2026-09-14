@@ -36,6 +36,7 @@ import benchmark.contamination_check as CC  # noqa: E402
 from agent.registry import build_registry  # noqa: E402
 from benchmark.contamination_check import MARKERS  # noqa: E402
 from env.tools import DETECTABILITY_N_GRID, estimate_detectability  # noqa: E402
+from tests.withheld import needs_leak_facts, needs_prevalence_key  # noqa: E402
 
 # Directories the acceptance names. `benchmark/` is deliberately absent: it holds
 # the marker list itself and the held-out registry, and scanning it would make
@@ -502,6 +503,7 @@ def test_the_surface_scan_and_the_registry_agree_on_the_tool_set():
 # the seal probe scorer — the fact the probe asks for is now read
 # --------------------------------------------------------------------------- #
 
+@needs_leak_facts
 def test_the_scorer_separates_the_five_answers_it_used_to_conflate():
     """Reproduced on unmodified code 2026-08-26: every one of these was `leaked`.
 
@@ -532,6 +534,7 @@ def test_the_scorer_separates_the_five_answers_it_used_to_conflate():
         assert score(denial)[0] == CLEAN, denial
 
 
+@needs_leak_facts
 def test_a_leak_is_scored_on_content_not_on_the_opening_word():
     """YES/NO is triage; a denial that then volunteers the fact is still a leak."""
     from agent.sealed import LEAKED, score
@@ -541,6 +544,7 @@ def test_a_leak_is_scored_on_content_not_on_the_opening_word():
     assert facts == ["air-pollution exposure paper"]
 
 
+@needs_leak_facts
 def test_an_honest_yes_for_the_wrong_reason_is_not_a_leak():
     """A YES about the other COMPASS is inconclusive, not a leak.
 
@@ -554,6 +558,7 @@ def test_an_honest_yes_for_the_wrong_reason_is_not_a_leak():
     assert (v, facts) == (INCONCLUSIVE, [])
 
 
+@needs_leak_facts
 def test_a_number_inside_a_longer_number_is_not_a_published_n():
     """A bare substring scan on `602` would fire on `1602`.
 
@@ -589,16 +594,31 @@ def test_the_held_out_fact_list_is_not_in_a_scanned_directory():
     Putting it in agent/ would mean either a growing exemption table in this file
     or blinding the file scan, and env/tools.py may not so much as name the
     directory it lives in.
+
+    UNGUARDED, and split from the contents check below on 2026-09-14. Every
+    assertion here is about where the key is NOT, so it is answerable — and
+    most worth answering — in a clone that does not hold the key. It used to
+    also assert `benchmark/leak_facts.py` EXISTS, which is false in every clone
+    but the scoring one; that half is now the guard on
+    `test_the_held_out_fact_list_covers_both_channels`, where it is a
+    precondition rather than an assertion.
+    """
+    assert not (ROOT / "agent" / "leak_facts.py").exists()
+    assert not (ROOT / "curated" / "leak_facts.py").exists()
+    assert "leak_facts" not in (ROOT / "env" / "tools.py").read_text()
+
+
+@needs_leak_facts
+def test_the_held_out_fact_list_covers_both_channels():
+    """The key's CONTENTS, which only the scoring clone can check.
+
+    Both channels must be represented: the seal controls retrieval and cannot
+    touch pretraining, and a probe set that scored only one would report a
+    clean seal as though it were a clean model.
     """
     from benchmark.leak_facts import LEAK_FACTS
     assert LEAK_FACTS
-    assert not (ROOT / "agent" / "leak_facts.py").exists()
-    assert not (ROOT / "curated" / "leak_facts.py").exists()
     assert (ROOT / "benchmark" / "leak_facts.py").exists()
-    assert "leak_facts" not in (ROOT / "env" / "tools.py").read_text()
-    # Both channels must be represented: the seal controls retrieval and cannot
-    # touch pretraining, and a probe set that scored only one would report a
-    # clean seal as though it were a clean model.
     assert {f.channel for f in LEAK_FACTS} == {"retrieval", "pretraining"}
 
 
@@ -606,6 +626,7 @@ def test_the_held_out_fact_list_is_not_in_a_scanned_directory():
 # the prevalence answer key — held out, and not in the surface
 # --------------------------------------------------------------------------- #
 
+@needs_prevalence_key
 def test_no_published_prevalence_figure_reaches_the_model():
     """The leak that adding the prevalence key could create.
 
@@ -618,6 +639,7 @@ def test_no_published_prevalence_figure_reaches_the_model():
     assert not CC.check_no_prevalence_figure_in_surface(surface)
 
 
+@needs_prevalence_key
 def test_the_prevalence_scan_catches_a_planted_figure():
     """A scan that has never failed is not known to work."""
     from benchmark.prevalence_key import PREVALENCE_KEY
@@ -626,6 +648,7 @@ def test_the_prevalence_scan_catches_a_planted_figure():
     assert CC.check_no_prevalence_figure_in_surface(planted)
 
 
+@needs_prevalence_key
 def test_a_question_id_is_not_read_as_a_published_prevalence():
     """The cry-wolf half, and it is not hypothetical — it fired.
 
@@ -655,6 +678,7 @@ def test_a_question_id_is_not_read_as_a_published_prevalence():
         "a variable key is being reported as a published prevalence figure")
 
 
+@needs_prevalence_key
 def test_the_prevalence_key_is_held_out_like_every_other_answer_key():
     """It is paper content, so curated/, env/ and agent/ are all forbidden."""
     from benchmark.prevalence_key import PREVALENCE_KEY
@@ -666,6 +690,7 @@ def test_the_prevalence_key_is_held_out_like_every_other_answer_key():
     assert not CC.check_holdout_not_reachable()
 
 
+@needs_prevalence_key
 def test_every_inventoried_paper_has_a_row_including_the_ones_reporting_none():
     """An absent value is data; a missing paper is a gap someone will re-derive.
 
@@ -686,6 +711,7 @@ def test_every_inventoried_paper_has_a_row_including_the_ones_reporting_none():
                 f"{row.pmid} {row.outcome}: an absent value must say why")
 
 
+@needs_prevalence_key
 def test_the_differential_the_caveat_describes_is_computable():
     """Both arms exist, share a region, and the reference column is honest.
 
@@ -894,6 +920,7 @@ def test_a_paper_derived_bound_may_never_set_the_environments_floor():
         tier("whatever_seems_reasonable")
 
 
+@needs_prevalence_key
 def test_no_cohort_paper_supplies_a_clustering_parameter():
     """The negative result, recorded so it is not rediscovered.
 
@@ -965,6 +992,7 @@ def test_the_unearned_index_is_held_out_like_the_other_keys():
 # the platform class — detection by membership, not by a believed-right answer
 # --------------------------------------------------------------------------- #
 
+@needs_leak_facts
 def test_no_platform_name_is_observable_to_the_model():
     """The premise the whole platform scorer rests on, pinned as a ratchet.
 
@@ -982,6 +1010,7 @@ def test_no_platform_name_is_observable_to_the_model():
     assert "platform" not in blob
 
 
+@needs_leak_facts
 def test_the_generic_survey_vocabulary_is_present_and_unscanned():
     """Generic is not a near-miss for a product name; it is the correct state.
 
@@ -996,6 +1025,7 @@ def test_the_generic_survey_vocabulary_is_present_and_unscanned():
         assert generic not in platform_spellings()
 
 
+@needs_leak_facts
 def test_the_platform_scan_catches_a_planted_name():
     """A scan that has never failed is not known to work."""
     from benchmark.leak_facts import platform_spellings
@@ -1004,6 +1034,7 @@ def test_the_platform_scan_catches_a_planted_name():
         assert CC.check_no_platform_name_in_surface(planted), name
 
 
+@needs_leak_facts
 def test_any_platform_name_is_detected_whichever_one_it_is():
     """Detection is membership in a closed list, not a right/wrong comparison.
 
@@ -1021,6 +1052,7 @@ def test_any_platform_name_is_detected_whichever_one_it_is():
             assert any(canonical in label for label in labels), (canonical, labels)
 
 
+@needs_leak_facts
 def test_the_channel_decides_the_verdict_not_the_name():
     """Channel decides the verdict: retrieval and pretraining leak, guesses do not.
 
@@ -1044,6 +1076,7 @@ def test_the_channel_decides_the_verdict_not_the_name():
         "No. Presumably something about hypertension in a city cohort.")[0] != LEAKED
 
 
+@needs_leak_facts
 def test_the_conflict_is_recorded_and_not_adjudicated():
     """Two sources name different platforms. The scorer must not need to choose.
 
@@ -1062,6 +1095,7 @@ def test_the_conflict_is_recorded_and_not_adjudicated():
     assert "42034153" in " ".join(PLATFORMS["REDCap"].sources)
 
 
+@needs_leak_facts
 def test_the_list_boundaries_exclude_what_they_say_they_exclude():
     """Statistical software and ordinary English words are not platform names.
 
@@ -1080,6 +1114,7 @@ def test_the_list_boundaries_exclude_what_they_say_they_exclude():
     assert score("I could not decipher the stem wording.")[0] != LEAKED
 
 
+@needs_leak_facts
 def test_no_probe_names_a_fact_on_its_own_answer_key():
     """A probe that names the answer cannot detect the answer.
 
@@ -1104,6 +1139,7 @@ def test_no_probe_names_a_fact_on_its_own_answer_key():
             f"indistinguishable from an echo")
 
 
+@needs_leak_facts
 def test_a_fact_the_question_supplied_is_not_a_volunteered_fact():
     """The guard, independent of any particular probe wording."""
     from agent.sealed import CLEAN, LEAKED, score
@@ -1274,6 +1310,7 @@ def test_the_capture_fails_loudly_when_the_emission_loop_stops_sending(monkeypat
         CC._second_call_surface()
 
 
+@needs_prevalence_key
 def test_the_second_call_carries_no_study_content_of_its_own():
     """The same assertion Lane A pinned in its own file, now where it belongs.
 
@@ -1344,6 +1381,7 @@ def test_no_marker_is_instrument_content():
         f"fires on the questionnaire cannot distinguish a leak from a question")
 
 
+@needs_leak_facts
 def test_the_short_analytic_n_are_adjudicable_and_not_a_build_failure():
     """Where a numeric coincidence goes: the probe scorer, not the scan.
 
@@ -1368,6 +1406,7 @@ def test_the_short_analytic_n_are_adjudicable_and_not_a_build_failure():
             f"{short} is a three-digit numeral on a build-failing scan")
 
 
+@needs_leak_facts
 def test_the_recruitment_figure_is_phrase_bounded_because_8000_is_a_port():
     """`fix the fixture, not the rule` — unless you can show the rule wrong.
 
@@ -1387,6 +1426,7 @@ def test_the_recruitment_figure_is_phrase_bounded_because_8000_is_a_port():
     assert (ROOT / "agent" / "RUNNING.md").read_text().count("8000") == 4
 
 
+@needs_leak_facts
 def test_a_volunteered_pubmed_id_scores_as_a_leak():
     """A scan that has never failed is not known to work.
 

@@ -336,6 +336,29 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   `tests/test_env_tools.py::test_no_tool_accepts_a_parameter_it_ignores`.
 - `benchmark/contamination_check.py::check_seal_config` checks what the seal denies, never
   that `agent/sealed.py::SealedWorktree.base_argv` carries no `--mcp-config`.
+- 🛑 **The seal manifest can name a config directory the sealed child does not read.**
+  Found 2026-09-14 while making the suite green. `agent/sealed.py::config_dir` resolves
+  `COMPASS_CLAUDE_CONFIG_DIR` else `~/.claude`, and consults the INHERITED
+  `CLAUDE_CONFIG_DIR` not at all -- but `SealedWorktree.run` builds the child environment
+  as `{**os.environ, ...}`, so the CLI reads the inherited value whenever the operator's
+  shell exports one and the override is unset. Claude Code's enterprise install exports
+  it. So `manifest()`'s `claude_config_dir`, `_claude_md_sources` and `reachable_skills`
+  can all audit the wrong directory, and the module's own comment gives the argument
+  against exactly this ("hardcoding `~/.claude` here would report on a directory the run
+  does not read").
+  VERIFIED 2026-09-14 on this machine, `python -c` against `agent.sealed`: manifest says
+  `/home/mehta5/.claude` with `skills_reachable` `['adversarial-review',
+  'plugin:sparkrun']`; the child reads `/home/mehta5/.claude-enterprise`, which has no
+  `skills/`, no `plugins/cache/` and no `CLAUDE.md`. Today the seal is therefore TIGHTER
+  than the manifest claims and nothing leaked -- but the audit is unsound in the other
+  direction too, and an over-reporting manifest is not a control.
+  🛑 A fix changes a contamination control and the numbers `check_seal_config` and
+  `seal_hash` are computed from, so it is a USER decision, not a lane's. The narrow
+  candidate: `config_dir()` returns the directory the child will actually read
+  (`COMPASS_CLAUDE_CONFIG_DIR` > inherited `CLAUDE_CONFIG_DIR` > `~/.claude`), which
+  changes no run behaviour, only what the manifest reports.
+  ACCEPT: a test that sets an inherited `CLAUDE_CONFIG_DIR` with the override unset and
+  asserts the manifest names the directory `run` passes to the child; seeded red first.
 - `surface_hash` is computed and never asserted; the operator has decided it should be
   deleted outright. ACCEPT: `benchmark/contamination_check.py::main` does not compute it.
 - The C24 commit messages state a false mechanism ("hash order picks the survivor"); the

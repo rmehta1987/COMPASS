@@ -16,6 +16,21 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ## 2026-09-14
 
+- **The suite is green in the working clone: 956 passed, 45 skipped, 0 failed.** It was
+  47 failed / 943 passed. The 45 tests that need `benchmark/prevalence_key.py` or
+  `benchmark/leak_facts.py` now SKIP behind guards in `tests/withheld.py`, whose skippable
+  set is imported from `benchmark.contamination_check::WITHHELD_MODULES` rather than
+  retyped, so a real missing dependency still fails. Nothing was deleted and the collected
+  count rose (990 -> 1001). Same rule as the gate's exit status, and the same reason.
+- **A test whose verdict moved with the operator's shell.**
+  `tests/test_specifier.py::test_without_the_override_the_seal_behaves_exactly_as_before`
+  asserted `"CLAUDE_CONFIG_DIR" not in seen`, which conflated "the seal added it" with "it
+  is there at all" -- `SealedWorktree.run` builds the child environment from `os.environ`,
+  and Claude Code's enterprise install exports that variable. Now asserted against the
+  parent's value, with a new pair pinning that the opt-in override beats an inherited one.
+  It surfaced a real defect in the seal's MANIFEST, left open and unfixed as a user
+  decision: see `TASKS.md` §Known-open defects.
+
 - **C32 closed — the marker scan tells a figure it CARRIES from a position it GENERATED.**
   `MARKERS` holds 28 purely numeric tokens and exactly one falls inside the candidate-index
   range, so the retrieval prompt's `"index": <n>` field made the scan report a marker in
