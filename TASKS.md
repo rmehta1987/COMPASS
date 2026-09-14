@@ -427,8 +427,41 @@ experts until much later, which is why the dashboard exists.
   C9 reopens, its conditions are in `DESIGN.md` §6.
 
 ## Known-open defects, no task yet
+- **C35 — how does an area-measure exposure reach CONFIRMED? 🛑 USER DECISION, and it
+  gates the `EXPOSURE_KEYS` fix below.** `scorability.py` accepts exactly one form of
+  positive evidence — a key resolving `unique` through `env/tools.py::resolve_variable` —
+  and it accepts only that because word presence wrongly admitted four papers. An
+  `AreaMeasureRef` has no key, so that evidence is structurally unavailable for a whole
+  class of exposure. Widening the column forces the question; it cannot be deferred into
+  the implementation. Four answers, and they are different CLAIMS about what the
+  benchmark measures, not different implementations of one spec:
+  - **A — populate `linked:` and treat it as an ordinary key.** `CONFIRMED` keeps its
+    exact meaning. Waits on the `area_measure_inventory` delivery, and half-collides with
+    `AreaMeasureRef` being the designed path (`benchmark/calibration_set.py`: nothing
+    stops a `VariableRef` naming a `linked:` key and `resolve_variable` cannot tell them
+    apart).
+  - **B — a second authority**, e.g. `resolve_area_measure(measure_id)` over an
+    inventory, returning `unique`/`not_found`. `CONFIRMED` still means "the environment
+    was asked and said yes". Preserves `AreaMeasureRef`. Same delivery dependency as A.
+  - **C — declare area exposures out of scope, explicitly**, with a row reading `unknown`
+    plus `blocked_on: area_measure_inventory`. Costs nothing, needs no delivery, and is
+    already the key FORM C12 records as settled — so implementing the settled form IS
+    option C. Narrows the benchmark's claim to survey-anchored designs. Does not
+    foreclose B.
+  - **D — confirm on the descriptor alone.** 🛑 DO NOT. A row naming a `measure_id` and
+    `source` that nothing checks is the word-presence failure in a new costume, and this
+    file exists to prevent it.
+  - RECOMMENDED: **C now, B later.** Open sub-question if C: an explicitly-`unknown`
+    exposure row makes the side REFUTED ("never scorable here" — overstates it, the
+    inventory could arrive) or UNDETERMINED ("not yet" — understates it, nothing in this
+    repo changes it). Neither fits, which argues for a THIRD status, e.g.
+    `blocked_on_delivery`, mirroring the three-way shape the project already uses for the
+    contamination exit status and for `NO_KEY_TO_RESOLVE` vs `KEY_DOES_NOT_RESOLVE`.
+  - ACCEPT: the chosen rule is stated in `scorability.py`'s docstring beside the existing
+    REFUTED/CONFIRMED/UNDETERMINED definitions, `_side` implements it, and the tests are
+    key-free (`_side` is pure, so they must not join `GUARD_CEILING`'s set).
 - **`EXPOSURE_KEYS`'s implemented type cannot express its own settled key form, NOR an
-  entire `Ref` kind the schema supports.** Two faults in one type.
+  entire `Ref` kind the schema supports.** BLOCKED on C35. Two faults in one type.
   (a) C12 records the form as "explicit `unknown` plus a named blocker", and
   `benchmark/scorability.py::EXPOSURE_KEYS` is `dict[str, tuple[str, ...]]` — a bare key
   tuple with no slot for either, so a provably-uncarryable exposure reads as an unfilled
