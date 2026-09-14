@@ -30,6 +30,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+import agent.prompt_contract as PC  # noqa: E402
 import agent.specifier as SP  # noqa: E402
 import benchmark.contamination_check as CC  # noqa: E402
 from agent.registry import build_registry  # noqa: E402
@@ -1174,6 +1175,91 @@ def test_a_marker_planted_in_the_refusal_prompt_is_caught(monkeypatch):
                         SP.TRANSDUCE_REFUSAL + "\nSee also E2SFCA accessibility.")
     hits = CC.check_markers(CC.model_visible_surface("benchmark"))
     assert any("E2SFCA" in h for h in hits), hits
+
+
+# --------------------------------------------------------------------------- #
+# C32 — a marker in CONTENT versus a position the harness numbered
+# --------------------------------------------------------------------------- #
+#
+# `MARKERS` holds 28 purely numeric tokens and exactly one, `1092`, falls inside
+# the candidate-index range, so the retrieval prompt carries the literal
+# `"index": 1092` and the scan reported a marker in the model-visible surface.
+# A false positive, and general: every numeric marker at or below the corpus
+# size collides with a position. Both sides are fixed — offering candidates by
+# index is a Hard Constraint, and `MARKERS` is re-derived rather than pruned, so
+# deleting `1092` to silence this is forbidden. These pin the partition instead:
+# the position is exempt, everything the surface CARRIES is not.
+
+
+def test_the_masked_field_is_the_one_the_harness_actually_emits():
+    """The exemption is derived from the dataclass, not typed beside it.
+
+    A rename in `agent/prompt_contract.py::Candidate` must break this, not
+    leave a mask pointing at a field name nothing renders any more — which
+    would restore the false positive silently.
+    """
+    rendered = PC.Candidate(index=7, key="k", wording="w").as_dict()
+    assert CC._INDEX_FIELD in rendered
+    assert rendered[CC._INDEX_FIELD] == 7, (
+        "the masked field must be the integer POSITION. Masking a field that "
+        "carries anything else would blind the scan to content.")
+
+
+def test_a_candidate_index_is_not_read_as_a_published_n():
+    """The C32 false positive itself, pinned rather than pruned from MARKERS."""
+    surface = CC.model_visible_surface()
+    prompt = surface["retrieval_prompt"]
+    # Anti-vacuity: this passes for the right reason only while the literal is
+    # really there. If the renderer stops numbering candidates this way the pin
+    # must fail loudly rather than quietly assert nothing.
+    assert '"index": 1092' in prompt, (
+        "the surface no longer carries the collision this test exists for; "
+        "re-derive the partition rather than keeping a pin that proves nothing.")
+    assert "1092" in MARKERS, (
+        "`1092` is a published analytic n and is re-derived, never pruned to "
+        "silence a scan (TASKS.md C32).")
+    assert not CC.check_markers({"retrieval_prompt": prompt}), (
+        "the scan fired on a position the harness generated with "
+        "`enumerate(keys, start=1)`, not on anything the surface carries.")
+
+
+def test_the_index_exemption_does_not_cover_a_wording():
+    """C32's ACCEPT criterion: it still fires when `1092` is CONTENT.
+
+    Rendered through the real contract, so the exemption is tested against the
+    structure it actually exempts rather than a string this test invented.
+    """
+    # Indices must be 1..n in order (`SelectionContract.__post_init__`), so the
+    # planted wording sits at position 1092 and its own index is in the same
+    # prompt. The scan must fire on one and not the other.
+    filler = tuple(PC.Candidate(index=i, key=f"k{i}", wording=f"item {i}")
+                   for i in range(1, 1092))
+    planted = PC.Candidate(
+        index=1092, key="k1092",
+        wording="the comparable published analysis reported 1092 participants")
+    text = PC.retrieval_contract("a request", (*filler, planted)).render()
+    assert '"index": 1092' in text, "the collision must be present to be tested"
+    hits = CC.check_markers({"planted_wording": text})
+    assert any("1092" in h for h in hits), (
+        "`1092` appeared in a wording, in the same prompt as its own index, "
+        "and the scan stayed silent. The exemption is supposed to be the "
+        "position and nothing else.")
+
+
+def test_the_exemption_is_the_position_and_not_every_integer_field():
+    """A numeric fact under its own typed name is content and stays scanned.
+
+    `Candidate.facts` render as sibling JSON fields beside `index`. A mask that
+    blanked any integer value, or keyed on shape rather than on the field name,
+    would swallow them too.
+    """
+    text = PC.retrieval_contract("a request", (
+        PC.Candidate(index=1, key="k1", wording="item one",
+                     facts={"roster_family_size": 2836}),)).render()
+    hits = CC.check_markers({"planted_fact": text})
+    assert any("2836" in h for h in hits), (
+        "a published n arrived as a typed fact and was masked as though it "
+        "were a candidate position.")
 
 
 def test_the_capture_fails_loudly_when_the_emission_loop_stops_sending(monkeypatch):

@@ -16,6 +16,17 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ## 2026-09-14
 
+- **C32 closed — the marker scan tells a figure it CARRIES from a position it GENERATED.**
+  `MARKERS` holds 28 purely numeric tokens and exactly one falls inside the candidate-index
+  range, so the retrieval prompt's `"index": <n>` field made the scan report a marker in
+  the model-visible surface. `1092` was NOT pruned from `MARKERS`; the scan was partitioned
+  instead. The exemption is only the integer after a quoted `index` key, is sound because
+  `agent/prompt_contract.py::SelectionContract.__post_init__` raises unless the indices are
+  exactly 1..n in order, and takes its field name from the dataclass so a rename breaks it
+  loudly. `benchmark/contamination_check.py::_without_harness_indices`, pinned four ways in
+  `tests/test_contamination_surface.py` including `1092` planted in a wording. Seeded three
+  ways: no mask, any integer field, every digit run.
+
 - **The contamination gate's exit status splits three ways** so it can be read in the clone
   where prompts are edited: `0` complete and clean, `1` a section FAILED, `2` none failed
   and one or more SKIPPED for a withheld module. A failure outranks a skip, so nothing is

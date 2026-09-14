@@ -904,12 +904,61 @@ def check_markers(surface: dict[str, str]) -> list[str]:
     """
     return [f"{where}  ->  {m!r}"
             for where, text in surface.items()
-            for m in MARKERS if _marker_hit(m, text)]
+            for m in MARKERS if _marker_hit(m, _without_harness_indices(text))]
 
 
 #: A marker made only of digits and thousands separators. These are figures, and
 #: a figure is a number rather than a substring; everything else is a name.
 _NUMERIC_MARKER = re.compile(r"^[\d,]+$")
+
+#: The field name `agent/prompt_contract.py::Candidate.as_dict` gives the
+#: harness-generated position. DERIVED from the dataclass rather than typed
+#: here: renaming the field must break this loudly, not leave an exemption
+#: pointing at a name nothing emits any more.
+_INDEX_FIELD = next(
+    k for k, v in PC.Candidate(index=1, key="", wording="").as_dict().items()
+    if isinstance(v, int))
+
+#: `"index": 1092,` in the rendered candidate block. Matches the quoted key and
+#: its integer value and nothing else, so the digits masked are only ever a
+#: position.
+_HARNESS_INDEX = re.compile(rf'"{re.escape(_INDEX_FIELD)}":\s*\d+')
+
+
+def _without_harness_indices(text: str) -> str:
+    """Blank the candidate positions the harness itself numbered.
+
+    C32, found 2026-09-10. `MARKERS` holds 28 purely numeric tokens and exactly
+    one, `1092`, falls inside the candidate-index range, so the retrieval prompt
+    carries the literal `"index": 1092` and the scan reported a marker in the
+    model-visible surface. It was a false positive, and the mechanism is
+    general: every numeric marker at or below the corpus size collides with a
+    position, forever. Offering candidates by index is a Hard Constraint and
+    re-deriving `MARKERS` rather than pruning it is a rule, so neither side can
+    give way — the scan has to tell a figure it CARRIES from a position it
+    GENERATED.
+
+    What makes that sound rather than convenient:
+    `agent/prompt_contract.py::SelectionContract.__post_init__` raises unless
+    the indices are exactly `1..n` in order, and
+    `agent/prompt_contract.py::candidates_from_keys` builds them with
+    `enumerate(keys, start=1)`. The value is therefore a position in the offered
+    list and cannot be paper-derived. Per-key `facts` render under their own
+    typed names and stay scanned; so does every `wording`.
+
+    The mask is deliberately the narrowest thing that works. It removes the
+    digits after a quoted `index` key and nothing else, so a marker in a
+    wording, in prose, in a list literal or in any other field still fires
+    (`tests/test_contamination_surface.py` plants each form, and
+    `test_the_index_exemption_does_not_cover_a_wording` plants `1092` itself).
+
+    Args:
+        text: One surface's text.
+
+    Returns:
+        The text with harness-emitted index values removed.
+    """
+    return _HARNESS_INDEX.sub(f'"{_INDEX_FIELD}": ', text)
 
 
 def _marker_hit(marker: str, text: str) -> bool:

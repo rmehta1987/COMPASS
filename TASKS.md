@@ -197,25 +197,6 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   ACCEPT: a test per item, each seeded red first; (a) and (b) either enforced or the
   docstring corrected to what the code does.
 
-- **C32 — the marker scan fires on a candidate INDEX.** Found 2026-09-10, the first
-  finding the 0d fix made observable: until the deferred imports landed,
-  `benchmark.contamination_check` could not run outside the scoring clone at all, so this
-  had never been seen. `MARKERS` holds 69 tokens, 28 of them purely numeric; exactly one,
-  `1092`, falls in 1..1353, which is the candidate-index range
-  `agent/prompt_contract.py` numbers its offers with. The retrieval prompt therefore
-  contains the literal `"index": 1092` and the scan reports a marker in the
-  model-visible surface. It is a FALSE POSITIVE today and the only non-withheld failure
-  in the whole suite (`tests/test_specifier.py::test_contamination_check_passes_offline`).
-  The mechanism is general: any numeric marker <= the corpus size collides, and offering
-  candidates by index is a Hard Constraint, so neither side can simply give way.
-  🛑 Do not "fix" it by deleting `1092` from `MARKERS` — the marker set is re-derived, not
-  inherited (`AGENTS.md` §Contamination Practice), and dropping a real published figure to
-  silence a scan is the failure mode the section exists to prevent.
-  ACCEPT: the scan distinguishes a marker in CONTENT from a marker in structural
-  scaffolding it emitted itself, with a seeded failure proving it still fires when `1092`
-  appears in a wording rather than an index; and the suite's only non-withheld failure
-  clears.
-
 ## Blocked on a person, not a task
 
 - **The two Qualtrics exports — response options and survey flow.** Without them
