@@ -106,19 +106,25 @@ EXPOSURE_KEY_COLUMN_MISSING = "exposure_key_column_missing"
 #: outcome problem — in a constant whose own comment says it exists "so a caller
 #: sees which problem it has".
 KEY_DOES_NOT_RESOLVE = "key_does_not_resolve"
-#: The absence case, split out of KEY_DOES_NOT_RESOLVE on 2026-09-14 for the
-#: same reason that constant was itself renamed from `outcome_key_unresolved`:
-#: a blocker exists "so a caller sees which problem it has", and one string was
-#: covering two problems. `KEY_DOES_NOT_RESOLVE` means a key was supplied and
-#: `resolve_variable` rejected it. This means NO KEY WAS SUPPLIED, so nothing
-#: was looked up at all -- and reporting that as a failed lookup asserts a
-#: negative result the module never obtained, which is the one thing
-#: `AGENTS.md` §Verification Discipline refuses ("could not detect X" is never
-#: "X is absent"). MEASURED the same day: PMIDs 38397711 and 38961645 both
-#: reported `key_does_not_resolve` on the outcome side with
-#: `outcome_keys_on_record` returning ZERO keys, so neither had a key that
-#: failed -- both had no key.
-NO_KEY_ROW_FOR_THIS_PAPER = "no_key_row_for_this_paper"
+#: Nothing was supplied on this side, so nothing was looked up. Split out of
+#: KEY_DOES_NOT_RESOLVE on 2026-09-14 for the same reason that constant was
+#: itself renamed from `outcome_key_unresolved`: a blocker exists "so a caller
+#: sees which problem it has", and one string was covering two problems.
+#: `KEY_DOES_NOT_RESOLVE` means a key WAS supplied and `resolve_variable`
+#: rejected it. This means there was no key to reject, and reporting that as a
+#: failed lookup asserts a negative result the module never obtained — the one
+#: thing `AGENTS.md` §Verification Discipline refuses.
+#:
+#: NAMED FOR THE KEY, NOT THE ROW, and the first attempt got that wrong. It was
+#: `no_key_row_for_this_paper` for half an hour, which is a THIRD false claim of
+#: the same kind. MEASURED 2026-09-14 on PMIDs 38397711 and 38961645:
+#: `outcome_keys_on_record` returns zero for both, AND
+#: `outcome_reachable_in_instrument` returns True for both — so a key ROW does
+#: exist for each, carrying an `instrument_region` inside the questionnaire, and
+#: it is the `instrument_key` CELL that is empty. Those two outcomes are
+#: fillable, not absent, and a blocker saying "no key row" would have hidden a
+#: task behind a word.
+NO_KEY_TO_RESOLVE = "no_key_to_resolve"
 KEY_NAMES_A_CONSTRUCT_NOT_A_VARIABLE = "key_names_a_construct_not_a_variable"
 #: The honest refutation for an outcome the questionnaire cannot carry. The word
 #: test cannot make this call: `serum PSA` shares tokens with a real instrument
@@ -369,7 +375,7 @@ def _side(side: str, terms: tuple[str, ...], keys: tuple[str, ...],
         blockers.append(missing_column_blocker)
     elif not keys:
         # Not KEY_DOES_NOT_RESOLVE: there is no key here to have resolved.
-        blockers.append(NO_KEY_ROW_FOR_THIS_PAPER)
+        blockers.append(NO_KEY_TO_RESOLVE)
     return SideVerdict(side, terms, UNDETERMINED, confirmed, absent,
                        tuple(blockers))
 

@@ -69,6 +69,27 @@ testable; seed its failure first.
   failed; `--pmid P --record F` prints the paper's recorded design beside a
   `ProtocolSpecification`, field by field. ACCEPT: `validate_exposure_keys` returns
   nothing, and `status_counts` reports a non-zero `confirmed` in the scoring clone.
+- **Two outcome key rows are FILLABLE, and this is the only concrete answer-key work the
+  measurement turned up.** 🛑 USER ONLY, in `compass-score`. MEASURED 2026-09-14: PMIDs
+  38397711 and 38961645 both return `outcome_reachable_in_instrument() == True` — the key
+  places their outcomes INSIDE the questionnaire — while `outcome_keys_on_record()`
+  returns zero, so the `instrument_key` cell is simply empty. Neither outcome is absent.
+  Plausible homes, unverified: 38397711 in `m2 female medical history`, 38961645 in
+  `m2:Q5 diagnosed conditions` (`m2:Q5.30` asks about clinical depression). Filling them
+  removes two `no_key_to_resolve` blockers and is worth doing even though it does NOT
+  unblock either paper: 38397711's exposure is an area measure the scoring column cannot
+  represent, and 38961645's is not in the instrument (below).
+- **38961645's exposure, checked at item level and not just by word.** The word test's
+  absence is real — re-measured 2026-09-14 over `searchable_text`: `discriminat` 0,
+  `perceived` 0, `unfair` 0, `disrespect` 0, `prejudic` 0. But word absence is not
+  construct absence, so the items were read: exactly ONE touches it, `m2:Q4.15#1_1`,
+  "You were treated poorly because of your race, ethnicity, cultural background or
+  language" — one of seven sub-items of a battery about problems during an OVERNIGHT
+  HOSPITAL STAY in the past 12 months. The broader outpatient battery
+  (`group:m2:Q4.7#1`, 13 sub-items) has no counterpart. So the instrument carries a
+  single binary item, conditional on hospitalisation, with `branch_dependency` null so
+  the denominator is unrecoverable — not a perceived-discrimination measure. Not
+  reachable, and now on evidence rather than on a word count.
 - T2 is the manuscript's worked example and the demo. It is NOT the rediscovery metric:
   that is C21 stage (i) and stays PARKED below. The side-by-side emits no total on
   purpose — a match rate over a design line's method token and a `model_spec.form` has no
@@ -422,8 +443,8 @@ experts until much later, which is why the dashboard exists.
   when a supplied key was rejected and when no key existed to reject — asserting a failed
   lookup that never happened. MEASURED: 38397711 and 38961645 both reported it with
   `outcome_keys_on_record` returning ZERO. Split into
-  `benchmark/scorability.py::NO_KEY_ROW_FOR_THIS_PAPER`, with four key-free tests on
-  `_side` and three seeded mutations.
+  `benchmark/scorability.py::NO_KEY_TO_RESOLVE`, with four key-free tests on `_side` and
+  three seeded mutations. Named for the missing KEY, not a missing ROW: the rows exist.
 - **`scorability.py` refutes an outcome on evidence it has no counterpart for on the
   exposure side.** `OUTCOME_NOT_IN_THE_INSTRUMENT` comes from the prevalence key's
   `instrument_region`; the exposure side has no such column, so the strongest thing it can

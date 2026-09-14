@@ -273,17 +273,19 @@ def test_every_instrument_region_parses():
 LIVE_TERM = ("cigarettes",)
 
 
-def test_a_side_with_no_key_row_does_not_claim_a_lookup_failed():
+def test_a_side_with_no_key_does_not_claim_a_lookup_failed():
     """No key supplied means no lookup happened, and the blocker must say so.
 
     MEASURED 2026-09-14: both papers reporting `key_does_not_resolve` on the
     outcome side had ZERO keys, so nothing had been looked up. One string was
     covering "a key was rejected" and "there was no key", and only the first
-    is a result.
+    is a result. The blocker is named for the missing KEY and not a missing
+    ROW, because the same measurement showed the rows DO exist with an
+    in-instrument region and an empty key cell.
     """
     v = sc._side("outcome", LIVE_TERM, (), None)
     assert v.status == sc.UNDETERMINED
-    assert sc.NO_KEY_ROW_FOR_THIS_PAPER in v.blockers
+    assert sc.NO_KEY_TO_RESOLVE in v.blockers
     assert sc.KEY_DOES_NOT_RESOLVE not in v.blockers, (
         "no key was supplied, so no key failed to resolve; saying otherwise "
         "asserts a negative result the module never obtained")
@@ -293,7 +295,7 @@ def test_a_supplied_key_that_is_rejected_still_says_so():
     """The other half of the split, or the rename loses a real failure."""
     v = sc._side("outcome", LIVE_TERM, ("m2:Q999.9",), None)
     assert sc.KEY_DOES_NOT_RESOLVE in v.blockers
-    assert sc.NO_KEY_ROW_FOR_THIS_PAPER not in v.blockers
+    assert sc.NO_KEY_TO_RESOLVE not in v.blockers
 
 
 def test_the_two_blockers_are_mutually_exclusive():
@@ -301,11 +303,11 @@ def test_the_two_blockers_are_mutually_exclusive():
     for keys in ((), ("m2:Q999.9",), ("m3:Q5.5",)):
         got = set(sc._side("outcome", LIVE_TERM, keys, None).blockers)
         assert not {sc.KEY_DOES_NOT_RESOLVE,
-                    sc.NO_KEY_ROW_FOR_THIS_PAPER} <= got, keys
+                    sc.NO_KEY_TO_RESOLVE} <= got, keys
 
 
 def test_the_exposure_side_still_names_its_missing_column():
     """The exposure side has a column blocker and must keep preferring it."""
     v = sc._side("exposure", LIVE_TERM, (), sc.EXPOSURE_KEY_COLUMN_MISSING)
     assert sc.EXPOSURE_KEY_COLUMN_MISSING in v.blockers
-    assert sc.NO_KEY_ROW_FOR_THIS_PAPER not in v.blockers
+    assert sc.NO_KEY_TO_RESOLVE not in v.blockers
