@@ -24,6 +24,10 @@ __pycache__/
 # dictionary lives at the root as dictionary.json.
 build/
 raw/
+# ... and as symlinks: a trailing-slash pattern matches a directory, never a
+# link to one, so a linked artifact would otherwise be stageable.
+build
+raw
 *.csv
 codebook.csv        # redundant under *.csv; kept as the training machine's no-read guard
 dictionary.json
@@ -51,9 +55,14 @@ deploy/model/
 out/
 runs/
 run/
+runs
+run
 *.log
 parked/
 fixtures/
+parked
+fixtures
+benchmark/fixtures
 # the one fixture that carries no instrument wording: hand-authored template
 # fields for the 44 negative requests
 !fixtures/negative_expansion_fields.json

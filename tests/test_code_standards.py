@@ -137,3 +137,28 @@ def test_google_docstring_convention_is_configured() -> None:
     assert 'convention = "google"' in cfg
     assert '"ANN"' in cfg, "annotation rules must stay enabled"
     assert '"D"' in cfg, "docstring rules must stay enabled"
+
+
+def test_withheld_artifacts_are_ignored_as_symlinks_too() -> None:
+    """A linked artifact must be as unstageable as a real one.
+
+    `.gitignore` spelled these `build/`, `raw/`, `run/`, `fixtures/`. A
+    trailing slash matches a directory and never a symlink to one, and on the
+    training machine these are routinely links into a sibling clone -- so
+    `git add -A` would stage a link pointing straight at the withheld
+    instrument. Asks git itself rather than parsing the file, so the guarantee
+    holds however the pattern is later rewritten.
+    """
+    git: Path | None = _tool("git")
+    if git is None:  # pragma: no cover - git is present wherever this runs
+        pytest.skip("git not installed")
+    names = ["build", "raw", "run", "runs", "parked",
+             "fixtures", "benchmark/fixtures"]
+    out: str = subprocess.run(
+        [str(git), "check-ignore", "--no-index", *names],
+        cwd=ROOT, capture_output=True, text=True).stdout
+    ignored = set(out.split())
+    missing = [n for n in names if n not in ignored]
+    assert not missing, (
+        f"not ignored without a trailing slash: {missing}. A symlinked "
+        "artifact would be stageable and would point at the instrument.")

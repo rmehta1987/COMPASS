@@ -40,6 +40,22 @@ checksum, command and commit. Where the two trees name the same thing differentl
   `tests/` marked "VERIFIED on build 6fcd02755bf3" were verified on that earlier build and
   have not been re-verified on `3dc8415eccfe` in this tree.
 
+## Which clone is which
+
+Consolidated 2026-09-14. One clone does the work; the other two exist for a reason
+that is not convenience.
+
+| clone | role | may an agent open it? |
+|---|---|---|
+| `COMPASS` | **The working clone.** The trunk carries the pipeline *and* `serve/`. Untracked artifacts are linked or copied from `compass-gen` (`build/` and `run/` must be real copies -- `tests/test_dictionary.py::test_build_is_deterministic` runs `build.py` with `cwd=ROOT` and through a symlink would write into the clone the link points at). | yes |
+| `compass-score` | Holds the answer keys (`benchmark/prevalence_key.py`, `benchmark/leak_facts.py`). | 🛑 **no** -- an agent that reads a key then authors prompts, docstrings or conventions is itself the leak channel, and a fresh session does not close it |
+| `compass-site` | The published GitHub Pages tree. | yes |
+
+`compass-gen` remains the source of the untracked artifacts (`raw/`, `build/`,
+`benchmark/fixtures/`, `deploy/targets.json`) and is otherwise superseded by `COMPASS`.
+The interpreter with `pydantic` and `torch` is `compass-gen/.venv`; `COMPASS/.venv` has
+neither and cannot import the specifier.
+
 ## The deployed retriever
 
 `deploy/` is the fine-tuned `bge-small` retriever: argmax cosine over 1,353 precomputed
