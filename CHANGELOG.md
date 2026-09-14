@@ -60,6 +60,20 @@ quote a figure from here.
   leaving the clone where prompts are edited. The claim is split three ways instead, and
   only the middle link is guarded.
 
+**The rediscovery benchmark has no reachable pair, and that is a measurement now.**
+Run 2026-09-14 in the scoring clone, `benchmark.scorability.scorability_report()`:
+10 REFUTED / 0 CONFIRMED / 6 UNDETERMINED over the 16-paper bibliography, every
+refutation on the OUTCOME side. The cohort's published work measures assays, biomarkers,
+blood pressure, a metabolome and biospecimen participation; the instrument is a
+two-column questionnaire and `clinical`, `lab` and `ehr` are declared EMPTY. Three papers
+present as one exposure key from CONFIRMED and are not: their exposures are area-level,
+they are the false survivors `scorability.py`'s docstring already names, and
+`search_variables` on each term returns the survey-link question and the drinking-water
+item. Recorded in `TASKS.md` §Open — the worked rediscovery, with the two defects it
+exposed (`EXPOSURE_KEYS` cannot express its own settled key form; the exposure side has
+no `instrument_region` counterpart, so its strongest blocker understates an absent
+construct as an unfilled cell). Never quote these counts — re-run the report.
+
 Phase 1 of the refocus: make the two progress signals mean something. Landed in three
 commits, then corrected in three more after an adversarial review found two of the three
 original claims unenforced. Counts, ceilings and the guarded-test ratchet are read from

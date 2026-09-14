@@ -4,8 +4,32 @@ Open work only; merged history is `CHANGELOG.md`, rules `AGENTS.md`, design limi
 testable; seed its failure first.
 
 ## Open — the worked rediscovery, n=1–3
+
+> **BLOCKED 2026-09-14, and not on anyone's effort.** MEASURED that day in the scoring
+> clone, `benchmark.scorability.scorability_report()`: **10 REFUTED, 0 CONFIRMED, 6
+> UNDETERMINED**. Every refutation is on the OUTCOME side — nine `outcome_not_in_the_
+> instrument`, one `outcome_absent_from_instrument`. The cohort's published work measures
+> serum assays, biomarkers, measured blood pressure, a metabolome and biospecimen
+> participation. A two-column questionnaire carries none of those, and `clinical`, `lab`
+> and `ehr` are declared and EMPTY (`env/tools.py::registry_coverage`).
+>
+> Three papers have a CONFIRMED outcome and exactly one blocker,
+> `exposure_key_column_missing`: 36065817, 37252073, 36702470. **That blocker overstates
+> them.** All three exposures are area-level, and all three are false survivors of the
+> word test that `benchmark/scorability.py`'s own docstring already names. VERIFIED
+> 2026-09-14 with `search_variables` on each exposure term: the best hits are the
+> survey-link question, drinking-water source, caregiver status and the UChicago Medical
+> Center items — no survey key exists to paste. Their real blocker is `linked:`, declared
+> EMPTY and blocked on `area_measure_inventory`, a study-team delivery of the same class
+> as the Qualtrics exports (§Blocked on a person).
+>
+> So **no reachable row exists today**, and pasting one is not the unblock. Read this
+> beside §PARKED: C12 is not parked because nobody got to it, it is parked because the
+> instrument and the bibliography do not overlap on both sides of any single paper.
+> Re-run the command above before acting on this; it is a measurement, not a doctrine.
+
 - **T2-rows — paste 1–3 rows into `benchmark/scorability.py::EXPOSURE_KEYS`.** 🛑 USER
-  ONLY. No agent writes a row and no agent reads a paper to check one; the key FORM is
+  ONLY. **Do not start this until the finding above is overturned by measurement.** No agent writes a row and no agent reads a paper to check one; the key FORM is
   settled and reopening it is a user conversation. Pick papers whose exposure and outcome
   plainly sit in the codebook. The scaffolding is built and waiting: `python -m
   benchmark.rediscovery` runs C12's ACCEPT criterion over the column — every asserted key
@@ -350,6 +374,26 @@ experts until much later, which is why the dashboard exists.
   C9 reopens, its conditions are in `DESIGN.md` §6.
 
 ## Known-open defects, no task yet
+- **`EXPOSURE_KEYS`'s implemented type cannot express its own settled key form.** C12
+  records the form as "explicit `unknown` plus a named blocker", and
+  `benchmark/scorability.py::EXPOSURE_KEYS` is `dict[str, tuple[str, ...]]` — a bare key
+  tuple with no slot for either. So a paper whose exposure the instrument provably cannot
+  carry has no way to say so, and reads as an unfilled row. Changing the form is a user
+  conversation, not a lane decision.
+- **`scorability.py` refutes an outcome on evidence it has no counterpart for on the
+  exposure side.** `OUTCOME_NOT_IN_THE_INSTRUMENT` comes from the prevalence key's
+  `instrument_region`; the exposure side has no such column, so the strongest thing it can
+  ever say is `EXPOSURE_KEY_COLUMN_MISSING` — "nobody filled this in" — for an exposure
+  that is not in the instrument at all. MEASURED 2026-09-14: this is exactly why three
+  unreachable papers present as one paste from CONFIRMED. Same class of defect as the
+  `outcome_key_unresolved` -> `KEY_DOES_NOT_RESOLVE` rename the file already records.
+- **`agent/schema.py::ProtocolSpecification` cannot express a population restriction.**
+  None of its 22 fields, and none of `ModelSpec`'s three, carries a restriction, stratum
+  or subgroup. A design stated for one subpopulation can only be adjusted for, not
+  restricted to — and for race specifically the category cannot even be named, because
+  `response_options` is null on all 2,804 entries (`checks.py::NULL_BY_CONSTRUCTION`), so
+  naming one would trip `_no_response_coding_is_asserted`. Surfaced 2026-09-14 by a real
+  request; no task yet because the fix interacts with Phase 3's `study_design` field.
 - Three unbound or vacuous guarantees, all in `DESIGN.md` §7:
   `estimability.exposure_contrast`, `agent/registry.py::RETRIEVAL_TOOLS`, and
   `env/tools.py::search_variables`' OR-decomposition.
