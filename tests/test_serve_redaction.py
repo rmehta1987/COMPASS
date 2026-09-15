@@ -19,6 +19,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import shutil
 import sys
 import types
 from collections.abc import Callable, Iterator
@@ -395,6 +396,69 @@ def test_files_serve_ships_verbatim_carry_no_instrument_content() -> None:
     text = served.read_text(encoding="utf-8")
     found = s.hits(text)
     assert not found, f"{served.name} carries instrument content: {found[:3]}"
+
+
+def test_every_tracked_file_under_site_carries_no_instrument_content() -> None:
+    """The `site/` gate was a SCRIPT nobody's tests ran.
+
+    `.gitignore` permits tracked JSON under `site/` -- `!site/artifacts/*.json`,
+    and now `!site/tools/requests.json` -- and its comment justifies that by
+    naming `site/tools/no_instrument.py`. That file is a standalone script: no
+    test invoked it, so the guarantee held only while somebody remembered, which
+    is the unenforced-guarantee shape `AGENTS.md` names as this codebase's
+    recurring defect. The static route ships these bytes with `read_bytes()` and
+    the runtime scrubber never sees them, exactly as for `serve/console.html`
+    above.
+
+    Reuses `Scrubber` rather than importing or re-implementing the script's
+    scan (`AGENTS.md` §Efficiency: do not build what exists). It is STRICTER --
+    same corpus and key set, plus the sub-five-word literal sweep -- so a pass
+    here implies the script passes. MEASURED 2026-09-15: all 25 tracked files
+    were clean under it, so this lands green on content that already shipped
+    rather than on a cleanup.
+
+    Reads the file list from `git ls-files`, not a glob: untracked artifacts
+    under `site/` are a local build product and are not what publishing
+    exposes. A shell glob would also drop dotfiles.
+    """
+    import subprocess
+
+    dic = _dictionary_or_skip()
+    git = shutil.which("git")
+    if git is None:  # pragma: no cover - git is present wherever this runs
+        pytest.skip("git not installed")
+
+    out = subprocess.run([git, "ls-files", "site"], cwd=ROOT,
+                         capture_output=True, text=True).stdout.split()
+    # Anti-vacuity: an empty list, or a `site/` that lost its page, would
+    # satisfy every assertion below.
+    assert len(out) >= 20, f"only {len(out)} tracked file(s) under site/"
+    assert "site/index.html" in out, "the page itself is not tracked"
+
+    s = Scrubber(path=dic)
+    dirty: dict[str, list[str]] = {}
+    for rel in out:
+        try:
+            text = (ROOT / rel).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue          # a binary asset carries no five-word run
+        found = s.hits(text)
+        if found:
+            dirty[rel] = found[:3]
+    assert not dirty, (
+        f"tracked file(s) under site/ carry instrument content: {dirty}. The "
+        f"repository is PUBLIC and the static route ships these bytes "
+        f"verbatim; site/tools/no_instrument.py is the gate this enforces.")
+
+    # Anti-vacuity the other way: the scanner must be live on this build, or
+    # the loop above proves only that it never fires.
+    entries = json.loads(dic.read_text(encoding="utf-8"))["entries"]
+    real = next(e["question_text"] for e in entries
+                if isinstance(e.get("question_text"), str)
+                and len(e["question_text"].split()) > 7)
+    assert s.hits(f"an example panel showing {real}"), (
+        "the scanner did not fire on real instrument wording, so the scan "
+        "above certifies nothing")
 
 
 def test_key_matching_is_case_insensitive_on_both_paths() -> None:

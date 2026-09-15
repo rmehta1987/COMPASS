@@ -1,0 +1,58 @@
+{
+  "schema": "compass_site/requests/1",
+  "provenance": {
+    "source": "hand-authored 2026-09-04. n01 and n42 are rows of fixtures/negative_requests.json (model-authored, 2026-09) with the instance fields of fixtures/negative_expansion_fields.json (hand-authored, tracked). The other two are the operator's own words: one is the retriever's own demo query in deploy/retriever.py. None is instrument wording. The causal question was added 2026-09-09 by the operator as the page's default: it names TWO constructs, which is what 'Ask the model' is for, and the retriever alone can only return one.",
+    "commit": "COMPASS main 265241d"
+  },
+  "examples": [
+    {
+      "id": "causal-question",
+      "label": "two constructs, one answer",
+      "request": "does smoking cause hypertension",
+      "role": "exposure",
+      "instances": [],
+      "origin": "operator-authored",
+      "note": "The question names two constructs. The deployed retriever is a single-construct tool: it returned the outcome the question names, cleared the threshold, and never surfaced the exposure at all -- every candidate above comes from the same domain. Nothing in its output says a construct was dropped. Resolving both roles, and deciding which is exposure and which is outcome, is what the model is asked to do; the retriever alone cannot."
+    },
+    {
+      "id": "resolved",
+      "label": "resolved",
+      "request": "how often siblings were diagnosed with breast cancer",
+      "role": "exposure",
+      "instances": [
+        "breast cancer"
+      ],
+      "origin": "operator-authored"
+    },
+    {
+      "id": "resolved-2",
+      "label": "resolved · demo query",
+      "request": "exogenous hormone medication",
+      "role": "exposure",
+      "instances": [],
+      "origin": "deploy/retriever.py __main__ demo query"
+    },
+    {
+      "id": "absent",
+      "label": "absent",
+      "request": "ambient PM2.5 concentration at the residential address",
+      "role": "exposure",
+      "instances": [
+        "fine particulate matter"
+      ],
+      "origin": "negative fixture n01 + negative_expansion_fields",
+      "note": "The construct is not in the instrument: the absence check finds no air-pollution measure in any dictionary field, only self-reported proximity to a pollution source. The retriever's nearest target is far below the threshold and it abstains, which is the correct verdict."
+    },
+    {
+      "id": "false-accept",
+      "label": "false accept",
+      "request": "what kind of neighborhood income level they live in",
+      "role": "exposure",
+      "instances": [
+        "median household income"
+      ],
+      "origin": "negative fixture n42 + negative_expansion_fields",
+      "note": "The request is area-level. The instrument has no area-level measure: no deprivation index, no census tract, no geocode (absence check). The retriever returns an individual household-income variable and does not abstain, clearing the threshold by a hair. Known failure; the threshold detects absent constructs, not wrong picks."
+    }
+  ]
+}

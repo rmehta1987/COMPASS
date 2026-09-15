@@ -81,6 +81,14 @@ benchmark/leak_facts.py
 # any variable key, and passed over all of site/ on 2026-09-15 (exit 0, 9,424
 # runs and 5,608 keys checked). That gate is the reason these may be tracked.
 !site/artifacts/*.json
+# the page's example requests: the INPUT to `site/tools/run_examples.py`, which
+# generates the tracked `site/artifacts/runs.json`. Ignored by `*.json` and so
+# left behind when `0606136` carried the page in-tree, which meant the runs
+# panel could not be regenerated from a clean checkout -- the same "works on one
+# box" defect as the `--site-dir` default that commit fixed. Its own provenance
+# field records that the five requests are the operator's words plus two rows of
+# the negative fixtures, and that none is instrument wording.
+!site/tools/requests.json
 # out/ and run/ are ignored wholesale; the handful of tracked artifacts under
 # out/ were force-added (git add -f) after a wording scan. See README.md.
 out/
