@@ -3,6 +3,16 @@ Open work only; merged history is `CHANGELOG.md`, rules `AGENTS.md`, design limi
 `DESIGN.md` §7. Read every count from the module owning it, never here. Acceptance is
 testable; seed its failure first.
 
+`C<n>` numbers are THIS FILE's series and no other's. A second, SUPERSEDED C30–C40 lives
+in `/home/mehta5/compass-reviews/HANDOFFS-C30-C40.md` (scoped 2026-09-09 against
+`compass-gen`, branch `ralph-loop`), and every number from C30 to C35 means something
+different there — its C32 is `check_holdout_not_reachable` reading prose, its C35 is a
+malformed derivation aborting a command, its C36 is floors firing at zero. It is
+superseded on evidence, not by assumption: its ordering rests on
+`benchmark.contamination_check` being unimportable until its own C40, and that module runs
+here (exit 2, 2026-09-14). Cite a `C<n>` from this file only, and never renumber one —
+the collision is recorded, not resolved.
+
 ## Open — the worked rediscovery, n=1–3
 
 > **BLOCKED 2026-09-14, and not on anyone's effort.** MEASURED that day in the scoring
