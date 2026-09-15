@@ -37,6 +37,31 @@ targets.json
 deploy/targets.json
 deploy/model/
 
+# --- the answer keys, as MODULES ----------------------------------------------
+# The three withheld modules named by
+# `benchmark/contamination_check.py::WITHHELD_MODULES`. They hold published
+# paper content -- rediscovery design anchors, prevalence rows, leak facts --
+# and they exist only in the scoring clone, where `git add -A` reaches them and
+# nothing stopped it. The discipline until now was UNTRACKED and nothing
+# enforced it: measured 2026-09-15, `prevalence_key.py` has zero commits in the
+# whole history and `leak_facts.py` has two, which is the recorded public
+# exposure (`TASKS.md` §Known-open defects). An ignore entry is what turns that
+# discipline into a mechanism.
+#
+# THIS DOES NOT UN-PUBLISH ANYTHING. `leak_facts.py` is reachable from the live
+# `origin/main`; the adding commit stays an ancestor and an ignore rule says
+# nothing about history. This prevents the NEXT staging, not the last one, and
+# the remedy for that one is the user's (rotation, or accepting it as
+# disclosed). Nor does it stop `git add -f`, which is how the tracked artifacts
+# under `out/` got there.
+#
+# Pinned by `tests/test_code_standards.py::
+# test_every_withheld_key_module_is_unstageable`, which asks git and reads the
+# module list from `WITHHELD_MODULES` rather than repeating it here.
+benchmark/design_key.py
+benchmark/prevalence_key.py
+benchmark/leak_facts.py
+
 # --- data, model and vector artifacts -----------------------------------------
 *.json
 *.jsonl

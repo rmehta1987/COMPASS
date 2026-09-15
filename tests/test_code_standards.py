@@ -162,3 +162,58 @@ def test_withheld_artifacts_are_ignored_as_symlinks_too() -> None:
     assert not missing, (
         f"not ignored without a trailing slash: {missing}. A symlinked "
         "artifact would be stageable and would point at the instrument.")
+
+
+def test_every_withheld_key_module_is_unstageable() -> None:
+    """An answer key must not be committable by accident, in any clone.
+
+    The instrument was ignored in every form and the ANSWER KEYS were not.
+    `.gitignore` named none of the three, so in the scoring clone -- the only
+    one where they exist -- `git add -A` reached them and nothing stopped it.
+    Measured 2026-09-15: `benchmark/prevalence_key.py` has zero commits in the
+    whole history, which is the discipline working by hand, and
+    `benchmark/leak_facts.py` has two, which is it failing
+    (`TASKS.md` §Known-open defects).
+
+    Asks git rather than parsing `.gitignore`, like the test above, so the
+    guarantee survives a rewrite of the pattern. Reads the module list from
+    `WITHHELD_MODULES` rather than repeating it, so a FOURTH withheld module
+    reddens this instead of arriving unignored -- the list has one owner
+    (`AGENTS.md` §Testing Patterns).
+
+    What this does NOT claim: an ignore rule is not history. `leak_facts.py`
+    stays reachable from the published `origin/main` and
+    `tests/test_withheld.py::test_no_new_withheld_module_is_reachable_from_a_published_ref`
+    is what watches that. Nor does it stop `git add -f`.
+    """
+    git: Path | None = _tool("git")
+    if git is None:  # pragma: no cover - git is present wherever this runs
+        pytest.skip("git not installed")
+
+    sys.path.insert(0, str(ROOT))
+    from benchmark.contamination_check import WITHHELD_MODULES
+
+    paths = sorted(m.replace(".", "/") + ".py" for m in WITHHELD_MODULES)
+    # Anti-vacuity: an empty registry would satisfy the assertion below.
+    assert len(paths) >= 3, f"only {len(paths)} withheld module(s) registered"
+
+    out: str = subprocess.run(
+        [str(git), "check-ignore", "--no-index", *paths],
+        cwd=ROOT, capture_output=True, text=True).stdout
+    ignored = set(out.split())
+    missing = [p for p in paths if p not in ignored]
+    assert not missing, (
+        f"withheld answer-key module(s) {missing} are not ignored, so "
+        f"`git add -A` in the scoring clone would stage a published paper's "
+        f"answers. Add each to .gitignore. This is how "
+        f"benchmark/leak_facts.py reached a public ref.")
+
+    # Anti-vacuity the other way: the rule must be specific, not a blanket that
+    # would also hide the code these modules are read BY.
+    live: str = subprocess.run(
+        [str(git), "check-ignore", "--no-index",
+         "benchmark/scorability.py", "benchmark/design_anchor.py",
+         "benchmark/contamination_check.py"],
+        cwd=ROOT, capture_output=True, text=True).stdout
+    assert not live.split(), (
+        f"the ignore rule also hides tracked source: {live.split()}")
