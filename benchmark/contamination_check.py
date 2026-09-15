@@ -87,7 +87,16 @@ ROOT = Path(__file__).resolve().parent.parent
 #: SKIPS loudly and makes the exit status non-zero; it never counts as clean.
 #: Named explicitly rather than caught broadly, so a genuine missing dependency
 #: still takes the run down instead of being reported as a withheld-key skip.
-WITHHELD_MODULES = frozenset({"benchmark.prevalence_key", "benchmark.leak_facts"})
+#:
+#: `benchmark.design_key` joined on 2026-09-14 (C36). It is the design-arrow key
+#: -- one row per paper, both sides -- and it exists BECAUSE the column it
+#: replaces was in the wrong clone: `scorability.py::EXPOSURE_KEYS` sat in the
+#: clone where prompts, `agent/schema.py` docstrings and `env/tools.py` are
+#: edited, which was safe only while it was empty. The first row would have made
+#: the editing clone the clone holding the rediscovery answers. The shape lives
+#: in `benchmark/design_anchor.py`, which is NOT withheld and stores no rows.
+WITHHELD_MODULES = frozenset({"benchmark.prevalence_key", "benchmark.leak_facts",
+                              "benchmark.design_key"})
 sys.path.insert(0, str(ROOT))
 
 import agent.prompt_contract as PC  # noqa: E402
@@ -1190,9 +1199,15 @@ def check_holdout_not_reachable() -> list[str]:
     # into one object and prints it. It stores none of that, which is why it is
     # not a key; it is named here anyway, because what a copy of it under
     # curated/ would put on a tool path is the same content either way.
+    # `design_key.py` joined on 2026-09-14 (C36). It holds one row per paper
+    # naming BOTH sides of a published design arrow, so it is the most direct
+    # statement of the answer in the repository -- and unlike the others it is
+    # also in WITHHELD_MODULES, so it should not exist here at all. Named here
+    # anyway: this check is about where a file SITS, and a copy under curated/
+    # would be on a globbed tool path whichever clone it was copied in.
     for key in ("leak_facts.py", "prevalence_key.py", "unearned_assertions.py",
                 "cohort_papers.py", "input_leakage.py", "scorability.py",
-                "rediscovery.py"):
+                "rediscovery.py", "design_key.py"):
         for d in ("curated", "env", "agent"):
             if (ROOT / d / key).exists():
                 bad.append(f"{d}/{key} exists — an answer key belongs under "

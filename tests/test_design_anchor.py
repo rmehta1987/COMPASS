@@ -352,3 +352,55 @@ def test_a_blocked_area_measure_and_a_refutation_need_no_resolver() -> None:
                           blocked_on=da.AREA_MEASURE_INVENTORY),),
                (da.Anchor("other", da.NOT_IN_INSTRUMENT),))
     assert da.validate_design_key((row,)) == []
+
+
+# --------------------------------------------------------------------------- #
+# the holdout, driven rather than grepped
+# --------------------------------------------------------------------------- #
+
+
+def test_the_holdout_check_catches_a_copy_of_the_design_key(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A copy of the design key on a globbed tool path must be caught.
+
+    `tests/test_scorability.py` pins its equivalent by asserting a quoted
+    filename appears in the source. This drives the function instead
+    (`AGENTS.md` §Testing Patterns: assert the wiring, not a substring), so it
+    also fails if the name is present but the loop stops reaching it.
+
+    `curated/` is globbed by the tool layer and `agent/` ships docstrings into
+    the transduction prompt, so a copy under either is not a near miss.
+    `cc.ROOT` is redirected at a tmp tree rather than writing a file named
+    `design_key.py` into the real `curated/` even briefly.
+
+    Args:
+        tmp_path: pytest's per-test directory, standing in for the repo root.
+        monkeypatch: Used to redirect `cc.ROOT`.
+    """
+    # Deferred: `benchmark.contamination_check` imports agent.specifier,
+    # agent.registry, benchmark.retrieval_eval and more at module scope, so at
+    # collection time an unrelated Lane A import error would turn every test in
+    # this file into a collection error naming the wrong file. TASKS.md carries
+    # that coupling as an open defect for tests/test_scorability.py; this does
+    # not add a second instance of it.
+    from benchmark import contamination_check as cc
+
+    (tmp_path / "env").mkdir()
+    (tmp_path / "env" / "tools.py").write_text("# nothing forbidden here\n")
+    (tmp_path / "curated").mkdir()
+    (tmp_path / "agent").mkdir()
+    monkeypatch.setattr(cc, "ROOT", tmp_path)
+
+    assert cc.check_holdout_not_reachable() == [], (
+        "the empty tmp tree must be clean, or the assertion below passes for "
+        "some reason other than the copy")
+
+    for directory in ("curated", "agent"):
+        planted = tmp_path / directory / "design_key.py"
+        planted.write_text("")
+        problems = cc.check_holdout_not_reachable()
+        planted.unlink()
+        assert any("design_key.py" in p for p in problems), (
+            f"a copy at {directory}/design_key.py went undetected. It holds one "
+            f"row per paper naming both sides of a published design arrow, "
+            f"which is the most direct statement of the answer there is.")

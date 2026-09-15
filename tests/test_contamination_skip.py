@@ -30,7 +30,8 @@ from benchmark import contamination_check as cc  # noqa: E402
 def test_the_withheld_set_names_only_the_held_out_modules() -> None:
     """The catch is named, not broad: a real missing dependency is not a skip."""
     assert cc.WITHHELD_MODULES == frozenset(
-        {"benchmark.prevalence_key", "benchmark.leak_facts"}), (
+        {"benchmark.prevalence_key", "benchmark.leak_facts",
+         "benchmark.design_key"}), (
         "WITHHELD_MODULES decides what may be downgraded to a skip. Widening it "
         "turns a genuine broken import into a section that silently did not run.")
 

@@ -39,6 +39,7 @@ from benchmark.contamination_check import WITHHELD_MODULES  # noqa: E402
 
 PREVALENCE_KEY = "benchmark.prevalence_key"
 LEAK_FACTS = "benchmark.leak_facts"
+DESIGN_KEY = "benchmark.design_key"
 
 
 def _importable(module: str) -> bool:
@@ -102,8 +103,18 @@ needs_prevalence_key = _guard(PREVALENCE_KEY)
 #: Needs the held-out leak-fact and platform-name key.
 needs_leak_facts = _guard(LEAK_FACTS)
 
+#: Needs the held-out design-arrow key (C36) -- one row per paper, both sides.
+#: A test wanting this AND the prevalence key carries two decorations and counts
+#: twice against `GUARD_CEILING`, which is the right cost: since C36 the design
+#: key is the only reader for design, so a test needing both is usually reading
+#: the prevalence key for something it no longer owns.
+needs_design_key = _guard(DESIGN_KEY)
+
 #: Every module a guard here may name. `tests/test_withheld.py` asserts this
-#: against `WITHHELD_MODULES`, so a guard cannot come to name a module the
-#: contamination gate does not hold out -- which would be an unconditional skip
-#: wearing a condition.
-GUARDED_MODULES = (PREVALENCE_KEY, LEAK_FACTS)
+#: against `WITHHELD_MODULES` in BOTH directions, so a guard cannot come to name
+#: a module the contamination gate does not hold out -- an unconditional skip
+#: wearing a condition -- and a withheld module cannot come to have no guard,
+#: which is how a test that needs a key ends up permanently red here instead.
+#: Listed rather than derived from `WITHHELD_MODULES` on purpose: deriving it
+#: would make both of those tests true by construction and therefore vacuous.
+GUARDED_MODULES = (PREVALENCE_KEY, LEAK_FACTS, DESIGN_KEY)

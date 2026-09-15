@@ -76,6 +76,28 @@ def test_the_guards_name_only_modules_the_gate_holds_out() -> None:
         f"skip with no condition.")
 
 
+def test_every_withheld_module_has_a_guard() -> None:
+    """The direction nothing checked, whose red state is a permanently red suite.
+
+    `test_the_guards_name_only_modules_the_gate_holds_out` catches a guard with
+    no holdout. Nothing caught the reverse: adding a module to
+    `WITHHELD_MODULES` without adding a guard here leaves the tests that need
+    it FAILING in every clone but the scoring one, which is the exact state
+    this module was written to end. Found when `benchmark.design_key` joined
+    the set for C36.
+
+    Both directions are asserted, and both are kept as separate tests rather
+    than one equality: the two red states are different defects and the message
+    should say which.
+    """
+    unguarded = WITHHELD_MODULES - set(withheld.GUARDED_MODULES)
+    assert not unguarded, (
+        f"{sorted(unguarded)} are withheld but have no guard in "
+        f"tests/withheld.py. Every test needing one is red here rather than "
+        f"skipped, and a permanently red suite says nothing about the change "
+        f"you just made.")
+
+
 def test_only_a_withheld_module_can_excuse_a_failure() -> None:
     """`present` refuses to launder an ordinary broken import into a skip."""
     with pytest.raises(ValueError, match="not withheld"):
@@ -90,7 +112,8 @@ def test_a_skip_says_what_did_not_run_and_that_it_is_not_a_pass() -> None:
     `pytest -q` prints a count and no reasons, which is why `AGENTS.md`
     §Verify current state now passes `-ra`.
     """
-    for mark in (withheld.needs_prevalence_key, withheld.needs_leak_facts):
+    for mark in (withheld.needs_prevalence_key, withheld.needs_leak_facts,
+                 withheld.needs_design_key):
         reason = mark.kwargs["reason"]
         assert "withheld from this clone" in reason
         assert "NOT a pass" in reason, (
