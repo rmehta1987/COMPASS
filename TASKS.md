@@ -212,9 +212,13 @@ publishes or blocks a downstream stage.
 *Added 2026-09-10. The operator's framing: the website is the product and this pipeline is
 its backbone; a user prompts it like a chat assistant, and the reasoning model is meant to
 separate the query into the schema before retrieving. Placement and priority in this file
-are the operator's. `serve/` lives on the unmerged branch `worktree-serve-endpoint` and is
-named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flow
-(`compass-site:site/index.html::askResolver` → `POST /api/pair`, no `k`) depends on it.*
+are the operator's. CORRECTED 2026-09-15: `serve/` is no longer unmerged and no longer
+unrecorded — it is on `merge-code-and-docs`, pushed, and `CHANGELOG.md` names it under
+that date; the page is in-tree at `site/index.html`, not in the `compass-site` clone, and
+`--site-dir` defaults to it. The site's* Ask the pipeline *flow
+(`site/index.html::askResolver` → `POST /api/pair`, no `k`) depends on it, and that
+hand-off now works on a default bind: the gate that killed every proposal ticket and the
+key mismatch that refused every battery-derived exposure both landed that day.*
 
 - **C29 — one pool cannot carry a multi-construct request; split before retrieving.**
   `serve/api.py::_role_candidates` passes the researcher's whole sentence as
