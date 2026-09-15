@@ -557,11 +557,14 @@ def test_a_mis_cased_key_is_fixed_in_code_and_reported_not_guessed() -> None:
     from serve.api import _canonical_key
 
     constructs = {"m3:Q16.1": object(), "m2:Q5.8": object()}
+    members = {"m3:Q16.1_1": "m3:Q16.1"}
     seen: dict[str, str] = {}
-    assert _canonical_key("m3:Q16.1", constructs, "exposure", seen) == "m3:Q16.1"
+    assert _canonical_key("m3:Q16.1", constructs, "exposure", seen,
+                          members) == "m3:Q16.1"
     assert seen == {}, "an exact match is not a correction"
 
-    assert _canonical_key("m3:q16.1", constructs, "exposure", seen) == "m3:Q16.1"
+    assert _canonical_key("m3:q16.1", constructs, "exposure", seen,
+                          members) == "m3:Q16.1"
     assert seen == {"m3:q16.1": "m3:Q16.1"}, "the rewrite must be reported"
 
 
@@ -571,7 +574,7 @@ def test_an_unresolvable_key_costs_nothing() -> None:
 
     constructs = {"m3:Q16.1": object()}
     with pytest.raises(ValueError, match="does not resolve"):
-        _canonical_key("m3:Q99.9", constructs, "exposure", {})
+        _canonical_key("m3:Q99.9", constructs, "exposure", {}, {})
 
 
 def test_case_insensitive_key_matching_is_unambiguous_on_this_instrument() -> None:
@@ -1495,4 +1498,165 @@ def test_every_route_that_issues_a_ticket_declares_its_kind() -> None:
 
 
 # --------------------------- a proposed key must be a key the Specifier takes
+
+def test_every_key_the_retriever_can_offer_resolves_for_the_specifier() -> None:
+    """The two routes are pinned to each other, over the whole key domain.
+
+    `/api/pair` proposes whatever `_role_candidates` put in the pool, and that
+    is the retriever's `key` field -- `deploy/retriever.py::_hit` returns
+    `t["canonical_key"]` under that name. `_canonical_key` matched only
+    CONSTRUCT keys, so a sub-item key such as a battery member was refused with
+    a 400 before any model call, and the caller had to substitute the construct
+    by hand.
+
+    MEASURED 2026-09-15 over `deploy/targets.json`: of 1,353 offerable keys,
+    946 were construct keys and **407 were sub-item keys the Specifier
+    refused** -- every battery-derived exposure, including the one the site's
+    own demo request produces. Counted here rather than pinned, so this stays
+    one-sided: it may only be a statement that nothing offerable is refused.
+    """
+    from serve.api import _canonical_key
+
+    targets = ROOT / "deploy" / "targets.json"
+    if not targets.is_file():
+        pytest.skip("the deploy bundle is not in this tree")
+    offerable = sorted({t["canonical_key"]
+                        for t in json.loads(targets.read_text())["targets"]})
+
+    constructs, members = _constructs_and_members_or_skip()
+
+    refused = []
+    for key in offerable:
+        canonical: dict[str, str] = {}
+        try:
+            _canonical_key(key, constructs, "exposure", canonical, members)
+        except ValueError:
+            refused.append(key)
+    assert not refused, (
+        f"{len(refused)} of {len(offerable)} keys the retriever can offer are "
+        f"refused by /api/specify, so the hand-off from /api/pair cannot work "
+        f"for them")
+
+def _constructs_and_members_or_skip() -> tuple[dict, dict]:
+    """The construct keys and the sub-item index, read from the dictionary.
+
+    Built here from the entries rather than imported from `generate.funnel`, so
+    the test states the relation it depends on instead of trusting a helper:
+    a construct owns the entries carrying its `construct_key`.
+
+    Returns:
+        The construct-key set (as a dict, the shape `_canonical_key` takes) and
+        the sub-item key to construct key index.
+    """
+    entries = json.loads(_dictionary_or_skip().read_text(encoding="utf-8"))["entries"]
+    constructs: dict[str, object] = {}
+    members: dict[str, str] = {}
+    for e in entries:
+        constructs.setdefault(e["construct_key"], object())
+        members[e["key"]] = e["construct_key"]
+    return constructs, members
+
+def test_a_sub_item_key_resolves_to_its_construct_and_the_reply_says_so() -> None:
+    """Translate at the boundary, and REPORT it. An unreported rewrite is worse.
+
+    `_canonical_key`'s case fix already records `{typed: resolved}` so the
+    response can report it "rather than silently rewriting input". A sub-item
+    translation follows that exactly, because it is the same hazard: the model
+    may never substitute a key, so the harness must say when it did.
+    """
+    from serve.api import _canonical_key
+
+    constructs = {"m3:Q16.1": object(), "m2:Q5.8": object()}
+    members = {"m3:Q16.1_1": "m3:Q16.1", "m3:Q16.1_2": "m3:Q16.1",
+               "m2:Q5.8": "m2:Q5.8"}
+    seen: dict[str, str] = {}
+
+    assert _canonical_key("m3:Q16.1_1", constructs, "exposure", seen,
+                          members) == "m3:Q16.1"
+    assert seen == {"m3:Q16.1_1": "m3:Q16.1"}, "the translation must be reported"
+
+    seen.clear()
+    assert _canonical_key("m2:Q5.8", constructs, "outcome", seen, members) == "m2:Q5.8"
+    assert seen == {}, "a key that is already a construct key is not a rewrite"
+
+def test_a_sub_item_translation_is_reported_apart_from_a_case_fix() -> None:
+    """The two rewrites differ in KIND, so one field may not carry both.
+
+    A case fix resolves to the construct the caller already meant. A sub-item
+    translation changes the GRAIN of the request -- one battery member becomes
+    the whole battery, which the Specifier may then derive within -- and
+    reporting that under `key_case_corrected` would state something false
+    beside a changed value. `PINNED_REASON` above was corrected for exactly
+    that shape.
+    """
+    from serve.api import _split_rewrites
+
+    case, grain = _split_rewrites({"m3:q16.1": "m3:Q16.1",
+                                   "m3:Q16.1_1": "m3:Q16.1"})
+    assert case == {"m3:q16.1": "m3:Q16.1"}
+    assert grain == {"m3:Q16.1_1": "m3:Q16.1"}
+    assert _split_rewrites({}) == ({}, {})
+
+def test_a_key_that_names_nothing_still_costs_nothing() -> None:
+    """The load-bearing half of the refusal survives the translation.
+
+    Its docstring records `m3:q16.1` costing a live run 78s and $0.04 to be
+    told about a capital letter. Accepting sub-item keys must not turn the
+    refusal into a model call for a key that names nothing at all.
+    """
+    from serve.api import Unresolvable, _canonical_key
+
+    constructs = {"m3:Q16.1": object()}
+    members = {"m3:Q16.1_1": "m3:Q16.1"}
+    with pytest.raises(Unresolvable, match="does not resolve"):
+        _canonical_key("m3:Q99.9", constructs, "exposure", {}, members)
+    with pytest.raises(Unresolvable, match="does not resolve"):
+        _canonical_key("m3:Q99.9_1", constructs, "exposure", {}, members)
+
+def test_the_sub_item_index_is_unambiguous_on_this_instrument() -> None:
+    """Translation is only a lookup while no sub-item key names two constructs.
+
+    MEASURED 2026-09-15 over the built dictionary: 2,804 sub-item keys, 1,080
+    construct keys, 2,929 in the union, ZERO case-insensitive collisions in
+    that union, ZERO sub-item keys owned by two constructs, and ZERO sub-item
+    keys that are a DIFFERENT construct's key. Re-derived here rather than
+    inherited, because the moment one of those is non-zero the translation
+    becomes a judgement and has to stop being made in Python.
+    """
+    constructs, members = _constructs_and_members_or_skip()
+
+    cross = {m: ck for m, ck in members.items() if m in constructs and m != ck}
+    assert not cross, f"a sub-item key is another construct's key: {sorted(cross)[:5]}"
+
+    folded: dict[str, str] = {}
+    collisions = []
+    for k in list(constructs) + list(members):
+        prior = folded.setdefault(k.casefold(), k)
+        if prior != k:
+            collisions.append((prior, k))
+    assert not collisions, f"two keys differ by case alone: {collisions[:5]}"
+
+def test_the_sub_item_index_is_the_dictionarys_own_grouping() -> None:
+    """`_member_index` must reshape the dictionary, never re-derive it.
+
+    The translation is only defensible because the mapping already exists: the
+    entries carry a `construct_key` column and `load_constructs` groups on it.
+    Compared here against that column read straight off the entries, so an
+    index built from anything else -- a key's own spelling, a regex over the
+    sub-item suffix -- turns this red rather than quietly translating to a
+    construct the dictionary does not agree with.
+    """
+    from serve.api import _member_index
+
+    try:
+        from generate.funnel import load_constructs
+        constructs, version = load_constructs()
+    except (ImportError, FileNotFoundError):  # pragma: no cover - public tree
+        pytest.skip("the built dictionary is withheld here")
+
+    entries = json.loads(_dictionary_or_skip().read_text(encoding="utf-8"))["entries"]
+    from_column = {e["key"]: e["construct_key"] for e in entries}
+
+    assert _member_index(constructs) == from_column, (
+        f"the index disagrees with the construct_key column of {version}")
 

@@ -405,8 +405,58 @@ def _retrieve(state: State, body: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _member_index(constructs: dict[str, Any]) -> dict[str, str]:
+    """Map every sub-item key to the construct that owns it.
+
+    Derived from `Construct.member_keys`, which is already the grouping
+    `load_constructs` built out of the entries' `construct_key` column -- so
+    this is a reshape of the dictionary the caller already loaded, not a second
+    source that could disagree with it.
+
+    MEASURED 2026-09-15 on `3dc8415eccfe`: 2,804 sub-item keys over 1,080
+    constructs, ZERO owned by two constructs and ZERO that are a DIFFERENT
+    construct's key, so the map is a lookup and never a judgement.
+    `tests/test_serve_redaction.py::test_the_sub_item_index_is_unambiguous_on_this_instrument`
+    turns red if that stops being true.
+
+    Args:
+        constructs: Construct keys to Construct, from `load_constructs`.
+
+    Returns:
+        Sub-item key to construct key.
+    """
+    # `c.member_keys`, not a `getattr` fallback: a value without the attribute
+    # would yield an EMPTY index, which refuses every sub-item key again and
+    # silently, with nothing going red. Failing loudly on the wrong type is the
+    # only version of this that stays enforced.
+    return {m: ck for ck, c in constructs.items() for m in c.member_keys}
+
+
+def _split_rewrites(canonical: dict[str, str]) -> tuple[dict[str, str],
+                                                        dict[str, str]]:
+    """Separate a case fix from a change of GRAIN, for reporting.
+
+    Both are rewrites of the caller's input and both travel in one dict, but
+    they are not the same claim. A case fix resolves to the construct the
+    caller already named. A sub-item translation replaces one battery member
+    with the whole battery, which the Specifier may then derive within -- a
+    different request, at a coarser grain. Reporting that under
+    `key_case_corrected` would state something false beside a changed value,
+    which is the shape `PINNED_REASON` was corrected for.
+
+    Args:
+        canonical: `{typed: resolved}` as `_canonical_key` recorded it.
+
+    Returns:
+        The case fixes and the grain changes, in that order.
+    """
+    case = {k: v for k, v in canonical.items() if k.casefold() == v.casefold()}
+    grain = {k: v for k, v in canonical.items() if k.casefold() != v.casefold()}
+    return case, grain
+
+
 def _canonical_key(key: str, constructs: dict[str, Any], role: str,
-                   canonical: dict[str, str]) -> str:
+                   canonical: dict[str, str], members: dict[str, str]) -> str:
     """Resolve a construct key's case before a model call, or refuse cheaply.
 
     WHY THIS IS NOT THE MODEL'S JOB. The Specifier is forbidden to substitute a
@@ -431,8 +481,11 @@ def _canonical_key(key: str, constructs: dict[str, Any], role: str,
         key: The construct key as the caller typed it.
         constructs: Construct keys to Construct, from `load_constructs`.
         role: `exposure` or `outcome`, for the error message.
-        canonical: Mutated with `{typed: resolved}` when a case fix was applied,
+        canonical: Mutated with `{typed: resolved}` when a rewrite was applied,
             so the response can report it rather than silently rewriting input.
+        members: Sub-item key to construct key, from `_member_index`. Required
+            rather than defaulted: a call site that omitted it would refuse
+            every sub-item key again, silently and with no test going red.
 
     Returns:
         The key as the dictionary spells it.
@@ -441,11 +494,32 @@ def _canonical_key(key: str, constructs: dict[str, Any], role: str,
         Unresolvable: When the key resolves to no construct. It subclasses
             `ValueError`, so the 400 branch that caught the old one catches it.
 
+    Note:
+        A SUB-ITEM KEY IS ACCEPTED AND TRANSLATED TO ITS CONSTRUCT. `/api/pair`
+        proposes whatever the retriever offered, and that is the sub-item `key`
+        field: MEASURED 2026-09-15, 407 of the 1,353 offerable keys are
+        sub-item keys, so a third of every proposal -- and the whole `derive`
+        path, the site's own demo request included -- was refused here with a
+        400 and the caller had to substitute the construct by hand. The mapping
+        needs no inference, since `deploy/retriever.py::_hit` already returns
+        `construct_key` beside `key`. The translation is REPORTED, and reported
+        apart from a case fix, because it changes the request's grain:
+        `_split_rewrites`.
     """
     if key in constructs:
         return key
+    # Construct keys first, at both exactnesses, so a string that is a
+    # construct key can never be read as some other construct's member. The
+    # measurement in `_member_index` says no such string exists today; the
+    # ordering means this stays correct rather than lucky if one appears.
     folded = {k.casefold(): k for k in constructs}
     fixed = folded.get(key.casefold())
+    if fixed is None:
+        owner = members.get(key)
+        if owner is None:
+            folded_members = {k.casefold(): v for k, v in members.items()}
+            owner = folded_members.get(key.casefold())
+        fixed = owner
     if fixed is not None:
         canonical[key] = fixed
         return fixed
@@ -1248,8 +1322,9 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
     resolver_model = _resolver_model(body)
     canonical: dict[str, str] = {}
     if not allow_unresolvable:
-        exposure = _canonical_key(exposure, C, "exposure", canonical)
-        outcome = _canonical_key(outcome, C, "outcome", canonical)
+        members = _member_index(C)
+        exposure = _canonical_key(exposure, C, "exposure", canonical, members)
+        outcome = _canonical_key(outcome, C, "outcome", canonical, members)
     pair = Candidate(exposure=C.get(exposure) or stand_in(exposure),
                      outcome=C.get(outcome) or stand_in(outcome))
 
@@ -1484,7 +1559,8 @@ def _specify_payload(res: Any, identity: Any, version: str, model: str,
         identity: The run identity.
         version: Dictionary version hash.
         model: The model that was asked for.
-        canonical: Any key-case corrections applied.
+        canonical: Any rewrites applied to the caller's keys, case fixes and
+            sub-item translations together; reported as two fields.
         allow_unresolvable: Whether the refusal path was driven deliberately.
         backend: The backend, for its cost.
         elapsed: Wall-clock seconds.
@@ -1497,6 +1573,7 @@ def _specify_payload(res: Any, identity: Any, version: str, model: str,
     # the pair unspecifiable (`agent/specifier.py::Result`). Collapsing them
     # into one "record" here would re-introduce exactly the discrimination that
     # class refuses to push onto its callers, so both are reported.
+    case_fixed, grain_changed = _split_rewrites(canonical)
     payload: dict[str, Any] = {
         "identity": {
             "protocol_id": identity.protocol_id,
@@ -1507,7 +1584,11 @@ def _specify_payload(res: Any, identity: Any, version: str, model: str,
             "selection_mode": "externally_posed",
             # A silent rewrite of the caller's input is its own small version of
             # the substitution problem: say what was changed and to what. The
-            "key_case_corrected": canonical or None,
+            # two rewrites are reported SEPARATELY because they are different
+            # claims -- a case fix names the construct the caller meant, a
+            # sub-item translation coarsens the request to the whole battery.
+            "key_case_corrected": case_fixed or None,
+            "key_subitem_to_construct": grain_changed or None,
             "allow_unresolvable": allow_unresolvable,
             # Stamped on EVERY run, whatever its selection mode. A posed pair
             # is kept out of a benchmark denominator by `screened_from = 0`; an
