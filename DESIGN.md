@@ -177,10 +177,15 @@ Three routes by which a published analysis reaches the model. **Only one closes.
   Not an environment-forced field for §6's partition until bound.
 - **The corpus binds harder than contamination.** Read refuted/confirmed/undetermined from
   `benchmark/scorability.py::status_counts`; no contamination fix repairs it.
-- Refuted rests on a recorded fact — the key puts the outcome outside the questionnaire,
-  or no token of one side is in the instrument. Confirmed needs a key resolving live on
-  both sides, so nothing confirms until `benchmark/scorability.py::EXPOSURE_KEYS` is
-  filled. That module's docstring records papers the naive word test admits wrongly.
+- Refuted rests on a recorded fact — a `not_in_instrument` anchor records an item-level
+  read of the questionnaire, or no token of one side is in the instrument. Confirmed needs
+  a live-resolved anchor for EVERY term on both sides, so nothing confirms until
+  `benchmark/design_key.py` holds rows; it is withheld from every clone but the scoring
+  one, which is why `status_counts` raises here (C36, 2026-09-14 — it was
+  `benchmark/scorability.py::EXPOSURE_KEYS` before). A fourth verdict,
+  `blocked_on_delivery`, covers an area-measure side: no authority in this repository
+  resolves one and the `area_measure_inventory` delivery would. `scorability.py`'s
+  docstring records papers the naive word test admits wrongly.
 - **A frontier-model run is not evidence about the target**: no grammar enforcement
   through the CLI, no format tax. Never cite Haiku results for 8–27B models.
 - **The blocking external dependency is the module co-completion counts.** Without them

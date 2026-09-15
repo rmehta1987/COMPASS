@@ -35,17 +35,26 @@ the collision is recorded, not resolved.
 > `benchmark/calibration_set.py` calls it "the schema's DESIGNED path for a linked
 > measure", and two signed conventions govern it
 > (`curated/conventions/place_vs_person_claims.md`, `adjustment_set_area_exposure.md`).
-> (2) CAN THE ANSWER KEY RECORD ONE? **No, and this is the blocker.**
-> `EXPOSURE_KEYS` is `dict[str, tuple[str, ...]]` — key strings only — and an area
-> measure has none, so an entire `Ref` kind the schema supports is unrepresentable in the
-> scoring column. `_confirm_keys` compounds it: CONFIRMED requires
-> `resolve_variable(key) == "unique"`, which no area measure can ever return. So these
-> three stay `exposure_key_column_missing` however carefully anyone fills the column.
+> (2) CAN THE ANSWER KEY RECORD ONE? **It could not, and that was the blocker. FIXED
+> 2026-09-14 by C36 and C35's decision.** The statement as it stood: `EXPOSURE_KEYS` was
+> `dict[str, tuple[str, ...]]` — key strings only — and an area measure has none, so an
+> entire `Ref` kind the schema supports was unrepresentable in the scoring column, and
+> `_confirm_keys` compounded it because CONFIRMED required
+> `resolve_variable(key) == "unique"`, which no area measure can ever return. The key can
+> record one NOW, as explicitly out of scope: an `area_measure` anchor with
+> `blocked_on: area_measure_inventory` and no key, and a side carrying one reads
+> `blocked_on_delivery`. It still cannot CONFIRM one, and that has not changed — no
+> authority resolves an area measure, which is C35 answer C and the reason answer D is
+> forbidden. What changed is that these three papers now say what is true about them
+> instead of presenting as an unfilled row.
 > (3) DOES THE LINKED DATA EXIST FOR THIS COHORT? **Unknown.** `linked:` is declared
 > EMPTY, blocked on `area_measure_inventory` — a study-team delivery of the same class as
 > the Qualtrics exports (§Blocked on a person).
 >
-> Only (3) is a delivery. (2) is a defect in this repository and is filed below.
+> Only (3) is a delivery. (2) was a defect in this repository, is filed below, and is
+> now fixed; the measurement above pre-dates the fix and its blocker
+> `exposure_key_column_missing` is renamed `no_design_key_row`. Re-run it in the scoring
+> clone once rows exist — the counts here are from before C36 and must not be quoted.
 >
 > **Say this precisely — the construct is not absent, the paper's MEASURE is.** VERIFIED
 > 2026-09-14 by `browse_variables` and `search_variables`: the instrument carries a
@@ -70,15 +79,25 @@ the collision is recorded, not resolved.
 > instrument and the bibliography do not overlap on both sides of any single paper.
 > Re-run the command above before acting on this; it is a measurement, not a doctrine.
 
-- **T2-rows — paste 1–3 rows into `benchmark/scorability.py::EXPOSURE_KEYS`.** 🛑 USER
-  ONLY. **Do not start this until the finding above is overturned by measurement.** No agent writes a row and no agent reads a paper to check one; the key FORM is
-  settled and reopening it is a user conversation. Pick papers whose exposure and outcome
-  plainly sit in the codebook. The scaffolding is built and waiting: `python -m
-  benchmark.rediscovery` runs C12's ACCEPT criterion over the column — every asserted key
-  resolves live `unique` through `env/tools.py::resolve_variable` — and names the key that
-  failed; `--pmid P --record F` prints the paper's recorded design beside a
-  `ProtocolSpecification`, field by field. ACCEPT: `validate_exposure_keys` returns
-  nothing, and `status_counts` reports a non-zero `confirmed` in the scoring clone.
+- **T2-rows — paste 1–3 rows into `benchmark/design_key.py::DESIGN_KEY`.** 🛑 USER ONLY,
+  in `compass-score`. **The destination changed on 2026-09-14: `EXPOSURE_KEYS` no longer
+  exists.** C36 is implemented, so a row is one `DesignKeyRow` per paper carrying BOTH
+  sides as typed anchors, and that module is withheld from this clone — which is the
+  point, since the first row would otherwise have put the rediscovery answers in the
+  clone where prompts are edited. `benchmark/design_anchor.py` holds the shape and the
+  validator and is NOT withheld, so read the row form there. **Do not start this until
+  the finding above is overturned by measurement.** No agent writes a row and no agent
+  reads a paper to check one; the FORM is settled and reopening it is a user
+  conversation. Pick papers whose exposure and outcome plainly sit in the codebook. The
+  scaffolding is built and waiting: `python -m benchmark.rediscovery` runs C12's ACCEPT
+  criterion over the table — every `variable` anchor resolves live `unique` through
+  `env/tools.py::resolve_variable`, every `derivation` anchor names a signed file — and
+  names the key that failed; `--pmid P --record F` prints the paper's recorded design
+  beside a `ProtocolSpecification`, field by field. ACCEPT:
+  `design_anchor.validate_design_key` returns nothing, and `status_counts` reports a
+  non-zero `confirmed` in the scoring clone. Note the tightened rule before pasting:
+  CONFIRMED now needs EVERY term on a side answered, not any one key, so an anchor's
+  `term` must be the design line's phrase byte for byte.
 - **Two outcome key rows are FILLABLE, and this is the only concrete answer-key work the
   measurement turned up.** 🛑 USER ONLY, in `compass-score`. MEASURED 2026-09-14: PMIDs
   38397711 and 38961645 both return `outcome_reachable_in_instrument() == True` — the key
@@ -107,9 +126,26 @@ the collision is recorded, not resolved.
   diagnosis items; the diagnosis is always the `Q5.15#1_*` key. Also checked and rejected:
   `m3:Q855`/`m3:Q856`, PHQ/GAD-shaped symptom items, carry no stem, no group and no
   response options, so neither recall period nor scale is recoverable from them.
-  Filling them removes two `no_key_to_resolve` blockers and is worth doing even though it
-  does NOT unblock either paper: 38397711's exposure is an area measure the scoring
-  column cannot represent, and 38961645's is not in the instrument (below).
+  🛑 **THE DESTINATION CHANGED ON 2026-09-14, AND THE PREVALENCE-KEY PASTE IS NOW A
+  NO-OP.** These two belong in `benchmark/design_key.py` as `variable` anchors on the
+  outcome side — one anchor per design-line phrase, and `m2:Q5.15#1_15` and `_37` both
+  filed against the phrase "depression", which the shape allows and a test pins. Pasting
+  them into the prevalence key's `instrument_key` cells instead accomplishes nothing
+  measurable: C36 made the design key the only reader for design, so no verdict reads
+  `instrument_key` any more. MEASURED 2026-09-14 by grep over `*.py`: that column's only
+  reader in the repository is
+  `benchmark/prevalence_rows.py::outcome_keys_on_record`, and nothing calls it for a
+  verdict — `benchmark/input_leakage.py` and
+  `contamination_check.py::check_no_prevalence_figure_in_surface` read `value`, a
+  different column. So the handoff's open sub-question ("does the cell have one consumer
+  or two?") is answered structurally: it has one, and that one is not scoring. The cell
+  is still where a published figure is made findable from a variable and filling it is
+  not wrong; it just is not the task.
+  Filling the two design-key rows removes two `no_key_to_resolve` blockers and is worth
+  doing even though it does NOT unblock either paper: 38397711's exposure is an area
+  measure, which since C35 reads `blocked_on_delivery` rather than as an unfilled row,
+  and 38961645's is not in the instrument (below) and is now recordable as such with a
+  `not_in_instrument` anchor.
 - **38961645's exposure, checked at item level and not just by word.** The word test's
   absence is real — re-measured 2026-09-14 over `searchable_text`: `discriminat` 0,
   `perceived` 0, `unfair` 0, `disrespect` 0, `prejudic` 0. But word absence is not
@@ -422,10 +458,11 @@ experts until much later, which is why the dashboard exists.
 
 ### The chain, as it stood when it was parked
 - **C12 — the held-out answer key over the full bibliography**, `benchmark/` only; the
-  binding constraint on everything scorable. Blocker:
-  `benchmark/scorability.py::EXPOSURE_KEYS` is empty. 🛑 Its key FORM is settled by the
-  user — explicit `unknown` plus a named blocker; reopening is a user conversation, not a
-  lane decision.
+  binding constraint on everything scorable. Blocker: `benchmark/design_key.py` holds no
+  rows (it was `benchmark/scorability.py::EXPOSURE_KEYS` until C36 landed on
+  2026-09-14). 🛑 Its key FORM is settled by the user — explicit `unknown` plus a named
+  blocker, now carried by the `area_measure` and `not_in_instrument` anchor kinds;
+  reopening is a user conversation, not a lane decision.
 - C12 consequences to inherit: `status_counts` unmoved, C6 has no scorable pair, C21 gains
   a second blocker.
 - C12 slices: `benchmark/prevalence_key.py` (role-tagged rows, no exposure field) and
@@ -478,8 +515,12 @@ experts until much later, which is why the dashboard exists.
   UNDETERMINED but `blocked_on_delivery` — "nothing in this repository changes this; a
   study-team delivery would". The benchmark's claim narrows to survey-anchored designs
   and says so. B is not foreclosed: adding `resolve_area_measure` later changes which
-  branch the `area_measure` kind takes and nothing else. Implemented as part of C36
-  below, which is the structure the decision needs. Because the decision RELAXES nothing
+  branch the `area_measure` kind takes and nothing else. **IMPLEMENTED 2026-09-14 as
+  part of C36:** `scorability.py::BLOCKED_ON_DELIVERY` is the fourth verdict, stated in
+  that module's docstring beside the other three, ranked below REFUTED and above
+  CONFIRMED, carried by `status_counts` as a fourth key, and pinned by four key-free
+  tests plus four seeded mutations. `_side` is pure, so none of them joins
+  `GUARD_CEILING`'s set. Because the decision RELAXES nothing
   — no paper reaches CONFIRMED that could not before — it cannot move a verdict from
   UNDETERMINED to CONFIRMED, and the three papers it covers stop presenting as one paste
   away from scorable.
@@ -518,9 +559,13 @@ experts until much later, which is why the dashboard exists.
     key-free (`_side` is pure, so they must not join `GUARD_CEILING`'s set).
   - C36 below does NOT decide this; it removes the type obstacle to every answer but D,
     and makes the third status a property of a recorded row rather than a new enum member.
-- **`EXPOSURE_KEYS`'s implemented type cannot express its own settled key form, NOR an
-  entire `Ref` kind the schema supports.** Was BLOCKED on C35; C35 is DECIDED
-  2026-09-14, so this is unblocked and C36 is its fix. Two faults in one type.
+- ~~**`EXPOSURE_KEYS`'s implemented type cannot express its own settled key form, NOR an
+  entire `Ref` kind the schema supports.**~~ **FIXED 2026-09-14 by C36.** The type is
+  gone; `benchmark/design_anchor.py::Anchor` carries `term`, `kind`, `key` and
+  `blocked_on`, so both faults below are unrepresentable rather than merely avoided — an
+  `area_measure` anchor names the delivery and no key, and `not_in_instrument` records a
+  refutation the old column had no slot for. The original statement follows, because the
+  fix is only readable against it. Two faults in one type.
   (a) C12 records the form as "explicit `unknown` plus a named blocker", and
   `benchmark/scorability.py::EXPOSURE_KEYS` is `dict[str, tuple[str, ...]]` — a bare key
   tuple with no slot for either, so a provably-uncarryable exposure reads as an unfilled
@@ -532,8 +577,40 @@ experts until much later, which is why the dashboard exists.
   A fix has to say what evidence confirms an area-measure side, which is a design
   question. Changing the form is a user conversation, not a lane decision.
 - **C36 — a design-arrow key: one stored row per paper, both sides, typed anchors.
+  ✅ IMPLEMENTED 2026-09-14.** What landed, and the only thing still open, first;
+  the proposal follows unchanged because the ACCEPT criteria are what it was checked
+  against.
+  - `benchmark/design_anchor.py` (NOT withheld) holds `Anchor`, `DesignKeyRow` and
+    `validate_design_key`. `benchmark/design_key.py` (withheld: in `WITHHELD_MODULES`,
+    in `check_holdout_not_reachable`, guarded by `tests/withheld.py::needs_design_key`)
+    holds the ROWS and does not exist in this clone.
+  - `scorability.py` reads that one table for both sides. `EXPOSURE_KEYS`,
+    `_side(self_reported=)` and `rediscovery.py::validate_exposure_keys` are gone; the
+    prevalence key's four design-shaped accessors moved to
+    `benchmark/prevalence_rows.py` and the scoring path imports neither it nor the key,
+    enforced by `test_nothing_on_the_scoring_path_reads_the_prevalence_key`.
+  - Two rules are TIGHTER than the proposal stated, both in the conservative direction.
+    (1) CONFIRMED needs EVERY term on a side answered, not any one resolving key — a
+    side naming two exposures used to confirm on one of them. One term may still carry
+    several keys. (2) `validate_design_key` refuses an `area_measure` anchor that
+    carries a key, which is C35 answer D refused at the validator as well as at the
+    verdict.
+  - `GUARD_CEILING` FELL 42 -> 34: eight scorability tests became key-free, because both
+    sides now read one substitutable reader. ACCEPT (v) asked for unchanged; this is
+    better and in the allowed direction.
+  - 🛑 **STILL OPEN, and it is the operator's: the rows.** `benchmark/design_key.py`
+    does not exist yet. Creating it and its first two rows (the decided outcome keys
+    above) is USER ONLY, in `compass-score`. Until then `scorability_for`,
+    `status_counts` and `python -m benchmark.rediscovery` raise or exit 2 in every clone,
+    which is the holdout working rather than a defect.
+  - NOT done, and deliberately out of C36's stated ACCEPT: `validate_design_key` does not
+    check that an anchor's `term` is one the design line actually names, nor that every
+    design-line term has an anchor. `_side` catches the second at verdict time
+    (`TERM_HAS_NO_ANCHOR`); the first would catch a typo'd phrase before it silently
+    stopped answering anything. Worth filing once rows exist.
+  ---
   PROPOSED 2026-09-14; the structural fix for C35 and for the `EXPOSURE_KEYS` type
-  above.** 🛑 USER AMENDMENT — it changes what the benchmark measures and where an answer
+  above. 🛑 USER AMENDMENT — it changes what the benchmark measures and where an answer
   key lives, so it is not a lane's. **AUTHORISED by the operator 2026-09-14, in full,
   with C35 answered C + third status.** The amendment is granted for the SHAPE and the
   wiring below; it does not authorise writing a row. Rows stay the operator's, in
@@ -605,13 +682,17 @@ experts until much later, which is why the dashboard exists.
   `outcome_keys_on_record` returning ZERO. Split into
   `benchmark/scorability.py::NO_KEY_TO_RESOLVE`, with four key-free tests on `_side` and
   three seeded mutations. Named for the missing KEY, not a missing ROW: the rows exist.
-- **`scorability.py` refutes an outcome on evidence it has no counterpart for on the
-  exposure side.** `OUTCOME_NOT_IN_THE_INSTRUMENT` comes from the prevalence key's
-  `instrument_region`; the exposure side has no such column, so the strongest thing it can
-  ever say is `EXPOSURE_KEY_COLUMN_MISSING` — "nobody filled this in" — for an exposure
-  that is not in the instrument at all. MEASURED 2026-09-14: this is exactly why three
-  unreachable papers present as one paste from CONFIRMED. Same class of defect as the
-  `outcome_key_unresolved` -> `KEY_DOES_NOT_RESOLVE` rename the file already records.
+- ~~**`scorability.py` refutes an outcome on evidence it has no counterpart for on the
+  exposure side.**~~ **FIXED 2026-09-14 by C36.** `OUTCOME_NOT_IN_THE_INSTRUMENT` came
+  from the prevalence key's `instrument_region` and the exposure side had no such column,
+  so the strongest thing it could ever say was `exposure_key_column_missing` — "nobody
+  filled this in" — for an exposure that is not in the instrument at all. MEASURED
+  2026-09-14: that is exactly why three unreachable papers presented as one paste from
+  CONFIRMED. Both sides now read one table with one vocabulary:
+  `EXPOSURE_NOT_IN_THE_INSTRUMENT` exists, the old blocker is renamed
+  `NO_DESIGN_KEY_ROW` and means only what it says, and
+  `tests/test_scorability.py::test_a_recorded_item_level_read_refutes_on_either_side`
+  pins the symmetry.
 - **`agent/schema.py::ProtocolSpecification` cannot express a population restriction.**
   None of its 22 fields, and none of `ModelSpec`'s three, carries a restriction, stratum
   or subgroup. A design stated for one subpopulation can only be adjusted for, not

@@ -16,6 +16,54 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ## 2026-09-14
 
+C35 decided and C36 landed: the answer key for a paper's design arrow left this clone,
+grew types, and became the only reader for design. The rows themselves are still the
+operator's and still unwritten — `TASKS.md` C36 carries what is open.
+
+- **C35 — an area-measure exposure is explicitly out of scope, not unfilled**
+  (`5cafa88`, implemented in `f6d25f8`). Four answers were on record and they were
+  different claims about what the benchmark measures, so nothing downstream could be
+  built while it was open. The operator chose C now / B later, plus a third status
+  rather than forcing the case onto REFUTED or UNDETERMINED. Answer D — confirm on the
+  descriptor alone — stays forbidden by name, and `design_anchor.validate_design_key`
+  refuses it: a key nothing resolves is the word-presence failure in a new costume. The
+  verdict vocabulary and its ranking are in `benchmark/scorability.py`'s docstring; the
+  rule is there, never here.
+- **C36 — `benchmark/design_key.py`, withheld, with typed anchors** (`6e09750`,
+  `d87e0e5`, `5228e45`, `f6d25f8`). The column it replaces lived in
+  `benchmark/scorability.py` in the clone where prompts, `agent/schema.py` docstrings
+  and `env/tools.py` are edited, and that was safe only while it was empty: the first
+  row would have made the editing clone the clone holding the rediscovery answers. The
+  shape and the validator stayed visible in `benchmark/design_anchor.py` so every claim
+  about them is testable where the code is written; only the ROWS are withheld.
+  `Anchor` carries `term`, `kind`, `key` and `blocked_on` — the three facts a bare key
+  tuple lost, each with a recorded cost in `TASKS.md` — and fails closed on every
+  illegal combination.
+- **Both sides read one table, and the prevalence key stops being a second design
+  authority** (`f6d25f8`). Its four design-shaped accessors moved to
+  `benchmark/prevalence_rows.py` with their tests; the scoring path imports neither them
+  nor the key, and a test fails if either import reappears. That is C36's own strongest
+  objection to itself — two keys that can disagree about one paper are worse than one
+  key with a blank cell — mitigated by enforcement rather than care. Three filed defects
+  close with it: the type that could not express its own settled key form, the exposure
+  side having no way to say the instrument does not carry it, and
+  `key_does_not_resolve`'s remaining overload.
+- **Two rules landed TIGHTER than C36 proposed, both conservative.** CONFIRMED needs
+  every term on a side answered rather than any one resolving key, and one term may
+  still carry several keys — the operator's decided depression row is why, and a
+  validator that refused repeated terms had to be corrected in `5228e45` because it made
+  that row unrepresentable.
+- **`tests/withheld.py` gained the direction nothing checked** (`d87e0e5`). A guard
+  naming a module nobody withholds was caught; a withheld module with NO guard was not,
+  and that leaves every test needing it red rather than skipped — the permanently-red
+  suite that module exists to end. Both directions are asserted now, as two tests.
+- The guarded-test ratchet moved down. Read it from
+  `tests/test_withheld.py::GUARD_CEILING`, never from here.
+- Corrected a line that cited a tree-wide null as item-level evidence (`d6946c1`).
+  `branch_dependency` is null on every entry by construction, and the draft that used it
+  had read the field off a tool return that does not carry it at all — `.get` answering
+  None for the wrong reason.
+
 Phase 2 of the refocus: a measurement that runs without an answer key or a domain expert,
 and the scaffolding for a worked rediscovery up to the rows the operator owns. Every
 number below is a first reading for the record, not a floor — re-run the module, never
