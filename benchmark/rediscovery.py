@@ -14,25 +14,42 @@ protocol. Every comparison that has no mechanical definition says so
 (`REVIEW`), rather than being reduced to a match rate that would look like a
 result.
 
-WHERE A ROW GOES. `benchmark/scorability.py::EXPOSURE_KEYS`, which is C12's
-missing column and is read by `scorability_for` with no code change. The FORM is
-settled by the user (`TASKS.md`, C12) and this module does not reopen it:
+WHERE A ROW GOES. `benchmark/design_key.py::DESIGN_KEY`, since C36 was
+authorised on 2026-09-14. One row per paper, BOTH sides, typed anchors, and
+that module is WITHHELD from every clone but the scoring one — which is the
+whole point of C36. Before it, the exposure column lived in
+`benchmark/scorability.py` in the clone where prompts, `agent/schema.py`
+docstrings and `env/tools.py` are edited, and the first row would have made the
+editing clone the clone holding the rediscovery answers. The FORM is the
+operator's (`TASKS.md`, C12 and C36) and this module does not reopen it:
 
-    EXPOSURE_KEYS: dict[str, tuple[str, ...]] = {
-        "<pmid>": ("m3:Q16.1_1", "m3:Q16.1_2"),   # keys, not constructs
-    }
+    DESIGN_KEY: tuple[DesignKeyRow, ...] = (
+        DesignKeyRow(
+            pmid="<pmid>",
+            exposure=(Anchor("<design-line phrase>", "variable",
+                             key="m3:Q16.1_1"),),
+            outcome=(Anchor("<design-line phrase>", "not_in_instrument"),),
+            provenance="<where in the paper, and its retrievability>",
+            filled_by="<who>"),
+    )
 
-`--validate` is the ACCEPT criterion C12 states, made runnable: every asserted
-key resolves live through `env/tools.py::resolve_variable` with
-`outcome == "unique"`. Run it the moment a row lands; a key that names a
-battery or a construct is rejected with the key named, because a blocker that
-says only "a key did not resolve" leaves the operator to find which.
+The row-level checks live in `benchmark/design_anchor.py::validate_design_key`,
+with the anchor type; this module runs them and reports them. That is C12's
+ACCEPT criterion generalised to both sides: every `variable` anchor resolves
+live through `env/tools.py::resolve_variable` with `outcome == "unique"`, every
+`derivation` anchor names a signed file, and an `area_measure` anchor carrying a
+key is refused because no authority resolves one. Run it the moment a row
+lands; a key that names a battery or a construct is rejected with the key
+named, because a blocker that says only "a key did not resolve" leaves the
+operator to find which.
 
-THE OUTCOME SIDE IS WITHHELD HERE. `benchmark/prevalence_key.py` lives in the
-scoring clone only, so the outcome-key row is unreadable in this one. That is
-reported as an INCOMPLETE run (exit 2), never as a mismatch and never as a
-clean pass — the same three-way status `benchmark/contamination_check.py` uses
-and for the same reason (`AGENTS.md` §Verification Discipline).
+BOTH SIDES ARE WITHHELD HERE, and that is a change. Before C36 the exposure
+column was readable in this clone and the outcome column was not, so the
+side-by-side was half-live. `benchmark.design_key` now lives in the scoring
+clone only, so NEITHER side is readable here. That is reported as an INCOMPLETE
+run (exit 2), never as a mismatch and never as a clean pass — the same
+three-way status `benchmark/contamination_check.py` uses and for the same
+reason (`AGENTS.md` §Verification Discipline).
 
 PAPER CONTENT. This module composes a published paper's recorded design, so it
 belongs under `benchmark/` with the bibliography and the keys, and
@@ -55,19 +72,19 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from agent.schema import KEY_PATTERN, ProtocolSpecification  # noqa: E402
+from agent.schema import ProtocolSpecification  # noqa: E402
 from benchmark import scorability as SC  # noqa: E402
 from benchmark.cohort_papers import COHORT_PAPERS, CohortPaper  # noqa: E402
 from benchmark.contamination_check import WITHHELD_MODULES  # noqa: E402
+from benchmark.design_anchor import (  # noqa: E402
+    DesignKeyRow,
+    validate_design_key,
+)
 from benchmark.design_quality import ref_keys  # noqa: E402
-from env.tools import resolve_variable  # noqa: E402
 
-#: The module holding the outcome-side key rows. Withheld from every clone but
-#: the scoring one.
-PREVALENCE_KEY = "benchmark.prevalence_key"
-
-#: `resolve_variable`'s only outcome that names a variable a design may assert.
-RESOLVED = "unique"
+#: The module holding the design-arrow key: one row per paper, both sides.
+#: Withheld from every clone but the scoring one (C36).
+DESIGN_KEY = "benchmark.design_key"
 
 #: Exit statuses, in `benchmark/contamination_check.py`'s spelling so a reader
 #: meets one convention rather than two. 2 is the normal state in every clone
@@ -89,25 +106,25 @@ REVIEW = "REVIEW"
 UNAVAILABLE = "UNAVAILABLE"
 
 
-def prevalence_key_present() -> bool:
-    """Whether the outcome-side answer key is importable in this clone.
+def design_key_present() -> bool:
+    """Whether the design-arrow answer key is importable in this clone.
 
     Named and not broad, in the shape `tests/withheld.py` uses: the module is
     checked against `WITHHELD_MODULES`, so an ordinary broken import can never
     be laundered into "the key is elsewhere".
 
     Returns:
-        True when `benchmark.prevalence_key` can be imported here.
+        True when `benchmark.design_key` can be imported here.
 
     Raises:
-        RuntimeError: If the prevalence key stops being a withheld module, in
-            which case this guard is excusing something it should not.
+        RuntimeError: If the design key stops being a withheld module, in which
+            case this guard is excusing something it should not.
     """
-    if PREVALENCE_KEY not in WITHHELD_MODULES:
+    if DESIGN_KEY not in WITHHELD_MODULES:
         raise RuntimeError(
-            f"{PREVALENCE_KEY} is no longer in WITHHELD_MODULES, so its "
+            f"{DESIGN_KEY} is no longer in WITHHELD_MODULES, so its "
             f"absence is a defect and not a holdout. Remove this guard.")
-    return importlib.util.find_spec(PREVALENCE_KEY) is not None
+    return importlib.util.find_spec(DESIGN_KEY) is not None
 
 
 # --------------------------------------------------------------------------- #
@@ -115,55 +132,29 @@ def prevalence_key_present() -> bool:
 # --------------------------------------------------------------------------- #
 
 
-def validate_exposure_keys(
-        rows: dict[str, tuple[str, ...]] | None = None) -> list[str]:
-    """C12's ACCEPT criterion, run over the exposure-key column.
+def validate(rows: tuple[DesignKeyRow, ...] | None = None) -> list[str]:
+    """C12's ACCEPT criterion, run over the design key.
 
-    Checks the whole row, not just resolution: a pmid the bibliography does not
-    carry is a typo that would otherwise sit in the mapping doing nothing, and
-    an empty tuple is a row that LOOKS filled and asserts nothing.
-
-    `scorability._confirm_keys` already resolves keys and is deliberately not
-    reused: it returns a blocker constant per failure and drops which key
-    caused it, which is exactly what an operator pasting a row needs to know.
+    A THIN DELEGATION, on purpose. The checks used to live here as
+    `validate_exposure_keys` over a `dict[str, tuple[str, ...]]`; C36 moved them
+    to `benchmark/design_anchor.py::validate_design_key`, beside the type they
+    check, so the anchor's `__post_init__` and the table's validator cannot
+    drift apart and so both are testable in a clone without the rows. This
+    module keeps the operator-facing entry point and the exit statuses.
 
     Args:
-        rows: The mapping to check, defaulting to the live `EXPOSURE_KEYS`.
+        rows: The table to check, defaulting to the live `DESIGN_KEY`.
 
     Returns:
         One complaint per problem, empty when every row is usable. Empty is
-        also the answer for an empty mapping — nothing asserted is nothing
-        wrong — so a caller that wants to know whether any row EXISTS must
-        count the rows, not read this.
-    """
-    import re
+        also the answer for an empty table — nothing asserted is nothing wrong
+        — so a caller that wants to know whether any row EXISTS must count the
+        rows, not read this.
 
-    table = SC.EXPOSURE_KEYS if rows is None else rows
-    known = {p.pmid for p in COHORT_PAPERS}
-    out: list[str] = []
-    for pmid in sorted(table):
-        keys = table[pmid]
-        if pmid not in known:
-            out.append(f"{pmid}: not a pmid in benchmark/cohort_papers.py")
-        if not keys:
-            out.append(f"{pmid}: empty key tuple — a row that asserts nothing "
-                       f"reads as a filled row and blocks nothing")
-            continue
-        if len(set(keys)) != len(keys):
-            out.append(f"{pmid}: repeats a key: {sorted(keys)}")
-        for key in keys:
-            if not re.match(KEY_PATTERN, key):
-                out.append(f"{pmid}: {key!r} is not a variable key "
-                           f"(agent/schema.py::KEY_PATTERN)")
-                continue
-            outcome = resolve_variable(key)["outcome"]
-            if outcome != RESOLVED:
-                out.append(
-                    f"{pmid}: {key} resolves {outcome!r}, not {RESOLVED!r}. "
-                    f"An exposure key must name one variable — a construct key "
-                    f"or a group id is the enumeration's id or a stem, and a "
-                    f"protocol may name neither.")
-    return out
+    Raises:
+        ModuleNotFoundError: If `rows` is None in a clone without the key.
+    """
+    return validate_design_key(rows)
 
 
 # --------------------------------------------------------------------------- #
@@ -182,10 +173,13 @@ class RecordedDesign:
         pmid: PubMed identifier.
         design_line: `cohort_papers.py`'s one-line design, verbatim.
         reported_n: The paper's realised n as that file prints it.
-        exposure_keys: The operator's `EXPOSURE_KEYS` row, empty when unfilled.
-        outcome_keys: The prevalence key's outcome-role keys.
-        outcome_key_readable: False when `benchmark.prevalence_key` is withheld
-            from this clone, so `outcome_keys` being empty says nothing.
+        exposure_keys: Keys the design key's exposure anchors name, empty when
+            the row is unfilled or its anchors carry none.
+        outcome_keys: The same for the outcome side.
+        design_key_readable: False when `benchmark.design_key` is withheld from
+            this clone, so EITHER side being empty says nothing. One flag, not
+            two, because since C36 both sides come from one table — before it
+            the exposure side was readable here and the outcome side was not.
     """
 
     pmid: str
@@ -193,7 +187,7 @@ class RecordedDesign:
     reported_n: str
     exposure_keys: tuple[str, ...]
     outcome_keys: tuple[str, ...]
-    outcome_key_readable: bool
+    design_key_readable: bool
 
 
 def paper(pmid: str) -> CohortPaper:
@@ -221,20 +215,44 @@ def recorded_design(pmid: str) -> RecordedDesign:
         pmid: PubMed identifier.
 
     Returns:
-        The assembled record. The outcome side is empty AND flagged unreadable
-        in a clone without the prevalence key, which are two different facts
-        and are carried separately.
+        The assembled record. Both sides are empty AND flagged unreadable in a
+        clone without the design key, which are two different facts and are
+        carried separately.
 
     Raises:
         KeyError: Propagated from `paper`.
     """
     p = paper(pmid)
-    readable = prevalence_key_present()
-    outcome = SC.outcome_keys_on_record(pmid) if readable else ()
+    readable = design_key_present()
+    row = SC.design_key_row(pmid) if readable else None
     return RecordedDesign(
         pmid=pmid, design_line=p.design, reported_n=p.n,
-        exposure_keys=tuple(SC.EXPOSURE_KEYS.get(pmid, ())),
-        outcome_keys=outcome, outcome_key_readable=readable)
+        exposure_keys=_anchor_keys(row.exposure if row else ()),
+        outcome_keys=_anchor_keys(row.outcome if row else ()),
+        design_key_readable=readable)
+
+
+def _anchor_keys(anchors: tuple[object, ...]) -> tuple[str, ...]:
+    """The keys a side's anchors name, in the order they were recorded.
+
+    An anchor may carry no key — `area_measure` names a delivery and
+    `not_in_instrument` names nothing — and those are dropped rather than
+    rendered as a blank, because the side-by-side compares KEY SETS and an
+    empty string is not a key. The verdict that reads those kinds is
+    `scorability.py::_side`, not this.
+
+    Args:
+        anchors: That side's anchors.
+
+    Returns:
+        The keys, deduplicated, in recorded order.
+    """
+    out: list[str] = []
+    for anchor in anchors:
+        key = getattr(anchor, "key", None)
+        if key and key not in out:
+            out.append(key)
+    return tuple(out)
 
 
 # --------------------------------------------------------------------------- #
@@ -306,16 +324,18 @@ def compare(recorded: RecordedDesign,
     """
     return [
         _keys("exposure_keys", recorded.exposure_keys, ref_keys(p.exposure),
-              True, ""),
+              recorded.design_key_readable,
+              f"{DESIGN_KEY} is withheld from this clone"),
         _keys("outcome_keys", recorded.outcome_keys, ref_keys(p.outcome),
-              recorded.outcome_key_readable,
-              f"{PREVALENCE_KEY} is withheld from this clone"),
+              recorded.design_key_readable,
+              f"{DESIGN_KEY} is withheld from this clone"),
         FieldComparison(
             "adjusted_covariate_keys", "-",
             " ".join(sorted({k for e in p.adjusted_covariates
                              for k in ref_keys(e.variable)})) or "-",
             UNAVAILABLE,
-            "the answer key has no covariate column; that column is C12"),
+            "the design key records the arrow's two sides and no covariate "
+            "column; a covariate anchor is not in C36's shape"),
         FieldComparison("model_form", recorded.design_line, p.model_spec.form,
                         REVIEW,
                         "a design line's method token and a model_spec.form "
@@ -366,20 +386,38 @@ def scaffold_status() -> dict[str, object]:
     """How far the worked rediscovery has got, with nothing inferred.
 
     Returns:
-        The number of filled exposure-key rows, the bibliography size, whether
-        the outcome key is readable here, any validation complaints, and
+        The number of design-key rows, the bibliography size, whether the
+        design key is readable here, any validation complaints, and
         `status_counts` when it can be computed. `status_counts` is None — not
-        a row of zeroes — in a clone that cannot read the outcome key.
+        a row of zeroes — in a clone that cannot read the key, and
+        `design_key_rows` is None there for the same reason: zero rows and an
+        unreadable table are different facts, and the old
+        `len(SC.EXPOSURE_KEYS)` could not tell them apart because that column
+        was always readable here.
     """
-    complaints = validate_exposure_keys()
-    readable = prevalence_key_present()
+    readable = design_key_present()
+    complaints = validate() if readable else []
     return {
-        "exposure_key_rows": len(SC.EXPOSURE_KEYS),
+        "design_key_rows": _row_count() if readable else None,
         "bibliography": len(COHORT_PAPERS),
-        "outcome_key_readable": readable,
+        "design_key_readable": readable,
         "complaints": complaints,
         "status_counts": SC.status_counts() if readable else None,
     }
+
+
+def _row_count() -> int:
+    """How many rows the design key holds.
+
+    Returns:
+        The row count.
+
+    Raises:
+        ModuleNotFoundError: In every clone but the scoring one.
+    """
+    from benchmark.design_key import DESIGN_KEY as ROWS
+
+    return len(ROWS)
 
 
 def _main(argv: Sequence[str] | None = None) -> int:
@@ -416,10 +454,10 @@ def _main(argv: Sequence[str] | None = None) -> int:
         print(f"  COMPLAINT  {line}")
     if complaints:
         return EXIT_FAILED
-    if not status["outcome_key_readable"]:
-        print(f"\n  {PREVALENCE_KEY} is withheld from this clone, so the "
-              f"outcome side did not run.\n  Nothing visible failed and I "
-              f"could not see everything. NOT a pass.")
+    if not status["design_key_readable"]:
+        print(f"\n  {DESIGN_KEY} is withheld from this clone, so NEITHER side "
+              f"ran.\n  Nothing visible failed and I could not see "
+              f"everything. NOT a pass.")
         return EXIT_INCOMPLETE
     return EXIT_OK
 

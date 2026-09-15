@@ -17,6 +17,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from benchmark import design_anchor as DA
 from benchmark import rediscovery as RD
 from benchmark import scorability as SC
 from benchmark.cohort_papers import COHORT_PAPERS
@@ -25,16 +26,82 @@ from tests.test_schema import p014
 PMID = COHORT_PAPERS[0].pmid
 
 
+def _row(exposure: tuple[DA.Anchor, ...],
+         outcome: tuple[DA.Anchor, ...] = (),
+         pmid: str = PMID) -> DA.DesignKeyRow:
+    """One design-key row, well formed apart from what a caller varies.
+
+    The outcome side defaults to a recorded refutation rather than to `()`,
+    because an empty side is itself a complaint and would mask the one the
+    caller is testing for.
+
+    Args:
+        exposure: Exposure-side anchors.
+        outcome: Outcome-side anchors, defaulting to one refutation.
+        pmid: PubMed identifier.
+
+    Returns:
+        The row.
+    """
+    return DA.DesignKeyRow(
+        pmid, exposure,
+        outcome or (DA.Anchor("a phrase", DA.NOT_IN_INSTRUMENT),),
+        provenance="fixture", filled_by="test")
+
+
+def _variable(key: str, term: str = "a phrase") -> tuple[DA.Anchor, ...]:
+    """One `variable` anchor naming `key`.
+
+    Args:
+        key: The instrument key.
+        term: The design-line phrase it answers.
+
+    Returns:
+        A one-anchor tuple.
+    """
+    return (DA.Anchor(term, DA.VARIABLE, key=key),)
+
+
+def _serve(monkeypatch, rows: tuple[DA.DesignKeyRow, ...]) -> None:
+    """Substitute the withheld design key, without importing it.
+
+    Args:
+        monkeypatch: pytest's patcher.
+        rows: The table to serve.
+    """
+    monkeypatch.setattr(RD, "design_key_present", lambda: True)
+    monkeypatch.setattr(RD, "validate", lambda r=None: DA.validate_design_key(
+        rows if r is None else r))
+    monkeypatch.setattr(RD, "_row_count", lambda: len(rows))
+    monkeypatch.setattr(
+        SC, "design_key_row",
+        lambda pmid: next((x for x in rows if x.pmid == pmid), None))
+
+
 # --- the validator ----------------------------------------------------------- #
 
-def test_the_live_exposure_key_column_is_clean():
-    """Whatever is pasted in must pass before anything else here means much."""
-    assert RD.validate_exposure_keys() == []
+def test_the_live_design_key_is_unreadable_here_and_says_so():
+    """The live table cannot be checked in this clone, and that is the design.
+
+    Before C36 the exposure column lived in the working clone and `validate()`
+    ran over it here. It is withheld now, so the honest statement is that the
+    criterion did not run -- `scaffold_status` reports `design_key_readable`
+    False and `design_key_rows` None, which is not the same as zero rows.
+    """
+    assert RD.design_key_present() is False, (
+        "benchmark.design_key must be withheld from this clone (C36)")
+    status = RD.scaffold_status()
+    assert status["design_key_readable"] is False
+    assert status["design_key_rows"] is None, (
+        "zero rows and an unreadable table are different facts; None says "
+        "which this is")
+    assert status["complaints"] == []
 
 
-def test_an_empty_column_is_not_a_complaint_and_is_not_progress():
-    assert RD.validate_exposure_keys({}) == []
-    assert RD.scaffold_status()["exposure_key_rows"] == len(SC.EXPOSURE_KEYS)
+def test_an_empty_table_is_not_a_complaint_and_is_not_progress(monkeypatch):
+    _serve(monkeypatch, ())
+    assert RD.validate() == []
+    assert RD.scaffold_status()["design_key_rows"] == 0
 
 
 def test_a_key_that_names_a_battery_is_rejected_with_the_key_named():
@@ -45,62 +112,66 @@ def test_a_key_that_names_a_battery_is_rejected_with_the_key_named():
     A complaint that said only "a key did not resolve" would leave the operator
     to work out which of a row's keys was wrong.
     """
-    out = RD.validate_exposure_keys({PMID: ("m3:Q16.1",)})
+    out = RD.validate((_row(_variable("m3:Q16.1")),))
     assert len(out) == 1
     assert "m3:Q16.1" in out[0] and "unique" in out[0]
 
 
 def test_a_key_that_resolves_to_one_variable_passes():
-    assert RD.validate_exposure_keys({PMID: ("m3:Q16.1_1",)}) == []
+    assert RD.validate((_row(_variable("m3:Q16.1_1")),)) == []
 
 
 def test_an_invented_key_is_rejected():
     """`linked:household_poverty` matches KEY_PATTERN and is in no registry."""
-    out = RD.validate_exposure_keys({PMID: ("linked:household_poverty",)})
+    out = RD.validate((_row(_variable("linked:household_poverty")),))
     assert len(out) == 1 and "linked:household_poverty" in out[0]
 
 
 def test_a_malformed_key_is_rejected_before_it_is_resolved():
-    out = RD.validate_exposure_keys({PMID: ("Q16.1_1",)})
+    out = RD.validate((_row(_variable("Q16.1_1")),))
     assert len(out) == 1 and "KEY_PATTERN" in out[0]
 
 
-def test_an_empty_row_is_rejected_because_it_reads_as_a_filled_one():
-    out = RD.validate_exposure_keys({PMID: ()})
+def test_an_empty_side_is_rejected_because_it_reads_as_a_filled_one():
+    out = RD.validate((DA.DesignKeyRow(PMID, (), _variable("m3:Q16.1_1"),
+                                       "fixture", "test"),))
     assert len(out) == 1 and "asserts nothing" in out[0]
 
 
 def test_a_pmid_the_bibliography_does_not_carry_is_rejected():
-    out = RD.validate_exposure_keys({"99999999": ("m3:Q16.1_1",)})
+    out = RD.validate((_row(_variable("m3:Q16.1_1"), pmid="99999999"),))
     assert any("not a pmid" in c for c in out)
 
 
 def test_a_repeated_key_in_one_row_is_rejected():
-    out = RD.validate_exposure_keys({PMID: ("m3:Q16.1_1", "m3:Q16.1_1")})
+    out = RD.validate((_row((*_variable("m3:Q16.1_1"),
+                             DA.Anchor("another phrase", DA.VARIABLE,
+                                       key="m3:Q16.1_1"))),))
     assert any("repeats a key" in c for c in out)
 
 
-# --- the withheld outcome side ------------------------------------------------ #
+# --- the withheld design key -------------------------------------------------- #
 
-def test_the_prevalence_key_guard_is_named_not_broad(monkeypatch):
+def test_the_design_key_guard_is_named_not_broad(monkeypatch):
     """An ordinary broken import may never be laundered into a holdout."""
     monkeypatch.setattr(RD, "WITHHELD_MODULES", frozenset())
     with pytest.raises(RuntimeError, match="no longer in WITHHELD_MODULES"):
-        RD.prevalence_key_present()
+        RD.design_key_present()
 
 
-def test_an_unreadable_outcome_column_is_flagged_separately_from_an_empty_one():
+def test_an_unreadable_key_is_flagged_separately_from_an_empty_one():
     rec = RD.recorded_design(PMID)
-    assert rec.outcome_key_readable is RD.prevalence_key_present()
-    if not rec.outcome_key_readable:
-        assert rec.outcome_keys == (), (
-            "an unreadable column must be empty AND flagged; the flag is what "
-            "stops the emptiness being read as 'the key records none'")
+    assert rec.design_key_readable is RD.design_key_present()
+    if not rec.design_key_readable:
+        assert rec.exposure_keys == () and rec.outcome_keys == (), (
+            "an unreadable key must leave both sides empty AND flagged; the "
+            "flag is what stops the emptiness being read as 'the key records "
+            "none'")
 
 
 def test_the_report_exits_incomplete_rather_than_clean_without_the_key(capsys):
     rc = RD._main([])
-    if RD.prevalence_key_present():
+    if RD.design_key_present():
         assert rc == RD.EXIT_OK
     else:
         assert rc == 2, "exit 2 is the literal, not EXIT_INCOMPLETE re-read"
@@ -108,20 +179,29 @@ def test_the_report_exits_incomplete_rather_than_clean_without_the_key(capsys):
 
 
 def test_a_complaint_outranks_an_incomplete_run(monkeypatch, capsys):
-    monkeypatch.setattr(SC, "EXPOSURE_KEYS", {PMID: ("m3:Q16.1",)})
+    """A failure must outrank a skip, and a complaint needs a readable key.
+
+    The readable case is what carries the claim: before C36 an unreadable
+    outcome side sat beside a readable exposure column, so a complaint could
+    be raised in this clone. Both sides are withheld now, so the served table
+    is what makes the ranking observable at all.
+    """
+    _serve(monkeypatch, (_row(_variable("m3:Q16.1")),))
     assert RD._main([]) == 1, "a failure must outrank a skip"
     assert "COMPLAINT" in capsys.readouterr().out
 
 
 def test_status_counts_is_null_rather_than_zeroes_where_it_cannot_run():
     status = RD.scaffold_status()
-    if not status["outcome_key_readable"]:
+    if not status["design_key_readable"]:
         assert status["status_counts"] is None
 
 
 # --- the side-by-side --------------------------------------------------------- #
 
-def test_an_unfilled_column_is_unavailable_and_never_differs():
+def test_an_unfilled_column_is_unavailable_and_never_differs(monkeypatch):
+    _serve(monkeypatch, (_row((DA.Anchor("a phrase",
+                                         DA.NOT_IN_INSTRUMENT),)),))
     rec = RD.recorded_design(PMID)
     rows = {r.field: r for r in RD.compare(rec, p014())}
     assert rows["exposure_keys"].state == RD.UNAVAILABLE
@@ -148,18 +228,20 @@ def test_an_unreadable_recorded_side_is_unavailable_and_never_differs():
     assert unfilled.state == RD.UNAVAILABLE and "no row" in unfilled.why
 
 
-def test_the_withheld_outcome_column_is_unavailable_in_the_side_by_side():
+def test_the_withheld_key_makes_both_sides_unavailable_in_the_side_by_side():
+    """Both sides now, not just the outcome one -- the change C36 makes here."""
     rec = RD.recorded_design(PMID)
     rows = {r.field: r for r in RD.compare(rec, p014())}
-    if rec.outcome_key_readable:
-        pytest.skip("the prevalence key is present here, so nothing is "
+    if rec.design_key_readable:
+        pytest.skip("the design key is present here, so nothing is "
                     "unreadable -- NOT a pass for the withheld path")
-    assert rows["outcome_keys"].state == RD.UNAVAILABLE
-    assert RD.PREVALENCE_KEY in rows["outcome_keys"].why
+    for field in ("exposure_keys", "outcome_keys"):
+        assert rows[field].state == RD.UNAVAILABLE
+        assert RD.DESIGN_KEY in rows[field].why
 
 
 def test_a_filled_column_that_agrees_reads_MATCH(monkeypatch):
-    monkeypatch.setattr(SC, "EXPOSURE_KEYS", {PMID: ("m3:Q16.2",)})
+    _serve(monkeypatch, (_row(_variable("m3:Q16.2")),))
     rec = RD.recorded_design(PMID)
     rows = {r.field: r for r in RD.compare(rec, p014())}
     assert rows["exposure_keys"].state == RD.MATCH
@@ -167,10 +249,27 @@ def test_a_filled_column_that_agrees_reads_MATCH(monkeypatch):
 
 
 def test_a_filled_column_that_disagrees_reads_DIFFERS(monkeypatch):
-    monkeypatch.setattr(SC, "EXPOSURE_KEYS", {PMID: ("m3:Q16.3",)})
+    _serve(monkeypatch, (_row(_variable("m3:Q16.3")),))
     rec = RD.recorded_design(PMID)
     rows = {r.field: r for r in RD.compare(rec, p014())}
     assert rows["exposure_keys"].state == RD.DIFFERS
+
+
+def test_an_anchor_with_no_key_contributes_none_to_the_side_by_side(monkeypatch):
+    """An `area_measure` names a delivery and a refutation names nothing.
+
+    Neither carries a key, and rendering one as a blank would put an empty
+    string into a comparison of KEY SETS. The verdict that reads those kinds is
+    `scorability.py::_side`, not the side-by-side.
+    """
+    _serve(monkeypatch, (_row(
+        (DA.Anchor("a phrase", DA.AREA_MEASURE,
+                   blocked_on=DA.AREA_MEASURE_INVENTORY),)),))
+    rec = RD.recorded_design(PMID)
+    assert rec.exposure_keys == ()
+    rows = {r.field: r for r in RD.compare(rec, p014())}
+    assert rows["exposure_keys"].state == RD.UNAVAILABLE
+    assert "no row for this paper yet" in rows["exposure_keys"].why
 
 
 def test_prose_fields_are_handed_to_a_reader_not_compared():
@@ -248,8 +347,12 @@ def test_status_counts_moves_when_a_paper_becomes_confirmed(monkeypatch):
       a pasted row is usable      -> the test below, key-free
       a usable row confirms a paper
         -> `tests/test_scorability.py::
-           test_a_populated_exposure_key_is_what_flips_a_paper`, guarded
+           test_a_populated_design_key_is_what_flips_a_paper`, KEY-FREE since
+           C36, because both sides now read one substitutable reader
       a confirmed paper moves the count  -> here, key-free
+
+    So none of the three links is guarded any more, and the split is kept
+    because the three claims are still different claims.
     """
     def report(status: str) -> tuple:
         side = SC.SideVerdict("exposure", ("t",), status, ("m3:Q16.1_1",), (), ())
@@ -266,10 +369,23 @@ def test_status_counts_moves_when_a_paper_becomes_confirmed(monkeypatch):
 def test_a_pasted_row_passes_the_accept_criterion_that_confirms_a_paper():
     """The first link, key-free: the row `test_scorability.py` flips on is usable.
 
-    Same row, so the two tests are about one thing and a change to either key
-    breaks the pair rather than leaving a silent gap between them.
+    Same key, so the two tests are about one thing and a change to either
+    breaks the pair rather than leaving a silent gap between them. The terms
+    come from the paper's own design line: an anchor is filed against the
+    phrase it answers, and a row whose terms are invented would validate while
+    asserting nothing about that paper.
     """
-    assert RD.validate_exposure_keys({"36702470": ("m2:Q5.8",)}) == []
+    paper = next(p for p in COHORT_PAPERS if p.pmid == "36702470")
+    terms = SC.exposure_terms(paper) + SC.outcome_terms(paper)
+    pool = ("m2:Q5.8", "m2:Q5.2", "m3:Q16.1_1", "m3:Q16.2")[:len(terms)]
+    assert len(pool) == len(terms), "need one distinct key per term"
+    anchors = [DA.Anchor(term, DA.VARIABLE, key=pool[i])
+               for i, term in enumerate(terms)]
+    exposure = tuple(anchors[:len(SC.exposure_terms(paper))])
+    outcome = tuple(anchors[len(SC.exposure_terms(paper)):])
+    assert exposure and outcome, "fixture assumed a paper with both sides"
+    row = DA.DesignKeyRow("36702470", exposure, outcome, "fixture", "test")
+    assert DA.validate_design_key((row,)) == []
 
 
 def test_the_scaffold_status_is_json_serialisable():

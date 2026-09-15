@@ -32,9 +32,11 @@ from tests import withheld  # noqa: E402
 #: conventions are edited, so the honest move is always to split a test until
 #: its key-free half runs here. Read from this module, never from a document
 #: (`AGENTS.md` §Testing Patterns). Was 45 when the guards landed; 42 after the
-#: 11 over-guarded tests were split. Lowering it is progress; raising it is a
-#: review failure.
-GUARD_CEILING = 42
+#: 11 over-guarded tests were split; 34 after C36 made both sides of a design
+#: verdict read one substitutable reader, so eight scorability tests became
+#: key-free rather than reaching the withheld prevalence key. Lowering it is
+#: progress; raising it is a review failure.
+GUARD_CEILING = 34
 
 
 def _guard_decorations() -> dict[str, int]:

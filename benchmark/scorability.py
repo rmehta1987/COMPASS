@@ -35,41 +35,71 @@ the word test rated that exposure present when the instrument does not carry it
 at all. A criterion built on word presence would have declared four papers
 scorable and been wrong about every one.
 
-So the two verdicts rest on different evidence and are not each other's
-negation:
+So the verdicts rest on different evidence and are not each other's negation.
+FOUR of them since the operator decided C35 on 2026-09-14:
 
-    REFUTED      no content word of the term occurs anywhere in the built
-                 instrument. Conservative and one-directional: a common word
-                 makes this refuse LESS often, never more, so a false REFUTED
-                 needs the instrument to carry none of the term's words.
-    CONFIRMED    an instrument key resolves live through
-                 `env.tools.resolve_variable` with `outcome == "unique"`. This
-                 is the only positive evidence in the repository, and it is the
-                 same discipline `benchmark/calibration_set.py` uses: read the
-                 field of the tool's ACTUAL return value that forces the
-                 verdict, never a hand-typed status beside a row that looks
-                 right.
-    UNDETERMINED neither. The honest majority today, and a work list rather
+    REFUTED      the instrument cannot supply this side, on either of two
+                 pieces of evidence. (a) A `not_in_instrument` ANCHOR: a
+                 recorded item-level read of the questionnaire, filed against
+                 the design-line phrase it refutes. (b) No content word of any
+                 term occurs anywhere in the built instrument — conservative
+                 and one-directional, since a common word makes this refuse
+                 LESS often, never more, so a false REFUTED needs the
+                 instrument to carry none of the term's words. (a) outranks (b)
+                 because it is the better evidence: the word test is what
+                 admitted four papers on `chicago`, `individual`, `household`
+                 and `community`.
+    CONFIRMED    EVERY term the design line names on this side is answered by
+                 an anchor whose authority said yes — `resolve_variable` with
+                 `outcome == "unique"` for a `variable`, `get_derivation` for a
+                 `derivation`. Positive evidence is still only ever a live
+                 lookup, and it is the same discipline
+                 `benchmark/calibration_set.py` uses: read the field of the
+                 tool's ACTUAL return value that forces the verdict, never a
+                 hand-typed status beside a row that looks right. One term may
+                 carry several keys and one resolving key answers it.
+    BLOCKED_ON   an `area_measure` anchor sits on this side. C35 answer C: no
+    _DELIVERY    authority in this repository resolves an area measure, and the
+                 `area_measure_inventory` delivery would change that. Not
+                 REFUTED, which would claim the inventory can never arrive; not
+                 UNDETERMINED, which would imply this repository could settle
+                 it. Ranked above CONFIRMED: part of the design being out of
+                 scope is not repaired by the rest of it resolving.
+    UNDETERMINED none of the above. The honest majority, and a work list rather
                  than a verdict.
 
 WHY NOTHING IS SCORABLE TODAY, AND WHAT WOULD CHANGE IT. Confirming needs a
-resolved key per side. `benchmark/prevalence_key.py` supplies outcome-side keys
-— 21 fields, and measured 2026-08-28, six of the sixteen papers have at least
-one row carrying a non-null `instrument_key`. Nothing in this repository
-supplies an exposure-side key for any paper: `prevalence_key.py` has no exposure
-column, and the design detail `cohort_papers.py` points at ("lives in the lane
-report") is in neither the tree nor the history. That missing column IS C12, and
-it is represented here as `EXPOSURE_KEYS`, an empty mapping this file already
-reads. Fill it and papers begin to qualify with no change to this code.
+resolved anchor per term per side, and `benchmark/design_key.py` holds the
+anchors. It is WITHHELD from every clone but the scoring one
+(`contamination_check.py::WITHHELD_MODULES`), so `scorability_for` raises here
+rather than returning a verdict — which is the point of C36. The column it
+replaces, `EXPOSURE_KEYS`, lived in THIS file, in the clone where prompts,
+`agent/schema.py` docstrings and `env/tools.py` are edited; that was safe only
+while it was empty, and the first row would have made the editing clone the
+clone holding the rediscovery answers.
+
+MEASURED 2026-09-14 in the scoring clone, BEFORE C36, and the number that
+motivated it: 10 REFUTED, 0 CONFIRMED, 6 UNDETERMINED, every refutation on the
+outcome side. Three papers had a CONFIRMED outcome and exactly one blocker,
+`exposure_key_column_missing` — which read as "nobody filled this in" for three
+exposures that are area-level and that no key column could ever have carried.
+Re-run it; do not quote it.
 
 THE GUARANTEE, AND ITS TEST. A paper is `scorable` only when both sides are
-CONFIRMED, and CONFIRMED is unreachable without a live-resolved key. So this
-module cannot report a paper scorable on word evidence, today or after anyone
-edits the term lists. `tests/test_scorability.py::
+CONFIRMED, and CONFIRMED is unreachable without a live-resolved anchor per
+term. So this module cannot report a paper scorable on word evidence, today or
+after anyone edits the term lists. `tests/test_scorability.py::
 test_word_presence_alone_can_never_make_a_paper_scorable` pins it, and
 `test_a_key_that_names_a_construct_is_not_a_confirmed_variable` pins the case
 that a key resolving to a battery is not a variable — `resolve_variable`'s own
 log says a protocol may never name a stem.
+
+ONE READER FOR DESIGN. The strongest objection to C36 is that it creates a
+SECOND answer key, and two keys that can disagree about one paper's outcome are
+worse than one key with a blank cell. The mitigation is exclusivity, not care:
+this module does not import `benchmark.prevalence_key` and does not import
+`benchmark.prevalence_rows`, where the prevalence key's design-shaped accessors
+now live, and `tests/test_scorability.py` fails if either import appears.
 
 HELD OUT. This file derives exposure and outcome terms from the bibliography's
 design lines, so it is paper content and belongs under `benchmark/` with the
@@ -84,9 +114,20 @@ import re
 from typing import NamedTuple
 
 from benchmark.cohort_papers import COHORT_PAPERS, CohortPaper
+from benchmark.design_anchor import (
+    AREA_MEASURE,
+    AREA_MEASURE_INVENTORY,
+    DERIVATION,
+    DERIVATION_OK,
+    NOT_IN_INSTRUMENT,
+    RESOLVED,
+    VARIABLE,
+    Anchor,
+    DesignKeyRow,
+)
 from benchmark.instrument_terms import terms_absent_from_instrument
 from benchmark.tier_gate import outcome_terms
-from env.tools import resolve_variable
+from env.tools import get_derivation, resolve_variable
 
 #: The three verdicts a side of a design line can carry. Not a bool: the whole
 #: point of the file is that "not refuted" and "confirmed" are different states
@@ -94,13 +135,30 @@ from env.tools import resolve_variable
 REFUTED = "refuted"
 CONFIRMED = "confirmed"
 UNDETERMINED = "undetermined"
+#: The FOURTH verdict, added 2026-09-14 by the operator's C35 decision. An
+#: area-measure exposure is out of scope EXPLICITLY, not unfilled: no authority
+#: in this repository resolves one, and the `area_measure_inventory` delivery
+#: would change that. REFUTED would claim the inventory can never arrive;
+#: UNDETERMINED would imply this repository could settle it. Neither is true, so
+#: the honest answer is a third state — the same three-way shape
+#: `benchmark/contamination_check.py`'s exit status uses, and the same shape
+#: `NO_KEY_TO_RESOLVE` vs `KEY_DOES_NOT_RESOLVE` already splits on this side.
+BLOCKED_ON_DELIVERY = "blocked_on_delivery"
 
 #: Named so a caller sees which problem it has, in the style of
 #: `benchmark/tier_gate.py`'s blockers — a named refusal instead of a number.
 NO_DESIGN_ARROW = "no_design_arrow"
 EXPOSURE_ABSENT_FROM_INSTRUMENT = "exposure_absent_from_instrument"
 OUTCOME_ABSENT_FROM_INSTRUMENT = "outcome_absent_from_instrument"
-EXPOSURE_KEY_COLUMN_MISSING = "exposure_key_column_missing"
+#: Renamed from `exposure_key_column_missing` on 2026-09-14 (C36), and the old
+#: name is the defect this file already carried: with one key column per side,
+#: the strongest thing the exposure side could ever say was "nobody filled this
+#: in", for an exposure that is not in the instrument at all. MEASURED
+#: 2026-09-14, that is exactly why three unreachable papers presented as one
+#: paste from CONFIRMED. Both sides now read one table, so the blocker means
+#: what it says: the design key holds no row for this paper. An exposure the
+#: instrument does not carry gets `EXPOSURE_NOT_IN_THE_INSTRUMENT` instead.
+NO_DESIGN_KEY_ROW = "no_design_key_row"
 #: Renamed from `outcome_key_unresolved` on 2026-08-29. It is raised for either
 #: side, and the old name reported an EXPOSURE key that did not resolve as an
 #: outcome problem — in a constant whose own comment says it exists "so a caller
@@ -126,6 +184,17 @@ KEY_DOES_NOT_RESOLVE = "key_does_not_resolve"
 #: task behind a word.
 NO_KEY_TO_RESOLVE = "no_key_to_resolve"
 KEY_NAMES_A_CONSTRUCT_NOT_A_VARIABLE = "key_names_a_construct_not_a_variable"
+#: A `derivation` anchor naming a file `curated/derivations/` does not hold. The
+#: kind exists because there is no single "physical activity" item — there are
+#: 30 — and hundreds of defensible ways to combine them, so a derivation is a
+#: signed, reviewable object and naming an unsigned one is an inline recipe
+#: wearing a reference's clothes (`agent/schema.py::DerivationRef`).
+DERIVATION_NOT_SIGNED = "derivation_not_signed"
+#: A phrase the design line names that no anchor answers. The side cannot be
+#: CONFIRMED on the anchors that ARE there: confirming part of a design and
+#: reporting the whole side confirmed is how one resolved key came to stand for
+#: an exposure the instrument does not carry.
+TERM_HAS_NO_ANCHOR = "term_has_no_anchor"
 #: The honest refutation for an outcome the questionnaire cannot carry. The word
 #: test cannot make this call: `serum PSA` shares tokens with a real instrument
 #: item (m2:Q6.3 asks whether a PSA TEST was ever had), while the paper's outcome
@@ -138,14 +207,21 @@ KEY_NAMES_A_CONSTRUCT_NOT_A_VARIABLE = "key_names_a_construct_not_a_variable"
 #: outcomes were ascertained administratively, and the instrument carries them
 #: anyway at `m2:Q5 diagnosed conditions`. Refuting on ascertainment discarded a
 #: paper the questionnaire can score.
+#: SINCE C36 THE EVIDENCE IS AN ANCHOR, NOT A REGION. The paragraph above
+#: describes where this verdict used to come from: the prevalence key's
+#: `instrument_region`, prefix-matched against the questionnaire's module names.
+#: It now comes from a `not_in_instrument` anchor — a recorded item-level read
+#: of the instrument, filed against the design-line phrase it refutes. The
+#: reason is the one the paragraph above already gives: the region field answers
+#: a question about the PREVALENCE key's layout, and reading it for design made
+#: that key a second design authority.
 OUTCOME_NOT_IN_THE_INSTRUMENT = "outcome_not_in_the_instrument"
-
-#: C12's missing column: PMID -> the instrument keys that carry that paper's
-#: EXPOSURE. Empty, and that emptiness is the finding rather than a stub —
-#: `prevalence_key.py` resolved the outcome side and left this one unbuilt, so
-#: no paper can reach CONFIRMED on both sides today. Populating this mapping is
-#: what makes the benchmark scorable; `scorability_for` reads it with no change.
-EXPOSURE_KEYS: dict[str, tuple[str, ...]] = {}
+#: The counterpart the exposure side never had, and its absence was a filed
+#: defect: `OUTCOME_NOT_IN_THE_INSTRUMENT` came from a column that existed only
+#: on the outcome side, so the strongest statement available about an exposure
+#: the instrument does not carry was "nobody filled this in". One table with
+#: typed anchors gives both sides the same vocabulary.
+EXPOSURE_NOT_IN_THE_INSTRUMENT = "exposure_not_in_the_instrument"
 
 
 class SideVerdict(NamedTuple):
@@ -209,179 +285,210 @@ def exposure_terms(paper: CohortPaper) -> tuple[str, ...]:
     return tuple(t.strip() for t in re.split(r",|/", left) if t.strip())
 
 
-#: `prevalence_key.py` rows carry a `role`, and only one of the three is this
-#: paper's outcome. Measured 2026-08-28: 31 rows are `outcome`, 9 are
-#: `covariate` and 1 is `recruitment`. Reading a covariate key as outcome
-#: evidence would confirm a paper on a variable it ADJUSTED FOR — found by
-#: inspection on PMID 38715087, whose only keyed row is `prevalent hypertension`
-#: as a covariate while its outcome is central hemodynamics.
-OUTCOME_ROLE = "outcome"
 
-
-def outcome_keys_on_record(pmid: str) -> tuple[str, ...]:
-    """Instrument keys the held-out prevalence key records as a paper's OUTCOME.
+def design_key_row(pmid: str) -> DesignKeyRow | None:
+    """The design-arrow key's row for one paper, or None when it holds none.
 
     Args:
         pmid: PubMed identifier.
 
     Returns:
-        Sorted distinct `instrument_key` values from `role == OUTCOME_ROLE`
-        rows, empty when the key records none. Not yet evidence: `_confirm_keys`
-        decides which of these resolve.
+        The row, or None when the key carries no row for this paper. None is
+        "no row", not "no key": in a clone without the key this raises instead,
+        because reporting a missing table as a missing row would assert a
+        negative result the module never obtained.
+
+    Raises:
+        ModuleNotFoundError: In every clone but the scoring one.
     """
-    # Deferred, not module-level: `benchmark/prevalence_key.py` is the held-out
-    # answer key and is withheld from every clone but the scoring one. At module
-    # scope this import took `benchmark.contamination_check` -- the MANDATORY gate
-    # after any prompt or convention edit -- down with ModuleNotFoundError on every
-    # other clone, so the check could not run where the code it checks is written.
-    # The function that needs the key still raises there; nothing else does.
-    from benchmark.prevalence_key import PREVALENCE_KEY
+    # Deferred, not module-level: `benchmark/design_key.py` is withheld
+    # (`contamination_check.py::WITHHELD_MODULES`). At module scope this import
+    # took `benchmark.contamination_check` -- the MANDATORY gate after any
+    # prompt or convention edit -- down with ModuleNotFoundError on every other
+    # clone, so the check could not run where the code it checks is written.
+    # That is why the prevalence-key import was deferred too; the reason did
+    # not change when the table did.
+    from benchmark.design_key import DESIGN_KEY
 
-    return tuple(sorted({
-        row.instrument_key for row in PREVALENCE_KEY
-        if row.pmid == pmid and row.instrument_key
-        and row.role == OUTCOME_ROLE}))
-
-
-#: A region the instrument holds names the module it sits in. Measured
-#: 2026-08-29 over all 41 rows: the reachable regions are `m2:Q5 diagnosed
-#: conditions`, `m2:Q12 cancer history and screening` and `m2 female medical
-#: history`; the unreachable ones say so in words — `clinical measurement, not
-#: in the instrument`, `lab registry, declared and EMPTY in v1`, `not in the
-#: instrument`, `recruitment, not in the instrument`, `anthropometry, not in the
-#: instrument`. Prefix-matching the module is structural where matching that
-#: prose would not be, and `test_every_instrument_region_parses` fails if a new
-#: value fits neither shape rather than letting it default to unreachable.
-_MODULE_PREFIXES = ("m1", "m2", "m3")
+    # Annotated rather than iterated directly: the withheld module is
+    # `follow_imports = "skip"` in `pyproject.toml`, so `DESIGN_KEY` is `Any`
+    # here and returning an element of it would be an untyped return.
+    rows: tuple[DesignKeyRow, ...] = DESIGN_KEY
+    for row in rows:
+        if row.pmid == pmid:
+            return row
+    return None
 
 
-def region_is_in_the_instrument(region: str) -> bool:
-    """Whether a prevalence-key region names a place inside the instrument.
+def _resolve_anchor(anchor: Anchor) -> tuple[str | None, str | None]:
+    """Ask the authority `anchor.kind` names, and report what it said.
+
+    THIS IS WHAT `kind` BUYS. A bare key string has one implied authority,
+    `resolve_variable`, so a derivation id sent through it fails as a malformed
+    key and an area measure is unrepresentable. The kind selects, and nothing
+    is inferred from the string's shape.
+
+    Each branch reads the `outcome` field of the tool's ACTUAL return value
+    rather than trusting the key was right when it was written -- the same
+    discipline `benchmark/calibration_set.py` uses.
 
     Args:
-        region: A `prevalence_key.py` row's `instrument_region`.
+        anchor: The anchor to resolve.
 
     Returns:
-        True when the region names a module of the questionnaire.
+        The confirmed key and None, or None and one blocker. Both are None for
+        `not_in_instrument`, which the caller handles: it is a refutation, and
+        there is no lookup to make.
     """
-    return region.startswith(_MODULE_PREFIXES)
+    if anchor.kind == VARIABLE:
+        outcome = resolve_variable(anchor.key or "")["outcome"]
+        if outcome == RESOLVED:
+            return anchor.key, None
+        if outcome in ("group", "construct"):
+            return None, KEY_NAMES_A_CONSTRUCT_NOT_A_VARIABLE
+        return None, KEY_DOES_NOT_RESOLVE
+
+    if anchor.kind == DERIVATION:
+        if get_derivation(anchor.key or "")["outcome"] == DERIVATION_OK:
+            return anchor.key, None
+        return None, DERIVATION_NOT_SIGNED
+
+    if anchor.kind == AREA_MEASURE:
+        # No resolver exists, by construction and by decision. C35 answer C:
+        # the blocker is the DELIVERY the anchor names, in the shape
+        # `env/tools.py::estimate_n` already uses -- null, plus a named
+        # blocker. Answer D, confirming on the descriptor alone, is refused in
+        # `design_anchor.py::validate_design_key`, and this branch is why: a
+        # key here would reach no authority at all.
+        return None, anchor.blocked_on or AREA_MEASURE_INVENTORY
+
+    return None, None
 
 
-def outcome_reachable_in_instrument(pmid: str) -> bool | None:
-    """Whether the held-out key places this paper's outcome inside the instrument.
+def _confirm_anchors(
+        anchors: tuple[Anchor, ...]) -> tuple[tuple[str, ...], list[str]]:
+    """Resolve every anchor on one side.
 
     Args:
-        pmid: PubMed identifier.
+        anchors: That side's anchors.
 
     Returns:
-        True when any outcome row sits in a module of the questionnaire, False
-        when outcome rows exist and none does, and None when the key holds no
-        outcome row for this paper — absence of evidence, which may not be read
-        as refutation.
-    """
-    # Deferred, not module-level: `benchmark/prevalence_key.py` is the held-out
-    # answer key and is withheld from every clone but the scoring one. At module
-    # scope this import took `benchmark.contamination_check` -- the MANDATORY gate
-    # after any prompt or convention edit -- down with ModuleNotFoundError on every
-    # other clone, so the check could not run where the code it checks is written.
-    # The function that needs the key still raises there; nothing else does.
-    from benchmark.prevalence_key import PREVALENCE_KEY
-
-    # A null region is dropped rather than counted as unreachable: the field is
-    # Optional in the key, and reading "not recorded" as "not in the instrument"
-    # would refute a paper on a blank cell. All 41 rows carry one today.
-    regions = [r.instrument_region for r in PREVALENCE_KEY
-               if r.pmid == pmid and r.role == OUTCOME_ROLE
-               and r.instrument_region]
-    if not regions:
-        return None
-    return any(region_is_in_the_instrument(r) for r in regions)
-
-
-def _confirm_keys(keys: tuple[str, ...]) -> tuple[tuple[str, ...], list[str]]:
-    """Split candidate keys into those that resolve to a variable, and why not.
-
-    Calls the real `env.tools.resolve_variable` and reads the `outcome` field of
-    its actual return value, rather than trusting the key was correct when it
-    was written. `unique` is the only value that names a variable: the tool's own
-    log says a group id is a stem "a protocol may never name", and a construct
-    key "is the id the enumeration uses, and a protocol may not name it".
-
-    Args:
-        keys: Candidate instrument keys.
-
-    Returns:
-        The confirmed keys, and one blocker per key that did not confirm.
+        The confirmed keys, and one blocker per anchor that did not confirm.
     """
     confirmed: list[str] = []
     blockers: list[str] = []
-    for key in keys:
-        outcome = resolve_variable(key)["outcome"]
-        if outcome == "unique":
+    for anchor in anchors:
+        key, blocker = _resolve_anchor(anchor)
+        if key is not None:
             confirmed.append(key)
-        elif outcome in ("group", "construct"):
-            blockers.append(KEY_NAMES_A_CONSTRUCT_NOT_A_VARIABLE)
-        else:
-            blockers.append(KEY_DOES_NOT_RESOLVE)
+        elif blocker is not None:
+            blockers.append(blocker)
     return tuple(confirmed), blockers
 
 
-def _side(side: str, terms: tuple[str, ...], keys: tuple[str, ...],
-          missing_column_blocker: str | None,
-          self_reported: bool | None = None) -> SideVerdict:
-    """Adjudicate one side of a design line from terms and candidate keys.
+def _unanswered_terms(terms: tuple[str, ...],
+                      anchors: tuple[Anchor, ...]) -> tuple[str, ...]:
+    """Design-line phrases no CONFIRMING anchor answers.
+
+    THE REASON THE RULE IS "EVERY TERM", NOT "ANY KEY". Before C36 a side
+    confirmed on any one resolving key, because a bare key tuple could not say
+    which phrase a key answered. It can now, so the weaker rule is no longer
+    the best available: a side naming two exposures, one of them absent from the
+    instrument, would confirm on the other. A term may carry SEVERAL keys and
+    one is enough for that term -- the operator's decided row for 38961645
+    splits one phrase across two instrument labels.
+
+    Args:
+        terms: Phrases the design line names on this side.
+        anchors: That side's anchors.
+
+    Returns:
+        The terms with no confirming anchor, in the design line's order.
+    """
+    answered = {a.term for a in anchors if _resolve_anchor(a)[0] is not None}
+    return tuple(t for t in terms if t not in answered)
+
+
+def _side(side: str, terms: tuple[str, ...],
+          anchors: tuple[Anchor, ...] | None) -> SideVerdict:
+    """Adjudicate one side of a design line from its terms and its anchors.
+
+    `self_reported=` GONE, and with it the last read of the prevalence key on
+    this path. An anchor's `kind` states directly what
+    `prevalence_rows.outcome_reachable_in_instrument` inferred from a region
+    string's module prefix, so the two keys can no longer disagree about one
+    paper's outcome.
 
     Args:
         side: `"exposure"` or `"outcome"`.
         terms: Phrases the design line names on this side.
-        keys: Candidate instrument keys from an answer key, possibly empty.
-        missing_column_blocker: The blocker naming an absent answer-key column,
-            or None when a column exists for this side.
-        self_reported: Outcome side only — `outcome_reachable_in_instrument`'s
-            verdict. False refutes on evidence the word test cannot reach.
+        anchors: That side's anchors, or None when the design key holds no row
+            for this paper at all. None and `()` are different facts: the
+            second is a row with an empty side, which
+            `design_anchor.validate_design_key` complains about.
 
     Returns:
         The side's verdict, with the evidence that produced it.
     """
     absent = terms_absent_from_instrument(terms)
-    blockers: list[str] = []
 
     if not terms:
         return SideVerdict(side, terms, UNDETERMINED, (), absent,
                            (NO_DESIGN_ARROW,))
 
-    confirmed, key_blockers = _confirm_keys(keys)
-    blockers.extend(key_blockers)
+    if anchors is None:
+        # No row. The word test is one-directional and can still refute, which
+        # is the one thing it is sound for.
+        if absent and len(absent) == len(terms):
+            return SideVerdict(side, terms, REFUTED, (), absent,
+                               (_absent_blocker(side),))
+        return SideVerdict(side, terms, UNDETERMINED, (), absent,
+                           (NO_DESIGN_KEY_ROW,))
+
+    confirmed, blockers = _confirm_anchors(anchors)
 
     # Refutation is checked before confirmation deliberately. A resolved key on
     # a side the instrument cannot supply is a contradiction in the answer key,
     # not a pass — and surfacing it as REFUTED with the term listed is how a
     # reader finds the bad row.
-    if self_reported is False:
-        # Checked before the word test because it is the better evidence: the
-        # key states WHERE the outcome sits, where the word test only observes
-        # token overlap with question wording.
+    if any(a.kind == NOT_IN_INSTRUMENT for a in anchors):
+        # A RECORDED ITEM-LEVEL READ, which is the upgrade over the word test
+        # that admitted four papers on `chicago`, `individual`, `household` and
+        # `community`. Checked before the word test because it is the better
+        # evidence, exactly as the region field was before it.
         return SideVerdict(side, terms, REFUTED, confirmed, absent,
-                           (OUTCOME_NOT_IN_THE_INSTRUMENT, *blockers))
+                           (_not_in_instrument_blocker(side), *blockers))
 
     if absent and len(absent) == len(terms):
         return SideVerdict(side, terms, REFUTED, confirmed, absent,
                            (_absent_blocker(side), *blockers))
 
-    if confirmed:
-        return SideVerdict(side, terms, CONFIRMED, confirmed, absent, ())
+    if not anchors:
+        # A row exists with nothing on this side. Not KEY_DOES_NOT_RESOLVE:
+        # there is no key here to have resolved.
+        return SideVerdict(side, terms, UNDETERMINED, confirmed, absent,
+                           (NO_KEY_TO_RESOLVE,))
 
-    if missing_column_blocker is not None and not keys:
-        blockers.append(missing_column_blocker)
-    elif not keys:
-        # Not KEY_DOES_NOT_RESOLVE: there is no key here to have resolved.
-        blockers.append(NO_KEY_TO_RESOLVE)
+    unanswered = _unanswered_terms(terms, anchors)
+    if any(a.kind == AREA_MEASURE for a in anchors):
+        # C35 answer C. Ranked above CONFIRMED and below REFUTED: an area
+        # measure on this side means part of the design is out of scope here,
+        # and no amount of resolving on the rest changes that.
+        return SideVerdict(side, terms, BLOCKED_ON_DELIVERY, confirmed, absent,
+                           tuple(blockers))
+
+    if not unanswered:
+        return SideVerdict(side, terms, CONFIRMED, confirmed, absent,
+                           tuple(blockers))
+
+    if not blockers:
+        blockers.append(TERM_HAS_NO_ANCHOR)
     return SideVerdict(side, terms, UNDETERMINED, confirmed, absent,
                        tuple(blockers))
 
 
 def _absent_blocker(side: str) -> str:
-    """The blocker naming an instrument that cannot supply this side.
+    """The blocker naming an instrument whose WORDS cannot supply this side.
 
     Args:
         side: `"exposure"` or `"outcome"`.
@@ -393,25 +500,51 @@ def _absent_blocker(side: str) -> str:
             else OUTCOME_ABSENT_FROM_INSTRUMENT)
 
 
+def _not_in_instrument_blocker(side: str) -> str:
+    """The blocker naming a recorded item-level read that refutes this side.
+
+    Args:
+        side: `"exposure"` or `"outcome"`.
+
+    Returns:
+        The matching blocker constant.
+    """
+    return (EXPOSURE_NOT_IN_THE_INSTRUMENT if side == "exposure"
+            else OUTCOME_NOT_IN_THE_INSTRUMENT)
+
+
 def scorability_for(paper: CohortPaper) -> PaperScorability:
     """Whether one paper can be scored, and the evidence for the verdict.
+
+    Both sides read ONE table. Before C36 the exposure side read a key column
+    in this file and the outcome side read the prevalence key, so the two could
+    disagree about one paper and nothing picked between them.
 
     Args:
         paper: A paper in the bibliography.
 
     Returns:
         The paper's status, both sides' verdicts, and every blocker standing.
-    """
-    exposure = _side("exposure", exposure_terms(paper),
-                     EXPOSURE_KEYS.get(paper.pmid, ()),
-                     EXPOSURE_KEY_COLUMN_MISSING)
-    outcome = _side("outcome", outcome_terms(paper),
-                    outcome_keys_on_record(paper.pmid), None,
-                    self_reported=outcome_reachable_in_instrument(paper.pmid))
 
-    if REFUTED in (exposure.status, outcome.status):
+    Raises:
+        ModuleNotFoundError: In every clone but the scoring one.
+    """
+    row = design_key_row(paper.pmid)
+    exposure = _side("exposure", exposure_terms(paper),
+                     row.exposure if row else None)
+    outcome = _side("outcome", outcome_terms(paper),
+                    row.outcome if row else None)
+
+    statuses = (exposure.status, outcome.status)
+    if REFUTED in statuses:
         status = REFUTED
-    elif exposure.status == CONFIRMED and outcome.status == CONFIRMED:
+    elif BLOCKED_ON_DELIVERY in statuses:
+        # Ranked below REFUTED and above everything else. An instrument that
+        # cannot supply a side is a fact about the instrument; a missing
+        # delivery is a fact about this repository, and the first outranks the
+        # second because no delivery repairs it.
+        status = BLOCKED_ON_DELIVERY
+    elif statuses == (CONFIRMED, CONFIRMED):
         status = CONFIRMED
     else:
         status = UNDETERMINED
@@ -441,9 +574,15 @@ def status_counts() -> dict[str, int]:
     prose ever made, and `UNDETERMINED` is a work list, not a soft no.
 
     Returns:
-        Counts keyed by `REFUTED`, `CONFIRMED` and `UNDETERMINED`.
+        Counts keyed by `REFUTED`, `CONFIRMED`, `UNDETERMINED` and
+        `BLOCKED_ON_DELIVERY`. Four keys since C35 was decided; a caller
+        summing three of them is dropping papers.
+
+    Raises:
+        ModuleNotFoundError: In every clone but the scoring one.
     """
-    counts = {REFUTED: 0, CONFIRMED: 0, UNDETERMINED: 0}
+    counts = {REFUTED: 0, CONFIRMED: 0, UNDETERMINED: 0,
+              BLOCKED_ON_DELIVERY: 0}
     for row in scorability_report():
         counts[row.status] += 1
     return counts
