@@ -16,6 +16,33 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ## 2026-09-15
 
+The finite list a five-seed review left behind, landed and closed. Two real defects with
+external consequence, two Hard Constraints that were held by prose, and one claim
+converted from blocked to weaker-and-true. The DONE CONDITION was written down before the
+work started and is honoured: this line of work is complete for agents, and what remains
+is in `TASKS.md` §Only the operator.
+
+- **Redaction keyed on the FIELD NAME, and five route names were not on the list**
+  (`a74c773`). `serve/api.py` sends `stem_text` as `exposure_stem` / `outcome_stem` and
+  `cite().wording` as `pinned_wording` / `exposure_wording` / `outcome_wording`, and
+  wording under five words is invisible to the run rule. Driven over the socket on a
+  default bind, `/api/enumerate` returned a direct-identifier stem verbatim with zero
+  redaction marks. The fix is content-based, so the name no longer decides, and the gated
+  list is now DERIVED from the emitting routes by AST rather than hand-kept.
+- **The site-dir guard did not know its own outputs** (`9634447`). A run directory left
+  inside `--site-dir` by an earlier session cleared both checks; 200 on the pseudonym map
+  and on an unscrubbed job record, measured. The coverage test runs the two writers and
+  requires every path they leave to be a named marker.
+- **Two guarantees were held by comments** (`620a3cf`, `4dd4808`). "No `BlockedOn` member
+  for disclosure" and the order of `_side`'s branches both survived a positive control
+  with the suite green. Neither constraint changed; both now have tests whose red state
+  names the member or the paper.
+- **The rediscovery claim has a bound every clone can re-derive** (`4dd4808`).
+  `scorability.py::key_free_ceiling` replaces a figure measurable in one clone only, and
+  `TASKS.md` §Open quotes it instead of repeating the irreproducible one.
+- **Five stale pointers, one of which misrouted `/loop`** (`c62cc0f`), and `serve/` and
+  `site/` are no longer UNASSIGNED in §Parallel Lanes.
+
 C31 closes, and the website can drive the pipeline. The three defects below all sat in
 `serve/api.py`, all stopped the hand-off from a proposal to a run, and none had a test.
 Two were found by running the site's own flow end to end rather than by reading code; the
