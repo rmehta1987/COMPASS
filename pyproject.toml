@@ -31,8 +31,18 @@ target-version = "py312"
 # measures the pipeline's code. deploy/smoke_test.py is the deployed retriever's
 # acceptance test (AGENTS.md section Hard Constraints exempts it from the "never an
 # acceptance gate" rule that covers the pipeline's own embedding runs).
+# `site/` is the published page and its build/verification scripts, brought in
+# 2026-09-15 from the `compass-site` clone (its branch `site`, 298a828) so the
+# endpoint can be served from a clean checkout instead of defaulting to one
+# operator's home directory. MEASURED that day: `site/tools/` adds 164 findings
+# under this config, taking `ruff check .` from 225 to 389, and the clone it came
+# from reports 392 against the SAME ceiling of 232 -- so these files have never
+# been clean anywhere and this is not a regression being hidden. Excluded for the
+# reason already recorded above for `src/` and `deploy/`: RUFF_CEILING measures
+# the pipeline's code, and the page's tooling was written against another
+# standard. mypy needs no entry -- its `files` list is an allowlist.
 exclude = [".venv", "build", ".claude", "build_targets.py", "encode_and_score.py",
-           "src", "deploy"]
+           "src", "deploy", "site"]
 
 [tool.ruff.lint]
 select = [

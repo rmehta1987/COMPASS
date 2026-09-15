@@ -1750,3 +1750,52 @@ def test_the_pool_helper_returns_only_fields_something_reads() -> None:
     assert '"surface"' not in returns, "surface was removed; the docstring kept it"
     for field in ('"cands"', '"cos"', '"skipped"', '"rendered"'):
         assert field in returns, f"{field} is returned but not documented"
+
+
+# ------------------------------------------ the page this repository serves
+
+
+def test_the_default_site_dir_is_in_this_repository() -> None:
+    """`--site-dir` must not default to a path outside the tree.
+
+    It defaulted to a sibling CLONE, `/home/mehta5/compass-site/site`, which is
+    the only place the page existed. That makes the endpoint unrunnable from a
+    fresh checkout and silently machine-specific: the default names one
+    operator's home directory, so `python -m serve.api` on any other box exits
+    2 with "site dir not found" for a file the repository could have carried.
+    `site/` is 25 files and 328K, so there was no size reason to keep it out.
+
+    Read from `parse_args` rather than from a document, and compared against
+    the repository root this test computes for itself.
+    """
+    from serve.api import ROOT, parse_args
+
+    default = parse_args(["--no-auth"]).site_dir.resolve()
+    assert default.is_relative_to(ROOT.resolve()), (
+        f"--site-dir defaults to {default}, outside {ROOT}: the endpoint cannot "
+        f"be started from a clean checkout of this repository alone")
+    assert default.is_dir(), f"the default site dir does not exist: {default}"
+    assert (default / "index.html").is_file(), (
+        f"{default} carries no index.html, so `GET /` has nothing to serve")
+
+
+def test_the_default_site_dir_is_safe_to_serve() -> None:
+    """Moving the page in-tree must not hand the static route the source tree.
+
+    This is the pairing the checks exist for: `_refuse_unsafe_site_dir` has no
+    content filter behind it, and a `site/` inside the repository is one
+    directory away from `build/dictionary.json`. So the DEFAULTS are checked
+    against each other here, not just the arbitrary paths a caller can pass --
+    `main` runs this same check, and a default that could not pass it would
+    turn every plain `python -m serve.api` into an exit 2.
+    """
+    from serve.api import _refuse_unsafe_site_dir, parse_args
+
+    a = parse_args(["--no-auth"])
+    assert _refuse_unsafe_site_dir(a.site_dir.resolve(),
+                                   a.run_dir.resolve()) is None
+
+    # Anti-vacuity: the check still refuses the tree that CONTAINS the default.
+    from serve.api import ROOT
+
+    assert _refuse_unsafe_site_dir(ROOT.resolve(), a.run_dir.resolve()) is not None

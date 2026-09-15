@@ -1,0 +1,215 @@
+"""Prove each check goes red on a planted violation.
+
+A scan that has never fired is not known to work. For steps 1–5, 7 and 8 the
+site is copied to a scratch directory, one violation is planted, and the check
+runs against the copy; it must exit non-zero. Steps 1–5 take the copy through
+``SITE_ROOT``; steps 7 and 8 are node and take it as an argument. Step 6 needs
+the real repository: an untracked artifact is created, the check runs, and
+the file is removed again. The instrument run planted for step 2 is taken
+from the dictionary at run time and written only to the scratch copy.
+
+    python3 site/tools/plant.py
+"""
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+SITE = HERE.parent
+REPO = SITE.parent
+
+
+def run(step: str, root: Path) -> int:
+    env = dict(os.environ, SITE_ROOT=str(root), PYTHONDONTWRITEBYTECODE="1")
+    r = subprocess.run([sys.executable, str(HERE / f"{step}.py")], env=env,
+                       capture_output=True, text=True)
+    return r.returncode
+
+
+def run_node(step: str, root: Path) -> int:
+    """Run a node harness against a planted copy.
+
+    Steps 7 and 8 are node, take the site directory as an argument rather than
+    through ``SITE_ROOT``, and stub the route they drive, so they need no
+    server.
+
+    Args:
+        step: Harness basename under ``site/tools`` without its suffix.
+        root: The planted site directory to run against.
+
+    Returns:
+        The harness's exit status; non-zero means it caught the violation.
+    """
+    r = subprocess.run(["node", str(HERE / f"{step}.js"), str(root)],
+                       capture_output=True, text=True)
+    return r.returncode
+
+
+def copy_site(tmp: Path) -> Path:
+    dst = tmp / "site"
+    shutil.copytree(SITE, dst, ignore=shutil.ignore_patterns("__pycache__"))
+    return dst
+
+
+def plant_page(root: Path, marker: str, payload: str) -> None:
+    p = root / "index.html"
+    s = p.read_text(encoding="utf-8")
+    assert marker in s, marker
+    p.write_text(s.replace(marker, payload, 1), encoding="utf-8")
+
+
+def instrument_run() -> str:
+    sys.path.insert(0, str(HERE))
+    from no_instrument import dictionary_path
+    dic = dictionary_path()
+    if dic is None:
+        raise SystemExit("dictionary not found; set COMPASS_DICTIONARY")
+    for e in json.loads(dic.read_text(encoding="utf-8"))["entries"]:
+        w = " ".join(str(e.get("question_text", "")).split()).split()
+        if len(w) >= 8:
+            return " ".join(w[:5])
+    raise SystemExit("no dictionary entry long enough to plant")
+
+
+def main() -> int:
+    results: list[tuple[str, str, bool]] = []
+    with tempfile.TemporaryDirectory(prefix="site-plant-") as t:
+        tmp = Path(t)
+        # 1a a literal on the page
+        root = copy_site(tmp / "a")
+        plant_page(root, "<main class=\"wrap\">", "<main class=\"wrap\"><p>cos 0.8214</p>")
+        results.append(("no_fabrication", "numeric literal on the page", run("no_fabrication", root) != 0))
+        # 1b an artifact without provenance
+        root = copy_site(tmp / "b")
+        (root / "artifacts").mkdir(exist_ok=True)
+        (root / "artifacts" / "index.json").write_text(json.dumps(
+            {"files": ["planted.json"], "provenance": {"source": "plant", "run_id": "x"}}))
+        (root / "artifacts" / "planted.json").write_text(json.dumps({"cos": 0.5}))
+        results.append(("no_fabrication", "artifact without provenance", run("no_fabrication", root) != 0))
+        # 1c a figure retyped inside a string
+        (root / "artifacts" / "planted.json").write_text(json.dumps(
+            {"note": "cos 0.7316 cleared", "provenance": {"source": "plant", "run_id": "x"}}))
+        results.append(("no_fabrication", "figure inside a string", run("no_fabrication", root) != 0))
+        # 2a five instrument words
+        root = copy_site(tmp / "c")
+        plant_page(root, "<main class=\"wrap\">", f"<main class=\"wrap\"><p>{instrument_run()}</p>")
+        results.append(("no_instrument", "five-word instrument run", run("no_instrument", root) != 0))
+        # 2b a variable key
+        root = copy_site(tmp / "d")
+        plant_page(root, "<main class=\"wrap\">", "<main class=\"wrap\"><p>" + "m1:" + "Q5.4" + "</p>")
+        results.append(("no_instrument", "variable key", run("no_instrument", root) != 0))
+        # 3 dead anchor and missing fetch target
+        root = copy_site(tmp / "e")
+        plant_page(root, "<main class=\"wrap\">", "<main class=\"wrap\"><a href=\"#nowhere\">x</a>")
+        results.append(("links", "dead anchor", run("links", root) != 0))
+        root = copy_site(tmp / "f")
+        plant_page(root, "<script>", "<script>fetch(\"artifacts/missing.json\");")
+        results.append(("links", "missing fetch target", run("links", root) != 0))
+        # 4 unbalanced tag and a syntax error
+        root = copy_site(tmp / "g")
+        plant_page(root, "</main>", "</section></main>")
+        results.append(("parse", "stray close tag", run("parse", root) != 0))
+        root = copy_site(tmp / "h")
+        plant_page(root, "<script>", "<script>const = ;")
+        results.append(("parse", "script syntax error", run("parse", root) != 0))
+        root = copy_site(tmp / "h2")
+        plant_page(root, "r.top_cos", "r.top_cosine_renamed")
+        results.append(("parse", "renamed artifact field renders undefined", run("parse", root) != 0))
+        # 4b the five 2026-09-09 review fixes, each re-seeded: render.js must
+        # catch the defect coming back, not only the page as it stands.
+        root = copy_site(tmp / "h3")
+        plant_page(root, 'if(typed!==null&&!cur&&(sel==="retriever"||sel==="intake")) return noRun();',
+                   'if(typed!==null&&!cur) return noRun();')
+        results.append(("parse", "unmatched query hides Metrics", run("parse", root) != 0))
+        root = copy_site(tmp / "h4")
+        plant_page(root, 'el("#foot").innerHTML=sel==="metrics"?"":', 'el("#foot").innerHTML=true?"":')
+        results.append(("parse", "footer empty on a committed panel", run("parse", root) != 0))
+        root = copy_site(tmp / "h5")
+        plant_page(root, 'el("#ask").disabled=!window.COMPASS_ENDPOINT;', 'el("#ask").disabled=false;')
+        results.append(("parse", "pipeline button live with no server", run("parse", root) != 0))
+        root = copy_site(tmp / "h6")
+        plant_page(root, 'if(e.key==="Enter")', 'if(e.key==="Escape")')
+        results.append(("parse", "Enter in the search box does nothing", run("parse", root) != 0))
+        root = copy_site(tmp / "h7")
+        plant_page(root, "<b>NO RECORD ON THIS PAGE</b>", "<b>NO RECORD ON THIS ENDPOINT</b>")
+        results.append(("parse", "jargon reaches the reader", run("parse", root) != 0))
+        # 5 an external script, a font stylesheet, a fetch to a host
+        root = copy_site(tmp / "i")
+        plant_page(root, "<head>", "<head><script src=\"https://cdn.example.com/x.js\"></script>")
+        results.append(("offline", "external script", run("offline", root) != 0))
+        root = copy_site(tmp / "j")
+        plant_page(root, "<style>", "<style>@import url(https://fonts.googleapis.com/css);")
+        results.append(("offline", "font @import", run("offline", root) != 0))
+        root = copy_site(tmp / "k")
+        plant_page(root, "<script>", "<script>fetch(\"https://example.com/a\");")
+        results.append(("offline", "fetch to a host", run("offline", root) != 0))
+        # 7 the live branch. Each of these shipped at some point: the attribute
+        # break was live until a planted quote found it, and the pipeline's own
+        # output was published as a per-record table and then, after that went,
+        # as the counts and caveats left behind. Both read as evidence, so both
+        # are pinned out; the ceiling is pinned IN, because that is the result.
+        root = copy_site(tmp / "n1")
+        plant_page(root, 'data-genex="${att(pr.exposure)}"', 'data-genex="${esc(pr.exposure)}"')
+        results.append(("render_endpoint", "a key with a quote breaks out of its attribute",
+                        run_node("render_endpoint", root) != 0))
+        root = copy_site(tmp / "n2")
+        plant_page(root, '<p class="sec">verdicts on this scoring run</p>',
+                   '<p class="sec">observed</p><dl><dt>x</dt><dd>y</dd></dl>'
+                   '<p class="sec">verdicts on this scoring run</p>')
+        results.append(("render_endpoint", "the run's own counts are reported again",
+                        run_node("render_endpoint", root) != 0))
+        root = copy_site(tmp / "n3")
+        plant_page(root, '<p class="sec">verdicts on this scoring run</p>',
+                   '<table><thead><tr><th>record</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>'
+                   '<p class="sec">verdicts on this scoring run</p>')
+        results.append(("render_endpoint", "the per-record listing is published again",
+                        run_node("render_endpoint", root) != 0))
+        root = copy_site(tmp / "n3b")
+        # Rename it OUT of the asserted phrase. An earlier plant appended a
+        # character, which left the phrase intact as a substring and passed.
+        plant_page(root, 'row("records that could have matched"', 'row("records that could have been matched"')
+        results.append(("render_endpoint", "the ceiling stops being stated",
+                        run_node("render_endpoint", root) != 0))
+        # 8 a stage change decided after an await must be forfeited if the
+        # reader has moved; `steer` is the whole guarantee, in one line.
+        root = copy_site(tmp / "n4")
+        plant_page(root, "function steer(nav,stage){ if(nav===navGen) sel=stage; }",
+                   "function steer(nav,stage){ sel=stage; }")
+        results.append(("render_race", "a finished run drags the reader off the stage they picked",
+                        run_node("render_race", root) != 0))
+    # 6 an untracked artifact in the real tree
+    art = SITE / "artifacts"
+    art.mkdir(exist_ok=True)
+    planted = art / "planted_untracked.json"
+    idx = art / "index.json"
+    had_index = idx.exists()
+    saved = idx.read_text(encoding="utf-8") if had_index else None
+    try:
+        planted.write_text(json.dumps({"provenance": {"source": "plant", "run_id": "x"}}))
+        files = (json.loads(saved).get("files", []) if saved else []) + ["planted_untracked.json"]
+        idx.write_text(json.dumps({"files": files, "provenance": {"source": "plant", "run_id": "x"}}))
+        results.append(("tracked", "untracked artifact", run("tracked", SITE) != 0))
+    finally:
+        planted.unlink(missing_ok=True)
+        if had_index:
+            idx.write_text(saved, encoding="utf-8")
+        else:
+            idx.unlink(missing_ok=True)
+            if not any(art.iterdir()):
+                art.rmdir()
+    bad = 0
+    for step, what, red in results:
+        print(f"{'red ' if red else 'MISS'}  {step:16s} {what}")
+        bad += not red
+    print("every planted violation caught" if not bad else f"{bad} violation(s) NOT caught")
+    return 1 if bad else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

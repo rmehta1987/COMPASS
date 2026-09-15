@@ -1,0 +1,117 @@
+{
+ "schema": "compass_site/stages/1",
+ "provenance": {
+  "source": "authored 2026-09-04 from generate/funnel.py, pipeline/gate.py, pipeline/generation_env.py, agent/specifier.py docstrings and deploy/manifest.json prose; carries no figures; rewritten 2026-09-09 against agent/schema.py (no typed DAG, no critique seam, no study-design field) and the scored run on the Metrics tab (the Specifier, Record and Score stages ran once, with the estimability gate switched off); stage order is the pipeline's, not the order the page was built in; status chips rewritten 2026-09-10 to say only whether a tab has output, is running, is waiting on the reader or has none -- the provenance they used to carry (gate off, output withheld, result under Metrics, nothing matchable) is stated in each tab's own body; every committed status is now `built`, the neutral chip colour: the rail label states the tab's state and colour is reserved for a failed live run, so no chip can typeset a zero-match run as a green pass; 2026-09-10 second pass: a fresh load auto-selects the first committed example, so Intake and Retriever were claiming a run the reader had not made. `example` is a worked example, `past run` a recorded capture no query changes, and `ran` is now reserved for a live run the reader started; 2026-09-10 third pass: the per-record listing was removed from the Metrics tab as an internal pipeline check, so the four strings promising a per-record list by hash now promise counts instead; 2026-09-10 fourth pass: the whole 'What the run produced' section was removed on the operator's instruction, counts and caveats included. The result stays -- it is the ceiling block and the headline, not the pipeline's output. The ledger denominator, the backend-error attrition, the single-outcome-stratum admission and the confounding-by-indication note are now rendered nowhere; they remain in metrics.json under observed, reads.attrition and reads.one_cell; 2026-09-10 fifth pass: restored Retriever above Intake in the stages array. f32630a (2026-09-09, operator-requested) put Retriever first because the reader's sequence -- type, retrieve, then ask what was really encoded -- differs from the pipeline's internal sequence; 5c02e78's adversarial-review rewrite reverted the array to intake-first without mentioning the order in its commit message, while leaving index.html's liveIntakePanel wiring from the same original fix untouched. The sentence above reading 'stage order is the pipeline's, not the order the page was built in' describes the pre-f32630a rationale and is superseded by this one: order is now the reader's, not the pipeline's",
+  "commit": "COMPASS main 265241d; generation clone ralph-loop 7ef75fa; scored run b3-20260904",
+  "tier": "A"
+ },
+ "stages": [
+  {
+   "id": "retriever",
+   "name": "Retriever",
+   "sub": "fine-tuned bge-small · argmax cosine over precomputed target vectors · fp32 CPU",
+   "does": [
+    "Encodes the rendered query on CPU",
+    "Scores against every precomputed target vector: no language-model call, no network",
+    "Abstains when the top cosine falls below the shipped threshold",
+    "Refuses to serve at all if the dictionary hash does not match"
+   ],
+   "status_label": "example",
+   "status": "built",
+   "placeholder": "Will show a real run: cosine, rank, margin, threshold, abstention and roster fold size, with the target pseudonymised.",
+   "waits_for": null
+  },
+  {
+   "id": "intake",
+   "name": "Intake",
+   "sub": "free text → RetrievalRequest · no language-model call",
+   "does": [
+    "Takes a construct, a role and any concrete instances",
+    "Never renders the role; leaves population unset by contract",
+    "Renders one deterministic query string: no paraphrase, no randomness, no language model"
+   ],
+   "status_label": "example",
+   "status": "built",
+   "placeholder": "Will show the real RetrievalRequest and the string the shipped template rendered for it.",
+   "waits_for": null
+  },
+  {
+   "id": "generate",
+   "name": "Generate",
+   "sub": "S1 enumerate · S2 prune · S3 estimability · then the Specifier",
+   "does": [
+    "S1 enumerates candidate exposure–outcome pairs over distinct constructs",
+    "S2 prunes on construct identity, battery membership, free text",
+    "S3 screens estimability: blocked until two survey metadata exports arrive",
+    "Runs the Specifier on a pair it produced, rather than one you typed"
+   ],
+   "status_label": "past run",
+   "status": "built",
+   "placeholder": "Will show the gate's real output: how many pairs were live, passed and blocked, and which exports are missing.",
+   "waits_for": null
+  },
+  {
+   "id": "specifier",
+   "name": "Specifier",
+   "sub": "adjudicate → reason → gate → structure → dictionary authority → validate → rank",
+   "does": [
+    "A deterministic adjudication step runs before the first call and gives the same answer for every attempt",
+    "The language model reasons with dictionary lookups and stops when it stops looking things up, or at a step ceiling",
+    "A gate checks that the required lookups appear in the log, not that the prose claims them",
+    "Every field the dictionary can compute is overwritten from the dictionary, and stale rationales are dropped",
+    "Ranking is a fixed function of the record: no judge, no self-rating"
+   ],
+   "status_label": "nothing to show",
+   "status": "built",
+   "placeholder": "The stage itself ran once, with the estimability gate switched off. Its reasoning log and the record it produced are not on this page. Will show a real reasoning log beside the record it produced, keys pseudonymised the same way as the retriever runs.",
+   "waits_for": "a redacted copy of the scored run's records: they carry instrument wording and variable keys, which this page cannot show. The Metrics tab reports how many there were, not what they say"
+  },
+  {
+   "id": "record",
+   "name": "Record",
+   "sub": "ProtocolSpecification or NotSpecifiable · estimability stamped",
+   "does": [
+    "Carries the full wording for every variable, never a bare key",
+    "Stamps estimability, so an unverifiable design cannot read as a verified one",
+    "Names the analysis model, its unit of analysis and any clustering; there is no study-design field, so a record cannot say cross-sectional or cohort",
+    "Rejects a mediator placed in the adjusted list by the role it was given, not by any causal graph: no typed DAG exists",
+    "Has no critique seam; a refusal is a separate record carrying its reason and what would unblock it"
+   ],
+   "status_label": "nothing to show",
+   "status": "built",
+   "placeholder": "The stage itself emitted records once, with the estimability gate switched off, and the Metrics tab counts them. Will show a real record: full wording per variable, the estimability stamp, and the covariates adjusted, excluded and sought.",
+   "waits_for": "the same redacted copy; the records exist and are counted on the Metrics tab"
+  },
+  {
+   "id": "score",
+   "name": "Score",
+   "sub": "match rate vs held-out published findings · contamination verdicts",
+   "does": [
+    "Scores committed records against a key held on a branch the pipeline never sees",
+    "Refuses to score anything generated where the key was reachable",
+    "Reports match rate only beside contamination and leakage verdicts",
+    "Runs exactly once, on a tag, before any tuning, so it cannot become a feedback signal"
+   ],
+   "status_label": "past run",
+   "status": "built",
+   "placeholder": "Will show the generation clone's GenerationEnv stamp and the one scored run.",
+   "waits_for": null
+  },
+  {
+   "id": "metrics",
+   "name": "Metrics",
+   "sub": "the one scored run · its ceiling, its bibliography, what it establishes",
+   "does": [
+    "States the ceiling before the score, because the score is unreadable without it",
+    "Says how the scored set was produced, gate off, before showing what it scored",
+    "Lists the cohort papers the run was scored against, and what each one is",
+    "Does not report the pipeline's own output: the per-record listing and the run's counts are its end-to-end check, and read as evidence",
+    "Carries the retrieval measurements and their known limitations"
+   ],
+   "status_label": "past run",
+   "status": "built",
+   "placeholder": "",
+   "waits_for": null
+  }
+ ]
+}

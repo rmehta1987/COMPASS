@@ -1,0 +1,654 @@
+{
+ "schema": "compass_site/metrics/1",
+ "provenance": {
+  "run_id": "b3-20260904",
+  "source": "scored in the clone that holds the prevalence key, on a tag, before any tuning; this page reads the result and never the key; 2026-09-10: three prose strings edited in place to match the removal of the per-record listing (they referred to a table, a list below them and a record-hash identity that no longer render). Same edits made in build_metrics.py; no figure touched",
+  "baseline_md": "artefacts/b3-20260904/BASELINE.md",
+  "bibliography": "benchmark/cohort_papers.py",
+  "dictionary_version_hash": "3dc8415eccfe",
+  "tree_sha": "703a1779c8bad8c1e6a829a24bf2bdc15361f3c9"
+ },
+ "headline": "Ceiling: at most 0 of 28 artefacts could match under this key and frame (1 matchable papers); observed 0. The observed rate IS the ceiling. What this run establishes is that the harness runs end to end, refuses unstamped artefacts and emits clean verdicts; it is not a measurement of hypothesis quality.",
+ "question_answered": "does the pipeline land on associations the literature found, given only self-report variables and no estimability check.",
+ "ceiling": {
+  "max_matched": 0,
+  "matchable_papers": 1,
+  "papers_in_table": 16,
+  "with_outcome_key": 3,
+  "with_exposure_resolved": 5
+ },
+ "observed": {
+  "matched": 0,
+  "scored": 28,
+  "ledger_denominator": 48,
+  "by_outcome": {
+   "discarded": 13,
+   "emitted": 28,
+   "backend_error": 7
+  },
+  "strata": [
+   "chronic_condition",
+   "medication",
+   "reproductive_hormonal"
+  ],
+  "artifact_files_on_disk": 39,
+  "denominator_note": "the scored set is the ledger's `emitted` rows. More record files than that sit in the run directory, because a discarded pair can still have written one; the extras are not scored and are not listed here"
+ },
+ "verdicts": {
+  "contamination_check": "ok",
+  "input_leakage": "ok",
+  "unearned_assertions": "ok"
+ },
+ "verdicts_note": "each verdict is the scoring run's own check, reported as it wrote it. This page does not re-run any of them and shows no positive control, so a green chip says the check ran and passed, not that it would have caught a planted failure",
+ "headline_source": "quoted verbatim from artefacts/b3-20260904/BASELINE.md, which spells artefact and writes the singular as a plural; the record is not edited to read better",
+ "how_produced": [
+  "the estimability gate was switched off for this run (--allow-unestimable): without it no language-model call is made, and every one of the scored records carries the gate's own blocking mark, so the analysis set exists only because the primary quality gate was disabled",
+  "the frame was the narrow one: medication and reproductive-hormonal exposures crossed with chronic-condition outcomes, through the same funnel the Generate tab shows for a different frame",
+  "the pairs generated were a seeded subset of that frame; the seed and limit are not carried in the artifacts this page ships",
+  "the Generate and Score tabs describe the generation clone at a different tree; this run's own tree is in the provenance line below"
+ ],
+ "artifacts": [
+  {
+   "record_hash": "563cb4a3b1c6113b",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 8,
+   "n_excluded": 3,
+   "n_sought_not_found": 1,
+   "n_undetermined": 1,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "dc1b082799caab77",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 6,
+   "n_excluded": 2,
+   "n_sought_not_found": 1,
+   "n_undetermined": 1,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "88a587e549a22183",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 6,
+   "n_excluded": 1,
+   "n_sought_not_found": 2,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "61e7bd495776b810",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 12,
+   "n_excluded": 1,
+   "n_sought_not_found": 0,
+   "n_undetermined": 1,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "cf6b6889e15b1452",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 5,
+   "n_excluded": 1,
+   "n_sought_not_found": 0,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "5befe74cc57898c4",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 6,
+   "n_excluded": 1,
+   "n_sought_not_found": 0,
+   "n_undetermined": 1,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "42ff4740d21a85f7",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 5,
+   "n_excluded": 2,
+   "n_sought_not_found": 1,
+   "n_undetermined": 1,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "0990bc0852518b24",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 7,
+   "n_excluded": 3,
+   "n_sought_not_found": 1,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "3550726640e96aa7",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 6,
+   "n_excluded": 4,
+   "n_sought_not_found": 1,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "f8f59fd09d6506a8",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 8,
+   "n_excluded": 2,
+   "n_sought_not_found": 0,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "d6b791be424c1060",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 5,
+   "n_excluded": 1,
+   "n_sought_not_found": 0,
+   "n_undetermined": 2,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "730904a2daade8af",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 3,
+   "n_excluded": 2,
+   "n_sought_not_found": 4,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "8630a07425be96f1",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 7,
+   "n_excluded": 2,
+   "n_sought_not_found": 0,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "b9be30242f408566",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 3,
+   "n_excluded": 1,
+   "n_sought_not_found": 5,
+   "n_undetermined": 2,
+   "n_source": "unknown",
+   "modules_required": [
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "4559ce9ae276bc94",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 7,
+   "n_excluded": 1,
+   "n_sought_not_found": 3,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "8f35c7790ef32960",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 7,
+   "n_excluded": 1,
+   "n_sought_not_found": 1,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "1eb91764be3746ad",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 9,
+   "n_excluded": 1,
+   "n_sought_not_found": 1,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "decbe54ea88f4028",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 10,
+   "n_excluded": 2,
+   "n_sought_not_found": 1,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "83d2295646e84a84",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 10,
+   "n_excluded": 1,
+   "n_sought_not_found": 0,
+   "n_undetermined": 1,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "050ff2c935ce4585",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 8,
+   "n_excluded": 2,
+   "n_sought_not_found": 4,
+   "n_undetermined": 2,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "0b405b31a7f809e1",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "reproductive_hormonal",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 3,
+   "n_excluded": 1,
+   "n_sought_not_found": 0,
+   "n_undetermined": 3,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "5331cfbc0369378d",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "reproductive_hormonal",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 4,
+   "n_excluded": 2,
+   "n_sought_not_found": 1,
+   "n_undetermined": 1,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "5ee1c32c19f96434",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "reproductive_hormonal",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 7,
+   "n_excluded": 1,
+   "n_sought_not_found": 3,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2"
+   ]
+  },
+  {
+   "record_hash": "198e55ddf644e36d",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "reproductive_hormonal",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 5,
+   "n_excluded": 2,
+   "n_sought_not_found": 3,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "56957431516516d7",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "reproductive_hormonal",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 6,
+   "n_excluded": 1,
+   "n_sought_not_found": 1,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "ee7cea192c14ab5d",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 12,
+   "n_excluded": 2,
+   "n_sought_not_found": 2,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "bf311e31b6bc1886",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 6,
+   "n_excluded": 1,
+   "n_sought_not_found": 1,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2",
+    "m3"
+   ]
+  },
+  {
+   "record_hash": "dca1dbb0fb494b69",
+   "estimability": "blocked_no_metadata",
+   "exposure_stratum": "medication",
+   "outcome_stratum": "chronic_condition",
+   "n_adjusted": 5,
+   "n_excluded": 2,
+   "n_sought_not_found": 2,
+   "n_undetermined": 0,
+   "n_source": "unknown",
+   "modules_required": [
+    "m1",
+    "m2"
+   ]
+  }
+ ],
+ "papers": [
+  {
+   "pmid": 32938600,
+   "year": 2020,
+   "venue": "BMJ Open",
+   "design": "cohort profile; recruitment coverage and baseline prevalences",
+   "n": "~8,000 recruited",
+   "inventoried_before_2026_08_27": true,
+   "exposure_terms_abstained": null
+  },
+  {
+   "pmid": 36065817,
+   "year": 2022,
+   "venue": "Circ Cardiovasc Qual Outcomes",
+   "design": "primary-care spatial accessibility (E2SFCA) -> hypertension control/awareness",
+   "n": "5,096",
+   "inventoried_before_2026_08_27": true,
+   "exposure_terms_abstained": 1
+  },
+  {
+   "pmid": 37252073,
+   "year": 2023,
+   "venue": "Prev Med Rep",
+   "design": "seven linked community characteristics -> CRC screening, WQS",
+   "n": "2,836",
+   "inventoried_before_2026_08_27": true,
+   "exposure_terms_abstained": null
+  },
+  {
+   "pmid": 38715087,
+   "year": 2024,
+   "venue": "Environ Health",
+   "design": "PM2.5/NO2 3-year residential exposure -> central hemodynamics",
+   "n": "2,387",
+   "inventoried_before_2026_08_27": true,
+   "exposure_terms_abstained": 2
+  },
+  {
+   "pmid": 38397711,
+   "year": 2024,
+   "venue": "Int J Environ Res Public Health",
+   "design": "Chicago Health Atlas neighbourhood + ambient exposures -> uterine fibroid diagnosis",
+   "n": "602",
+   "inventoried_before_2026_08_27": false,
+   "exposure_terms_abstained": 1
+  },
+  {
+   "pmid": 36702470,
+   "year": 2023,
+   "venue": "Am J Epidemiol",
+   "design": "eight Chicago Health Atlas characteristics, WQS -> asthma",
+   "n": "6,592",
+   "inventoried_before_2026_08_27": false,
+   "exposure_terms_abstained": 2
+  },
+  {
+   "pmid": 42034153,
+   "year": 2026,
+   "venue": "Environ Res",
+   "design": "residential greenspace -> memory performance",
+   "n": "4,048",
+   "inventoried_before_2026_08_27": false,
+   "exposure_terms_abstained": 1
+  },
+  {
+   "pmid": 41883377,
+   "year": 2026,
+   "venue": "not recorded here",
+   "design": "PM2.5 components -> cardiovascular biomarkers",
+   "n": "648 (COMPASS arm)",
+   "inventoried_before_2026_08_27": false,
+   "exposure_terms_abstained": 1
+  },
+  {
+   "pmid": 39217205,
+   "year": 2024,
+   "venue": "not recorded here",
+   "design": "PM2.5 exposure windows -> blood pressure",
+   "n": "6,381",
+   "inventoried_before_2026_08_27": false,
+   "exposure_terms_abstained": 1
+  },
+  {
+   "pmid": 39238838,
+   "year": 2024,
+   "venue": "not recorded here",
+   "design": "individual and area characteristics -> household PM2.5",
+   "n": "244 households",
+   "inventoried_before_2026_08_27": false,
+   "exposure_terms_abstained": 1
+  },
+  {
+   "pmid": 38961645,
+   "year": 2024,
+   "venue": "not recorded here",
+   "design": "perceived discrimination in health care -> anxiety, depression, bipolar; g-estimation",
+   "n": "not in retrievable text",
+   "inventoried_before_2026_08_27": false,
+   "exposure_terms_abstained": 1
+  },
+  {
+   "pmid": 37884074,
+   "year": 2024,
+   "venue": "not recorded here",
+   "design": "PM2.5 exposure windows -> cardiometabolic biomarkers",
+   "n": "641",
+   "inventoried_before_2026_08_27": false,
+   "exposure_terms_abstained": 1
+  },
+  {
+   "pmid": 37879000,
+   "year": 2024,
+   "venue": "not recorded here",
+   "design": "health insurance type and clinic visits -> measured hypertension",
+   "n": "1,092",
+   "inventoried_before_2026_08_27": false,
+   "exposure_terms_abstained": null
+  },
+  {
+   "pmid": 36823587,
+   "year": 2023,
+   "venue": "not recorded here",
+   "design": "breast cancer case/control -> serum metabolome",
+   "n": "125 + 125",
+   "inventoried_before_2026_08_27": false,
+   "exposure_terms_abstained": 1
+  },
+  {
+   "pmid": 33088675,
+   "year": 2020,
+   "venue": "not recorded here",
+   "design": "tobacco and marijuana use -> serum PSA",
+   "n": "928",
+   "inventoried_before_2026_08_27": false,
+   "exposure_terms_abstained": null
+  },
+  {
+   "pmid": 32542493,
+   "year": 2021,
+   "venue": "not recorded here",
+   "design": "neighbourhood socioeconomic status -> biospecimen participation",
+   "n": "5,108 addresses",
+   "inventoried_before_2026_08_27": false,
+   "exposure_terms_abstained": null
+  }
+ ],
+ "reads": {
+  "establishes": "that the scoring code runs end to end, refuses unstamped records and emits clean verdicts, with the estimability gate switched off",
+  "is_not": "a measurement of hypothesis quality: with a ceiling of zero the run cannot separate a good pipeline from a bad one, and no score above zero was attainable under this key and this frame",
+  "unit_of_analysis": "the numerator counts records, not papers: a record matches when one paper's outcome key and resolved exposure are both its own. The ceiling counts how many of the scored records could have matched any paper; a paper is matchable when at least one record could match it. Both denominators are stated beside their counts",
+  "why_the_ceiling_is_low": "a paper is matchable only when its outcome key is on record and its exposure resolves against the instrument; one paper of sixteen clears both. Resolution goes through the deployed retriever, so a retriever miss and a genuine non-match are scored identically: the ceiling is retriever-dependent",
+  "the_frame": "the frame is the set of pairs the funnel enumerated for this run: one group of exposure questions crossed with one group of outcome questions, here medication and reproductive-hormonal exposures by chronic-condition outcomes. A paper whose pair lies outside it cannot be matched by any record, however the pipeline reasoned",
+  "attrition": "the scored denominator is the emitted rows only. The pairs lost to a backend error were dropped without a missingness argument, and an error is not obviously independent of how hard a pair is; the rate is stated beside this sentence",
+  "one_cell": "every scored record has the same outcome stratum, so the set is one cell of the instrument, not a spread. Self-reported medication against a self-reported chronic condition is the pairing an epidemiologist would query first, for confounding by indication and reverse causation; nothing in the estimability column speaks to either. Whether rows sharing a pair and differing only in their covariate sets are independent is not established here",
+  "excluded_floor": "the schema requires at least one excluded variable, so a count of one in that column is a floor the record was made to meet, not a finding",
+  "how_the_two_populations_relate": "a record is a pair of questionnaire items that the pipeline proposed by itself, by working through the instrument; a paper is a published study about the same cohort. Neither list was built from the other, so there is no reason for the two counts to match. Scoring compares them: every scored record was checked against all sixteen papers, and none matched one",
+  "what_the_paper_column_means": "every record here was scored against the bibliography. A record matches a paper when the paper's outcome key is one the record used, and the paper's exposure terms resolve through the deployed retriever to the record's exposure. None matched, so the column reads none: a scored result, not a missing feature. It can only reach the papers that have an outcome key on record, which is what caps the ceiling",
+  "why_no_match_was_available": "That paper is outside the frame this run drew from, so no record could have matched it: none were possible, and none were found. This sentence is from the scoring clone's progress log, not from BASELINE.md, which records only the two counts"
+ },
+ "not_built": [
+  {
+   "what": "the full per-paper key",
+   "why": "matching is already automatic -- every emitted record is scored against the whole bibliography, taking each paper's outcome keys from the held-out key and resolving its exposure terms through the deployed retriever. What is missing is the rest of that key: the covariate set, the model form and the tier, which is task C12. Until it exists the comparison reaches only the papers whose outcome keys are on record, and that is what caps the ceiling"
+  },
+  {
+   "what": "scoring from this page",
+   "why": "scoring needs benchmark/prevalence_key.py and runs exactly once, on a tag, before any tuning, so that it cannot become a feedback signal. A button that re-scored on demand would break that, not complete it"
+  }
+ ],
+ "pubmed_base": "https://pubmed.ncbi.nlm.nih.gov/",
+ "abstained_note": "the count is of the paper's exposure terms the retriever abstained on; BASELINE.md does not record how many terms the line had, so no rate is given. Papers it does not list show none listed",
+ "instrument_withheld_here": "The exposure and outcome keys behind these counts, and their wording, are instrument content. They are not published here in any form, and no part of this page requests them."
+}

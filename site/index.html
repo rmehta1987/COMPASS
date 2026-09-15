@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COMPASS — survey variable retrieval and study design</title>
+<style>
+  :root{
+    --ground:#EDF0F2; --paper:#F7F9FA; --ink:#16232E; --ink-2:#4A5C69; --ink-3:#7A8B97;
+    --rule:#C3CDD4; --rule-2:#DCE3E7; --signal:#A8621B; --ok:#2C5A4E;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font:400 16px/1.55 var(--sans)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  header{border-bottom:2px solid var(--ink)}
+  .mast{display:flex;flex-wrap:wrap;align-items:baseline;gap:18px;padding:30px 0 18px}
+  h1{font-size:clamp(27px,3.8vw,40px);line-height:1.03;letter-spacing:-.025em;font-weight:640;margin:0}
+  h1 span{display:block;font-family:var(--mono);font-size:.36em;font-weight:400;color:var(--ink-2);
+    margin-top:11px;line-height:1.5;max-width:62ch;letter-spacing:.01em}
+  .links{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12.5px}
+  .links a,.links button{color:var(--ink);text-decoration:none;border:1px solid var(--rule);background:var(--paper);padding:7px 12px;font:inherit;cursor:pointer}
+  .links a:hover,.links a:focus-visible,.links button:hover,.links button:focus-visible{border-color:var(--ink)}
+
+  .bar{border-bottom:1px solid var(--rule);background:var(--paper)}
+  .bar .wrap{display:flex;gap:12px;align-items:center;padding:13px 24px;flex-wrap:wrap}
+  .bar input{flex:1 1 340px;min-width:0;font:400 15px var(--sans);color:var(--ink);
+    background:#fff;border:1px solid var(--rule);padding:10px 12px}
+  .bar input:focus-visible{outline:2px solid var(--ink);outline-offset:-1px}
+  button{font:500 14px var(--sans);color:var(--paper);background:var(--ink);
+    border:1px solid var(--ink);padding:10px 18px;cursor:pointer}
+  button.g{color:var(--ink);background:transparent}
+  button:hover{opacity:.87} button:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+  .bar .ex{display:flex;gap:6px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px}
+  .bar .ex button{padding:6px 9px;font-family:var(--mono);font-size:11.5px}
+  .bar .served{flex-basis:100%;font-family:var(--mono);font-size:11px;color:var(--ink-2)}
+  button[disabled]{opacity:.45;cursor:not-allowed}
+
+  .stage{display:grid;grid-template-columns:236px minmax(0,1fr);border:1px solid var(--rule);
+    background:var(--paper);margin:28px 0 0}
+  .rail{border-right:1px solid var(--rule)}
+  .rail button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);
+    border:0;border-bottom:1px solid var(--rule-2);padding:13px 16px;cursor:pointer;font:400 14px var(--sans)}
+  .rail button:hover{background:#fff}
+  .rail button[aria-current="true"]{background:#fff;box-shadow:inset 3px 0 0 var(--ink);font-weight:600}
+  .rail .st{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;margin-top:3px}
+  /* Neutral is the rail's normal state; `blocked` is the only colour a chip
+     earns, and only when a live run failed. `shipped` and `pass` stay defined
+     because `stages.json` is operator-edited data that may name them and
+     `parse.py` fails on a status with no rule -- nothing emits them today. */
+  .st.shipped{color:var(--ok)} .st.built{color:var(--ink-3)} .st.blocked{color:var(--signal)}
+  .st.pass{color:var(--ok)}
+
+  .panel{padding:22px 24px 26px;background:#fff}
+  .panel h2{font-size:23px;margin:0 0 3px;letter-spacing:-.012em}
+  .panel .sub{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);margin:0 0 18px}
+  .does{margin:0 0 22px;padding:0;list-style:none;font-size:14.5px}
+  .does li{padding:5px 0 5px 16px;position:relative;color:var(--ink-2)}
+  .does li:before{content:"";position:absolute;left:0;top:13px;width:6px;height:1px;background:var(--ink-3)}
+
+  .sec{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink-2);
+    border-bottom:1px solid var(--ink);padding-bottom:6px;margin:0 0 12px}
+  .sec+.sec{margin-top:26px}
+  .sec.major{font-size:14px;letter-spacing:.01em;color:var(--ink);text-transform:none;
+    border-top:1px solid var(--rule);border-bottom:2px solid var(--ink);
+    padding-top:26px;padding-bottom:8px;margin-top:40px;font-family:inherit;font-weight:600}
+  .sec.major em{display:block;font-style:normal;font-weight:400;font-size:12px;
+    color:var(--ink-2);margin-top:5px;font-family:var(--mono)}
+
+  .tools{border:1px solid var(--rule);margin:0 0 26px;font-family:var(--mono);font-size:12.5px}
+  .tools .t{border-bottom:1px solid var(--rule-2);padding:9px 12px}
+  .tools .t:last-child{border-bottom:0}
+  .tools .call{color:var(--ink)}
+  .tools .call b{font-weight:600}
+  .tools .ret{color:var(--ink-2);padding-left:16px;margin-top:4px;display:block}
+  .tools .ret.no{color:var(--signal)}
+  .tools .gate{background:var(--ground);color:var(--ink-2);font-size:11.5px}
+  .tools .gate.pass{box-shadow:inset 3px 0 0 var(--ok)}
+  .tools .gate.fail{box-shadow:inset 3px 0 0 var(--signal)}
+  /* These two hold sentences, not machine output. In 12.5px monospace grey
+     they were the smallest text on the page and carried its longest
+     paragraphs; the reader was asked to work hardest exactly where the
+     argument is. Sans, larger, and the same measure as the body. */
+  .none{border:1px solid var(--rule);padding:14px 13px;margin:0 0 22px;
+    font-size:14.5px;line-height:1.6;color:var(--ink-2)}
+  .none code,.none b{font-family:var(--mono);font-size:13px}
+  .ph{border:1px dashed var(--signal);padding:14px 13px;margin:0 0 22px;
+    font-size:14.5px;line-height:1.6;color:var(--signal)}
+  /* A caveat the reader can open when they want it, instead of four grey slabs
+     stacked between them and the table. Closed by default; the lead paragraph
+     above it carries what a first read needs. */
+  .fold{border:1px solid var(--rule);margin:0 0 22px;background:var(--paper)}
+  .fold>summary{cursor:pointer;padding:11px 13px;font-size:14px;font-weight:600;
+    color:var(--ink);list-style-position:inside}
+  .fold>summary:hover{background:#fff}
+  .fold[open]>summary{border-bottom:1px solid var(--rule)}
+  .fold>.in{padding:4px 13px 6px}
+  .notes{display:block;border:0;margin:0}
+  .notes dt{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);
+    background:none;border:0;padding:12px 0 2px}
+  .notes dd{font-size:14.5px;line-height:1.6;color:var(--ink-2);border:0;padding:0 0 8px}
+  .ph b{letter-spacing:.06em}
+  /* The one box that is NOT an absence: solid ink, not the dashed orange that
+     marks NOT YET RUN and NO RECORD. Orange used to mean both. */
+  .key{border:1px solid var(--ink);border-left:5px solid var(--ink);padding:14px 12px;margin:0 0 26px;
+    font-size:14px;color:var(--ink);background:var(--paper)}
+  .key b{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em}
+
+  dl{margin:0 0 26px;display:grid;grid-template-columns:150px minmax(0,1fr);border:1px solid var(--rule)}
+  dt,dd{margin:0;padding:8px 12px;border-bottom:1px solid var(--rule-2);font-size:14px}
+  dt{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);background:var(--paper)}
+  dd.m{font-family:var(--mono);font-size:13.5px;word-break:break-word}
+  dl>:nth-last-child(-n+2){border-bottom:0}
+  .flag{color:var(--signal);font-weight:600}
+  .good{color:var(--ok);font-weight:600}
+  .after{display:flex;gap:8px;flex-wrap:wrap}
+  .after button{font-family:var(--mono);font-size:12px;padding:8px 12px}
+
+  .measure{margin:34px 0 0}
+  .measure h2{font-size:20px;margin:0 0 4px;letter-spacing:-.012em}
+  .measure p.lead{margin:0 0 16px;font-size:14px;color:var(--ink-2);max-width:82ch}
+  .tbl{overflow-x:auto;border:1px solid var(--rule);background:#fff;margin:0 0 18px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--rule-2);text-align:right;font-family:var(--mono);font-size:13.5px;white-space:nowrap}
+  th{font-weight:600;color:var(--ink-2);background:var(--paper);letter-spacing:.03em;font-size:11px}
+  td:first-child,th:first-child{text-align:left;font-family:var(--sans);font-size:13.5px}
+  tr:last-child td{border-bottom:0}
+  td.hi{font-weight:600}
+  .prov{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin:-8px 0 18px}
+  footer{border-top:1px solid var(--rule);margin-top:34px;padding:20px 0 54px;font-size:13px;color:var(--ink-2)}
+  footer p{margin:0 0 7px;max-width:82ch}
+  @media (max-width:820px){
+    .stage{grid-template-columns:1fr}
+    .rail{border-right:0;border-bottom:1px solid var(--rule);display:flex;overflow-x:auto}
+    .rail button{border-bottom:0;border-right:1px solid var(--rule-2);white-space:nowrap;width:auto}
+    dl{grid-template-columns:120px minmax(0,1fr)}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header><div class="wrap mast">
+  <h1>COMPASS<span>Type what you want to measure. Watch each stage retrieve, refuse, or block — with the dictionary lookups it made.</span></h1>
+  <nav class="links"><button class="g" id="dl-src">Download this page</button><a href="https://github.com/rmehta1987/COMPASS">Repo</a></nav>
+</div></header>
+
+<div class="bar"><div class="wrap">
+  <input id="q" value="" aria-label="request" placeholder="a question, or a construct, or two keys">
+  <button id="ask" title="the pipeline: retrieve candidates, then the language model reasons about which serve as exposure and which as outcome. Needs the live server">Ask the pipeline</button><button id="run" class="g" title="the deployed retriever alone: cosine over the target vectors, no language-model call, no cost, and the way to load a committed example">Search only</button>
+  <span class="ex" id="examples"></span>
+  <span class="served" id="served"></span>
+</div></div>
+
+<main class="wrap">
+  <div class="stage">
+    <nav class="rail" id="rail" aria-label="pipeline stage"></nav>
+    <section class="panel" id="panel" aria-live="polite"></section>
+  </div>
+  <footer id="foot"></footer>
+</main>
+
+<script>
+/* Nothing on this page is typed in. Every stage description, run, record and
+   figure is fetched from site/artifacts/*.json, each carrying its provenance.
+   site-check.sh fails the build if a numeric literal appears here. */
+const DATA={};
+let sel="retriever", cur=null, typed=null;
+const el=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+/* Attribute context. `esc` leaves a double quote alone, which is harmless in
+   element text and in a variable key, and breaks out of title=" the moment the
+   value is question wording. */
+const att=s=>esc(s).replace(/"/g,"&quot;");
+const row=(k,v,m)=>`<dt>${k}</dt><dd class="${m?'m':''}">${v}</dd>`;
+const f4=x=>x.toFixed(4);
+
+async function load(){
+  const emb=document.getElementById("embedded-artifacts");
+  if(emb){Object.assign(DATA,JSON.parse(emb.textContent));return;}
+  const idx=await (await fetch("artifacts/index.json")).json();
+  DATA.index=idx;
+  for(const f of idx.files){
+    DATA[f.replace(/\.json$/,"")]=await (await fetch("artifacts/"+f)).json();
+  }
+}
+
+/* What a stage is doing RIGHT NOW, or null to keep the committed chip.
+   ONE VOCABULARY, and a chip says nothing else. It answers the only question a
+   chip can answer from outside the panel: whose run is on this tab, is one
+   coming, is it on the reader, or is there none.
+     example           a worked example, chosen for you; you ran nothing
+     past run          a recorded run of the project; no query changes it
+     ran               a live run YOU started put this here
+     running&hellip;   a run is in flight
+     waiting for you   press something and there will be one
+     nothing to show   none on this page, and the reader cannot make one
+     failed            the run errored; the panel says how
+   `ran` is the reader's own run and nothing else. A fresh load auto-selects the
+   first committed example and pre-fills the search box, so five of the seven
+   chips used to say `ran` before the reader had typed anything -- the rail was
+   describing the artifacts, which the reader cannot tell apart from a claim
+   about their own session. An example says `example` however it was reached:
+   clicking one is the reader acting, but it is still not their query.
+   The chips used to carry provenance -- which gate was off, what was withheld,
+   which other tab held the result -- and read as a caption to a tab nobody had
+   opened yet. Every one of those facts is stated in the body of the tab it
+   belongs to, so the chip drops it rather than losing it.
+   `stages.json` describes the SHIPPED state of the pipeline, not this session,
+   so its chips describe the shipped pipeline. `rail` ran once at load and never
+   again, so those stayed on screen through a completed run -- the page said no
+   run had happened while showing its record -- and `aria-current` never moved
+   either, so the rail did not even mark the stage being read.
+   COLOUR MEANS ONE THING: a run failed. Everything settled is neutral. A green
+   chip on the one scored run read as an achievement when what it denoted was
+   zero matched against a ceiling of zero, so no chip claims a pass any more --
+   the label states the tab's state and the panel states the result. `rail`
+   interpolates a stage's own `status` straight into the class, so `stages.json`
+   may only use a class the stylesheet defines; `parse.py` fails if it does not.
+   An earlier note here claimed only three classes existed, which was true of
+   this function's own returns and false of the committed data it falls back to. */
+function liveStatus(id){
+  /* Served, nothing run yet: it is on the reader, not withheld. The committed
+     chip says "nothing to show", which is true of the static page and wrong
+     here -- the button beside it works. */
+  const served=!!window.COMPASS_ENDPOINT;
+  /* Mirrors `stagePanel`'s own `noRun` test. Drift here and the chip describes
+     a panel the reader is not looking at. */
+  const noRun=typed!==null&&!cur;
+  if(id==="retriever"){
+    if(posed) return {cls:"built",label:"nothing to show"};
+    if(ask) return ask.running?{cls:"built",label:"running&hellip;"}:{cls:"built",label:"ran"};
+    if(live) return {cls:"built",label:"ran"};
+    if(noRun) return {cls:"built",label:"nothing to show"};
+    return null;
+  }
+  if(id==="intake"){
+    if(posed) return {cls:"built",label:"nothing to show"};
+    if(live||(ask&&ask.rendered_query)) return {cls:"built",label:"ran"};
+    if(noRun) return {cls:"built",label:"nothing to show"};
+    return null;
+  }
+  if(id==="specifier"){
+    if(!spec) return served?{cls:"built",label:"waiting for you"}:null;
+    if(spec.running) return {cls:"built",label:"running&hellip;"};
+    if(spec.error) return {cls:"blocked",label:"failed"};
+    return {cls:"built",label:"ran"};
+  }
+  if(id==="record"){
+    if(!spec) return served?{cls:"built",label:"waiting for you"}:null;
+    /* The reader cannot run this stage; the Specifier fills it. So it mirrors
+       that run rather than sitting on "nothing to show" while one is in flight. */
+    if(spec.running) return {cls:"built",label:"running&hellip;"};
+    if(spec.error) return null;
+    if(spec.selected||spec.refusal) return {cls:"built",label:"ran"};
+    return null;
+  }
+  if(id==="generate"&&gen&&!gen.running&&!gen.error) return {cls:"built",label:"ran"};
+  return null;
+}
+
+function rail(){
+  /* No sequence number: the rail is the pipeline's order, but a printed count
+     read as a strict sequence and two of the seven stages were not in one. */
+  el("#rail").innerHTML=DATA.stages.stages.map(s=>{
+    const ls=liveStatus(s.id);
+    return `<button data-s="${s.id}" aria-current="${s.id===sel}">
+      ${esc(s.name)}
+      <span class="st ${esc(ls?ls.cls:s.status)}">${ls?ls.label:esc(s.status_label)}</span></button>`;
+  }).join("");
+  /* Taking the ticket IS the reader saying where they want to be; see `steer`. */
+  document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{
+    navGen={}; sel=b.dataset.s; draw();});
+}
+
+function examples(){
+  el("#examples").innerHTML=DATA.runs.examples.map((e,i)=>
+    `<button class="g" data-ex="${i}">${esc(e.label)}</button>`).join("");
+  document.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>{
+    cur=DATA.runs.examples[+b.dataset.ex]; typed=null; live=null; posed=null; liveGen={}; navGen={};
+    el("#q").value=cur.request.text; draw();});
+}
+
+const norm=s=>s.toLowerCase().replace(/[^a-z0-9 ]+/g," ").split(/\s+/).filter(Boolean).join(" ");
+function match(q){
+  const n=norm(q);
+  return DATA.runs.examples.find(e=>norm(e.request.text)===n||norm(e.rendered_query)===n)||null;
+}
+
+function placeholder(s){
+  return `<p class="sec">output</p><div class="ph"><b>NO RECORD ON THIS PAGE</b> — ${esc(s.placeholder)}`
+    +(s.waits_for?` Waits for ${esc(s.waits_for)}.`:"")+`</div>`;
+}
+/* Live retrieval, used only when this page is being SERVED BY serve/api.py.
+   Same origin, so there is no host in the URL and no CORS: the offline gate
+   forbids a host precisely because an external request is what this page must
+   never make, and a same-origin call the reader triggers is not one. Opened
+   from GitHub Pages or from file:// there is no /api, the fetch fails, and
+   everything below falls back to the committed runs exactly as before. The
+   endpoint answers with whatever IT was started with -- pseudonyms by default,
+   wording under --show-instrument -- so this renders what it is given and
+   claims nothing about which. */
+let live=null, ask=null;
+
+async function askResolver(){
+  /* The button is disabled on the static page (see `draw`), so this branch is
+     a keyboard or scripted reach; it still says something rather than nothing. */
+  if(!window.COMPASS_ENDPOINT){ el("#served").textContent=servedNote(); return; }
+  const q=el("#q").value.trim(); if(!q) return;
+  const gen=(liveGen={}), nav=(navGen={});
+  live=null; posed=null; cur=null; typed=null; ask={running:true}; sel="retriever"; draw();
+  try{
+    const r=await fetch("/api/pair",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({request:q})});
+    const j=await r.json().catch(()=>null);
+    if(!j||typeof j!=="object"){ ask={error:`the server answered ${r.status}`}; return; }
+    if(!j.ticket){ ask=j; return; }
+    for(;;){
+      await new Promise(done=>setTimeout(done,j.poll_after_ms));
+      if(gen!==liveGen) return;
+      const s2=await fetch("/api/specify/status",{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ticket:j.ticket})});
+      const u=await s2.json().catch(()=>null);
+      if(!u||typeof u!=="object"){ ask={error:`the server answered ${s2.status}`}; return; }
+      if(u.status==="running"){ ask={running:true,elapsed_s:u.elapsed_s}; draw(); continue; }
+      ask=u; adoptProposals(u);
+      /* Keys in, design out. Nothing was inferred, so there is nothing to
+         confirm -- see adoptProposals for where that line is drawn. */
+      if(allPinned(u)){ draw(); runSpecifier(nav); return; }
+      return;
+    }
+  }catch(err){ ask={error:"the server did not answer"}; }
+  finally{ draw(); }
+}
+
+function allPinned(j){
+  /* True only when BOTH anchors came from keys in the request. A `resolved`
+     verdict is the model's judgement and still gets a look before it runs. */
+  if(!j||!j.roles) return false;
+  return ["exposure","outcome"].every(r=>
+    j.roles[r]&&j.roles[r].verdict==="pinned"&&j.roles[r].pinned_key);
+}
+
+function adoptProposals(j){
+  /* Carry over only what the model COMMITTED to. `resolved` and `pinned` are
+     answers; `ambiguous`, `absent`, `derive` and `family` are it declining, and
+     filling those would pick one to be helpful -- the exact move the retrieval
+     guidance forbids. The reader still presses Run, which is the confirmation. */
+  if(!j||!j.roles) return;
+  for(const role of ["exposure","outcome"]){
+    const v=j.roles[role]; if(!v) continue;
+    if(v.verdict==="pinned"&&v.pinned_key){ anchors[role]=v.pinned_key; continue; }
+    if(v.verdict!=="resolved") continue;
+    const pick=(v.candidates||[]).find(c=>c.proposed&&c.key);
+    if(pick) anchors[role]=pick.key;
+  }
+}
+
+function roleBlock(role,v){
+  let h=`<p class="sec">${role} &middot; <b>${esc(v.verdict)}</b></p>`;
+  if(v.verdict==="pinned") return h+`<div class="tools"><div class="t gate pass">`
+    +`<span class="call"><b>${esc(v.pinned_key||"")}</b> ${esc(v.pinned_wording||"")}</span>`
+    +`<span class="ret">named in the request &mdash; not inferred</span></div></div>`;
+  if(v.reason) h+=`<div class="none">${esc(v.reason)}</div>`;
+  if(v.missing_dimension) h+=`<div class="none" style="color:var(--signal)">`
+    +`what would settle it: ${esc(v.missing_dimension)}</div>`;
+  h+=`<div class="tools">`+v.candidates.map(c=>
+      `<div class="t${c.proposed?" gate pass":""}"><span class="call">`
+      +`${c.proposed?"&#10003; ":""}${c.index}. <b>${esc(c.key||"")}</b> ${esc(c.wording)}</span>`
+      +`<span class="ret">cos ${f4(c.cos)}</span>`
+      +(c.key?`<button class="g pick" data-anchor="${role}" data-key="${esc(c.key)}">use</button>`:"")
+      +`</div>`).join("")+`</div>`;
+  return h;
+}
+
+function resolverPanel(){
+  const j=ask;
+  if(j.running) return `<p class="sec">reading the request</p><div class="ph"><b>IN PROGRESS</b>`
+    +`${typeof j.elapsed_s==="number"?` &mdash; ${j.elapsed_s}s`:""} &mdash; the language model reads`
+    +` your request and the candidate list and selects by index. The server resolves`
+    +` the index, so the model never writes a key.</div>`;
+  if(j.error) return `<p class="sec">output</p><div class="ph"><b>NO ANSWER</b> &mdash; ${esc(j.error)}</div>`;
+  let h=`<p class="sec">request read by ${esc(j.model_id)} &middot; not a committed run</p><dl>`
+    +row("request",esc(j.request))
+    +row("proposed by",esc(j.anchors_proposed_by),true)
+    +`</dl>`;
+  for(const role of ["exposure","outcome"]) if(j.roles&&j.roles[role]) h+=roleBlock(role,j.roles[role]);
+  const declined=["exposure","outcome"].filter(r=>j.roles&&j.roles[r]
+    &&j.roles[r].verdict!=="resolved"&&j.roles[r].verdict!=="pinned");
+  h+=`<p class="sec">chosen pair</p>`
+    +(allPinned(j)?`<div class="none" style="color:var(--signal)">`
+      +`Both anchors were named in the request, so nothing was inferred and the`
+      +` Specifier started automatically.</div>`:"")
+    +(declined.length?`<div class="none" style="color:var(--signal)">`
+      +`The language model declined to choose the ${esc(declined.join(" and "))}, so nothing`
+      +` was filled in there. Pick one yourself, or ask again more specifically.</div>`
+      :`<div class="none">Filled from what the language model committed to. Change either`
+      +` before running.</div>`)
+    +`<dl>`
+    +row("exposure",anchors.exposure?esc(anchors.exposure):"<em>none picked</em>",true)
+    +row("outcome",anchors.outcome?esc(anchors.outcome):"<em>none picked</em>",true)
+    +`</dl>`
+    +(anchors.exposure&&anchors.outcome
+      ?`<div class="after"><button class="g" id="go-spec">Run the Specifier on this pair</button></div>`
+      :"");
+  h+=`<div class="none" style="color:var(--signal)">${esc(j.not_a_selection)}</div>`;
+  return h;
+}
+
+/* The pair the reader assembled, and the last Specifier answer. Both live
+   alongside `live` rather than inside it: a run outlives the retrieval that
+   suggested its anchors. */
+const anchors={exposure:null,outcome:null};
+let spec=null, specBusy=false;
+
+async function runSpecifier(nav){
+  if(!window.COMPASS_ENDPOINT||specBusy) return;
+  if(!anchors.exposure||!anchors.outcome) return;
+  /* Clicked directly this is the reader's own intent, so it takes a fresh
+     ticket; chained from the resolver it inherits that request's. */
+  if(nav===undefined) nav=(navGen={});
+  specBusy=true; spec={running:true}; steer(nav,"specifier"); draw();
+  try{
+    const r=await fetch("/api/specify",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({exposure:anchors.exposure,outcome:anchors.outcome})});
+    const j=await r.json().catch(()=>null);
+    /* A refusal, a busy answer while another run holds the lock, and a
+       bad-request for an unresolvable key are all ANSWERS, not failures:
+       show what came back rather than collapsing them into "no endpoint". */
+    if(!j||typeof j!=="object"){ spec={error:`the server answered ${r.status}`}; return; }
+    if(!j.ticket){ spec=j; return; }
+    /* A RUN OUTLIVES ANY ONE REQUEST. Held open, the POST hit Cloudflare's
+       proxy ceiling and died with a gateway timeout while the run itself
+       carried on happily to completion. So the POST hands back a ticket and
+       we ask again on the interval the server names: the page states no
+       number of its own. */
+    spec={running:true,ticket:j.ticket}; draw();
+    for(;;){
+      await new Promise(done=>setTimeout(done,j.poll_after_ms));
+      const q=await fetch("/api/specify/status",{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ticket:j.ticket})});
+      const u=await q.json().catch(()=>null);
+      if(!u||typeof u!=="object"){ spec={error:`the server answered ${q.status}`}; return; }
+      if(u.status==="running"){ spec={running:true,ticket:j.ticket,elapsed_s:u.elapsed_s}; draw(); continue; }
+      spec=u; return;
+    }
+  }catch(err){
+    spec={error:"the server did not answer"};
+  }finally{
+    specBusy=false;
+    /* Land the reader on the object, not on the machinery that made it. */
+    if(spec&&(spec.selected||spec.refusal)) steer(nav,"record");
+    draw();
+  }
+}
+
+function anchorLine(a){
+  /* Exposure and outcome are a union: a variable reference, a derivation, or a
+     roster family. Show whichever arrived rather than assuming a key. */
+  if(!a) return "<em>none</em>";
+  const wording=a.quoted_wording?` &mdash; ${esc(a.quoted_wording)}`:"";
+  return `<b>${esc(a.key||a.derivation_id||a.group_key||a.kind||"")}</b>${wording}`;
+}
+
+function covBlock(title,list,note){
+  if(!list||!list.length) return `<p class="sec">${title}</p><div class="none">${note}</div>`;
+  return `<p class="sec">${title} &middot; ${list.length}</p><div class="tools">`
+    +list.map(c=>`<div class="t"><span class="call"><b>${esc(c.variable&&(c.variable.key||c.variable.derivation_id)||"")}</b>`
+      +` &middot; ${esc(c.role||"")}${c.contestable?" &middot; contestable":""}</span>`
+      +`<span class="ret">${esc(c.mechanism||c.justification||"")}</span></div>`).join("")
+    +`</div>`;
+}
+
+function readableProtocol(r){
+  const m=r.model_spec||{}, e=r.estimability||{}, a=r.access||{}, ft=r.falsifier_threshold;
+  let h=`<dl>`
+    +row("question",esc(r.question))
+    +row("expected direction",(function(d){
+        /* A structured type, not a string: direction plus an optional magnitude
+           and where that magnitude came from. Rendered as `[object Object]`
+           until this was checked against a real record. */
+        if(!d) return "<em>none</em>";
+        const mag=d.magnitude===null||d.magnitude===undefined?"":
+          ` &middot; ${esc(String(d.magnitude))}`
+          +(d.magnitude_source?` (${esc(d.magnitude_source)})`:"");
+        return `${esc(d.direction||"")}${mag}`;
+      })(r.expected_direction),true)
+    +row("exposure",anchorLine(r.exposure),true)
+    +row("outcome",anchorLine(r.outcome),true)
+    +row("analysis model",`${esc(m.form||"")} &middot; per ${esc(m.unit_of_analysis||"")}`
+        +(m.clustering?` &middot; clustered on ${esc(m.clustering)}`:""),true)
+    +row("falsifier",esc(r.falsifier))
+    +(ft?row("threshold",`${esc(String(ft.comparator||""))} ${esc(String(ft.value))} `
+        +`${esc(ft.unit||"")}`,true):"")
+    +`</dl>`;
+  h+=covBlock("adjusted",r.adjusted_covariates,"none");
+  h+=covBlock("excluded on purpose",r.excluded_variables,
+              "none &mdash; an empty exclusion list is rejected by the schema, so one entry is a floor, not a finding");
+  h+=covBlock("undetermined",r.undetermined_covariates,"none");
+  if(r.sought_covariates&&r.sought_covariates.length)
+    h+=`<p class="sec">looked for and not found &middot; ${r.sought_covariates.length}</p>`
+      +`<div class="tools">`+r.sought_covariates.map(u=>
+        `<div class="t"><span class="call"><b>${esc(u.construct_sought||"")}</b></span>`
+        +`<span class="ret">${esc(u.exposes_the_estimate_to||u.why_rejected||"")}</span></div>`
+        +(u.search_phrases&&u.search_phrases.length
+          ?`<div class="t"><span class="call">tried: ${u.search_phrases.map(esc).join(" &middot; ")}</span></div>`:"")
+      ).join("")+`</div>`;
+  h+=`<p class="sec">estimability</p><dl>`
+    +row("analytic n",e.analytic_n===null||e.analytic_n===undefined
+        ?`<span class="flag">unknown</span> &middot; ${esc(e.n_source||"")}`
+        :`${esc(String(e.analytic_n))} &middot; ${esc(e.n_source||"")}`,true)
+    +row("modules required",esc((e.modules_required||[]).join(", ")),true)
+    +(e.exposure_contrast?row("contrast",esc(e.exposure_contrast)):"")
+    +row("access",esc(a.decision||""),true)
+    +`</dl>`;
+  h+=`<p class="sec">status</p><div class="tools">`
+    +`<div class="t gate ${(r.blocked_on||[]).length?"fail":"pass"}"><span class="call">`
+    +`<b>${esc(r.status||"")}</b></span><span class="ret">`
+    +((r.blocked_on||[]).length?`blocked on ${esc(r.blocked_on.join(", "))}`
+      :"no blockers")+`</span></div></div>`;
+  return h;
+}
+
+function readableRefusal(r){
+  let h=`<dl>`
+    +row("pair",esc(r.pair_id),true)
+    +row("reason",`<b>${esc(r.reason||"")}</b>`,true)
+    +row("statement",esc(r.statement))
+    +row("what would unblock it",esc(r.what_would_unblock))
+    +`</dl>`;
+  if(r.evidence&&r.evidence.length) h+=`<p class="sec">evidence &middot; the dictionary lookups the server made</p>`
+    +`<div class="tools">`+r.evidence.map(v=>
+      `<div class="t"><span class="call"><b>${esc(v.tool||"")}</b>(${esc(v.argument||"")})</span>`
+      +`<span class="ret">&rarr; ${esc(v.outcome||"")}</span></div>`).join("")+`</div>`;
+  if((r.blocked_on||[]).length) h+=`<div class="none">blocked on ${esc(r.blocked_on.join(", "))}</div>`;
+  return h;
+}
+
+let gen=null, genBusy=false;
+
+async function enumerate(){
+  if(!window.COMPASS_ENDPOINT||genBusy) return;
+  genBusy=true; gen={running:true}; sel="generate"; draw();
+  try{
+    const r=await fetch("/api/enumerate",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+    const j=await r.json().catch(()=>null);
+    gen=(j&&typeof j==="object")?j:{error:`the server answered ${r.status}`};
+  }catch(err){ gen={error:"the server did not answer"}; }
+  finally{ genBusy=false; draw(); }
+}
+
+function generatePanel(){
+  const committed=DATA.funnel.gate;
+  let h=`<p class="sec">the committed gate &middot; run ${esc(DATA.funnel.provenance.run_id||DATA.funnel.provenance.commit||"")}</p>`
+    +`<div class="tools"><div class="t gate ${committed.passed?"pass":"fail"}">`
+    +`<span class="call">live ${committed.live} &middot; passed ${committed.passed}`
+    +` &middot; blocked ${committed.blocked}</span>`
+    +`<span class="ret">${committed.blocked_on.map(esc).join(" &middot; ")}</span></div></div>`;
+  /* Same page, two trees. This gate output is the worked frame in the
+     generation clone; the scored run on Metrics used a different frame, a
+     different tree, and the gate switched off. Left unsaid, the two read as
+     one run that both did and did not happen. */
+  const mp=DATA.metrics.provenance;
+  h+=`<div class="none">This is the gate as captured at `
+    +`${esc(DATA.funnel.provenance.commit)}. The run scored on the <b>Metrics</b> tab `
+    +`(${esc(mp.run_id)}, tree ${esc(mp.tree_sha)}) was produced from a different frame with this gate `
+    +`switched off, which is the only way any pair reaches the Specifier today: its `
+    +`${DATA.metrics.observed.scored} records all carry the mark above.</div>`;
+  if(!window.COMPASS_ENDPOINT) return h+`<div class="none">Served statically, so the`
+    +` funnel cannot be run from here. The figures above are the committed run.</div>`;
+  if(!gen) return h+`<div class="after"><button class="g" id="go-gen">Run the funnel now</button></div>`;
+  if(gen.running) return h+`<div class="ph"><b>ENUMERATING</b> &mdash; S1 and S2 are`
+    +` deterministic and make no language-model call.</div>`;
+  if(gen.error) return h+`<div class="ph"><b>NO OUTPUT</b> &mdash; ${esc(gen.error)}</div>`;
+  const c=gen.counts;
+  h+=`<p class="sec">this run of the funnel</p><dl>`
+    +row("sets",`${gen.sets.exposures} exposure(s) &times; ${gen.sets.outcomes} outcome(s)`
+        +` &middot; module ${esc(gen.sets.exposure_module)} ${esc(gen.sets.exposure_prefix)}`
+        +` &rarr; module ${esc(gen.sets.outcome_module)} ${esc(gen.sets.outcome_prefix)}`,true)
+    +row("enumerated (S1)",String(c.enumerated),true)
+    +row("pruned (S2)",String(c.pruned_S2),true)
+    +row("live",String(c.live),true)
+    +row("estimable (S3)",`<span class="flag">${c.estimable}</span> &middot; unknown ${c.unknown}`,true)
+    +row("requires derivation",String(c.requires_derivation),true)
+    +`</dl>`;
+  h+=`<div class="none" style="color:var(--signal)">${esc(gen.note)}</div>`;
+  launchable={};
+  h+=`<p class="sec">pairs &middot; showing ${gen.shown} of ${c.enumerated}</p><div class="tools">`
+    +gen.pairs.map((pr,pi)=>{
+      const tok=`generate:${pi}`;
+      if(pr.exposure&&pr.outcome) launchable[tok]={source:"generate",
+        source_label:"the funnel's enumerated pairs on the Generate tab",
+        id:pr.pair_id, exposure:pr.exposure, outcome:pr.outcome,
+        exposure_text:pr.exposure_stem||"", outcome_text:pr.outcome_stem||"",
+        question:""};
+      return `<div class="t"><span class="call"><b>${esc(pr.pair_id)}</b></span>`
+      +(pr.exposure&&pr.outcome
+        ?/* `att`, not `esc`: these are attribute values from the endpoint, and `esc`
+             leaves a double quote alone -- one in a key closes the attribute early
+             and the rest becomes markup inside a button. `att` was already used
+             for the token beside them. Proved red by the planted quote in
+             `render_endpoint.js`. */
+          `<button class="g pick" data-genex="${att(pr.exposure)}" data-genout="${att(pr.outcome)}" data-launch="${att(tok)}">specify this pair</button>`
+        :`<span class="ret">keys withheld</span>`)+`</div>`
+      +`<div class="t"><span class="call">${esc(pr.exposure_stem||"")} &rarr; ${esc(pr.outcome_stem||"")}</span></div>`;
+    }).join("")+`</div>`;
+  return h;
+}
+
+function recordPanel(){
+  const j=spec;
+  if(!j||j.running) return `<p class="sec">output</p><div class="ph"><b>NO RECORD YET</b>`
+    +` &mdash; run the Specifier; whatever it produces lands here.</div>`;
+  const rec=j.selected||j.refusal;
+  if(!rec) return `<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; `
+    +`${esc(j.reason||"the run produced neither a protocol nor a refusal")}. `
+    +`The Specifier tab has the run and the design the gate rejected.</div>`;
+  let h=`<p class="sec">${j.selected?"ProtocolSpecification":"NotSpecifiable"}`
+    +` &middot; the record's type</p>`
+    +(j.selected?readableProtocol(rec):readableRefusal(rec))
+    +`<details><summary>the record as JSON &middot; provenance</summary>`
+    +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre></details>`;
+  /* What the type carries and what it does not. An earlier stage description
+     advertised a HypothesisRecord with a typed DAG and a critique seam, and
+     this block was its retraction, shown only to readers with a live record;
+     the description now says the same thing as this block, to every reader. */
+  h+=`<p class="sec">what the record carries, and what it cannot</p><div class="tools">`
+    +`<div class="t gate pass"><span class="call">full wording per variable, never a bare key</span>`
+    +`<span class="ret">in the record</span></div>`
+    +`<div class="t gate pass"><span class="call">estimability stamped on the record</span>`
+    +`<span class="ret">in the record</span></div>`
+    +`<div class="t gate pass"><span class="call">analysis model, unit of analysis, clustering</span>`
+    +`<span class="ret">in the record</span></div>`
+    +`<div class="t gate fail"><span class="call">a study-design field: cross-sectional, cohort, case-control</span>`
+    +`<span class="ret">no such field</span></div>`
+    +`<div class="t gate fail"><span class="call">causal structure as a typed DAG</span>`
+    +`<span class="ret">no such field; a mediator is rejected by the role it was given in a list</span></div></div>`
+    +`<div class="none">The object above is a <code>ProtocolSpecification</code> or a `
+    +`<code>NotSpecifiable</code> refusal. Nothing else is built.</div>`;
+  return h;
+}
+
+function specifierPanel(){
+  const j=spec;
+  if(j.running) return `<p class="sec">running</p><div class="ph"><b>IN PROGRESS</b>`
+    +`${typeof j.elapsed_s==="number"?` &mdash; ${j.elapsed_s}s elapsed`:""}`
+    +` &mdash; a real run: the language model reasons, looking things up in the`
+    +` dictionary as it goes, then writes the record, then the gate checks it.`
+    +` Minutes, not seconds. The run continues on the server whatever happens to`
+    +` this page. One run at a time: a second is refused rather than queued.</div>`;
+  if(j.error) return `<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.error)}</div>`;
+  const id=j.identity||{};
+  let h=`<p class="sec">run &middot; not a measurement</p><dl>`
+    +row("pair",esc(id.protocol_id),true)
+    +row("language model",`${esc(id.model_id)}${id.is_pipeline_model?"":` <span class="flag">not the pipeline proxy</span>`}`,true)
+    +row("selection",`${esc(id.selection_mode)} &middot; screened_from ${id.screened_from}`,true)
+    +row("dictionary",esc(id.dictionary_version),true)
+    +(id.key_case_corrected?row("key case corrected",esc(JSON.stringify(id.key_case_corrected)),true):"")
+    +row("records produced",esc(j.yield),true)
+    +`</dl>`;
+  if(Array.isArray(j.samples)&&j.samples.length){
+    h+=`<p class="sec">attempts &middot; one per seed</p><div class="tools">`+j.samples.map(a=>
+      `<div class="t"><span class="call">seed ${a.seed} &middot; <b>${esc(a.gate)}</b></span>`
+      +`<span class="ret">${a.tool_calls} lookup(s), ${a.transductions} structuring pass(es)</span></div>`
+      +(Array.isArray(a.distinct_tools)?`<div class="t"><span class="call">${esc(a.distinct_tools.join(" &middot; "))}</span></div>`:"")
+    ).join("")+`</div>`;
+  }
+  const rec=j.selected||j.refusal;
+  if(rec){
+    /* The object lives in Record; this stage is the run that produced it. */
+    h+=`<p class="sec">outcome</p><div class="none">`
+      +`This run produced a <b>${j.selected?"protocol":"refusal the environment upheld"}</b>.`
+      +` The <b>Record</b> tab has it.</div>`;
+  }else{
+    h+=`<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.reason||"the run produced neither a protocol nor a refusal")}</div>`;
+    /* A rejected design is still a design. The sample kept it, so show it: a
+       run can spend ten minutes and dozens of tool calls building one, and it
+       is worth reading and scoring even when the gate refused to authorise it.
+       The gate's verdict stands; this only stops it being invisible. */
+    for(const a of (j.samples||[])){
+      if(a.rejected_record) h+=`<p class="sec">the design the gate rejected &middot; seed ${a.seed}</p>`
+        +(typeof a.rejected_record==="object"&&a.rejected_record.question
+          ?readableProtocol(a.rejected_record):"")
+        +`<details><summary>as JSON &middot; provenance</summary><pre class="rec">`
+        +`${esc(typeof a.rejected_record==="string"?a.rejected_record:JSON.stringify(a.rejected_record,null,2))}`
+        +`</pre></details>`;
+      if(a.analysis) h+=`<p class="sec">what the language model established &middot; seed ${a.seed}</p>`
+        +`<details><summary>the reasoning, in full</summary>`
+        +`<pre class="rec">${esc(a.analysis)}</pre></details>`;
+    }
+  }
+  if(j.not_a_measurement) h+=`<div class="none" style="color:var(--signal)">${esc(j.not_a_measurement)}</div>`;
+  return h;
+}
+
+/* Every request that can change the panel takes a ticket. An await
+   suspends, and the reader keeps clicking: without this, a slow live
+   reply lands after they picked an example and paints over it. */
+let liveGen=null;
+
+/* `liveGen` answers "is this reply still about the query on screen". It does not
+   answer "may this reply move the reader", and those come apart the moment a run
+   is slow. A Specifier run can outlast the reader's patience by minutes; they
+   spend that time reading other stages, and the `finally` below then drags them
+   to the record. Dropping the
+   reply instead would be worse -- the query has not changed and the answer they
+   asked for would be thrown away. So a second ticket: a rail or example click
+   takes it, and every stage change that happens AFTER an await must still hold
+   the one it was issued. Panels still fill; only the steering is forfeited. */
+let navGen=null;
+function steer(nav,stage){ if(nav===navGen) sel=stage; }
+
+/* A pair launched from Metrics or Generate is POSED, not retrieved: no query was
+   rendered and no vectors were scored. Retriever and Intake used to keep showing
+   whatever was there before -- a committed example, or the previous request's
+   hits -- beside a record produced from a different pair entirely, so the page
+   answered "what was actually run?" with another run's numbers. `posed` is what
+   those two stages read instead, and the launch clears `live` and `ask` so there
+   is nothing stale left to fall through to. It never invents a retrieval: there
+   was none, and saying so is the whole point. */
+let posed=null;
+
+/* Rows a run can be launched from, rebuilt by whichever panel drew them and
+   addressed by token, not by bare index: a button left over from another panel
+   resolves to nothing rather than to the wrong row. The button still carries
+   the two keys, which is what the Specifier needs; this carries the wording and
+   the provenance, which is what the reader needs. */
+let launchable={};
+
+async function liveRetrieve(q){
+  /* INERT unless the endpoint said so. On GitHub Pages a root-relative
+     "/api/retrieve" does NOT fail: it resolves against the Pages origin, the
+     POST leaves the browser carrying what the reader typed, and a not-found
+     answer comes back. The offline gate certifies "zero external requests" and cannot see
+     a hostless URL, so the page must be unable to make that request at all --
+     not merely handle its failure. Only the server can honestly claim to be
+     the server, so it sets the flag when it serves this file. */
+  if(!window.COMPASS_ENDPOINT) return null;
+  try{
+    const r=await fetch("/api/retrieve",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({query:q})});
+    if(!r.ok) return null;
+    const j=await r.json();
+    return (j&&Array.isArray(j.hits)&&j.hits.length)?j:null;
+  }catch(err){ return null; }
+}
+
+function anchorOf(v){
+  /* Whatever the pair route settled on for a role, however it got there. */
+  if(!v) return null;
+  if(v.verdict==="pinned"&&v.pinned_key)
+    return {key:v.pinned_key,wording:v.pinned_wording,how:"named in the request"};
+  const pick=(v.candidates||[]).find(c=>c.proposed&&c.key);
+  if(pick&&v.verdict==="resolved")
+    return {key:pick.key,wording:pick.wording,how:"chosen by the model"};
+  // No entity inside a string that `esc` will escape: it would render the
+  // entity's own source text. Plain words only in here.
+  return {key:null,wording:null,how:`not settled: ${v.verdict}`};
+}
+
+function pairIntakePanel(){
+  const j=ask;
+  let h=`<p class="sec">lookups</p><div class="none">None for the query itself. `
+    +`The template is deterministic string concatenation: same fields, same query, `
+    +`every run. The language-model call comes after, to read the candidates.</div>`;
+  h+=`<p class="sec">what was encoded &middot; live, not a committed run</p><dl>`
+    +row("request",esc(j.request))
+    +row("rendered query",esc(j.rendered_query),true)
+    +`</dl>`;
+  h+=`<div class="none">ONE query served both roles. `
+    +`<code>deploy/template.py</code> never renders the role, so an exposure `
+    +`request and an outcome request build the identical string &mdash; the two `
+    +`anchors are separated by the language model reading one shared candidate pool, not `
+    +`by two different searches.</div>`;
+  h+=`<p class="sec">anchors resolved from it</p><dl>`;
+  for(const role of ["exposure","outcome"]){
+    const a=anchorOf(j.roles&&j.roles[role]);
+    h+=row(role,a&&a.key
+      ? `<b>${esc(a.key)}</b> &middot; ${esc(a.how)}`
+        +(a.wording?`<br>${esc(a.wording)}`:"")
+      : `<em>${a?esc(a.how):"none"}</em>`,true);
+  }
+  h+=`</dl>`;
+  return h;
+}
+
+function liveIntakePanel(){
+  /* A pair is a different object from a single retrieval: one prose request,
+     one pool query, two anchors. Rendering it through the RetrievalRequest
+     shape claimed the whole sentence was one construct with one role, and the
+     role was an artifact of how the pool is built. */
+  if(!live&&ask&&ask.rendered_query) return pairIntakePanel();
+  const j=live, q=(live&&live.request)||{};
+  const dropped=(live&&live.instances_dropped_as_covered)||[];
+  let h=`<p class="sec">lookups</p><div class="none">None. The template is `
+    +`deterministic string concatenation: same fields, same query, every run. `
+    +`No language-model call, no network.</div>`;
+  h+=`<p class="sec">RetrievalRequest &middot; live, not a committed run</p><dl>`
+    +row("request",esc(j.query||j.request))
+    +row("construct",esc(q.construct),true)
+    +row("role",`${esc(q.role)} &middot; never rendered`,true)
+    +row("instances",(q.instances&&q.instances.length)?esc(q.instances.join(", ")):"<em>none</em>",true)
+    +row("population",`<em>unset</em> &middot; shipped contract leaves it empty`,true)
+    +row("rendered query",esc(j.rendered_query),true)
+    +row("dropped as covered",dropped.length
+        ?`${esc(dropped.join(", "))} &middot; every content word already in the construct`
+        :"<em>nothing</em>",true)
+    +`</dl>`;
+  const typedText=j.query||j.request;
+  if(j.rendered_query!==typedText) h+=`<div class="none" style="color:var(--signal)">`
+    +`The encoder did NOT see what you typed. Compare the two rows above.</div>`;
+  return h;
+}
+
+function livePanel(){
+  const j=live, [top]=j.hits;
+  let h=`<p class="sec">live retrieval &middot; served by this server, not a committed run</p>`;
+  h+=`<dl>`
+    +row("query",esc(j.query),true)
+    +row("top cosine",f4(top.cos),true)
+    +row("min_cos",`${f4(j.threshold)} &middot; ${j.abstained?`<span class="flag">not cleared</span>`:"cleared"}`,true)
+    +row("abstained",j.abstained?`<span class="flag">true</span>`:"false",true)
+    +(typeof j.margin_12==="number"?row("margin to rank two",f4(j.margin_12),true):"")
+    +`</dl>`;
+  h+=`<p class="sec">candidates</p><div class="tools">`+j.hits.map(c=>
+      `<div class="t"><span class="call"><b>${esc(c.target)}</b>`
+      +`${c.key?` &middot; ${esc(c.key)}`:""}</span>`
+      +`<span class="ret">cos ${f4(c.cos)}`
+      +`${c.cos<j.threshold?" &middot; below min_cos":""}</span></div>`
+      +(c.stem?`<div class="t"><span class="call">${esc(c.stem)}</span></div>`:"")
+      /* The anchor is PICKED, never typed. The harness resolves the choice to
+         a key, which is why agent/prompt_contract.py hands the model an index
+         and resolves it itself: a key you never type is a key you cannot
+         mistype. A wrong-case one used to cost a whole run to discover. */
+      +(c.key?`<div class="t"><span class="call">use as</span>`
+        +`<button class="g pick" data-anchor="exposure" data-key="${esc(c.key)}">exposure</button>`
+        +`<button class="g pick" data-anchor="outcome" data-key="${esc(c.key)}">outcome</button>`
+        +`</div>`:"")
+    ).join("")+`</div>`;
+  h+=`<p class="sec">chosen pair</p><dl>`
+    +row("exposure",anchors.exposure?esc(anchors.exposure):"<em>none picked</em>",true)
+    +row("outcome",anchors.outcome?esc(anchors.outcome):"<em>none picked</em>",true)
+    +`</dl>`
+    +(anchors.exposure&&anchors.outcome
+      ?`<div class="after"><button class="g" id="go-spec">Run the Specifier on this pair</button></div>`
+      :`<div class="none">Pick both anchors to run the Specifier. Search one construct, use it as exposure; search the other, use it as outcome.</div>`);
+  if(j.note) h+=`<p class="sec">known limitation</p>`
+    +`<div class="none" style="color:var(--signal)">${esc(j.note)}</div>`;
+  return h;
+}
+
+function noRun(){
+  return `<p class="sec">output</p><div class="ph"><b>NO COMMITTED RUN</b> — this page has no encoder and never invents a score. The request is shown verbatim and nothing else: <em>${esc(typed)}</em>. The example buttons above load the runs that were committed with this page; the Generate, Score and Metrics stages do not depend on what you typed and still show their committed runs.</div>`;
+}
+
+function toolLog(log){
+  let h=`<div class="tools">`;
+  for(const t of log){
+    const args=Object.entries(t.args).map(([k,v])=>`${k}=${typeof v==="string"?JSON.stringify(v):(typeof v==="number"&&!Number.isInteger(v)?f4(v):v)}`).join(", ");
+    let ret;
+    if(t.returned===null) ret=`<span class="ret no">→ null — abstained</span>`;
+    else ret=`<span class="ret">→ ${esc(Object.entries(t.returned).map(([k,v])=>`${k} ${typeof v==="number"&&!Number.isInteger(v)?f4(v):v}`).join(" · "))}</span>`;
+    h+=`<div class="t"><span class="call"><b>${esc(t.tool)}</b>(${esc(args)})</span>${ret}</div>`;
+  }
+  return h+`</div>`;
+}
+
+function retrieverPanel(){
+  const r=cur.record, p=DATA.runs.provenance, t=r.target||r.nearest_if_abstained;
+  let h=`<p class="sec">lookups · run ${esc(p.run_id)}</p>`+toolLog(cur.tool_log);
+  /* Say what the name IS where it is first met. The withholding policy used to
+     be stated only on the Metrics tab, six clicks from here. */
+  const pseud=`<b>${esc(t.pseudonym)}</b> · a pseudonym: the matched variable's key and wording are withheld on this page`;
+  h+=`<p class="sec">RetrievalRecord</p><dl>`
+    +row("target",r.abstained?`<span class="flag">none — abstained</span> · nearest ${pseud}`:pseud,true)
+    +row("domain",esc(t.domain),true)
+    +row("level",esc(t.level),true)
+    +row("top cosine",f4(r.top_cos),true)
+    +row("min_cos",`${f4(DATA.runs.threshold.min_cos)} · ${r.abstained?`<span class="flag">not cleared, short by ${f4(-r.gap_above_threshold)}</span>`:`cleared by ${f4(r.gap_above_threshold)}`}`,true)
+    +row("abstained",r.abstained?`<span class="flag">true</span>`:"false",true)
+    +row("margin to rank two",f4(r.margin_12),true)
+    +row("roster fold",`${t.fold_size} roster row(s) folded into this target`,true)
+    +row("option",t.option_position?`option ${t.option_position} of ${t.option_count}`:"stem-level target, no option",true)
+    +row("query time",`${r.query_ms_median} ms median, isolated, this machine (${esc(p.machine.machine)}, ${p.machine.threads} threads)`,true)
+    +row("targets scored",`${DATA.runs.corpus.n_targets.toLocaleString()} targets, one vector each · dictionary ${esc(p.bundle.dictionary_version_hash)}`,true)
+    +`</dl>`;
+  h+=`<p class="sec">next candidates</p><div class="tools">`+cur.candidates.map(c=>
+    `<div class="t"><span class="call">${c.rank}. <b>${esc(c.pseudonym)}</b> · ${esc(c.domain)}</span><span class="ret">cos ${f4(c.cos)}${c.cos<DATA.runs.threshold.min_cos?" · below min_cos":""}</span></div>`).join("")+`</div>`;
+  if(r.abstained){
+    const a=DATA.absence;
+    h+=`<p class="sec">absence check · dictionary ${esc(a.provenance.dictionary_version_hash)}</p><div class="tools">`
+      +a.domains.map(d=>`<div class="t"><span class="call"><b>${esc(d.domain)}</b></span><span class="ret">dictionary entries matching ${d.dictionary_entries_matching} · targets matching ${d.targets_matching} · adjacent constructs present ${d.adjacent_constructs_present}</span></div>`).join("")
+      +`<div class="t gate ${a.all_domains_absent?"pass":"fail"}">all ${a.domains.length} negative domains absent from ${a.n_dictionary_entries.toLocaleString()} entries and ${a.n_targets.toLocaleString()} targets: ${a.all_domains_absent}</div></div>`;
+  }
+  if(cur.note) h+=`<p class="sec">known limitation</p><div class="none" style="color:var(--signal)">${esc(cur.note)}</div>`;
+  return h;
+}
+
+function intakePanel(){
+  const q=cur.request, p=DATA.runs.provenance;
+  let h=`<p class="sec">lookups</p><div class="none">None. The template is deterministic string concatenation: same fields, same query, every run. No language-model call, no network.</div>`;
+  h+=`<p class="sec">RetrievalRequest · run ${esc(p.run_id)}</p><dl>`
+    +row("request",esc(q.text))
+    +row("construct",esc(q.construct),true)
+    +row("role",`${esc(q.role)} · never rendered`,true)
+    +row("instances",q.instances.length?esc(q.instances.join(", ")):"<em>none</em>",true)
+    +row("population",`<em>unset</em> · shipped contract leaves it empty`,true)
+    +row("rendered query",esc(cur.rendered_query),true)
+    +row("dropped as covered",cur.instances_dropped_as_covered.length?`${esc(cur.instances_dropped_as_covered.join(", "))} · every content word already in the construct`:"<em>nothing</em>",true)
+    +row("origin",esc(cur.origin))
+    +`</dl>`;
+  h+=`<p class="sec">template</p><div class="none">[population] construct [timeframe][: instance, instance, …] — a slot renders only when its content words are not already present. Bundle template sha ${esc(p.bundle.template_py_sha256)}</div>`;
+  return h;
+}
+
+function funnelPanel(){
+  const f=DATA.funnel, st=f.stages, g=f.gate;
+  let h=`<p class="sec">lookups</p><div class="none">None. S1–S4 and the gate are deterministic: no language model, no network.</div>`;
+  h+=`<p class="sec">screen · captured ${esc(f.provenance.run_id)} · ${esc(f.provenance.commit)}</p><dl>`
+    +row("S1 enumerate",`${st.S1_enumerated} candidate pairs over distinct constructs`,true)
+    +row("S2 prune",`${st.S2_pruned} removed · construct identity, battery, free text, scale`,true)
+    +row("S3 screen",`${st.S3_estimable} estimable · ${st.S3_unknown} unknown · ${st.S3_requires_derivation} need a derivation · ${st.S3_parked} parked`,true)
+    +row("live",`${st.live} pairs reach the gate`,true)
+    +row("gate",`passed <span class="flag">${g.passed}</span> · blocked <span class="flag">${g.blocked}</span> of ${g.live} · allow_unestimable ${g.allow_unestimable}`,true)
+    +row("estimability",g.estimability_marks.map(m=>`<span class="flag">${esc(m)}</span>`).join(", "),true)
+    +row("blocked on",esc(g.missing_exports.join(" · ")),true)
+    +row("n source",esc(g.n_sources.join(", ")),true)
+    +row("pairs emitted",`<span class="flag">${f.pairs_emitted}</span> without --allow-unestimable`,true)
+    +row("dictionary",esc(f.provenance.dictionary_version_hash),true)
+    +`</dl>`;
+  h+=`<div class="none">The two exports are survey-metadata counts the study team holds. Until they arrive every pair carries the marker above and nothing reaches the Specifier by default.</div>`;
+  return h;
+}
+
+/* `loadMetricKeys` and the `met` state went with the per-record listing. They
+   existed to fetch exposure and outcome keys from `/api/metrics` and join them
+   onto the rows by `record_hash`; with no rows there is no join and nothing to
+   render, and the payload was still being written into the JSON download while
+   appearing nowhere on screen. Removing it also removes the page's only
+   runtime path for instrument wording, and with it three false claims a single
+   click used to produce: `stagePanel` returned the metrics panel through its
+   live branch, so `provenanceLine` announced that committed figures were "not
+   committed"; the rail chip flipped to `ran` with no run; and a server error
+   set `met` truthy, making all of that stick for the session with no way to
+   clear it. */
+
+function metricsPanel(){
+  const m=DATA.metrics, c=m.ceiling, o=m.observed;
+
+  let h=`<div class="key"><b>READ THE CEILING FIRST</b> &mdash; ${esc(m.headline)}</div>`
+    +`<p class="prov">${esc(m.headline_source)}</p>`;
+  h+=`<p class="sec">the question this run answers</p>`
+    +`<div class="none">${esc(m.question_answered)}</div>`;
+  h+=`<p class="sec">how the scored set was produced</p><ul class="does">`
+    +m.how_produced.map(x=>`<li>${esc(x)}</li>`).join("")+`</ul>`;
+
+  h+=`<p class="sec">ceiling &middot; the highest score that was available</p><dl>`
+    +row("papers in the table",String(c.papers_in_table),true)
+    +row("with an outcome key on record",String(c.with_outcome_key),true)
+    +row("with an exposure the retriever resolved",String(c.with_exposure_resolved),true)
+    +row("papers matchable, needing both",`<span class="flag">${c.matchable_papers}</span> of ${c.papers_in_table}`,true)
+    +row("records that could have matched",`<span class="flag">${c.max_matched}</span> of ${o.scored}`,true)
+    +`</dl><div class="none">${esc(m.reads.unit_of_analysis)}.</div>`
+    +`<div class="none">${esc(m.reads.why_the_ceiling_is_low)}.</div>`
+    +`<div class="none">${esc(m.reads.the_frame)}. ${esc(m.reads.why_no_match_was_available)}.</div>`;
+
+  /* TWO SECTIONS, NOT ONE TABLE AFTER ANOTHER. Met back to back, the second
+     table reads as a continuation of the first and the reader starts hunting for
+     the row that ties them -- which is the question that keeps arriving. Each
+     now says whose output it is, above a rule. */
+  /* Both halves are true and the reader needs both: the count is a floor on
+     what the literature holds, and it is the fixed denominator the ceiling
+     above was computed over. */
+  const late=m.papers.filter(r=>!r.inventoried_before_2026_08_27).length;
+  const noVenue=m.papers.filter(r=>/not recorded/.test(r.venue)).length;
+  h+=`<p class="sec major">Cohort bibliography &middot; ${m.papers.length} indexed`
+    +`<em>What the literature published. Nothing here came from the pipeline. The count is a floor on `
+    +`the literature, and the fixed denominator of the ceiling above.</em></p>`
+    +`<div class="tbl"><table><thead><tr><th>PMID</th><th>year</th><th>venue, as recorded</th>`
+    +`<th>design, as the bibliography records it</th><th>n, as the paper reports it</th>`
+    +`<th>exposure terms the retriever abstained on</th>`
+    +`</tr></thead><tbody>`
+    +m.papers.map(r=>`<tr><td><a href="${esc(m.pubmed_base)}${esc(r.pmid)}/">`
+      +`${esc(r.pmid)}</a>${r.inventoried_before_2026_08_27?"":" <span class=\"flag\">late</span>"}`
+      +`</td><td>${r.year}</td><td>${esc(r.venue)}</td><td>${esc(r.design)}</td>`
+      +`<td>${esc(r.n)}</td><td>${r.exposure_terms_abstained===null?`<span class="ret">none listed</span>`:r.exposure_terms_abstained}</td></tr>`).join("")
+    +`</tbody></table></div>`
+    +`<div class="none">${late} of ${m.papers.length} rows are marked <span class="flag">late</span>: they entered `
+    +`the bibliography when it was rebuilt, shortly before this run. The ceiling above counts all `
+    +`${m.papers.length}, late rows included. ${noVenue} rows carry no venue in the bibliography and read as `
+    +`such. The design column is the bibliography's own prose, exposure to outcome as it wrote it, `
+    +`and the n column is each paper's own unit. ${esc(m.abstained_note)}.</div>`;
+
+  const gap=m.not_built.find(x=>x.what.indexOf("per-paper")>-1);
+  h+=`<p class="sec">what is still missing from the key</p>`
+    +`<div class="ph"><b>NOT BUILT</b> &mdash; ${esc(gap.why)}.</div>`;
+
+  /* The verdicts certify the KEY SIDE: that scoring saw no instrument content it
+     should not have, and that nothing leaked into the inputs. They sit with the
+     bibliography and the key rather than with the pipeline's output. */
+  h+=`<p class="sec">verdicts on this scoring run</p><div class="tools">`
+    +Object.entries(m.verdicts).map(([k,v])=>
+      `<div class="t gate ${v==="ok"?"pass":"fail"}"><span class="call">${esc(k)}</span>`
+      +`<span class="ret">${esc(v)}</span></div>`).join("")+`</div>`
+    +`<div class="none">${esc(m.verdicts_note)}.</div>`;
+
+  /* THE PIPELINE'S OWN OUTPUT IS NOT REPORTED ON THIS PAGE. What stood here --
+     a per-record table, then the counts and caveats left after it went -- was
+     the pipeline's end-to-end check, and it read as evidence to every reviewer
+     who met it. The RESULT does not live here and never did: the ceiling block
+     above states the score against the highest score available, the headline
+     quotes it verbatim, and Score carries the run's stamp. So the section is
+     gone rather than trimmed again.
+     What the page no longer says anywhere, stated plainly because it is a real
+     subtraction: how many pairs the ledger generated, that some were lost to a
+     backend error before scoring, that every scored record shares one outcome
+     stratum, and that the pairing invites confounding by indication. Those were
+     the run's own limitations. They remain in `metrics.json` -- `observed`,
+     `reads.one_cell`, `reads.attrition` -- which is committed and readable; the
+     page simply does not render them. Restoring any of them means restoring a
+     section, so weigh that before adding a sentence back on its own. */
+  h+=`<p class="sec major">What is shipped, and what these figures are`
+    +`<em>The whole run in three paragraphs, closing the tab that scores it.</em></p>`
+    +`<div class="none">${shippedSummary()}</div>`;
+
+  h+=`<p class="prov">${esc(m.provenance.run_id)} &middot; dictionary `
+    +`${esc(m.provenance.dictionary_version_hash)} &middot; tree `
+    +`${esc(m.provenance.tree_sha)} &middot; ${esc(m.provenance.source)}</p>`;
+
+  h+=measureHTML();
+  return h;
+}
+
+function scorePanel(){
+  const sc=DATA.score, e=sc.generation_env;
+  const b=v=>v?`<span class="flag">true</span>`:`false <span class="good">required</span>`;
+  const mp=DATA.metrics.provenance;
+  let h=`<p class="sec">lookups</p><div class="none">None in the generation clone. Scoring runs in a separate clone that holds the key; it has run once, on ${esc(mp.run_id)}, and the <b>Metrics</b> tab carries the result.</div>`;
+  h+=`<p class="sec">GenerationEnv · stamped ${esc(sc.provenance.run_id)}</p><dl>`
+    +row("key_present",b(e.key_present),true)
+    +row("key_fetchable",b(e.key_fetchable),true)
+    +row("branch",esc(e.branch),true)
+    +row("tree_sha",esc(e.tree_sha),true)
+    +row("tree_clean",String(e.tree_clean),true)
+    +row("clean_for_scoring",e.clean_for_scoring?`<span class="good">true</span>`:`<span class="flag">false</span>`,true)
+    +row("estimable denominator",`<span class="flag">${sc.estimable_denominator}</span>`,true)
+    +row("status",`<span class="flag">${esc(sc.status)}</span> · scored in this clone: ${sc.scored_in_generation_clone}`,true)
+    +`</dl>`;
+  h+=`<p class="sec">why the gate blocks</p><ul class="does">${sc.why_the_gate_blocks.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`;
+  h+=`<p class="sec">the one scored run</p><dl>`
+    +row("run",esc(mp.run_id),true)
+    +row("tree",esc(mp.tree_sha),true)
+    +row("gate",`<span class="flag">off</span> · every scored record carries ${DATA.funnel.gate.estimability_marks.map(esc).join(", ")}`,true)
+    +row("scored",String(DATA.metrics.observed.scored),true)
+    +row("matched",`<span class="flag">${DATA.metrics.observed.matched}</span> · ceiling ${DATA.metrics.ceiling.max_matched}`,true)
+    +`</dl><div class="none">${esc(sc.scored_run_note)}.</div>`;
+  return h;
+}
+
+function measureHTML(){
+  const m=DATA.measurements, sh=m.shipped, S=sh.arms.S, I=sh.arms.I, th=sh.threshold, lat=sh.latency, L=m.limitations;
+  const n=m.fixture.n_positive_rows;
+  const [,R1lab]=sh.arm_columns.find(([k])=>k==="recall_at_1"), R1=esc(R1lab);
+  const cell=(k,v)=>k.startsWith("recall_at")?v.toFixed(3):k==="params_m"?`${v}M`:k==="model"?esc(v):String(v);
+  let h=`<h2>What was measured</h2>
+  <p class="lead">Two tables, both on the same ${n}-row fixture (${m.fixture.n_negative_rows} held-out negatives). ${esc(m.fixture.note)}.</p>`;
+  /* The whole of the manifest's known limitations, not the first clause. The
+     comparison below is exactly the one these sentences qualify. */
+  h+=`<p class="sec">known limitations · ${esc(L.source)}</p><dl>`
+    +row("fixture queries",`written by the same generator family as the ${L.training_pairs.toLocaleString()} training pairs, with sight of the gold wording`)
+    +row("gain over frozen",`${R1} ${L.gain_r1_over_frozen_bge_small.toFixed(3)} for the fine-tuned model over frozen bge-small on the no-template arm · <span class="flag">${esc(L.register_alignment_share)}</span> share of it is register alignment`,true)
+    +row("lexical leakage",`${L.lexical_leakage.measured?"measured":"not measured"} and it ${L.lexical_leakage.survives?"survives":"does not survive"}: item-level Spearman ${L.lexical_leakage.item_level_spearman} (permutation p ${L.lexical_leakage.permutation_p}); ${R1} by query-to-gold overlap quartile ${L.lexical_leakage.r1_by_query_gold_overlap_quartile.map(q=>q.toFixed(3)).join(" / ")}, ${L.lexical_leakage.monotonic?"monotonic":"non-monotonic"}${L.lexical_leakage.flat_within_query_length_strata?", flat within every query-length stratum":""}`,true)
+    +row("recall by stratum",`not uniform: `+L.strata.map(s=>`${esc(s.stratum)} ${R1} ${s.recall_at_1.toFixed(3)} (n=${s.n})`).join(" · ")+`. One ${R1} below is the pooled figure`,true)
+    +row("unmeasured strata",`no fixture row for ${L.unmeasured_strata.map(esc).join(", ")}: recall there is unmeasured, not good`,true)
+    +row("phrasing",`${L.phrasing.items_retrieved_on_no_phrasing} of ${L.phrasing.gold_items} gold items retrieved on none of their ${L.phrasing.phrasings_per_item} phrasings, ${L.phrasing.items_retrieved_on_one_phrasing} on one`,true)
+    +`</dl>`;
+  h+=`<p class="sec">encoder sweep · ${esc(m.sweep.what)} · ${esc(m.sweep.machine)} · dictionary ${esc(m.sweep.dictionary_version_hash)}</p>
+  <div class="tbl"><table><thead><tr>${m.sweep.columns.map(([,l])=>`<th>${esc(l)}</th>`).join("")}</tr></thead><tbody>`
+   +m.sweep.rows.map(r=>`<tr>${m.sweep.columns.map(([k])=>`<td>${cell(k,r[k])}</td>`).join("")}</tr>`).join("")
+   +`</tbody></table></div>
+  <p class="prov">${esc(m.provenance.run_id)} · ${esc(m.provenance.sweep_artifacts_note)}</p>
+  <div class="none">R@k is the share of the ${n} positive queries whose gold target ranked in the top k. No row is marked best: differences of a few hundredths between rows are within what a ${n}-row fixture can resolve, and no interval is computed here.</div>`;
+  h+=`<p class="sec">shipped model · ${esc(sh.model)} · ${sh.params_m}M params · ${esc(sh.training.negatives)} · ${sh.n_targets.toLocaleString()} targets · dictionary ${esc(sh.dictionary_version_hash)}</p>
+  <div class="tbl"><table><thead><tr><th>query arm</th>${sh.arm_columns.map(([,l])=>`<th>${esc(l)}</th>`).join("")}<th>negatives rejected</th><th>AUROC absent vs present</th></tr></thead><tbody>`
+   +[["S",S],["I",I]].map(([k,a])=>`<tr><td>${k} · ${esc(a.label)}</td>${sh.arm_columns.map(([c])=>`<td>${cell(c,a[c])}</td>`).join("")}<td>${a.negatives_rejected} / ${a.n_negatives}</td><td>${a.auroc_absent_vs_present.toFixed(3)}</td></tr>`).join("")
+   +`</tbody></table></div>
+  <div class="none">Both arms are one model on one machine; they differ only in how the query was rendered. AUROC is shown to three places: it is computed over ${I.n_negatives} negatives and ${n} positives, and the two arms reject the same count.</div>
+  <div class="tbl"><table><thead><tr><th>threshold</th><th>min_cos</th><th>coverage</th><th>precision</th><th>recall</th><th>F1</th><th>candidate values</th><th>latency</th></tr></thead><tbody>
+   <tr><td>shipped · F1-maximising over the same ${n} positives it is reported on</td><td>${th.min_cos.toFixed(6)}</td><td>${th.coverage.toFixed(4)}</td><td>${th.precision.toFixed(4)}</td><td>${th.recall.toFixed(4)}</td><td>${th.f1.toFixed(4)}</td><td>${th.candidate_taus}</td><td>${lat.query_ms_isolated_single} ms · ${esc(lat.machine)} · ${lat.threads} threads</td></tr>
+  </tbody></table></div>
+  <div class="none">Coverage: ${esc(th.definitions.coverage)}. Precision: ${esc(th.definitions.precision)}. Recall: ${esc(th.definitions.recall)}. This recall is not the ${R1} above: ${R1} counts every query, this one only those that cleared min_cos. ${esc(th.selection_note)}.</div>
+  <p class="prov">${esc(m.provenance.commit)} · ${esc(lat.note)}</p>`;
+  h+=`<div class="none">${esc(sh.wrong_pick_detection.note)}.</div>`;
+  return h;
+}
+
+/* "N medication · M reproductive_hormonal", counted from the rows: the strata
+   list alone read as breadth when every row shared one outcome. Written
+   without a numeric literal, which the fabrication gate forbids on this page. */
+/* `sideCounts` went with the section that called it. It counted each stratum
+   on its own side of a pair, written that way because a flat list of stratum
+   names read as breadth when one side had a single value. If a per-side count
+   is ever wanted again, that is the defect to write it against. */
+
+/* WHERE THE SHIPPED FIGURES LIVE. These three paragraphs used to hang under
+   every panel as a page footer, which put system-wide claims beneath a stage
+   that had nothing to do with them. They are a summary of the whole run, so they
+   close the Metrics tab instead, as a section of their own.
+
+   `provenanceLine` stays available to `foot` because the third paragraph is the
+   one thing that is NOT a summary: it says whether the figures directly above
+   are committed or were produced moments ago, and that has to travel with the
+   panel it describes. */
+function provenanceLine(){
+  return `${panelLive
+      ? `The panel above was produced by this server during this session. Its figures come from that run and are <b>not</b> committed &mdash; nothing on this page pins them, and a second run may differ. Every other figure here is loaded from <code>site/artifacts/</code> with its run id or commit.`
+      : `Every figure above is loaded from <code>site/artifacts/</code> with its run id or commit; nothing on this panel was produced by your query.`} Panels marked NO RECORD ON THIS PAGE carry no committed record and show no numbers.`;
+}
+
+function shippedSummary(){
+  const m=DATA.measurements, sh=m.shipped, I=sh.arms.I, lat=sh.latency, o=DATA.metrics.observed;
+  return `<p>Retrieval is in use: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, no language-model call. Hypothesis generation is gated: the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} pairs without two survey-metadata exports, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>. The one scored run switched that gate off; it emitted ${o.scored} records, of which ${o.matched} matched against a ceiling of ${DATA.metrics.ceiling.max_matched}.</p>
+  <p>Abstention on constructs the instrument does not measure: ${I.negatives_rejected} of ${I.n_negatives} held-out negatives rejected on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(3)}). Its recall is an upper bound, not an open question: the fixture's queries were written with sight of the gold wording, by the same generator family as the training pairs. Detecting its own wrong pick is a different question; that figure was measured, withdrawn from git, and is not reproducible from this page.</p>
+  <p>${provenanceLine()}</p>`;
+}
+
+/* The footer carries ONLY the provenance line, but under EVERY panel: live or
+   committed, it says which. Scoping it to live panels left the committed ones
+   with an empty footer, so a reader who loaded the page with a query prefilled
+   saw a live-sounding masthead over a run committed days earlier and nothing
+   that said so. Metrics closes with the same line in its own summary. */
+function foot(){
+  el("#foot").innerHTML=sel==="metrics"?"":`<p>${provenanceLine()}</p>`;
+}
+
+/* What the static page can and cannot do, said beside the controls that do it. */
+function servedNote(){
+  return window.COMPASS_ENDPOINT?""
+    :"Served statically: the example runs and Search only work here. Asking the pipeline needs the live server, so that button is off.";
+}
+
+function panelPNG(){
+  const panel=el("#panel"), rect=panel.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  const css=[...document.querySelectorAll("style")].map(x=>x.textContent).join("\n");
+  const w=Math.ceil(rect.width), hgt=Math.ceil(panel.scrollHeight), o=Number();
+  const svgNS="http://www.w3.org/2000/svg", xhtml="http://www.w3.org/1999/xhtml";
+  const svg=document.createElementNS(svgNS,"svg");
+  svg.setAttribute("xmlns",svgNS); svg.setAttribute("width",w); svg.setAttribute("height",hgt);
+  const fo=document.createElementNS(svgNS,"foreignObject");
+  fo.setAttribute("width",w); fo.setAttribute("height",hgt);
+  const body=document.createElementNS(xhtml,"div");
+  body.setAttribute("xmlns",xhtml);
+  const style=document.createElementNS(xhtml,"style"); style.textContent=css; body.appendChild(style);
+  const clone=panel.cloneNode(true); clone.setAttribute("style",`width:${w}px;background:#fff`);
+  body.appendChild(clone); fo.appendChild(body); svg.appendChild(fo);
+  const xml=new XMLSerializer().serializeToString(svg);
+  const img=new Image();
+  img.onload=()=>{
+    const c=document.createElement("canvas"); c.width=w*dpr; c.height=hgt*dpr;
+    const ctx=c.getContext("2d"); ctx.scale(dpr,dpr); ctx.fillStyle="#fff"; ctx.fillRect(o,o,w,hgt);
+    ctx.drawImage(img,o,o);
+    c.toBlob(b=>{const a=document.createElement("a");a.href=URL.createObjectURL(b);
+      a.download=`compass_${sel}_${cur?cur.id:"none"}.png`;a.click();URL.revokeObjectURL(a.href);},"image/png");
+  };
+  img.onerror=()=>alert("The browser refused to rasterise the panel. The SVG route needs same-origin styles only, which this page has, so this is a browser limitation; download the page instead.");
+  img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(xml);
+}
+
+/* Which branch `stagePanel` took. The footer closes by asserting that every
+   figure on the page is loaded from a committed artifact; for a panel this
+   endpoint produced moments ago that is simply untrue, and it is the sentence a
+   reviewer would quote. Read only by `foot`. */
+let panelLive=false;
+
+/* Everything the reader is actually looking at, which is not always a committed
+   example: after a live run `cur` is null. The download used to be
+   `{stage, example: cur, provenance}` regardless, so a reviewer who had just
+   watched a run finish got a file containing `"example": null` -- named
+   `..._none.json`, under a button that says "Download this record" -- and
+   nothing of the run itself. Whatever is on screen goes in. */
+function panelRecord(){
+  const doc={stage:sel};
+  if(cur) doc.example=cur;
+  if(posed) doc.posed_pair=posed;
+  if(ask) doc.resolver=ask;
+  if(live) doc.live_retrieval=live;
+  if(spec) doc.specifier_run=spec;
+  if(gen) doc.enumeration=gen;
+  doc.artifact_provenance=Object.fromEntries(Object.entries(DATA)
+    .filter(([k])=>k!=="index").map(([k,v])=>[k,v.provenance]));
+  return doc;
+}
+
+/* True when there is something to download. The PNG button is NOT gated on
+   this: a panel always renders something, and hiding a button that works would
+   be the same defect pointed the other way. */
+function panelHasRecord(){ return Boolean(cur||ask||live||posed||spec||gen); }
+
+/* Both anchors as they were handed to the Specifier. Wording only if the
+   endpoint supplied it: the committed artifact carries none, and an empty
+   string must read as "withheld", never as a blank that looks like an answer. */
+function posedPair(){
+  const L=posed;
+  const line=(role,key,text)=>`<div class="t"><span class="call">${role} &middot; <b>${esc(key)}</b></span>`
+    +`<span class="ret">${text?esc(text):"wording withheld here"}</span></div>`;
+  return `<div class="tools">`+line("exposure",L.exposure,L.exposure_text)
+    +line("outcome",L.outcome,L.outcome_text)+`</div>`;
+}
+
+function posedRetrieverPanel(){
+  return `<p class="sec">tool calls</p>`
+   +`<div class="none">None. Nothing was retrieved for this run.</div>`
+   +`<p class="sec">output</p>`
+   +`<div class="ph"><b>NO RETRIEVAL WAS RUN</b> &mdash; this pair was posed`
+   +` directly from ${esc(posed.source_label)}, so the deployed retriever scored`
+   +` no vectors. There is no cosine, no threshold decision and no abstention to`
+   +` show, and this panel will not borrow another run's.</div>`
+   +`<p class="sec">what went to the Specifier instead</p>`+posedPair()
+   +(posed.question?`<p class="sec">the question this pair stands for</p>`
+     +`<div class="none">${esc(posed.question)}</div>`:``);
+}
+
+function posedIntakePanel(){
+  /* Intake renders prose into a query. A posed pair arrives as two keys, so
+     there is nothing to render -- and the identity is read off the run record
+     once it lands rather than asserted here, because the endpoint is what
+     decides it. */
+  const id=(spec&&spec.identity)||null;
+  return `<p class="sec">tool calls</p><div class="none">None.</div>`
+   +`<p class="sec">output</p>`
+   +`<div class="ph"><b>NO QUERY WAS RENDERED</b> &mdash; intake turns a request`
+   +` into a query for the retriever. Both anchors were already keys, so there`
+   +` was nothing to render and nothing to drop as covered.</div>`
+   +`<p class="sec">how this run is identified</p><dl>`
+   +row("posed from",esc(posed.source_label),true)
+   +row("row",esc(posed.id),true)
+   +(id?row("selection",`${esc(id.selection_mode)} &middot; screened_from ${id.screened_from}`,true)
+      :row("selection","<em>the run record carries it; the run has not landed yet</em>",true))
+   +`</dl>`
+   +`<p class="sec">the pair</p>`+posedPair();
+}
+
+function stagePanel(s){
+  panelLive=true;
+  if(spec&&sel==="record") return recordPanel();
+  if(spec&&sel==="specifier") return specifierPanel();
+  /* Before the committed branches: a posed run has no retrieval of its own, and
+     falling through would show the previous one as if it were this one. */
+  if(posed&&sel==="retriever") return posedRetrieverPanel();
+  if(posed&&sel==="intake") return posedIntakePanel();
+  if(ask&&sel==="retriever") return resolverPanel();
+  if(live&&sel==="retriever") return livePanel();
+  if((live||(ask&&ask.rendered_query))&&sel==="intake") return liveIntakePanel();
+  if(sel==="generate"&&gen) return generatePanel();
+  panelLive=false;
+  /* Only the two stages a query feeds. This test used to sit above every
+     committed branch, so one unrecognised query made Generate, Score and
+     Metrics unreachable until a reload. */
+  if(typed!==null&&!cur&&(sel==="retriever"||sel==="intake")) return noRun();
+  if(sel==="retriever"&&cur) return retrieverPanel();
+  if(sel==="intake"&&cur) return intakePanel();
+  if(sel==="generate") return generatePanel();
+  if(sel==="score") return scorePanel();
+  if(sel==="metrics") return metricsPanel();
+  return placeholder(s);
+}
+
+function draw(){
+  const s=DATA.stages.stages.find(x=>x.id===sel);
+  let h=`<h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>
+         <ul class="does">${s.does.map(d=>`<li>${esc(d)}</li>`).join("")}</ul>`;
+  /* Contain a throwing panel. Everything below -- the assignment to #panel and
+     every handler wired after it -- is downstream of this expression, so an
+     exception here does not blank one panel, it leaves the PREVIOUS stage's DOM
+     on screen with handlers still bound to a run that has moved on, and the rail
+     stops responding. The realistic cause is a malformed endpoint reply: the
+     committed artifacts pass site-check, an endpoint payload passes nothing.
+     The message is safe to show -- the payload it came from was already through
+     the server's scrubber and was about to be rendered into this same panel. */
+  try{ h+=stagePanel(s); }
+  catch(err){
+    console.error("panel failed", sel, err);
+    h+=`<div class="none"><b>This panel could not be drawn.</b> The rest of the
+        page still works: pick another stage, or run the request again. The
+        browser console has the full error.<br><code>${esc(String(err&&err.message||err))}</code></div>`;
+  }
+  h+=`<div class="after">`
+    +(panelHasRecord()?`<button class="g" id="dl-json">Download this record as JSON</button>`:"")
+    +`<button class="g" id="png">Save panel as PNG</button></div>`;
+  el("#panel").innerHTML=h;
+  document.querySelectorAll("[data-anchor]").forEach(b=>b.onclick=()=>{
+    anchors[b.dataset.anchor]=b.dataset.key; draw();});
+  const go=el("#go-spec"); if(go) go.onclick=runSpecifier;
+  /* Dead and silent was the worst moment on the published page: the darkest
+     control did nothing. Off, with the reason beside it, when there is no
+     server to ask. Re-read on every draw because the server sets the flag. */
+  el("#ask").onclick=askResolver;
+  el("#ask").disabled=!window.COMPASS_ENDPOINT;
+  el("#served").textContent=servedNote();
+  const gg=el("#go-gen"); if(gg) gg.onclick=enumerate;
+  document.querySelectorAll("[data-genex]").forEach(b=>b.onclick=()=>{
+    anchors.exposure=b.dataset.genex; anchors.outcome=b.dataset.genout;
+    /* A run already holds the lock: `runSpecifier` would return in silence and
+       the click would look broken. Show the run that is blocking instead. */
+    if(specBusy){ navGen={}; sel="specifier"; draw(); return; }
+    const L=launchable[b.dataset.launch];
+    posed=L||{source:"unknown",source_label:"a pair chosen on this page",
+              id:"", exposure:b.dataset.genex, outcome:b.dataset.genout,
+              exposure_text:"", outcome_text:"", question:""};
+    /* The previous request's retrieval is not this run's evidence. */
+    live=null; ask=null; cur=null; typed=null;
+    runSpecifier();});
+  const dj=el("#dl-json"); if(dj) dj.onclick=()=>{
+    const doc=panelRecord();
+    const b=new Blob([JSON.stringify(doc,null,2)],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(b);
+    /* Named for what it holds. `cur` alone put `_none` on a file full of run. */
+    a.download=`compass_${sel}_${cur?cur.id:(spec?"live_run":"live")}.json`;
+    a.click();URL.revokeObjectURL(a.href);};
+  el("#png").onclick=panelPNG;
+  /* The rail reports live state and marks the current stage, so it is rebuilt
+     with the panel rather than once at load. */
+  rail();
+  /* After the panel, not before: `foot` reads `panelLive`, which `stagePanel` set. */
+  foot();
+}
+
+el("#run").onclick=async()=>{
+  const q=el("#q").value.trim(); if(!q)return;
+  const gen=(liveGen={}), nav=(navGen={});
+  live=null; ask=null; posed=null; cur=match(q); typed=cur?null:q;
+  /* Draw the committed answer first, so the page never blocks on a network
+     call that will usually not be there, then upgrade if the endpoint replies. */
+  draw();
+  if(cur) return;
+  const j=await liveRetrieve(q);
+  if(gen!==liveGen) return;
+  /* Only pull the reader to the retriever if they are not deliberately
+     somewhere else: a reply arriving while they read another stage should not
+     move them. */
+  if(j){ live=j; if(sel!=="specifier") steer(nav,"retriever"); draw(); }
+};
+/* Enter is the reader's first action; without this it did nothing. */
+el("#q").onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); el("#run").onclick(); } };
+el("#dl-src").onclick=()=>{
+  /* One self-contained file: the live DOM as rendered, plus every loaded
+     artifact embedded as JSON so load() needs no fetch when opened from disk. */
+  const root=document.documentElement.cloneNode(true);
+  const old=root.querySelector("#embedded-artifacts"); if(old) old.remove();
+  const emb=document.createElement("script");
+  emb.type="application/json"; emb.id="embedded-artifacts";
+  emb.textContent=JSON.stringify(DATA).replace(/<\//g,"<\\/");
+  root.querySelector("head").appendChild(emb);
+  const b=new Blob(["<!DOCTYPE html>\n"+root.outerHTML],{type:"text/html"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(b);
+  a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
+
+load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); draw(); foot();}).catch(e=>{
+  el("#panel").innerHTML=`<h2>Artifacts did not load</h2><div class="ph"><b>NO DATA</b> — ${esc(e.message)}. Serve this directory over HTTP; a file:// open cannot fetch the artifacts.</div>`;
+});
+</script>
+</body>
+</html>

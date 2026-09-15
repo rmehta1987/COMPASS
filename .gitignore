@@ -50,6 +50,12 @@ deploy/model/
 # can self-verify (deploy/smoke_test.py step 0)
 !deploy/manifest.json
 !deploy/target_vectors.safetensors
+# the page's artifacts, without which `GET /` renders empty panels. They are
+# generated FROM the instrument but carry none of it: `site/tools/
+# no_instrument.py` forbids any five-word run shared with a dictionary entry and
+# any variable key, and passed over all of site/ on 2026-09-15 (exit 0, 9,424
+# runs and 5,608 keys checked). That gate is the reason these may be tracked.
+!site/artifacts/*.json
 # out/ and run/ are ignored wholesale; the handful of tracked artifacts under
 # out/ were force-added (git add -f) after a wording scan. See README.md.
 out/

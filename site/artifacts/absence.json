@@ -1,0 +1,51 @@
+{
+ "schema": "compass_site/absence/1",
+ "provenance": {
+  "source": "src/verify_negatives.py re-run against the dictionary, the deploy targets and the negative-request fixture; patterns and adjacent keys stay private",
+  "run_id": "2026-09-04T21:40:06+00:00",
+  "commit": "COMPASS main 265241d",
+  "dictionary_version_hash": "3dc8415eccfe"
+ },
+ "n_dictionary_entries": 2804,
+ "n_targets": 1353,
+ "n_negative_queries": 44,
+ "fields_searched": [
+  "question_text",
+  "stem_text",
+  "subitem_text",
+  "searchable_text"
+ ],
+ "all_domains_absent": true,
+ "domains": [
+  {
+   "domain": "ambient_air_pollution",
+   "dictionary_entries_matching": 0,
+   "targets_matching": 0,
+   "adjacent_constructs_present": 2
+  },
+  {
+   "domain": "area_deprivation",
+   "dictionary_entries_matching": 0,
+   "targets_matching": 0,
+   "adjacent_constructs_present": 7
+  },
+  {
+   "domain": "geocode_spatial",
+   "dictionary_entries_matching": 0,
+   "targets_matching": 0,
+   "adjacent_constructs_present": 7
+  },
+  {
+   "domain": "biospecimen_assay",
+   "dictionary_entries_matching": 0,
+   "targets_matching": 0,
+   "adjacent_constructs_present": 10
+  },
+  {
+   "domain": "genomics_ancestry",
+   "dictionary_entries_matching": 0,
+   "targets_matching": 0,
+   "adjacent_constructs_present": 3
+  }
+ ]
+}

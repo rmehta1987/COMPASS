@@ -2036,8 +2036,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8080)
-    ap.add_argument("--site-dir", type=Path,
-                    default=Path("/home/mehta5/compass-site/site"))
+    # IN-TREE, not a sibling clone. This defaulted to
+    # `/home/mehta5/compass-site/site`, which was the only copy of the page that
+    # existed, so `python -m serve.api` exited 2 with "site dir not found" on any
+    # box but one and the server could not be started from a clean checkout. The
+    # page is 25 files; `site/` is now carried here and the pair of defaults is
+    # checked against `_refuse_unsafe_site_dir` by a test, because a `site/`
+    # inside the repository sits one directory from `build/dictionary.json`.
+    ap.add_argument("--site-dir", type=Path, default=ROOT / "site")
     ap.add_argument("--deploy-root", type=Path, default=ROOT / "deploy")
     ap.add_argument("--run-dir", type=Path, default=ROOT / "run" / "serve")
     ap.add_argument("--auth", default=None,
