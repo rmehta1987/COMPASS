@@ -475,6 +475,8 @@ experts until much later, which is why the dashboard exists.
   - ACCEPT: the chosen rule is stated in `scorability.py`'s docstring beside the existing
     REFUTED/CONFIRMED/UNDETERMINED definitions, `_side` implements it, and the tests are
     key-free (`_side` is pure, so they must not join `GUARD_CEILING`'s set).
+  - C36 below does NOT decide this; it removes the type obstacle to every answer but D,
+    and makes the third status a property of a recorded row rather than a new enum member.
 - **`EXPOSURE_KEYS`'s implemented type cannot express its own settled key form, NOR an
   entire `Ref` kind the schema supports.** BLOCKED on C35. Two faults in one type.
   (a) C12 records the form as "explicit `unknown` plus a named blocker", and
@@ -487,6 +489,71 @@ experts until much later, which is why the dashboard exists.
   `resolve_variable(...) == "unique"`, unreachable for an area measure by construction.
   A fix has to say what evidence confirms an area-measure side, which is a design
   question. Changing the form is a user conversation, not a lane decision.
+- **C36 — a design-arrow key: one stored row per paper, both sides, typed anchors.
+  PROPOSED 2026-09-14; the structural fix for C35 and for the `EXPOSURE_KEYS` type
+  above.** 🛑 USER AMENDMENT — it changes what the benchmark measures and where an answer
+  key lives, so it is not a lane's.
+  WHY, and this part is not about tidiness: `EXPOSURE_KEYS` lives in
+  `benchmark/scorability.py` in the WORKING clone, and that is safe only while it is `{}`.
+  The first row makes the clone where prompts, `agent/schema.py` docstrings and
+  `env/tools.py` are edited the clone that holds the rediscovery answers — the channel
+  `AGENTS.md` §Contamination Practice names, "an agent reading paper content for a key or
+  probe is itself a channel". The exposure column has to change clones BEFORE it is ever
+  filled, whatever else is decided.
+  SHAPE. `benchmark/design_key.py`, withheld: in `WITHHELD_MODULES`, named in
+  `check_holdout_not_reachable`'s filename tuple, guarded in `tests/withheld.py`. One row
+  per paper — `pmid`, `exposure: tuple[Anchor, ...]`, `outcome: tuple[Anchor, ...]`,
+  `provenance` (where in the paper it was read, and that paper's retrievability),
+  `filled_by`. The anchor is the load-bearing part: `term` (the `cohort_papers.py`
+  design-line phrase, verbatim), `kind: Literal["variable", "derivation", "area_measure",
+  "not_in_instrument"]`, `key: str | None`, `blocked_on: str | None`.
+  WHAT EACH FIELD BUYS over today's bare `tuple[str, ...]`, which loses three facts.
+  (1) `term` records WHICH phrase the key answers — the failure this file already
+  documents, PMID 38715087's covariate key readable as outcome evidence, stops depending
+  on a reviewer noticing. (2) `kind` SELECTS THE RESOLVER: `variable` -> `resolve_variable`
+  must return `unique`; `derivation` -> `get_derivation`; `area_measure` -> no resolver
+  exists, so it can never be CONFIRMED and yields the third status C35's sub-question
+  asks for; `not_in_instrument` -> REFUTED on a recorded item-level read instead of on the
+  word test that admitted four papers on `chicago`, `individual`, `household` and
+  `community`. (3) `blocked_on` names the missing delivery — the shape
+  `env/tools.py::estimate_n` already uses, null plus `unknown` plus a blocker.
+  `kind` MUST be a `Literal`, and the anchor MUST have a fail-closed `__post_init__`:
+  `variable`/`derivation` require `key` and forbid `blocked_on`; `area_measure` requires
+  `blocked_on` when `key` is None; `not_in_instrument` forbids both. A half-filled anchor
+  reads as a filled row and asserts nothing — the complaint
+  `rediscovery.py::validate_exposure_keys` already raises for an empty tuple — and the C32
+  exemption that failed OPEN, swallowing a PMID and a published n, is the recorded cost of
+  skipping this.
+  WHAT IT DOES TO `scorability.py`, which is less than it looks because `scorability_for`
+  already calls `_side` symmetrically. Both sides read the one table. `_side`'s
+  `self_reported=` argument GOES: an anchor's `kind` states directly what
+  `outcome_reachable_in_instrument` infers from `instrument_region`'s module prefix, so
+  `_MODULE_PREFIXES` and `region_is_in_the_instrument` stop being load-bearing for
+  scoring. `_confirm_keys` keeps `unique`-only for `variable` and gains one branch per
+  other kind. The prevalence key LOSES NOTHING: `value`, `quantity`, `arm`, `role`,
+  `instrument_key` and `instrument_region` all stay, and `instrument_key` goes on being
+  what makes a published figure findable from a variable. Migration is additive; nothing
+  is deleted from either file.
+  THE STRONGEST OBJECTION, and the thing that must be tested rather than promised: this
+  creates a SECOND answer key, and two keys that can disagree about one paper's outcome is
+  worse than one key with a blank cell. The mitigation is exclusivity, not care —
+  `design_key.py` becomes the only reader for design, and nothing enforces that unless a
+  test does.
+  ACCEPT, all in the same commit as the guarantee (`AGENTS.md` §Testing Patterns):
+  (i) `design_key.py` in `WITHHELD_MODULES` and in `check_holdout_not_reachable`, with a
+  `tests/withheld.py` guard built FROM that set and not retyped;
+  (ii) a validator over BOTH sides generalising `validate_exposure_keys` — unknown pmid,
+  empty tuple, repeated key, non-`KEY_PATTERN` key, plus one check per `kind`;
+  (iii) a test that nothing outside `design_key.py` reads `prevalence_key` for design;
+  (iv) `__post_init__` seeded red on each illegal `kind`/`key`/`blocked_on` combination;
+  (v) `tests/test_withheld.py::GUARD_CEILING` UNCHANGED — split every claim so its
+  key-free half runs in this clone (anchor shape, `kind`'s vocabulary matching
+  `agent/schema.py::Ref`'s discriminator, the validator over a fixture table). That
+  ceiling fires on ADDING a guarded test, so one guarded test per claim is a review
+  failure.
+  SEQUENCING: the two fillable outcome keys (§Open — the worked rediscovery) are correct
+  under either shape and become this table's first two rows, so doing them now in the
+  existing shape costs nothing.
 - ~~`key_does_not_resolve` covers two problems.~~ **FIXED 2026-09-14.** It fired both
   when a supplied key was rejected and when no key existed to reject — asserting a failed
   lookup that never happened. MEASURED: 38397711 and 38961645 both reported it with
