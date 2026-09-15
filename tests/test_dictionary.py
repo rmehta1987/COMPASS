@@ -327,13 +327,20 @@ import ast  # noqa: E402
 import checks  # noqa: E402
 
 
-def test_only_a_rule_or_a_column_change_has_ever_moved_the_hash():
+def test_the_hash_has_moved_only_deliberately():
     """One pin, and its history is written beside it.
 
     Item 8 was reorganisation and moved the hash not at all — verified at
-    c272da5de196 while it landed. Item 2 moved it afterwards by adding a column,
-    which is the documented obligation in `AGENTS.md`: build.py hashes files,
-    the rules and n, so any new column must bump.
+    c272da5de196 while it landed.
+
+    THIS TEST WAS NAMED `test_only_a_rule_or_a_column_change_has_ever_moved_the
+    _hash` and its docstring said "any new column must bump", which is the
+    claim `AGENTS.md` carried and which does not hold as a mechanism —
+    `_rule_fingerprint` never reads `Entry`, and
+    `test_the_column_set_is_outside_the_fingerprint_and_says_so` measures that.
+    The three recorded moves beside `BUILD_HASH` are attributed to columns;
+    whatever in each of those changes actually moved the hash is NOT
+    re-derived here, and the attribution should not be read as a mechanism.
     """
     d = json.loads((ROOT / "build" / "dictionary.json").read_text())
     assert d["version_hash"] == BUILD_HASH
@@ -447,6 +454,66 @@ def test_the_two_declared_gaps_say_they_are_gaps():
     """
     for name in ("build", "read_module"):
         assert B._NOT_HASHED[name].startswith("DECLARED GAP")
+
+
+def test_the_column_set_is_outside_the_fingerprint_and_says_so():
+    """The third declared gap, pinned so closing it is deliberate.
+
+    `AGENTS.md` said "any column, regex, shape-table or parsing-function change
+    moves `version_hash` on its own". The column clause was FALSE AS A
+    MECHANISM: `_rule_fingerprint` reads patterns, `SHAPES`,
+    `MOJIBAKE_MARKERS` and the source of `_HASHED_SOURCES`, and an `Entry`
+    field populated in `build` -- itself a declared gap -- is in none of them.
+    CONFIRMED 2026-09-15: a column added to `Entry` reached
+    `build/dictionary.json` with `version_hash` still `3dc8415eccfe` and the
+    suite green, while editing `RE_SUBITEM_SUFFIX` moved it to `cb7a8dc275d2`.
+    The operator decided to NARROW THE SENTENCE rather than hash the field set,
+    so two materially different dictionaries can share one build hash and this
+    test is the record of that.
+
+    Driven through `_version_hash` rather than through a build, for the reason
+    its own docstring gives: a build would write `build/` and move the artefact
+    under test.
+    """
+    import dataclasses
+
+    n = 2804
+    before = B._version_hash(_FILES, n)
+
+    # A column set with one more field than `Entry` has. Substituted at the
+    # module level, which is what `build` reads, so if the fingerprint ever
+    # started consulting it the hash below would move.
+    wider = dataclasses.make_dataclass(
+        "Entry", [*((f.name, f.type) for f in dataclasses.fields(B.Entry)),
+                  ("a_column_nobody_hashed", str)])
+    original = B.Entry
+    try:
+        B.Entry = wider                                  # type: ignore[misc]
+        assert B._version_hash(_FILES, n) == before, (
+            "the Entry column set now moves version_hash. That is the gap "
+            "closed, which is a user amendment: reword AGENTS.md Hard "
+            "Constraints back, repin BUILD_HASH with its history, and delete "
+            "build.py::_COLUMNS_NOT_HASHED")
+    finally:
+        B.Entry = original                               # type: ignore[misc]
+
+    # No field name reaches the payload either, so the independence above is a
+    # property of the fingerprint and not of this substitution.
+    blob = json.dumps(B._rule_fingerprint(), sort_keys=True)
+    for field in dataclasses.fields(B.Entry):
+        assert f'"{field.name}"' not in blob, field.name
+
+    # Anti-vacuity: the payload is not empty, and the things that ARE hashed
+    # are in it -- otherwise the loop above passes on a fingerprint of nothing.
+    assert len(blob) > 500
+    for name in B._HASHED_PATTERNS:
+        assert name in blob, name
+    for name in B._HASHED_SOURCES:
+        assert name in blob, name
+
+    # And the gap is DECLARED, in the file that has it.
+    assert "version_hash" in B._COLUMNS_NOT_HASHED
+    assert len(B._COLUMNS_NOT_HASHED) > 60
 
 
 # --------------------------------------------------------------------------- #

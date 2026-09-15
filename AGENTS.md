@@ -68,9 +68,19 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 - A prompt's variable list is parsed from its body by the `string.Formatter` that renders
   it (`agent/specifier.py::PromptTemplate`); never a second list.
 - Accepted tool args = advertised fields ∪ real signature (`agent/registry.py::SCHEMAS`).
-- `build.py` hashes files + the rule fingerprint + n, not entries: any column, regex,
-  shape-table or parsing-function change moves `version_hash` on its own.
+- `build.py` hashes files + the rule fingerprint + n, not entries: any regex, shape-table
+  or parsing-function change moves `version_hash` on its own.
   `BUILD_RULES_VERSION` is a label now, not the provenance.
+- THE COLUMN SET IS A THIRD DECLARED GAP (user amendment, 2026-09-15 — the column clause
+  is withdrawn from the line above). `_rule_fingerprint` reads patterns, `SHAPES`,
+  `MOJIBAKE_MARKERS` and the source of `_HASHED_SOURCES`; an `Entry` field populated in
+  `build` is in none of them. CONFIRMED: a column reached `build/dictionary.json` with
+  `version_hash` still `3dc8415eccfe` and the suite green, while a hashed-regex edit
+  moved it to `cb7a8dc275d2`. So two materially different dictionaries can share one
+  build hash, and the "build hash moved" stop condition is blind to that class of change.
+  Declared, not closed; pinned by
+  `tests/test_dictionary.py::test_the_column_set_is_outside_the_fingerprint_and_says_so`
+  and `build.py::_COLUMNS_NOT_HASHED`, so closing it is a deliberate act.
 - Every module-level function in `build.py` is hashed or in `_NOT_HASHED` with a reason;
   `build` and `read_module` are DECLARED GAPS — they decide rows and are excluded so a
   refactor does not move the hash.

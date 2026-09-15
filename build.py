@@ -266,6 +266,23 @@ _HASHED_PATTERNS = (
 _HASHED_SOURCES = ("collapse_to_base", "parse_shape", "split_stem",
                    "repair_mojibake", "_to_original_bytes")
 
+#: A THIRD DECLARED GAP, and the one that is not a function: `Entry`'s COLUMN
+#: SET is outside the fingerprint. `_rule_fingerprint` reads patterns, `SHAPES`,
+#: `MOJIBAKE_MARKERS` and the source of `_HASHED_SOURCES`; a new `Entry` field
+#: populated in `build` -- itself a declared gap -- is in none of them. CONFIRMED
+#: 2026-09-15: a column added to `Entry` reached `build/dictionary.json` with
+#: `version_hash` still `3dc8415eccfe` and the suite green, while editing
+#: `RE_SUBITEM_SUFFIX` moved it to `cb7a8dc275d2`. So TWO MATERIALLY DIFFERENT
+#: DICTIONARIES CAN SHARE ONE BUILD HASH, and the "build hash moved" stop
+#: condition in `AGENTS.md` §Verify current state is blind to that class of
+#: change. Declared rather than closed, by the operator's decision of
+#: 2026-09-15: hashing the field set would move the hash on every column, which
+#: is a user amendment each time. `tests/test_dictionary.py` pins the gap, so
+#: closing it later is a deliberate act and not a silent one.
+_COLUMNS_NOT_HASHED = (
+    "Entry's field set is not in _rule_fingerprint; a column can be added, "
+    "removed or renamed without moving version_hash.")
+
 #: Every other module-level function here, each with the reason it is NOT a
 #: hashed rule. `tests/test_dictionary.py` asserts this set plus
 #: `_HASHED_SOURCES` is exactly the module-level functions of this file, so
