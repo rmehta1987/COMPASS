@@ -118,9 +118,18 @@ the collision is recorded, not resolved.
   language" — one of seven sub-items of a battery about problems during an OVERNIGHT
   HOSPITAL STAY in the past 12 months. The broader outpatient battery
   (`group:m2:Q4.7#1`, 13 sub-items) has no counterpart. So the instrument carries a
-  single binary item, conditional on hospitalisation, with `branch_dependency` null so
-  the denominator is unrecoverable — not a perceived-discrimination measure. Not
-  reachable, and now on evidence rather than on a word count.
+  single binary item, conditional on hospitalisation — not a perceived-discrimination
+  measure. Not reachable, and now on evidence rather than on a word count.
+  🛑 **The conditionality is read off the WORDING, not off `branch_dependency`, and an
+  earlier draft of this line got that wrong.** That field says nothing about this item or
+  any other: it is null on all 2,804 entries and is in
+  `checks.py::NULL_BY_CONSTRUCTION`, which asserts its non-null count at zero (re-measured
+  2026-09-14, 2,804 entries carry the field, 0 non-null). The build records no branching
+  at all, so "`branch_dependency` is null here" is a property of the tree and is evidence
+  about nothing. Worse, `env/tools.py::get_item_group`'s return does not carry the field
+  AT ALL, so `.get("branch_dependency")` there answers `None` for the wrong reason and
+  reads like a finding. The denominator is unrecoverable because no branching is recorded
+  anywhere — which is also why no item-level read can ever recover one.
 - T2 is the manuscript's worked example and the demo. It is NOT the rediscovery metric:
   that is C21 stage (i) and stays PARKED below. The side-by-side emits no total on
   purpose — a match rate over a design line's method token and a `model_spec.form` has no
