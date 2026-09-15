@@ -16,12 +16,18 @@ Three filters, because they fail differently and no one of them is enough:
     `_hit` gains next year is excluded by default rather than published by
     default.
   * STRUCTURAL, BY FIELD NAME (`WORDING_FIELDS`) — a `Cited.wording` IS
-    `question_text` byte for byte, and the textual rule below cannot see wording
-    shorter than five words. Naming those fields closes that without lowering
-    the run length, which the pipeline rejected as too noisy.
+    `question_text` byte for byte, and a value that reaches the browser under a
+    field name is wording whatever the run rule can see of it. The set is not
+    hand-kept: `tests/test_serve_redaction.py::test_every_field_a_route_emits_
+    wording_under_is_gated` DERIVES it from the routes in `serve/api.py` by AST,
+    so a route emitting wording under a sixth name reddens rather than shipping.
   * TEXTUAL (`Scrubber.hits`) — the pipeline's own five-word-run rule for prose
     where wording arrives inside a sentence the model wrote, plus the
-    instrument's own key set matched literally.
+    instrument's own key set AND its own sub-five-word strings matched
+    literally. The literal sets are what make the textual rule independent of
+    the field name: a short stem passes the run rule under ANY name, and did —
+    `exposure_stem` shipped `Additional Contact #1` verbatim from
+    `/api/enumerate` on a default bind (MEASURED over the socket 2026-09-15).
 
 Whichever fires, the WHOLE string is replaced and the path is named in
 `redactions`. Editing inside a sentence leaves something that still reads as a
@@ -32,9 +38,16 @@ total is worse than one whose edges are written down. The last three are why
 `serve/api.py` binds loopback and why that is a property of the design rather
 than a default someone may flip:
 
-  * The five-word rule cannot see instrument text shorter than five words.
-    THREE dictionary rows are (MEASURED 2026-09-08, 2,804 entries), two of them
-    "List of Countries". `WORDING_FIELDS` is what covers them.
+  * The five-word RUN rule cannot see instrument text shorter than five words,
+    and `Scrubber.short` is what covers it: SIX distinct strings, all three or
+    four words, over `question_text`, `stem_text` and `searchable_text`
+    (MEASURED 2026-09-15, 2,804 entries). The floor is `SHORT_FLOOR` words, so a
+    one-word row built in future is covered by `WORDING_FIELDS` alone — matching
+    it as a substring would redact ordinary prose, and dropping the floor is a
+    decision with a cost, not a tightening.
+  * NEITHER LITERAL SET SEES A PARAPHRASE. They are substring tests on the
+    instrument's own bytes; wording a model reworded below the run length is
+    caught by the field name or not at all.
   * IT DOES NOT STOP CORRELATION, AND THE SALT DOES NOT EITHER. An earlier
     version of this paragraph claimed the salt bounds it; that was wrong. The
     allowlisted scalars are properties of the target row, not of the salt:
@@ -110,12 +123,28 @@ KEY_RE = re.compile(
 #:   - `option` -- 440 runs, all of them already in the corpus today. It is
 #:     named here anyway: that is a fact about the current build, not a
 #:     guarantee, and it is the same field on the same code path as the other two.
+#: The last five names are `serve/api.py`'s own: `_enumerate` sends `stem_text`
+#: as `exposure_stem` / `outcome_stem`, `_pair` sends `cite().wording` as
+#: `pinned_wording`, and `_metrics` sends it as `exposure_wording` /
+#: `outcome_wording`. None of them was named here, so a stem under five words
+#: left a default bind verbatim with zero redaction marks. This list is NOT the
+#: authority for which names need gating -- the AST test named above derives
+#: that from the routes, which is why a second hand-kept list is not what got
+#: added here (`agent/specifier.py::PromptTemplate` is the same defect).
 WORDING_FIELDS = frozenset({"wording", "question_text", "stem_text",
                             "searchable_text", "quoted_wording", "subitem_text",
-                            "stem", "option", "members"})
+                            "stem", "option", "members",
+                            "exposure_stem", "outcome_stem", "pinned_wording",
+                            "exposure_wording", "outcome_wording"})
 
 #: Words per forbidden run. The pipeline's number, not a new one.
 RUN = 5
+
+#: Fewest words a whole instrument string may have and still be swept literally.
+#: Two, not one: a one-word row ("Other", "Age") as a substring test would
+#: redact clean prose everywhere, which is a filter that certifies nothing
+#: rather than a strict one. Nothing in the build is below this today.
+SHORT_FLOOR = 2
 
 REDACTED = "[REDACTED: instrument wording]"
 
@@ -261,6 +290,9 @@ class Scrubber:
 
     Attributes:
         corpus: Every five-word run in the dictionary's three text fields.
+        keys: The instrument's own variable keys, matched literally.
+        short: Whole strings from those fields that are too short for the run
+            rule, matched literally so the field name never decides.
         source: The dictionary file the corpus came from, for the health route.
     """
 
@@ -289,11 +321,15 @@ class Scrubber:
         self.source = p
         corpus: set[tuple[str, ...]] = set()
         keys: set[str] = set()
+        short: set[str] = set()
         for e in json.loads(p.read_text(encoding="utf-8"))["entries"]:
             for f in ("searchable_text", "question_text", "stem_text"):
                 v = e.get(f)
                 if isinstance(v, str):
                     corpus |= _grams(v)
+                    w = " ".join(v.split())
+                    if SHORT_FLOOR <= len(w.split()) < RUN:
+                        short.add(w.casefold())
             for f in ("key", "construct_key", "group_key"):
                 v = e.get(f)
                 if isinstance(v, str) and v:
@@ -305,6 +341,11 @@ class Scrubber:
         # shape is built. The regex stays as the backstop for a key-shaped
         # string the dictionary does not contain.
         self.keys = keys
+        # Same construction, same reason, for the other thing a regex cannot
+        # reach: the run rule's own blind spot below five words. Built from the
+        # instrument rather than declared, so it tracks the build instead of
+        # recording what someone measured once.
+        self.short = short
 
     def hits(self, text: str) -> list[str]:
         """Instrument runs and bare keys present in `text`.
@@ -323,6 +364,10 @@ class Scrubber:
             low = text.casefold()
             found += [f"key {k}" for k in sorted(self.keys) if k.casefold() in low]
         found += [" ".join(g) for g in sorted(_grams(text) & self.corpus)]
+        # Field-name-independent cover for wording the run rule cannot see. Six
+        # substring tests on this build, so no guard is worth the branch.
+        low = " ".join(text.split()).casefold()
+        found += [w for w in sorted(self.short) if w in low]
         return sorted(set(found))
 
     def scrub(self, obj: Any, _path: str = "") -> tuple[Any, list[str]]:

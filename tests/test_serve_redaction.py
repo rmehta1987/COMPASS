@@ -307,14 +307,27 @@ def test_a_variable_key_used_as_a_dict_key_is_caught() -> None:
 
 
 def test_wording_fields_go_structurally_not_by_word_count() -> None:
-    """Three dictionary rows are under five words; the run rule cannot see them."""
+    """A gated field is withheld on its NAME, whatever the run rule can see.
+
+    The five-word RUN rule cannot see a sub-five-word row -- six distinct
+    strings in this build are -- and this is the half of the cover that does not
+    depend on the corpus at all: a synthetic value no instrument contains is
+    still withheld under a gated name. `Scrubber.short` is the other half, and
+    `test_the_same_value_redacts_identically_under_any_field_name` is where the
+    instrument's own short rows are checked; this test deliberately holds no
+    instrument text.
+    """
     dic = _dictionary_or_skip()
     s = Scrubber(path=dic)
-    short = "List of Countries"
-    assert not s.hits(short), "this row is no longer short; pick another"
+    short = "Three Synthetic Words"
+    assert not s.hits(short), "the run rule and both literal sets are blind here"
     clean, marks = s.scrub({"cited": {"key": "m1:Q2.2_1", "wording": short}})
     assert clean["cited"]["wording"] == REDACTED
     assert "cited.wording" in marks
+    # Anti-vacuity: the same value under an ungated name is what the NAME buys,
+    # and it must still pass -- otherwise the assertion above proves nothing
+    # about the name.
+    assert s.scrub({"note": short})[0]["note"] == short
 
 
 def test_every_json_response_is_filtered_at_one_chokepoint() -> None:
@@ -1799,3 +1812,116 @@ def test_the_default_site_dir_is_safe_to_serve() -> None:
     from serve.api import ROOT
 
     assert _refuse_unsafe_site_dir(ROOT.resolve(), a.run_dir.resolve()) is not None
+
+
+def test_the_same_value_redacts_identically_under_any_field_name() -> None:
+    """The field name must not decide. It did, and the run rule hid it.
+
+    `scrub` gates structurally on the field NAME and textually on a five-word
+    run, so instrument wording shorter than five words was withheld under
+    `stem_text` and published under any name nobody had listed. MEASURED at
+    `e6d1df6` over `build/dictionary.json`: 28 rows carry a `stem_text` of fewer
+    than five whitespace tokens (4 distinct strings, 5 construct keys, modules 1
+    and 3) and 3 rows a `question_text` under five words -- and `_enumerate`
+    sends `stem_text` as `exposure_stem`, which was not a listed name.
+
+    Written as an invariance over names rather than as an assertion about the
+    five that leaked: the defect is the dependence on the name, and a test
+    naming the fields would go green the moment a sixth route appears.
+    """
+    dic = _dictionary_or_skip()
+    sc = Scrubber(path=dic)
+    entries = json.loads(dic.read_text(encoding="utf-8"))["entries"]
+    shorts = sorted({e["stem_text"] for e in entries
+                     if isinstance(e.get("stem_text"), str)
+                     and e["stem_text"].strip()
+                     and len(e["stem_text"].split()) < 5})
+    assert shorts, "no sub-five-word stem in this build; the blind spot moved"
+
+    gated = sorted(WORDING_FIELDS - {"members"})
+    # `members` is excluded only because its value is a LIST, not a string.
+    ungated = ["reason", "note", "why_rejected", "request",
+               "a_field_name_no_route_has_invented_yet"]
+    for value in shorts:
+        seen = {n: sc.scrub({n: value})[0][n] for n in [*gated, *ungated]}
+        assert set(seen.values()) == {REDACTED}, (
+            f"{value!r} survived under: "
+            f"{sorted(n for n, v in seen.items() if v != REDACTED)}")
+
+    # Anti-vacuity, and it has to run on the UNGATED names: a listed name
+    # redacts any non-empty value by design, so a filter that redacted every
+    # string would be indistinguishable there. These are the names where the
+    # loop above proves something, so these are where clearing must still work.
+    clean = "a synthetic sentence carrying no instrument content at all"
+    for n in ungated:
+        assert sc.scrub({n: clean})[0][n] == clean, f"{n} redacted clean prose"
+
+
+def test_every_field_a_route_emits_wording_under_is_gated() -> None:
+    """Derive the gated names from the routes, never restate them.
+
+    `WORDING_FIELDS` was a hand-kept list and `serve/api.py` grew five names it
+    did not hold. A second list that must agree with a first is the defect
+    `agent/specifier.py::PromptTemplate` exists to avoid, so the requirement is
+    read out of the emitting code by AST -- an `ast.Attribute`, not an
+    `inspect.getsource` substring -- and compared against the one list.
+
+    A dict key is required to be gated when its VALUE reads wording: an
+    attribute the wording sources are named by, or a call to a helper whose
+    whole job is to bind one. A subscript is deliberately not a source: the same
+    routes send `pr["exposure"]["quoted_wording"]` as `exposure_wording_hash`,
+    which is a sha256 and not wording at all.
+    """
+    import ast
+
+    #: Attributes whose value IS instrument text. `env/labels.py::Cited.wording`
+    #: is `question_text` byte for byte; the rest are the dictionary's and the
+    #: retriever's own field names.
+    sources = {"wording", "question_text", "stem_text", "searchable_text",
+               "subitem_text", "stem", "option", "members"}
+    #: Helpers that return wording and nothing else.
+    makers = {"_metrics_wording"}
+
+    api = ROOT / "serve" / "api.py"
+    tree = ast.parse(api.read_text(encoding="utf-8"))
+
+    def reads_wording(node: ast.expr) -> bool:
+        # Stops at a nested `ast.Dict`, so a wording read is charged to the
+        # innermost key that carries it and not to every container above it.
+        # Without this, `pairs`, `candidates` and `run` are reported as
+        # ungated wording fields and the real five are lost in the noise.
+        stack: list[ast.AST] = [node]
+        while stack:
+            n = stack.pop()
+            if isinstance(n, ast.Attribute) and n.attr in sources:
+                return True
+            if isinstance(n, ast.Call):
+                f = n.func
+                name = f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", "")
+                if name in makers:
+                    return True
+            stack += [c for c in ast.iter_child_nodes(n)
+                      if not isinstance(c, ast.Dict)]
+        return False
+
+    required: dict[str, int] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Dict):
+            continue
+        for k, v in zip(node.keys, node.values, strict=True):
+            if isinstance(k, ast.Constant) and isinstance(k.value, str):
+                if reads_wording(v):
+                    required.setdefault(k.value, v.lineno)
+
+    # Anti-vacuity: an AST walk that matched nothing would pass the assertion
+    # below silently, which is how this defect survived a reviewed module.
+    assert len(required) >= 5, (
+        f"only {len(required)} wording-emitting field(s) found in {api.name}; "
+        "the walk stopped matching, it is not that the routes stopped emitting")
+
+    ungated = {n: ln for n, ln in required.items() if n not in WORDING_FIELDS}
+    assert not ungated, (
+        "serve/api.py emits instrument wording under field name(s) that "
+        f"serve/redact.py::WORDING_FIELDS does not gate: {sorted(ungated)} "
+        f"(first at api.py:{min(ungated.values())}). Add the name there, or "
+        "stop emitting wording under it.")
