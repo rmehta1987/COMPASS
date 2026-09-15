@@ -629,7 +629,17 @@ def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str,
         k: Pool size.
 
     Returns:
-        `{"surface": SelectionContract, "candidates": [...], "cos": {...}}`.
+        `{"cands": [...], "cos": {key: cosine}, "skipped": [...],
+        "rendered": str}` -- the pool, its scores, the keys no wording could be
+        bound to, and the query the encoder actually saw.
+
+        NO `surface`. One was returned for as long as this function existed and
+        nothing ever read it: `_pair` builds its own, and it has to, because a
+        surface built here carries the framing for the role this call names
+        while `_pair` offers the ONE pool to both roles. Reusing it would ask
+        "which item serves as the EXPOSURE here?" and record the answer as the
+        outcome. It was dead weight that read like an optimisation someone had
+        forgotten to take, so it is gone rather than commented.
 
     Raises:
         ValueError: When no candidate can be bound to wording.
@@ -665,9 +675,7 @@ def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str,
         raise ValueError(f"no candidate for the {role} could be bound to wording")
 
     cands = PC.candidates_from_keys(keys, facts)
-    framed = f"{request}\n\nWhich item serves as the {role.upper()} here?"
-    return {"surface": PC.retrieval_contract(framed, cands),
-            "cands": cands, "cos": cos_by_key, "skipped": skipped,
+    return {"cands": cands, "cos": cos_by_key, "skipped": skipped,
             "rendered": rendered}
 
 

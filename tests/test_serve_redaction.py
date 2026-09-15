@@ -1276,7 +1276,6 @@ def test_split_is_off_unless_asked_for(
     assert [q for q, _, _ in seen] == [_SPLIT_REQ]
 
 
-
 # ------------------------------------- the hand-off from a proposal to a poll
 
 
@@ -1322,6 +1321,7 @@ def _serving(state: object) -> Iterator[Callable[[str, dict], tuple[int, dict]]]
         srv.shutdown()
         srv.server_close()
 
+
 def _scripted_pair_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> object:
     """A `State` whose `/api/pair` runs without a model call or a retriever.
 
@@ -1363,6 +1363,7 @@ def _scripted_pair_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> obj
     return api.State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run",
                      show_instrument=True)
 
+
 def test_a_proposal_ticket_is_pollable_while_the_specifier_is_disabled(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """`/api/pair` must not spend a model call for a ticket nobody can poll.
@@ -1400,6 +1401,7 @@ def test_a_proposal_ticket_is_pollable_while_the_specifier_is_disabled(
     assert reply["status"] == "done", reply
     assert reply["roles"]["outcome"]["verdict"] == "resolved", reply
 
+
 def test_a_specifier_ticket_is_still_refused_while_the_specifier_is_disabled(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Serving a proposal ticket may not weaken the 403 the flag exists for.
@@ -1422,6 +1424,7 @@ def test_a_specifier_ticket_is_still_refused_while_the_specifier_is_disabled(
     assert code == 403, reply
     assert "--enable-specify" in reply["error"]
 
+
 def test_the_specify_route_itself_is_still_refused_while_disabled(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The guarantee the fix must not touch: the expensive route stays off."""
@@ -1433,6 +1436,7 @@ def test_the_specify_route_itself_is_still_refused_while_disabled(
                            {"exposure": "m3:Q16.1", "outcome": "m2:Q5.8", "k": 1})
     assert code == 403, reply
     assert "--enable-specify" in reply["error"]
+
 
 def test_a_job_record_from_before_kinds_existed_is_read_as_a_specifier_run(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1454,6 +1458,7 @@ def test_a_job_record_from_before_kinds_existed_is_read_as_a_specifier_run(
         code, reply = post("/api/specify/status", {"ticket": "020202-abcdef"})
     assert code == 403, reply
 
+
 def test_an_unknown_ticket_is_answered_by_the_route_not_by_the_gate(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A ticket this endpoint never issued has no kind, and 403 would mislead.
@@ -1470,6 +1475,7 @@ def test_an_unknown_ticket_is_answered_by_the_route_not_by_the_gate(
         code, reply = post("/api/specify/status", {"ticket": "030303-abcdef"})
     assert code == 400, reply
     assert "no run with ticket" in reply["error"]
+
 
 def test_every_route_that_issues_a_ticket_declares_its_kind() -> None:
     """The gate can only tell the routes apart if each one labels its job.
@@ -1498,6 +1504,7 @@ def test_every_route_that_issues_a_ticket_declares_its_kind() -> None:
 
 
 # --------------------------- a proposed key must be a key the Specifier takes
+
 
 def test_every_key_the_retriever_can_offer_resolves_for_the_specifier() -> None:
     """The two routes are pinned to each other, over the whole key domain.
@@ -1537,6 +1544,7 @@ def test_every_key_the_retriever_can_offer_resolves_for_the_specifier() -> None:
         f"refused by /api/specify, so the hand-off from /api/pair cannot work "
         f"for them")
 
+
 def _constructs_and_members_or_skip() -> tuple[dict, dict]:
     """The construct keys and the sub-item index, read from the dictionary.
 
@@ -1555,6 +1563,7 @@ def _constructs_and_members_or_skip() -> tuple[dict, dict]:
         constructs.setdefault(e["construct_key"], object())
         members[e["key"]] = e["construct_key"]
     return constructs, members
+
 
 def test_a_sub_item_key_resolves_to_its_construct_and_the_reply_says_so() -> None:
     """Translate at the boundary, and REPORT it. An unreported rewrite is worse.
@@ -1579,6 +1588,7 @@ def test_a_sub_item_key_resolves_to_its_construct_and_the_reply_says_so() -> Non
     assert _canonical_key("m2:Q5.8", constructs, "outcome", seen, members) == "m2:Q5.8"
     assert seen == {}, "a key that is already a construct key is not a rewrite"
 
+
 def test_a_sub_item_translation_is_reported_apart_from_a_case_fix() -> None:
     """The two rewrites differ in KIND, so one field may not carry both.
 
@@ -1597,6 +1607,7 @@ def test_a_sub_item_translation_is_reported_apart_from_a_case_fix() -> None:
     assert grain == {"m3:Q16.1_1": "m3:Q16.1"}
     assert _split_rewrites({}) == ({}, {})
 
+
 def test_a_key_that_names_nothing_still_costs_nothing() -> None:
     """The load-bearing half of the refusal survives the translation.
 
@@ -1612,6 +1623,7 @@ def test_a_key_that_names_nothing_still_costs_nothing() -> None:
         _canonical_key("m3:Q99.9", constructs, "exposure", {}, members)
     with pytest.raises(Unresolvable, match="does not resolve"):
         _canonical_key("m3:Q99.9_1", constructs, "exposure", {}, members)
+
 
 def test_the_sub_item_index_is_unambiguous_on_this_instrument() -> None:
     """Translation is only a lookup while no sub-item key names two constructs.
@@ -1635,6 +1647,7 @@ def test_the_sub_item_index_is_unambiguous_on_this_instrument() -> None:
         if prior != k:
             collisions.append((prior, k))
     assert not collisions, f"two keys differ by case alone: {collisions[:5]}"
+
 
 def test_the_sub_item_index_is_the_dictionarys_own_grouping() -> None:
     """`_member_index` must reshape the dictionary, never re-derive it.
@@ -1660,3 +1673,80 @@ def test_the_sub_item_index_is_the_dictionarys_own_grouping() -> None:
     assert _member_index(constructs) == from_column, (
         f"the index disagrees with the construct_key column of {version}")
 
+
+def test_one_shared_pool_is_asked_a_different_question_for_each_role(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """C31(c), the half that survived: the framing is per role, not per pool.
+
+    `_role_candidates` also returns a `surface` built with the role it was
+    CALLED with, and `_pair` calls it once with `role="exposure"` and serves
+    that one pool to both roles. So reusing that surface for the outcome would
+    ask "which item serves as the EXPOSURE here?" while recording the answer as
+    the outcome -- the pool is role-agnostic, but the ASK must not be. Nothing
+    read `surface`, and the test helper's fake pool never even supplied it,
+    which is why it is now gone from the return rather than left as a field a
+    later reader could pick up in good faith.
+    """
+    from agent import cli_backend
+    from agent import prompt_contract as PC
+    from agent.backends import Reply
+    from serve import api
+
+    asked: list[str] = []
+    real_contract = PC.retrieval_contract
+
+    def recording_contract(framed: str, cands: object) -> object:
+        asked.append(framed)
+        return real_contract(framed, cands)
+
+    def fake_pool(_state: object, query: str, _role: str, _k: int) -> dict:
+        ks = ["m2:Q5.8"]
+        return {"cands": PC.candidates_from_keys(ks), "cos": dict.fromkeys(ks, 0.5),
+                "skipped": [], "rendered": f"q:{query}"}
+
+    class _Scripted:
+        """A backend that always resolves to the first candidate."""
+
+        name = "scripted"
+        last_cost = 0.0
+
+        def __init__(self, **_: object) -> None:
+            pass
+
+        def transduce(self, *_: object) -> Reply:
+            return Reply(content=_PICK_FIRST)
+
+    monkeypatch.setattr(cli_backend, "ClaudeCliBackend", _Scripted)
+    monkeypatch.setattr(api, "_role_candidates", fake_pool)
+    monkeypatch.setattr(PC, "retrieval_contract", recording_contract)
+
+    st = api.State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run",
+                   show_instrument=True)
+    import time
+
+    ticket = api._pair(st, {"request": "cohesion and hypertension"})["ticket"]
+    deadline = time.time() + 30
+    while st.jobs[ticket]["status"] == "running" and time.time() < deadline:
+        time.sleep(0.05)
+    done = st.jobs[ticket]
+    assert done["status"] == "done", done
+
+    assert sum("EXPOSURE" in a for a in asked) == 1, asked
+    assert sum("OUTCOME" in a for a in asked) == 1, asked
+
+
+def test_the_pool_helper_returns_only_fields_something_reads() -> None:
+    """The documented return said `candidates` while the code said `cands`.
+
+    A Returns line naming a key no caller can index is the same defect class as
+    the dead `surface` beside it: both invite a reader to use something that is
+    not there, or not right. Checked against the code so the docstring cannot
+    drift back.
+    """
+    from serve import api
+
+    doc = api._role_candidates.__doc__ or ""
+    returns = doc.split("Returns:", 1)[1]
+    assert '"surface"' not in returns, "surface was removed; the docstring kept it"
+    for field in ('"cands"', '"cos"', '"skipped"', '"rendered"'):
+        assert field in returns, f"{field} is returned but not documented"
