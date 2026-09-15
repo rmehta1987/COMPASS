@@ -92,9 +92,15 @@ the collision is recorded, not resolved.
   battery, `group:m2:Q5.15#1` ("...ever told you that you had any of the following"):
   `m2:Q5.15#1_3` anxiety/panic/PTSD/phobia, `m2:Q5.15#1_9`
   bipolar/manic depression, `m2:Q5.15#1_15` clinical depression, `m2:Q5.15#1_37` major
-  depression or a related mood disorder. 🛑 ONE USER DECISION REMAINS: depression has TWO
-  sub-items, `_15` and `_37`, and which of them counts needs the paper's outcome
-  definition.
+  depression or a related mood disorder. **DECIDED by the operator 2026-09-14: depression
+  takes BOTH `_15` and `_37`.** The design line says "depression" unqualified and the
+  outcomes were ascertained administratively, so no instrument label was being targeted;
+  the questionnaire splits one construct across two labels and the cell records where the
+  instrument covers it. `outcome_keys_on_record` returns a distinct tuple, so two keys on
+  one side is the form, not a workaround. The paste is therefore mechanical and nothing
+  else is owed on these two rows: 38397711 -> `m2:Q9.117`; 38961645 -> `m2:Q5.15#1_3`,
+  `m2:Q5.15#1_9`, `m2:Q5.15#1_15`, `m2:Q5.15#1_37`. It does not move either verdict —
+  `_side` confirms on ANY resolving key, and both papers stay blocked on their exposures.
   🛑 NOT the `Q5.x` keys, and this file said `m2:Q5.30` until 2026-09-14. That is "How old
   were you when you were first told that you had clinical depression?" — an age variable,
   as are `Q5.18`, `Q5.24` and `Q5.52` for the other three. Four age items shadow the four
