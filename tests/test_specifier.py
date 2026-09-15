@@ -399,6 +399,115 @@ def test_recording_a_covariate_gap_does_not_rank_a_record_below_a_silent_one(rec
     assert SP._rank(silent) == SP._rank(disclosing)
 
 
+#: A blocker that names a PENDING ARTIFACT somebody could hand over. It can
+#: unblock, so attaching it to a record costs that record nothing permanent.
+DELIVERABLE = "deliverable"
+
+#: A blocker that states a property of a FIXED instrument. It never unblocks,
+#: and `AGENTS.md` §Hard Constraints forbids one: `_rank` sorts on
+#: `len(blocked_on)` ASCENDING, so a member tied to disclosure would rank an
+#: honest record strictly below an otherwise identical silent one, and
+#: `_a_threshold_on_an_unknown_n_discloses_it` subtracts a denylist of ONE from
+#: `blocked_on`, so every member added gains standing as an admission about the
+#: analytic n -- which a disclosure is not.
+DISCLOSURE = "disclosure"
+
+#: Every `BlockedOn` member, classified, with the deliverable named.
+#:
+#: The constraint was held by a comment in `agent/schema.py` and by nothing
+#: else. MEASURED at `e6d1df6`: adding an 8th member
+#: `instrument_appears_not_to_carry_the_covariate` left the suite 1123 passed,
+#: exit 0, and the member reached `ProtocolSpecification.model_json_schema()` --
+#: the prompt text the Specifier reads. An unenforced guarantee is this
+#: codebase's own named recurring defect (`f9ba07e`).
+#:
+#: Declared, not derived, and deliberately so: which kind a new member is
+#: cannot be read off its name, and forcing that decision is the entire
+#: mechanism. A member missing here reddens rather than defaulting either way.
+_BLOCKER_KIND = {
+    "module_co_completion_counts": (DELIVERABLE, "the co-completion counts"),
+    "per_item_non_missing_counts": (DELIVERABLE, "the per-item counts"),
+    "area_measure_inventory": (DELIVERABLE, "the inventory"),
+    "response_coding": (DELIVERABLE, "the coding"),
+    "study_team_confirmation": (DELIVERABLE, "the study team's confirmation"),
+    "outcome_prevalence_unconfirmed": (DELIVERABLE, "a measured frequency"),
+    "design_effect_for_community_area_clustering":
+        (DELIVERABLE, "participants per cluster and an ICC"),
+}
+
+
+def test_every_blocked_on_member_is_classified_and_none_is_a_disclosure() -> None:
+    """The Hard Constraint, enforced instead of commented.
+
+    Two failures, and they are different: an UNCLASSIFIED member means a
+    decision was skipped, and a member classified `DISCLOSURE` means the
+    decision went the way `AGENTS.md` forbids. Both name the member, because
+    "a count changed" is not a defect report.
+    """
+    from agent.schema import BlockedOn
+
+    members = [m.value for m in BlockedOn]
+    # Anti-vacuity: an empty or shrunken enum would satisfy every loop below.
+    assert len(members) >= 7, (
+        f"BlockedOn has {len(members)} members; this test proves nothing about "
+        f"an enum that lost its members")
+    assert len(members) == len(set(members)), "duplicate BlockedOn value"
+
+    unclassified = sorted(set(members) - set(_BLOCKER_KIND))
+    assert not unclassified, (
+        f"BlockedOn member(s) {unclassified} are not classified in "
+        f"tests/test_specifier.py::_BLOCKER_KIND. Decide, per AGENTS.md "
+        f"§Hard Constraints: DELIVERABLE means it names a pending artifact "
+        f"somebody could hand over and it can unblock; DISCLOSURE means it "
+        f"states a property of a fixed instrument and never unblocks, which is "
+        f"forbidden -- `_rank` sorts on len(blocked_on) ASCENDING, so it would "
+        f"rank an honest record below a silent twin. If it is a disclosure, "
+        f"`sought_covariates` is where that gap goes.")
+
+    stale = sorted(set(_BLOCKER_KIND) - set(members))
+    assert not stale, (
+        f"_BLOCKER_KIND classifies {stale}, which BlockedOn no longer has; "
+        f"removing a member is a user amendment, not a bookkeeping fix")
+
+    disclosures = sorted(m for m in members if _BLOCKER_KIND[m][0] is DISCLOSURE)
+    assert not disclosures, (
+        f"BlockedOn member(s) {disclosures} are classified as disclosures. "
+        f"AGENTS.md §Hard Constraints: no BlockedOn member for disclosure. "
+        f"Changing that sentence is a user amendment, not a lane's.")
+
+    for m, (kind, deliverable) in sorted(_BLOCKER_KIND.items()):
+        assert kind in (DELIVERABLE, DISCLOSURE), f"{m}: unknown kind {kind!r}"
+        assert deliverable.strip(), (
+            f"{m} is classified DELIVERABLE with no deliverable named; if "
+            f"nothing can be handed over it is not one")
+
+
+def test_the_prompt_offers_exactly_the_classified_blockers() -> None:
+    """`model_json_schema()` copies the enum into the prompt, so it is the surface.
+
+    The classification is only worth anything if the members the model is
+    OFFERED are the members that were classified. This is the join: a member
+    added to the enum reaches the Specifier's prompt text whether or not anyone
+    decided what kind it is.
+    """
+    import json
+
+    from agent.schema import ProtocolSpecification
+
+    schema = ProtocolSpecification.model_json_schema()
+    blob = json.dumps(schema)
+    offered = {m for m in _BLOCKER_KIND if f'"{m}"' in blob}
+    assert offered == set(_BLOCKER_KIND), (
+        f"classified but not in the prompt surface: "
+        f"{sorted(set(_BLOCKER_KIND) - offered)}")
+
+    # And nothing outside the classification reaches it. Read off the enum
+    # rather than off a copy of the value strings.
+    from agent.schema import BlockedOn
+
+    assert {m.value for m in BlockedOn} == set(_BLOCKER_KIND)
+
+
 _GAPS = [
     ("the respondent's own age at enrolment", ["age", "age at enrollment"]),
     ("household income over the past year", ["income", "household income"]),
