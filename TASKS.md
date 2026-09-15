@@ -490,6 +490,32 @@ experts until much later, which is why the dashboard exists.
   C9 reopens, its conditions are in `DESIGN.md` §6.
 
 ## Known-open defects, no task yet
+- **`benchmark/leak_facts.py` is fetchable from the public repository, and the
+  operator has chosen to record it rather than rewrite history (2026-09-15).**
+  MEASURED 2026-09-15: the blob (`87437e5e`, 22,006 bytes) was added by the publication
+  commit `b3d818d` and deleted by `37a37dd` the next day, which removed it from the TIP
+  only. `git merge-base --is-ancestor b3d818d origin/main` succeeds against the LIVE
+  remote (`git ls-remote origin refs/heads/main` → `265241d`), it is reachable from eight
+  remote-tracking refs including `origin/main`, and `gh repo view --json visibility`
+  returns `PUBLIC` for `rmehta1987/COMPASS`. So anyone who clones gets the second answer
+  key. The deletion commit's own subject calls it that. Swept the same day: it is the
+  ONLY withheld artefact in that position — `prevalence_key.py`, `design_key.py`,
+  `build/dictionary.json`, `dictionary.json` and `codebook.csv` each have 0 commits
+  reachable from `origin/main`.
+  What is NOT claimed: nobody read the contents, here or in review — reading an answer
+  key is itself the channel this repository exists to close — so the severity rests on
+  the deletion commit's description and the file's role, not on its text. It is
+  benchmark integrity, not participant data; no participant data exists in this system.
+  **The remedy is the user's, not a lane's**, and a rewrite is not a fix on its own: a
+  force-push does not un-distribute what was already fetched, and GitHub may retain the
+  blob server-side. The live options stay open — rewrite plus rotation, or treat the key
+  as disclosed and re-cut it — and nothing here forecloses them.
+  GUARDED, not fixed, by
+  `tests/test_withheld.py::test_no_new_withheld_module_is_reachable_from_a_published_ref`:
+  `KNOWN_PUBLIC_EXPOSURE` pins this one path and the test reddens both when an UNPINNED
+  withheld module becomes reachable and when a pinned one stops being reachable, so the
+  set can only shrink and a stale allowance cannot hide the next breach. Seeded both
+  directions red before landing. It does not make this exposure go away.
 - **C35 — how does an area-measure exposure reach CONFIRMED?
   ✅ DECIDED by the operator 2026-09-14: answer **C now, B later**, and the open
   sub-question takes the THIRD STATUS — `blocked_on_delivery`.** The four answers and

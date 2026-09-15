@@ -16,6 +16,7 @@ therefore a ratchet in its own right, in the direction skips should travel.
 from __future__ import annotations
 
 import ast
+import subprocess
 import sys
 from pathlib import Path
 
@@ -162,3 +163,113 @@ def test_the_ceiling_is_not_vacuous() -> None:
         "no guarded tests found at all. Either the guards are gone -- in which "
         "case lower GUARD_CEILING to 0 and delete this -- or the AST walk "
         "stopped matching the decorator, and the ratchet is now blind.")
+
+
+# --------------------------------------------------------------------------- #
+# Reachability of a withheld module from a PUBLISHED ref
+# --------------------------------------------------------------------------- #
+#
+# WHY THIS EXISTS. Deleting an answer key removes it from the tip and from no
+# other commit. `benchmark/leak_facts.py` was added by the publication commit
+# b3d818d (2026-09-03) and deleted by 37a37dd the next day; the adding commit is
+# still an ancestor of `origin/main`, and the repository is public, so the blob
+# is in the pack anyone gets by cloning. `WITHHELD_MODULES` says what must not
+# be readable; nothing said it must not be FETCHABLE, and the two came apart
+# without a red test. Found by review 2026-09-15.
+
+#: Withheld modules already reachable from a published ref, as repo-relative
+#: paths. A record of a known breach, not permission for another. Remediating one
+#: means rewriting published history and force-pushing, and a rewrite does not
+#: un-distribute what was already fetched -- the user's call, not a lane's
+#: (`TASKS.md` §Known-open defects). DIRECTION: this set may only SHRINK.
+KNOWN_PUBLIC_EXPOSURE = frozenset({"benchmark/leak_facts.py"})
+
+
+def _git() -> Path | None:
+    """Locate git on PATH.
+
+    Resolved here rather than imported from `tests/test_code_standards.py`: a
+    test module is not an API, and this file already owns what it needs.
+
+    Returns:
+        Path to the executable, or None when git is not installed.
+    """
+    from shutil import which
+    found: str | None = which("git")
+    return Path(found) if found else None
+
+
+def _published_refs(git: Path) -> list[str]:
+    """Remote-tracking refs: what a stranger could clone.
+
+    Args:
+        git: The git executable.
+
+    Returns:
+        Fully-qualified remote-tracking ref names, empty when there are none.
+    """
+    out = subprocess.run(
+        [str(git), "for-each-ref", "--format=%(refname)", "refs/remotes/"],
+        cwd=ROOT, capture_output=True, text=True).stdout
+    return [r for r in out.split() if r]
+
+
+def _exposed_withheld_paths(git: Path, refs: list[str]) -> set[str]:
+    """Which withheld modules any published ref carries a commit for.
+
+    Asks about the PATH's history rather than the tip, because a deletion leaves
+    the adding commit reachable.
+
+    Args:
+        git: The git executable.
+        refs: Remote-tracking refs to search.
+
+    Returns:
+        Repo-relative paths reachable from at least one published ref.
+    """
+    exposed: set[str] = set()
+    for module in sorted(WITHHELD_MODULES):
+        path = module.replace(".", "/") + ".py"
+        for ref in refs:
+            n = subprocess.run(
+                [str(git), "rev-list", "--count", ref, "--", path],
+                cwd=ROOT, capture_output=True, text=True).stdout.strip()
+            if n.isdigit() and int(n) > 0:
+                exposed.add(path)
+                break
+    return exposed
+
+
+def test_no_new_withheld_module_is_reachable_from_a_published_ref() -> None:
+    """A withheld module must not be fetchable by cloning, pin or no pin.
+
+    Two-sided on purpose. An unpinned exposure is a new breach. A pinned path
+    that is no longer reachable means the history was cleaned and the pin is
+    now stale cover for nothing -- so the pin must come out, and this test says
+    so rather than passing quietly.
+    """
+    git: Path | None = _git()
+    if git is None:
+        pytest.skip("git not installed, so reachability cannot be asked. "
+                    "NOT a pass -- run it where git is.")
+    refs = _published_refs(git)
+    if not refs:
+        pytest.skip("no remote-tracking refs in this clone, so nothing is "
+                    "published from here and reachability is unanswerable. "
+                    "NOT a pass -- run it in a clone that has a remote.")
+    exposed = _exposed_withheld_paths(git, refs)
+
+    new = exposed - KNOWN_PUBLIC_EXPOSURE
+    assert not new, (
+        f"withheld module(s) {sorted(new)} are reachable from a published ref "
+        f"({', '.join(refs)}). Deleting the file does not help: the adding "
+        f"commit is still an ancestor. Treat the key as disclosed and tell the "
+        f"user -- a history rewrite and force-push is theirs to decide, not a "
+        f"lane's.")
+
+    healed = KNOWN_PUBLIC_EXPOSURE - exposed
+    assert not healed, (
+        f"{sorted(healed)} is pinned in KNOWN_PUBLIC_EXPOSURE but is no longer "
+        f"reachable from any published ref. If the history was rewritten, "
+        f"remove it from the pin: the set may only shrink, and leaving it here "
+        f"hides the next real exposure behind an allowance.")
