@@ -80,22 +80,34 @@ def _serve(monkeypatch, rows: tuple[DA.DesignKeyRow, ...]) -> None:
 
 # --- the validator ----------------------------------------------------------- #
 
-def test_the_live_design_key_is_unreadable_here_and_says_so():
-    """The live table cannot be checked in this clone, and that is the design.
+def test_the_live_design_key_is_reported_honestly_in_either_clone():
+    """Whichever clone this is, `scaffold_status` must not blur the two cases.
 
     Before C36 the exposure column lived in the working clone and `validate()`
-    ran over it here. It is withheld now, so the honest statement is that the
-    criterion did not run -- `scaffold_status` reports `design_key_readable`
-    False and `design_key_rows` None, which is not the same as zero rows.
+    ran over it here. It is withheld now, so where the key is ABSENT the honest
+    statement is that the criterion did not run: `design_key_readable` False
+    and `design_key_rows` None, which is not the same as zero rows.
+
+    BRANCHED, not asserted one way. An earlier draft asserted
+    `design_key_present() is False`, which is true here and FALSE in the
+    scoring clone -- so the moment the operator creates the key, this test goes
+    red in the only clone where it can actually exercise the readable path.
+    That is the permanently-red suite `tests/withheld.py` exists to end, and it
+    would have been introduced by the commit that closed C36.
     """
-    assert RD.design_key_present() is False, (
-        "benchmark.design_key must be withheld from this clone (C36)")
     status = RD.scaffold_status()
-    assert status["design_key_readable"] is False
-    assert status["design_key_rows"] is None, (
-        "zero rows and an unreadable table are different facts; None says "
-        "which this is")
-    assert status["complaints"] == []
+    assert status["design_key_readable"] is RD.design_key_present()
+    if status["design_key_readable"]:
+        assert isinstance(status["design_key_rows"], int), (
+            "a readable key must report a row count, even if it is 0")
+        assert status["status_counts"] is not None
+    else:
+        assert status["design_key_rows"] is None, (
+            "zero rows and an unreadable table are different facts; None says "
+            "which this is")
+        assert status["status_counts"] is None
+        assert status["complaints"] == [], (
+            "nothing was checked, so nothing may be complained about")
 
 
 def test_an_empty_table_is_not_a_complaint_and_is_not_progress(monkeypatch):
