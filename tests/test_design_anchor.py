@@ -264,13 +264,24 @@ def test_a_repeated_key_on_one_side_is_named() -> None:
     assert any("repeats a key" in c for c in da.validate_design_key((row,)))
 
 
-def test_a_repeated_term_on_one_side_is_named() -> None:
-    """Two anchors on one phrase is two answers to one question."""
-    row = _row((da.Anchor(TERM, da.VARIABLE, key="m2:Q5.8"),
-                da.Anchor(TERM, da.AREA_MEASURE,
-                          blocked_on=da.AREA_MEASURE_INVENTORY)),
-               (da.Anchor("other", da.NOT_IN_INSTRUMENT),))
-    assert any("repeats a term" in c for c in da.validate_design_key((row,)))
+def test_one_term_may_carry_several_keys() -> None:
+    """The operator's decided depression row, as a shape claim.
+
+    38961645's design line says "depression" unqualified and the questionnaire
+    splits that construct across two labels, so two anchors share one term and
+    name different keys. A validator that refused repeated terms made the
+    decided row unrepresentable -- the same failure as the bare key tuple this
+    table replaces, where the type could not express the settled form.
+    """
+    from env.tools import resolve_variable
+    pair = [k for k in ("m2:Q5.15#1_15", "m2:Q5.15#1_37", "m2:Q5.8", "m2:Q5.2")
+            if resolve_variable(k)["outcome"] == da.RESOLVED][:2]
+    if len(pair) < 2:
+        pytest.skip("need two resolving keys to test one term carrying both")
+    row = _row((da.Anchor("other", da.NOT_IN_INSTRUMENT),),
+               (da.Anchor(TERM, da.VARIABLE, key=pair[0]),
+                da.Anchor(TERM, da.VARIABLE, key=pair[1])))
+    assert da.validate_design_key((row,)) == []
 
 
 def test_a_missing_provenance_or_filler_is_named() -> None:

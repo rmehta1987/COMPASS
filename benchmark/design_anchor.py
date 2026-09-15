@@ -277,10 +277,14 @@ def _complain_about_side(pmid: str, side: str,
     keys = [a.key for a in anchors if a.key is not None]
     if len(set(keys)) != len(keys):
         out.append(f"{pmid}: {side} repeats a key: {sorted(keys)}")
-    terms = [a.term for a in anchors]
-    if len(set(terms)) != len(terms):
-        out.append(f"{pmid}: {side} repeats a term: {sorted(terms)}. Two "
-                   f"anchors on one phrase is two answers to one question.")
+    # NOT checked: a repeated TERM. One phrase may carry several keys, and the
+    # operator's decided row for 38961645 is the case -- the design line says
+    # "depression" unqualified and the questionnaire splits that construct
+    # across two labels, so two anchors share the term and name different
+    # keys. A repeats-a-term check made that row unrepresentable, which is the
+    # same class of failure as the bare key tuple this table replaces: the type
+    # could not express the settled form. The repeated-KEY check above is what
+    # catches one piece of evidence counted twice.
 
     for anchor in anchors:
         out.extend(_complain_about_anchor(pmid, side, anchor))
