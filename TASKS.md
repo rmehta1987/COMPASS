@@ -74,11 +74,26 @@ testable; seed its failure first.
   38397711 and 38961645 both return `outcome_reachable_in_instrument() == True` — the key
   places their outcomes INSIDE the questionnaire — while `outcome_keys_on_record()`
   returns zero, so the `instrument_key` cell is simply empty. Neither outcome is absent.
-  Plausible homes, unverified: 38397711 in `m2 female medical history`, 38961645 in
-  `m2:Q5 diagnosed conditions` (`m2:Q5.30` asks about clinical depression). Filling them
-  removes two `no_key_to_resolve` blockers and is worth doing even though it does NOT
-  unblock either paper: 38397711's exposure is an area measure the scoring column cannot
-  represent, and 38961645's is not in the instrument (below).
+  VERIFIED 2026-09-14 — `env.tools.resolve_variable` over build `3dc8415eccfe`, all five
+  keys below `unique`. These are the keys to paste, not plausible homes. 38397711's
+  outcome is `m2:Q9.117`, "Has a doctor or healthcare professional ever diagnosed you with
+  uterine fibroids?"; the only other fibroid item in the instrument is `m2:Q9.118`, its
+  age-at-diagnosis sibling. 38961645's three outcomes are sub-items of ONE 49-item
+  battery, `group:m2:Q5.15#1` ("...ever told you that you had any of the following"):
+  `m2:Q5.15#1_3` anxiety/panic/PTSD/phobia, `m2:Q5.15#1_9`
+  bipolar/manic depression, `m2:Q5.15#1_15` clinical depression, `m2:Q5.15#1_37` major
+  depression or a related mood disorder. 🛑 ONE USER DECISION REMAINS: depression has TWO
+  sub-items, `_15` and `_37`, and which of them counts needs the paper's outcome
+  definition.
+  🛑 NOT the `Q5.x` keys, and this file said `m2:Q5.30` until 2026-09-14. That is "How old
+  were you when you were first told that you had clinical depression?" — an age variable,
+  as are `Q5.18`, `Q5.24` and `Q5.52` for the other three. Four age items shadow the four
+  diagnosis items; the diagnosis is always the `Q5.15#1_*` key. Also checked and rejected:
+  `m3:Q855`/`m3:Q856`, PHQ/GAD-shaped symptom items, carry no stem, no group and no
+  response options, so neither recall period nor scale is recoverable from them.
+  Filling them removes two `no_key_to_resolve` blockers and is worth doing even though it
+  does NOT unblock either paper: 38397711's exposure is an area measure the scoring
+  column cannot represent, and 38961645's is not in the instrument (below).
 - **38961645's exposure, checked at item level and not just by word.** The word test's
   absence is real — re-measured 2026-09-14 over `searchable_text`: `discriminat` 0,
   `perceived` 0, `unfair` 0, `disrespect` 0, `prejudic` 0. But word absence is not
