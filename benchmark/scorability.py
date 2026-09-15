@@ -63,8 +63,13 @@ FOUR of them since the operator decided C35 on 2026-09-14:
                  `area_measure_inventory` delivery would change that. Not
                  REFUTED, which would claim the inventory can never arrive; not
                  UNDETERMINED, which would imply this repository could settle
-                 it. Ranked above CONFIRMED: part of the design being out of
-                 scope is not repaired by the rest of it resolving.
+                 it. Ranked above CONFIRMED — part of the design being out of
+                 scope is not repaired by the rest of it resolving — and above
+                 REFUTED-(b), the word test, because an area measure is never
+                 in the instrument by construction, so word absence restates
+                 the kind rather than adding evidence. It is ranked BELOW
+                 REFUTED-(a), a recorded item-level read, which is a fact about
+                 the instrument no delivery repairs.
     UNDETERMINED none of the above. The honest majority, and a work list rather
                  than a verdict.
 
@@ -459,6 +464,30 @@ def _side(side: str, terms: tuple[str, ...],
         return SideVerdict(side, terms, REFUTED, confirmed, absent,
                            (_not_in_instrument_blocker(side), *blockers))
 
+    if any(a.kind == AREA_MEASURE for a in anchors):
+        # C35 answer C. Ranked above CONFIRMED (part of the design being out of
+        # scope is not repaired by the rest of it resolving), below REFUTED-on-
+        # an-item-level-read, and — the ordering that was wrong until
+        # 2026-09-14 — ABOVE THE WORD TEST.
+        #
+        # An area measure is a linked place-based measure and is therefore
+        # never in the instrument BY CONSTRUCTION. So "no content word of this
+        # phrase occurs anywhere in the built instrument" restates what `kind`
+        # already said; it is not additional evidence. Refuting on it claims
+        # the `area_measure_inventory` can never arrive, which is the exact
+        # overstatement C35 answer C exists to remove.
+        #
+        # MEASURED on the case that found this: filed as an `area_measure`,
+        # 42034153's exposure `residential greenspace` is word-absent, so the
+        # word test fired first and the side read REFUTED — the old
+        # `exposure_key_column_missing` failure wearing the other costume. The
+        # word-test blocker is still reported when it applies, because the
+        # observation is true; it just does not decide the status.
+        if absent and len(absent) == len(terms):
+            blockers.append(_absent_blocker(side))
+        return SideVerdict(side, terms, BLOCKED_ON_DELIVERY, confirmed, absent,
+                           tuple(blockers))
+
     if absent and len(absent) == len(terms):
         return SideVerdict(side, terms, REFUTED, confirmed, absent,
                            (_absent_blocker(side), *blockers))
@@ -469,15 +498,7 @@ def _side(side: str, terms: tuple[str, ...],
         return SideVerdict(side, terms, UNDETERMINED, confirmed, absent,
                            (NO_KEY_TO_RESOLVE,))
 
-    unanswered = _unanswered_terms(terms, anchors)
-    if any(a.kind == AREA_MEASURE for a in anchors):
-        # C35 answer C. Ranked above CONFIRMED and below REFUTED: an area
-        # measure on this side means part of the design is out of scope here,
-        # and no amount of resolving on the rest changes that.
-        return SideVerdict(side, terms, BLOCKED_ON_DELIVERY, confirmed, absent,
-                           tuple(blockers))
-
-    if not unanswered:
+    if not _unanswered_terms(terms, anchors):
         return SideVerdict(side, terms, CONFIRMED, confirmed, absent,
                            tuple(blockers))
 

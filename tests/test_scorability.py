@@ -302,6 +302,59 @@ def test_an_area_measure_never_reaches_confirmed_however_much_else_resolves(
     assert side.status != sc.CONFIRMED
 
 
+def test_a_word_absent_area_measure_is_blocked_on_delivery_not_refuted(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """The ordering defect a dry run of the first real rows found.
+
+    An area measure is a linked place-based measure and is therefore never in
+    the instrument BY CONSTRUCTION, so the word test observing that no content
+    word of the phrase occurs anywhere restates what `kind` already says. While
+    the word test outranked the anchor, filing 42034153's `residential
+    greenspace` as an `area_measure` produced REFUTED -- "never scorable here",
+    the exact overstatement C35 answer C exists to remove, and the old
+    `exposure_key_column_missing` failure in the other costume.
+
+    The paper is chosen because its exposure is word-absent: this case is
+    unreachable on a term the instrument shares a token with, which is why the
+    three papers that motivated C35 did not expose it.
+    """
+    paper = _paper("42034153")
+    terms = sc.exposure_terms(paper)
+    absent = sc.terms_absent_from_instrument(terms)
+    assert absent and len(absent) == len(terms), (
+        "fixture assumed an exposure the word test refutes; without that this "
+        "test cannot distinguish the two orderings")
+    _serve(monkeypatch, _row(paper, _anchors(terms, da.AREA_MEASURE), ()))
+    side = sc.scorability_for(paper).exposure
+    assert side.status == sc.BLOCKED_ON_DELIVERY, side
+    assert side.status != sc.REFUTED, (
+        "word absence may not refute a side the answer key has recorded as an "
+        "area measure; a delivery could still supply it")
+    assert da.AREA_MEASURE_INVENTORY in side.blockers
+    assert sc.EXPOSURE_ABSENT_FROM_INSTRUMENT in side.blockers, (
+        "the word-test observation is true and must still be reported; it "
+        "just does not decide the status")
+
+
+def test_a_recorded_read_outranks_an_area_measure_on_the_same_side(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """REFUTED-(a) stays above BLOCKED_ON_DELIVERY, and only that one does.
+
+    A recorded item-level read is a fact about the instrument that no delivery
+    repairs, so a side carrying both must refute. Without this, raising the
+    area-measure branch above the word test could have carried it above the
+    recorded read too.
+    """
+    paper = _paper("42034153")
+    terms = sc.exposure_terms(paper)
+    mixed = (da.Anchor(terms[0], da.NOT_IN_INSTRUMENT),
+             da.Anchor("a second phrase", da.AREA_MEASURE,
+                       blocked_on=da.AREA_MEASURE_INVENTORY))
+    _serve(monkeypatch, _row(paper, mixed, ()))
+    side = sc.scorability_for(paper).exposure
+    assert side.status == sc.REFUTED, side
+
+
 def test_status_counts_carries_the_fourth_status(
         monkeypatch: pytest.MonkeyPatch) -> None:
     """A caller summing three keys would drop papers.
