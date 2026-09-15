@@ -15,10 +15,26 @@ the collision is recorded, not resolved.
 
 ## Open — the worked rediscovery, n=1–3
 
-> **BLOCKED 2026-09-14, and not on anyone's effort.** MEASURED that day in the scoring
-> clone, `benchmark.scorability.scorability_report()`: **10 REFUTED, 0 CONFIRMED, 6
-> UNDETERMINED**. Every refutation is on the OUTCOME side — nine `outcome_not_in_the_
-> instrument`, one `outcome_absent_from_instrument`. The cohort's published work measures
+> **BLOCKED, and not on anyone's effort. Restated 2026-09-15 on evidence this clone can
+> compute.** Run it: `python -m benchmark.scorability` prints a **key-free CEILING on
+> CONFIRMED of 8 of 16 papers** — 1 paper has no design arrow, 7 are word-refuted on at
+> least one side — and the FLOOR in any clone without `benchmark/design_key.py` is **0**,
+> because CONFIRMED needs a live-resolved anchor per term. Those are a bound and a floor,
+> not an estimate. No answer-key row can lift the ceiling: `scorability.py::_side` checks
+> both exclusions BEFORE any confirmation path, and
+> `tests/test_scorability.py::test_a_word_refuted_side_never_reaches_confirmed_whatever_
+> the_key_says` pins that over every anchor kind.
+>
+> 🛑 **The figure this banner used to open on is NOT RE-DERIVABLE HERE, and is no longer
+> the claim.** It was 10 REFUTED / 0 CONFIRMED / 6 UNDETERMINED, measured 2026-09-14 in
+> the scoring clone, with every refutation on the OUTCOME side — nine
+> `outcome_not_in_the_instrument`, one `outcome_absent_from_instrument`. It pre-dates C36,
+> `status_counts` raises `ModuleNotFoundError` in every other clone, and C36 withdrew the
+> mechanism most of it rested on. Treat it as a record of one run, not as a result: quote
+> the ceiling above instead, or re-run `status_counts` in the scoring clone. The paragraphs
+> below describe that same pre-C36 run and carry the same caveat.
+>
+> The cohort's published work measures
 > serum assays, biomarkers, measured blood pressure, a metabolome and biospecimen
 > participation. A two-column questionnaire carries none of those, and `clinical`, `lab`
 > and `ehr` are declared and EMPTY (`env/tools.py::registry_coverage`).

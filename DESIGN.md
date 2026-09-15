@@ -185,7 +185,10 @@ Three routes by which a published analysis reaches the model. **Only one closes.
   `benchmark/scorability.py::EXPOSURE_KEYS` before). A fourth verdict,
   `blocked_on_delivery`, covers an area-measure side: no authority in this repository
   resolves one and the `area_measure_inventory` delivery would. `scorability.py`'s
-  docstring records papers the naive word test admits wrongly.
+  docstring records papers the naive word test admits wrongly. A clone without the key
+  still has a bound: `status_counts` raises, `scorability.py::key_free_ceiling` does not,
+  and it reports the most papers CONFIRMED could ever reach — the two exclusions it
+  counts are checked before any confirmation path, so no key row lifts it.
 - **A frontier-model run is not evidence about the target**: no grammar enforcement
   through the CLI, no format tax. Never cite Haiku results for 8–27B models.
 - **The blocking external dependency is the module co-completion counts.** Without them

@@ -660,3 +660,132 @@ def test_nothing_on_the_scoring_path_reads_the_prevalence_key() -> None:
                     f"Since C36 the design key is the only reader for design; "
                     f"a second reader can disagree with it about one paper and "
                     f"nothing picks between them.")
+
+
+# --- the key-free ceiling ----------------------------------------------------- #
+#
+# Key-free by construction: `_side` is pure, and `key_free_ceiling` reads the
+# bibliography's design lines and the built instrument, never a key.
+
+#: A term no content word of which the instrument carries, so the word test
+#: refutes on it. Synthetic: no published phrase belongs in this file, and the
+#: property under test is about the ORDER of `_side`'s branches, not about any
+#: paper. Asserted absent below rather than assumed.
+_WORD_ABSENT = ("synthetic unobtainium exposure",)
+
+
+@pytest.mark.parametrize("kind", da.ANCHOR_KINDS)
+def test_a_word_refuted_side_never_reaches_confirmed_whatever_the_key_says(
+        kind: str) -> None:
+    """No answer-key row can lift a word-refuted side to CONFIRMED.
+
+    This is what makes `key_free_ceiling` a ceiling rather than a guess, and it
+    has to hold for EVERY anchor kind: `not_in_instrument` refutes, an
+    `area_measure` takes `BLOCKED_ON_DELIVERY`, and the word test refutes the
+    rest -- three different branches, all of them above the CONFIRMED branch.
+    Parametrised over `ANCHOR_KINDS` rather than over the three names, so a
+    fifth kind is tested the day it is added instead of being quietly exempt.
+    """
+    from benchmark.instrument_terms import terms_absent_from_instrument
+
+    assert terms_absent_from_instrument(_WORD_ABSENT) == _WORD_ABSENT, (
+        "the instrument now carries a word of this synthetic term; pick another")
+
+    keys = _resolving_keys(1) if kind == da.VARIABLE else ()
+    if kind == da.DERIVATION:
+        from env.tools import get_derivation
+
+        signed = next((d for d in ("met_hours_week", "social_cohesion_scale")
+                       if get_derivation(d)["outcome"] == da.DERIVATION_OK), None)
+        if signed is None:
+            pytest.skip("no signed derivation in this tree")
+        keys = (signed,)
+
+    for side in ("exposure", "outcome"):
+        # Every anchor shape a row can take on this side, plus the two shapes
+        # that are not a row at all.
+        for anchors in (None, (), _anchors(_WORD_ABSENT, kind, keys)):
+            verdict = sc._side(side, _WORD_ABSENT, anchors)
+            assert verdict.status != sc.CONFIRMED, (
+                f"{side} with {kind!r} anchors={anchors!r} reached CONFIRMED on "
+                f"a term the instrument carries no word of")
+
+    # Anti-vacuity: the same anchors on a term the instrument DOES carry must
+    # still be able to confirm, or the loop above proves only that `_side`
+    # never confirms.
+    if kind == da.VARIABLE:
+        live = sc._side("exposure", LIVE_TERM, _anchors(LIVE_TERM, kind, keys))
+        assert live.status == sc.CONFIRMED, live
+
+
+def test_the_ceiling_excludes_exactly_the_papers_side_cannot_confirm() -> None:
+    """`key_free_ceiling` must agree with the adjudicator, not restate it.
+
+    The count is read off `_side` itself -- the function `scorability_for`
+    calls -- driven with NO ROW, which is the state every clone without
+    `benchmark/design_key.py` is in. A ceiling derived from a second copy of
+    the rule would go green while the rule moved underneath it.
+
+    No oracle: the input is the paper's design line and the built instrument,
+    which is what a clone without the key has.
+    """
+    c = sc.key_free_ceiling()
+    assert c.papers == len(COHORT_PAPERS)
+    # Anti-vacuity, both ends: a ceiling of 0 or of everything would satisfy
+    # the agreement check below without saying anything.
+    assert 0 < c.ceiling < c.papers, c
+
+    # THE BEST ROW ANYONE COULD FILL: one live-resolving variable anchor per
+    # term. If `_side` will not confirm on that, no key row confirms it, and
+    # that is the whole content of the word "ceiling". Asking instead whether
+    # `_side` REFUTES with no row is an ORACLE -- it reads `NO_DESIGN_ARROW`
+    # back off the thing under test, and it went green when the no-arrow
+    # exclusion was deleted from `key_free_ceiling`.
+    keys = _resolving_keys(3)
+    for row in c.rows:
+        paper = _paper(row.pmid)
+        statuses = {}
+        for side, terms in (("exposure", sc.exposure_terms(paper)),
+                            ("outcome", sc.outcome_terms(paper))):
+            assert len(terms) <= len(keys), (
+                f"{row.pmid} names {len(terms)} terms on {side} and only "
+                f"{len(keys)} resolving keys are available")
+            best = _anchors(terms, da.VARIABLE, keys[:len(terms)])
+            statuses[side] = sc._side(side, terms, best).status
+        assert row.confirmable == all(v == sc.CONFIRMED
+                                      for v in statuses.values()), (
+            f"{row.pmid}: ceiling says confirmable={row.confirmable} while "
+            f"_side on the best possible row says {statuses} "
+            f"(blockers={row.blockers})")
+
+    assert c.ceiling == sum(1 for r in c.rows if r.confirmable)
+    assert c.no_design_arrow + c.word_refuted + c.ceiling == c.papers
+
+
+def test_the_ceiling_prints_no_paper_content() -> None:
+    """A module prints the figure, and it must not print a design line.
+
+    `_main` exists so the number lives in code rather than in `TASKS.md`. The
+    design lines it reads are paper content (`AGENTS.md` §Contamination
+    Practice), and an operator's terminal, scrollback and shell log are all
+    places a term must not land for the sake of a summary line.
+    """
+    import contextlib
+    import io
+
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        assert sc._main() == 0
+    printed = out.getvalue()
+
+    assert "key-free ceiling" in printed
+    # Anti-vacuity: every paper is named, so "no term was printed" is a
+    # statement about a report that actually reported.
+    for paper in COHORT_PAPERS:
+        assert paper.pmid in printed
+
+    for paper in COHORT_PAPERS:
+        for terms in (sc.exposure_terms(paper), sc.outcome_terms(paper)):
+            for term in terms:
+                assert term.lower() not in printed.lower(), (
+                    f"_main printed a design-line phrase for {paper.pmid}")

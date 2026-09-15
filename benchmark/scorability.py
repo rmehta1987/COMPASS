@@ -83,6 +83,13 @@ replaces, `EXPOSURE_KEYS`, lived in THIS file, in the clone where prompts,
 while it was empty, and the first row would have made the editing clone the
 clone holding the rediscovery answers.
 
+AND THERE IS A BOUND THAT NEEDS NO KEY. `key_free_ceiling` reports the most
+papers `status_counts` could ever call CONFIRMED, from the design lines and the
+built instrument alone, so every clone can re-derive it: 8 of 16 as measured
+2026-09-15. The floor here is 0, because confirming needs the key. That pair is
+what this file can say without it; the figure below is not re-derivable outside
+the scoring clone and must not be quoted as one.
+
 MEASURED 2026-09-14 in the scoring clone, BEFORE C36, and the number that
 motivated it: 10 REFUTED, 0 CONFIRMED, 6 UNDETERMINED, every refutation on the
 outcome side. Three papers had a CONFIRMED outcome and exactly one blocker,
@@ -607,3 +614,121 @@ def status_counts() -> dict[str, int]:
     for row in scorability_report():
         counts[row.status] += 1
     return counts
+
+
+class CeilingRow(NamedTuple):
+    """One paper's key-free upper bound on CONFIRMED.
+
+    Attributes:
+        pmid: PubMed identifier, as `cohort_papers.py` records it.
+        confirmable: False when no design key row could ever make this paper
+            CONFIRMED. True means NOT EXCLUDED, never that it is confirmable.
+        blockers: Why it is excluded, in `_side`'s own blocker vocabulary;
+            empty when it is not excluded.
+    """
+
+    pmid: str
+    confirmable: bool
+    blockers: tuple[str, ...]
+
+
+class KeyFreeCeiling(NamedTuple):
+    """The upper bound on CONFIRMED that needs no answer key.
+
+    Attributes:
+        papers: The bibliography's size, the denominator.
+        ceiling: Papers no key-free evidence excludes. An UPPER BOUND.
+        no_design_arrow: Papers whose design line has no exposure-to-outcome
+            arrow, so one side has no terms and can never be CONFIRMED.
+        word_refuted: Papers with at least one side every term of which is
+            word-absent from the instrument.
+        rows: One row per paper, in bibliography order.
+    """
+
+    papers: int
+    ceiling: int
+    no_design_arrow: int
+    word_refuted: int
+    rows: tuple[CeilingRow, ...]
+
+
+def key_free_ceiling() -> KeyFreeCeiling:
+    """The most papers `status_counts` could ever report CONFIRMED.
+
+    COMPUTABLE IN EVERY CLONE, which is the point. `status_counts` raises
+    without `benchmark/design_key.py`, so the only figure the project had for
+    its headline claim was measured once in the scoring clone and cannot be
+    re-derived anywhere else. This is the weaker statement every clone CAN
+    re-derive, and it is a statement no key row can overturn, because both
+    exclusions are checked in `_side` BEFORE any confirmation path:
+
+      * A side with no terms returns UNDETERMINED immediately
+        (`NO_DESIGN_ARROW`). The cohort profile is that case.
+      * A side every term of which is word-absent from the instrument returns
+        REFUTED -- or BLOCKED_ON_DELIVERY when an `area_measure` anchor sits on
+        it, which is not CONFIRMED either. With no row at all it is REFUTED on
+        the same test. There is no anchor that reaches CONFIRMED past it.
+
+    READ IT AS A CEILING AND NOTHING ELSE. `confirmable=True` means "not
+    excluded by evidence available without the key", not "confirmable": every
+    such paper still needs a resolved anchor per term per side, and today the
+    key is absent, so the floor on CONFIRMED in this clone is zero. The two
+    numbers are a bound and not an estimate, in the direction the word test is
+    sound in -- absence, never presence (`instrument_terms.py`).
+
+    Returns:
+        The bound, its two exclusion counts, and one row per paper.
+    """
+    rows: list[CeilingRow] = []
+    no_arrow = refuted = 0
+    for paper in COHORT_PAPERS:
+        blockers: list[str] = []
+        sides = (("exposure", exposure_terms(paper)),
+                 ("outcome", outcome_terms(paper)))
+        if any(not terms for _, terms in sides):
+            blockers.append(NO_DESIGN_ARROW)
+            no_arrow += 1
+        else:
+            for side, terms in sides:
+                absent = terms_absent_from_instrument(terms)
+                if absent and len(absent) == len(terms):
+                    blockers.append(_absent_blocker(side))
+            if blockers:
+                refuted += 1
+        rows.append(CeilingRow(paper.pmid, not blockers, tuple(blockers)))
+    return KeyFreeCeiling(len(COHORT_PAPERS),
+                          sum(1 for r in rows if r.confirmable),
+                          no_arrow, refuted, tuple(rows))
+
+
+def _main() -> int:
+    """Print the key-free ceiling.
+
+    A module prints this, and `TASKS.md` does not assert it. The figure
+    `TASKS.md` §Open opened on -- 10 REFUTED / 0 CONFIRMED / 6 UNDETERMINED,
+    measured in the scoring clone 2026-09-14 -- is not re-derivable in any
+    other clone, and a document was the only thing carrying it.
+
+    PMIDs AND BLOCKER NAMES ONLY. The design lines this reads are paper
+    content; printing a term would put it on an operator's terminal and into
+    whatever scrollback or log that lands in, for no gain -- the blocker names
+    already say which side failed and why.
+
+    Returns:
+        0 always. This is a measurement, not a gate: no ceiling value is a
+        failure, and `tests/test_scorability.py` is where the direction is
+        enforced.
+    """
+    c = key_free_ceiling()
+    print(f"key-free ceiling on CONFIRMED: {c.ceiling} of {c.papers} papers")
+    print(f"  excluded: {c.no_design_arrow} with no design arrow, "
+          f"{c.word_refuted} word-refuted on at least one side")
+    print("  floor on CONFIRMED in a clone without benchmark/design_key.py: 0")
+    for row in c.rows:
+        mark = "  -" if row.confirmable else "  x"
+        print(f"{mark} {row.pmid}  {', '.join(row.blockers) or 'not excluded'}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(_main())
