@@ -103,6 +103,7 @@ follow_imports = "skip"
 # scoring and this override goes quiet on its own. Delete it only if the keys
 # move back onto this branch permanently, which would mean the split is over.
 [[tool.mypy.overrides]]
-module = ["benchmark.prevalence_key", "benchmark.leak_facts"]
+module = ["benchmark.prevalence_key", "benchmark.leak_facts",
+          "benchmark.design_key"]
 ignore_missing_imports = true
 follow_imports = "skip"
