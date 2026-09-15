@@ -185,7 +185,7 @@ class State:
 
     def __init__(self, deploy_root: Path, site_dir: Path, run_dir: Path,
                  show_instrument: bool = False, auth: str | None = None,
-                 enable_specify: bool = True,
+                 enable_specify: bool = False,
                  allowed_models: frozenset[str] | None = None) -> None:
         """Prepare shared state and fail early on a missing instrument.
 
@@ -200,6 +200,13 @@ class State:
                 `main` requires it for any non-loopback bind.
             enable_specify: Allow `POST /api/specify`. Off unless `main` is
                 asked for it, because each run spends the operator's seat.
+                THE DEFAULT WAS `True` while this line already said "off",
+                which is the unenforced-guarantee shape `AGENTS.md` names as
+                this codebase's recurring defect. `main` has always passed it
+                explicitly, so no deployed endpoint was affected -- but every
+                other constructor got the expensive route enabled, and a test
+                asserting the 403 found a live Specifier run starting instead
+                (2026-09-15). A flag that spends a seat defaults to off.
             allowed_models: Models a REQUEST may name. Defaults to the pipeline
                 proxy alone; the operator widens it, never the caller.
         """

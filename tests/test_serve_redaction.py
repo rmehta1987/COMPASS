@@ -16,9 +16,11 @@ passes a leak test trivially, so every "it was removed" assertion is paired with
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import sys
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -1269,3 +1271,63 @@ def test_split_is_off_unless_asked_for(
                            [_PICK_FIRST, _PICK_FIRST])
     assert done["run"]["split"] == {"status": "off"}
     assert [q for q, _, _ in seen] == [_SPLIT_REQ]
+
+
+
+# ------------------------------------- the hand-off from a proposal to a poll
+
+
+@contextlib.contextmanager
+def _serving(state: object) -> Iterator[Callable[[str, dict], tuple[int, dict]]]:
+    """A real server on this state, and a poster that speaks to it over HTTP.
+
+    Driven over the socket rather than by calling a route function, because the
+    thing being pinned lives in `do_POST`'s gate: a direct call to `_pair` or
+    `_specify_status` skips the gate entirely and would test nothing.
+
+    Args:
+        state: The `State` to serve.
+
+    Yields:
+        A callable taking a route and a JSON body, returning the status code
+        and the decoded reply.
+    """
+    import threading
+    import urllib.error
+    import urllib.request
+
+    from serve.api import build_server
+
+    srv = build_server("127.0.0.1", 0, state)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    host, port = srv.server_address[0], srv.server_address[1]
+
+    def post(route: str, body: dict) -> tuple[int, dict]:
+        req = urllib.request.Request(
+            f"http://{host}:{port}{route}", method="POST",
+            data=json.dumps(body).encode("utf-8"),
+            headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return r.status, json.loads(r.read())
+        except urllib.error.HTTPError as exc:
+            return exc.code, json.loads(exc.read())
+
+    try:
+        yield post
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+def test_the_specify_route_itself_is_still_refused_while_disabled(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The guarantee the fix must not touch: the expensive route stays off."""
+    from serve.api import State
+
+    state = State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    with _serving(state) as post:
+        code, reply = post("/api/specify",
+                           {"exposure": "m3:Q16.1", "outcome": "m2:Q5.8", "k": 1})
+    assert code == 403, reply
+    assert "--enable-specify" in reply["error"]
+
