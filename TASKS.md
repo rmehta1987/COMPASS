@@ -311,24 +311,6 @@ named in neither this file nor `CHANGELOG.md`; the site's* Ask the pipeline *flo
   ticket that produced them. Splitting a prose request into its N pairs is C29-C's
   splitter, not this item.
 
-- **C31 — `serve/`'s request-shaping defects, in the one part of the module no test
-  reaches.** Found by adversarial review 2026-09-10; each re-checked by running it against
-  the live dictionary `3dc8415eccfe`. `tests/test_serve_redaction.py` carries 55 tests and
-  exercises `_specify`, `_canonical_key`, `_int_arg`, `Handler`, `build_server` and
-  `_refuse_unsafe_site_dir`, so this is a hole in a COVERED module: `_pair`, `_resolve`,
-  `_role_candidates` and `_pin_keys_from_prose` are never invoked by any test.
-  (a) `_pin_keys_from_prose` assigns roles by WORD ORDER — it zips `("exposure",
-  "outcome")` against keys in the order they appear, and nothing enforces the docstring's
-  assumption. *"is `m3:Q4.2` predicted by `m2:Q5.8`"* returns the outcome labelled
-  exposure, with **no retrieval and no model call**, in ~0.02 s, carrying `reason: "the
-  request named this key, so it was not inferred"`.
-  (b) A third key in the prose is silently dropped (`zip(..., strict=False)`).
-  (c) `role` is passed into `RetrievalRequest` but `deploy/template.py::to_query` never
-  renders it, while `_role_candidates`'s docstring says the request *is* framed by role.
-  `_pair` also discards the `surface` `_role_candidates` built and recomputes it.
-  ACCEPT: a test per item, each seeded red first; (a) and (b) either enforced or the
-  docstring corrected to what the code does.
-
 ## Blocked on a person, not a task
 
 - **The two Qualtrics exports — response options and survey flow.** Without them

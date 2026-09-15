@@ -14,6 +14,72 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ---
 
+## 2026-09-15
+
+C31 closes, and the website can drive the pipeline. The three defects below all sat in
+`serve/api.py`, all stopped the hand-off from a proposal to a run, and none had a test.
+Two were found by running the site's own flow end to end rather than by reading code; the
+third was found by the test written to protect the second. Every fix was seeded red
+against the whole file first.
+
+- **`/api/pair` and `/api/resolve` issued tickets nobody could poll.** `do_POST` gated on
+  `route.startswith("/api/specify")`, which also caught `/api/specify/status` — the one
+  route the two cheap proposal routes share. On a default bind a proposal was therefore
+  accepted, spent its model call, returned a ticket, and every poll of it answered 403:
+  the site's *Ask the pipeline* flow was dead in the shape that reads as "the server is
+  broken" rather than "this route is off". The prefix match was the bug, because it made
+  one flag govern routes whose costs differ by an order of magnitude. Tickets now carry
+  their own kind and the gate reads that; the operator chose this over gating the
+  proposal routes too, so proposing anchors stays cheap and separately available.
+  `/api/specify` itself is refused exactly as before, and its reasoning is unchanged.
+  An UNLABELLED record — one written before kinds existed, read back off disk — resolves
+  to the refused kind, so age cannot weaken a spending gate.
+
+- **A proposed key was not a key the Specifier would take.** `_canonical_key` matched
+  only construct keys, while `/api/pair` proposes whatever the retriever offered, and that
+  is the sub-item `key` field. MEASURED over `deploy/targets.json`: of the 1,353 offerable
+  keys, **407 were sub-item keys refused with a 400** before any model call — the whole
+  `derive` path, and the site's own demo request among them. The mapping needed no
+  inference, since `deploy/retriever.py::_hit` already returns `construct_key` beside
+  `key`. A sub-item key is now translated to its construct and the translation is
+  REPORTED, following the case fix's own precedent; it is reported in its OWN field,
+  because it changes the request's grain rather than naming the construct the caller
+  already meant, and `key_case_corrected` would have said something false beside it.
+  `Unresolvable` still fires, still before any model call, for a key naming nothing.
+
+- **`State.enable_specify` defaulted to `True` while its own docstring said "off".**
+  Found by the test written to prove the 403 above was not weakened: it got a live
+  Specifier run instead. `main` has always passed the flag explicitly, so no deployed
+  endpoint was affected — but every other constructor got the expensive route enabled.
+  This is the unenforced-guarantee shape `AGENTS.md` names as the recurring defect, and
+  the rule it now follows is the one `build_registry(mode)` already followed: a flag that
+  spends the operator's seat does not default to permissive.
+
+- **C31 (a), (b) and (c) are all done, and C31's own text was stale.** Corrected by
+  measurement 2026-09-15: it claimed `_pair`, `_resolve`, `_role_candidates` and
+  `_pin_keys_from_prose` were "never invoked by any test" (12, 2, 9 and 7 references),
+  and it pinned a test count for `tests/test_serve_redaction.py` that was already wrong
+  when written — read that count from the file, never from a document.
+  (a) and (b) had already taken the docstring route. (c) was reported as untested and is
+  not: `test_the_role_never_reaches_the_encoder` already pins that `to_query` never
+  renders `role`, and `_role_candidates`'s docstring already states it. What survived of
+  (c) was the dead `surface` — built on every call, read by nothing, and not a forgotten
+  optimisation but a trap: it carries the framing for the role it was CALLED with, while
+  `_pair` offers ONE pool to both roles, so reusing it would ask "which item serves as
+  the EXPOSURE here?" and file the answer as the outcome. Removed, with the per-role
+  framing pinned instead. The helper's documented return also named a key (`candidates`)
+  that no caller could index.
+
+- Live confirmation, 2026-09-15, both defects driven end to end on a private port and
+  reported beside the server's own log: a default bind polled a pair ticket to `done`
+  (HTTP 200 throughout, `kind: pair` on disk) while `/api/specify` still answered 403;
+  and the exact key that run proposed, `m3:Q16.1_2`, was then accepted by `/api/specify`
+  and came back `1 specified` with `key_subitem_to_construct` reporting the translation
+  and `key_case_corrected` null. Both runs are `externally_posed` with `screened_from: 0`
+  and enter no benchmark denominator.
+
+---
+
 ## 2026-09-14
 
 C35 decided and C36 landed: the answer key for a paper's design arrow left this clone,
