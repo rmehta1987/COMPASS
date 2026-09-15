@@ -20,6 +20,7 @@ import contextlib
 import json
 import os
 import sys
+import types
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
@@ -1925,3 +1926,82 @@ def test_every_field_a_route_emits_wording_under_is_gated() -> None:
         f"serve/redact.py::WORDING_FIELDS does not gate: {sorted(ungated)} "
         f"(first at api.py:{min(ungated.values())}). Add the name there, or "
         "stop emitting wording under it.")
+
+
+def test_a_stale_run_directory_inside_the_site_dir_is_refused(
+        tmp_path: Path) -> None:
+    """The guard compared the CURRENT run dir, so an old one was served.
+
+    MEASURED 2026-09-15 at `e6d1df6`: with `--run-dir` outside `--site-dir`,
+    a run directory left inside `site_dir` by an earlier session cleared both
+    checks and the static route returned 200 for `pseudonyms.json` -- the salt
+    and the label map, which together un-do the pseudonymiser -- and for a job
+    record, which `_save_job` writes before anything scrubs it.
+
+    Driven through the guard AND the socket, because the guard returning a
+    string proves only that `main` would exit; the 200 is what the defect was.
+    """
+    from serve.api import _refuse_unsafe_site_dir
+
+    site = tmp_path / "site"
+    (site / "old-run" / "jobs").mkdir(parents=True)
+    (site / "index.html").write_text("<html>page</html>", encoding="utf-8")
+    (site / "old-run" / "pseudonyms.json").write_text(
+        '{"salt": "0123456789abcdef", "labels": {"417": "VABCDEF012345"}}',
+        encoding="utf-8")
+    (site / "old-run" / "jobs" / "131500-aabbcc.json").write_text(
+        '{"status": "done"}', encoding="utf-8")
+    live = tmp_path / "live"
+    live.mkdir()
+
+    why = _refuse_unsafe_site_dir(site.resolve(), live.resolve())
+    assert why is not None, "a stale run directory inside site_dir was cleared"
+    assert "pseudonyms.json" in why
+
+    # Anti-vacuity: the same tree WITHOUT the stale run directory is served, so
+    # the refusal above is about that directory and not about tmp_path.
+    import shutil
+
+    shutil.rmtree(site / "old-run")
+    assert _refuse_unsafe_site_dir(site.resolve(), live.resolve()) is None
+
+
+def test_the_guard_names_every_output_this_endpoint_writes(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Derive the own-output markers by WRITING them, not by listing them.
+
+    `WITHHELD_MARKERS` came from `README.md` and could not have named these:
+    they are this module's own products. So the requirement is read off the two
+    writers -- `Pseudonymiser.dump` and `_save_job` -- by running them into an
+    empty directory and requiring the guard to refuse every path component they
+    leave behind. A third output shape reddens this instead of being served.
+    """
+    from serve.api import (
+        OWN_OUTPUT_MARKERS,
+        Pseudonymiser,
+        _refuse_unsafe_site_dir,
+        _save_job,
+    )
+
+    run = tmp_path / "run"
+    Pseudonymiser(salt="fixed").label(417)
+    Pseudonymiser(salt="fixed").dump(run / "pseudonyms.json")
+    state = types.SimpleNamespace(run_dir=run)
+    _save_job(state, "131500-aabbcc", {"status": "done"})
+
+    written = sorted(p.relative_to(run) for p in run.rglob("*"))
+    assert written, "neither writer produced anything; the walk proves nothing"
+
+    for rel in written:
+        assert rel.parts[0] in OWN_OUTPUT_MARKERS, (
+            f"this endpoint writes {rel} into its run directory and "
+            f"serve/api.py::OWN_OUTPUT_MARKERS does not name {rel.parts[0]!r}, "
+            f"so a stale run directory inside --site-dir would serve it")
+
+    # And each named marker really does refuse, at depth, one at a time.
+    for marker in OWN_OUTPUT_MARKERS:
+        site = tmp_path / f"site-{marker.replace('.', '-')}"
+        (site / "pages" / "deep").mkdir(parents=True)
+        (site / "pages" / "deep" / marker).mkdir()
+        why = _refuse_unsafe_site_dir(site.resolve(), (tmp_path / "run").resolve())
+        assert why is not None and marker in why, f"{marker} was cleared"

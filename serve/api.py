@@ -1453,7 +1453,7 @@ def _job_path(state: State, ticket: str) -> Path:
     Returns:
         The file path. Tickets are `HHMMSS-hex`, so the name is safe.
     """
-    return state.run_dir / "jobs" / f"{ticket}.json"
+    return state.run_dir / JOBS_DIR_NAME / f"{ticket}.json"
 
 
 def _save_job(state: State, ticket: str, done: dict[str, Any]) -> None:
@@ -1948,6 +1948,31 @@ class Handler(BaseHTTPRequestHandler):
 WITHHELD_MARKERS = ("dictionary.json", "build", "targets.json", "raw",
                     "prevalence_key.py", "cohort_papers.py")
 
+#: The pseudonym map's filename. Named once and used by the writer, so the
+#: refusal below and `main` cannot drift apart.
+PSEUDONYM_MAP_NAME = "pseudonyms.json"
+
+#: Where finished runs are kept, relative to `run_dir`. Same reason.
+JOBS_DIR_NAME = "jobs"
+
+#: What THIS ENDPOINT writes. A separate tuple from `WITHHELD_MARKERS` because
+#: the source of truth is different: that list comes from `README.md`, this one
+#: from the two writers in this module -- `Pseudonymiser.dump` and `_save_job`.
+#: Both are as withholdable as the instrument and neither was listed:
+#: `pseudonyms.json` carries the SALT and the label map, which together un-do
+#: the pseudonymiser, and `jobs/<ticket>.json` is the job record as the route
+#: built it -- `_send` scrubs on the wire, `_save_job` writes before that, so
+#: the file holds `Cited.wording` verbatim.
+#:
+#: The run-dir clause at the end of `_refuse_unsafe_site_dir` compares the
+#: CURRENT `run_dir` only. A run directory from an earlier session sitting
+#: inside `site_dir` cleared it, and the static route has no content filter:
+#: MEASURED 2026-09-15, `GET /old-run/pseudonyms.json` and
+#: `GET /old-run/jobs/<ticket>.json` both returned 200 with the salt and
+#: unscrubbed wording. Walking for these names is what closes that, and it is
+#: the same walk, so it closes it at every depth.
+OWN_OUTPUT_MARKERS = (PSEUDONYM_MAP_NAME, JOBS_DIR_NAME)
+
 #: Directories `_refuse_unsafe_site_dir` will visit before it gives up and
 #: refuses. A published page directory is tens of entries; needing thousands to
 #: describe one is itself the signal that this is a source tree, so the cap is a
@@ -1965,6 +1990,14 @@ def _refuse_unsafe_site_dir(site_dir: Path, run_dir: Path) -> str | None:
     it, `pseudonyms.json`, which un-does the pseudonymiser completely. The
     filter guards what this process COMPUTES; nothing guarded what it was
     pointed at.
+
+    Two marker sets, because they have two sources of truth: `WITHHELD_MARKERS`
+    is `README.md`'s list, `OWN_OUTPUT_MARKERS` is this module's own writers.
+    The second closes the STALE run directory -- the `run_dir` comparison below
+    sees only the run this process was given, so a run directory from an
+    earlier session inside `site_dir` was served (MEASURED 2026-09-15, 200 on
+    both shapes). The comparison is kept as well: it refuses a run directory
+    that has not written anything yet, which no marker can see.
 
     Args:
         site_dir: The resolved directory to be served at `/`.
@@ -2002,6 +2035,16 @@ def _refuse_unsafe_site_dir(site_dir: Path, run_dir: Path) -> str | None:
                         f"which is withheld (README.md §What is withheld). The "
                         f"static route has no content filter -- point --site-dir "
                         f"at the published page directory, not at a source tree.")
+        for marker in OWN_OUTPUT_MARKERS:
+            if marker in dirnames or marker in filenames:
+                where = Path(parent, marker).relative_to(site_dir)
+                return (f"refusing to serve {site_dir}: it contains {str(where)!r}, "
+                        f"which THIS ENDPOINT writes -- a run directory, this "
+                        f"one's or an earlier session's. {PSEUDONYM_MAP_NAME} "
+                        f"carries the salt and the label map, and "
+                        f"{JOBS_DIR_NAME}/ holds job records written before "
+                        f"anything scrubbed them. Point --run-dir outside "
+                        f"--site-dir and move what is already there.")
     if run_dir == site_dir or run_dir.is_relative_to(site_dir):
         return (f"refusing to serve {site_dir}: the run directory {run_dir} is "
                 f"inside it, so pseudonyms.json would be downloadable and the "
@@ -2163,7 +2206,7 @@ def main(argv: list[str]) -> int:
     except KeyboardInterrupt:
         pass
     finally:
-        state.pseud.dump(state.run_dir / "pseudonyms.json")
+        state.pseud.dump(state.run_dir / PSEUDONYM_MAP_NAME)
         srv.server_close()
     return 0
 
