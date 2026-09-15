@@ -1319,6 +1319,106 @@ def _serving(state: object) -> Iterator[Callable[[str, dict], tuple[int, dict]]]
         srv.shutdown()
         srv.server_close()
 
+def _scripted_pair_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> object:
+    """A `State` whose `/api/pair` runs without a model call or a retriever.
+
+    The Specifier is left DISABLED, which is the condition under test: a
+    default bind is exactly where the proposal route was reachable and its
+    ticket was not.
+
+    Args:
+        tmp_path: Scratch root.
+        monkeypatch: Patcher for the backend and the pool.
+
+    Returns:
+        A `State` with `enable_specify` off.
+    """
+    from agent import cli_backend
+    from agent import prompt_contract as PC
+    from agent.backends import Reply
+    from serve import api
+
+    def fake_pool(_state: object, query: str, _role: str, _k: int) -> dict:
+        ks = ["m2:Q5.8"]
+        return {"cands": PC.candidates_from_keys(ks), "cos": dict.fromkeys(ks, 0.5),
+                "skipped": [], "rendered": f"q:{query}"}
+
+    class _Scripted:
+        """A backend that always resolves to the first candidate."""
+
+        name = "scripted"
+        last_cost = 0.0
+
+        def __init__(self, **_: object) -> None:
+            pass
+
+        def transduce(self, *_: object) -> Reply:
+            return Reply(content=_PICK_FIRST)
+
+    monkeypatch.setattr(cli_backend, "ClaudeCliBackend", _Scripted)
+    monkeypatch.setattr(api, "_role_candidates", fake_pool)
+    return api.State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run",
+                     show_instrument=True)
+
+def test_a_proposal_ticket_is_pollable_while_the_specifier_is_disabled(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`/api/pair` must not spend a model call for a ticket nobody can poll.
+
+    Found by running the site's own *Ask the pipeline* flow on 2026-09-15. The
+    gate matched `route.startswith("/api/specify")`, so on a default bind
+    `/api/pair` accepted the request, spent the call, returned a ticket -- and
+    every poll of `/api/specify/status` answered 403. It failed in the shape
+    that reads as "the server is broken" rather than "this route is off".
+
+    The prefix match was the bug: it made ONE flag govern TWO routes whose
+    costs differ by an order of magnitude (~$0.012 against ~$0.118), and a
+    proposal commits nothing -- `not_a_selection` says so on every reply.
+    """
+    import time
+
+    state = _scripted_pair_state(tmp_path, monkeypatch)
+    assert state.enable_specify is False, "the defect is on a DEFAULT bind"
+
+    with _serving(state) as post:
+        code, reply = post("/api/pair", {"request": "cohesion and hypertension"})
+        assert code == 200, reply
+        ticket = reply["ticket"]
+
+        deadline = time.time() + 30
+        while time.time() < deadline:
+            code, reply = post("/api/specify/status", {"ticket": ticket})
+            assert code == 200, (
+                f"a proposal ticket answered {code}: the model call was spent "
+                f"and the result is unreachable -- {reply}")
+            if reply["status"] != "running":
+                break
+            time.sleep(0.05)
+
+    assert reply["status"] == "done", reply
+    assert reply["roles"]["outcome"]["verdict"] == "resolved", reply
+
+def test_a_specifier_ticket_is_still_refused_while_the_specifier_is_disabled(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Serving a proposal ticket may not weaken the 403 the flag exists for.
+
+    The 403's own reasoning is unchanged: every `/api/specify` run spends a
+    named human's Claude seat, there is no per-caller accounting, and runs
+    serialise, so one visitor holds the lock for ten minutes. A ticket that
+    names such a run must still be refused when the flag is off.
+
+    Asserted against the LITERAL 403, never a constant: `AGENTS.md` §Parallel
+    Lanes records a status asserted against its own constant proving nothing --
+    setting the constant to 1 kept every test green.
+    """
+    from serve.api import JOB_SPECIFY, State, _start_job
+
+    state = State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    _start_job(state, "010101-abcdef", JOB_SPECIFY)
+    with _serving(state) as post:
+        code, reply = post("/api/specify/status", {"ticket": "010101-abcdef"})
+    assert code == 403, reply
+    assert "--enable-specify" in reply["error"]
+
 def test_the_specify_route_itself_is_still_refused_while_disabled(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The guarantee the fix must not touch: the expensive route stays off."""
@@ -1330,4 +1430,69 @@ def test_the_specify_route_itself_is_still_refused_while_disabled(
                            {"exposure": "m3:Q16.1", "outcome": "m2:Q5.8", "k": 1})
     assert code == 403, reply
     assert "--enable-specify" in reply["error"]
+
+def test_a_job_record_from_before_kinds_existed_is_read_as_a_specifier_run(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A ticket on disk from an older build carries no kind; refuse it.
+
+    Finished runs outlive the process, so `_load_job` reads records written
+    before this field existed. Treating an unlabelled record as a PROPOSAL
+    would silently widen what a default bind serves, so the unlabelled case
+    resolves to the refusal and the guarantee cannot be weakened by age.
+    """
+    from serve.api import State, _ticket_kind
+
+    state = State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    with state._jobs_lock:
+        state.jobs["020202-abcdef"] = {"status": "running", "started": 0.0}
+    assert _ticket_kind(state, "020202-abcdef") == "specify"
+
+    with _serving(state) as post:
+        code, reply = post("/api/specify/status", {"ticket": "020202-abcdef"})
+    assert code == 403, reply
+
+def test_an_unknown_ticket_is_answered_by_the_route_not_by_the_gate(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A ticket this endpoint never issued has no kind, and 403 would mislead.
+
+    The truthful answer is the route's own one -- "no run with this ticket" --
+    and it must not be replaced by "the route is off", which sends the caller
+    to look for a flag that is not their problem.
+    """
+    from serve.api import State, _ticket_kind
+
+    state = State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    assert _ticket_kind(state, "030303-abcdef") is None
+    with _serving(state) as post:
+        code, reply = post("/api/specify/status", {"ticket": "030303-abcdef"})
+    assert code == 400, reply
+    assert "no run with ticket" in reply["error"]
+
+def test_every_route_that_issues_a_ticket_declares_its_kind() -> None:
+    """The gate can only tell the routes apart if each one labels its job.
+
+    Asserted on the AST `Call` nodes rather than a source substring
+    (`AGENTS.md` §Testing Patterns): a comment naming the constant would
+    satisfy a grep and leave the wiring absent.
+    """
+    import ast
+
+    src = (ROOT / "serve" / "api.py").read_text(encoding="utf-8")
+    fns = {n.name: n for n in ast.walk(ast.parse(src))
+           if isinstance(n, ast.FunctionDef)}
+
+    for fn, kind in (("_pair", "JOB_PAIR"), ("_resolve", "JOB_RESOLVE"),
+                     ("_specify", "JOB_SPECIFY")):
+        node = fns[fn]
+        called = {c.func.id for c in ast.walk(node)
+                  if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)}
+        assert {"_start_job", "_finish_job"} <= called, (
+            f"{fn} does not route its job through the labelling helpers: {called}")
+        names = {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+        assert kind in names, f"{fn} never names {kind}"
+        wrong = {"JOB_PAIR", "JOB_RESOLVE", "JOB_SPECIFY"} - {kind}
+        assert not (names & wrong), f"{fn} names another route's kind: {names & wrong}"
+
+
+# --------------------------- a proposed key must be a key the Specifier takes
 

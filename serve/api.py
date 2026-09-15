@@ -133,6 +133,23 @@ class Unresolvable(ValueError):
             f"Nothing was spent: this is checked before the model runs. Pass "
             f'"allow_unresolvable": true to drive the refusal path deliberately.')
 
+#: What KIND of run a ticket names. `--enable-specify` governs one route, but
+#: the gate used to match the path prefix `/api/specify`, which caught the
+#: shared status route and therefore both proposal routes' tickets as well. A
+#: proposal is a different thing from a run: `/api/pair` and `/api/resolve` cost
+#: about $0.012 against `/api/specify`'s $0.118, they commit nothing -- every
+#: reply carries `not_a_selection` -- and they do not touch the Specifier. So
+#: the ticket carries its own kind and the gate reads that instead of the path.
+JOB_PAIR = "pair"
+JOB_RESOLVE = "resolve"
+JOB_SPECIFY = "specify"
+
+#: Kinds a caller may poll while `--enable-specify` is off. Stated as an
+#: allowlist, not as "everything but specify": a kind added later is refused
+#: until someone decides it is cheap, which is the direction a spending gate
+#: should fail in.
+POLLABLE_WHILE_DISABLED = frozenset({JOB_PAIR, JOB_RESOLVE})
+
 #: Largest request body accepted. A `Content-Length` is attacker-supplied even
 #: on loopback, and `rfile.read(n)` would otherwise size an allocation from it.
 MAX_BODY_BYTES = 64 * 1024
@@ -423,6 +440,7 @@ def _canonical_key(key: str, constructs: dict[str, Any], role: str,
     Raises:
         Unresolvable: When the key resolves to no construct. It subclasses
             `ValueError`, so the 400 branch that caught the old one catches it.
+
     """
     if key in constructs:
         return key
@@ -885,8 +903,7 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
     if not state.model_lock.acquire(blocking=False):
         raise Busy("a model run is already in progress on this endpoint.")
     ticket = f"{time.strftime('%H%M%S')}-{os.urandom(3).hex()}"
-    with state._jobs_lock:
-        state.jobs[ticket] = {"status": "running", "started": time.time()}
+    _start_job(state, ticket, JOB_PAIR)
 
     def _run() -> None:
         try:
@@ -972,9 +989,7 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
             done = {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
         finally:
             state.model_lock.release()
-        with state._jobs_lock:
-            state.jobs[ticket] = done
-        _save_job(state, ticket, done)
+        _finish_job(state, ticket, done, JOB_PAIR)
 
     threading.Thread(target=_run, daemon=True).start()
     return {"ticket": ticket, "status": "running", "poll_after_ms": POLL_MS,
@@ -1053,8 +1068,7 @@ def _resolve(state: State, body: dict[str, Any]) -> dict[str, Any]:
         raise Busy("a model run is already in progress on this endpoint. "
                    "Runs are serialised. Try again in a moment.")
     ticket = f"{time.strftime('%H%M%S')}-{os.urandom(3).hex()}"
-    with state._jobs_lock:
-        state.jobs[ticket] = {"status": "running", "started": time.time()}
+    _start_job(state, ticket, JOB_RESOLVE)
 
     def _run() -> None:
         try:
@@ -1099,9 +1113,7 @@ def _resolve(state: State, body: dict[str, Any]) -> dict[str, Any]:
             done = {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
         finally:
             state.model_lock.release()
-        with state._jobs_lock:
-            state.jobs[ticket] = done
-        _save_job(state, ticket, done)
+        _finish_job(state, ticket, done, JOB_RESOLVE)
 
     threading.Thread(target=_run, daemon=True).start()
     return {"ticket": ticket, "status": "running", "poll_after_ms": POLL_MS,
@@ -1256,8 +1268,7 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
     # tunnel however healthy the run was -- and both times it was the request
     # that died, not the run. So the POST starts a job and hands back a ticket.
     ticket = f"{time.strftime('%H%M%S')}-{os.urandom(3).hex()}"
-    with state._jobs_lock:
-        state.jobs[ticket] = {"status": "running", "started": time.time()}
+    _start_job(state, ticket, JOB_SPECIFY)
 
     def _run() -> None:
         try:
@@ -1278,14 +1289,75 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
                     "error": f"{type(exc).__name__}: {exc}"}
         finally:
             state.model_lock.release()
-        with state._jobs_lock:
-            state.jobs[ticket] = done
-        _save_job(state, ticket, done)
+        _finish_job(state, ticket, done, JOB_SPECIFY)
 
     threading.Thread(target=_run, daemon=True).start()
     return {"ticket": ticket, "status": "running", "poll_after_ms": POLL_MS,
             "note": "A run takes minutes. Ask /api/specify/status for this "
                     "ticket; the run continues whatever happens to this page."}
+
+
+def _start_job(state: State, ticket: str, kind: str) -> None:
+    """Record an in-flight run, labelled with what kind of run it is.
+
+    The label is written at BOTH ends -- here and in `_finish_job` -- because
+    the done record replaces this one wholesale rather than updating it, so a
+    kind set only at the start is lost the moment the run completes.
+
+    Args:
+        state: Shared handles.
+        ticket: The run's ticket.
+        kind: One of `JOB_PAIR`, `JOB_RESOLVE`, `JOB_SPECIFY`.
+    """
+    with state._jobs_lock:
+        state.jobs[ticket] = {"status": "running", "started": time.time(),
+                              "kind": kind}
+
+
+def _finish_job(state: State, ticket: str, done: dict[str, Any],
+                kind: str) -> None:
+    """Store and persist a finished run, keeping its kind.
+
+    Three routes ran these two statements themselves, and the kind had to be
+    stamped on every one of them for the gate to work; a helper is used so a
+    fourth route cannot land unlabelled and silently become pollable.
+
+    Args:
+        state: Shared handles.
+        ticket: The run's ticket.
+        done: The finished job record.
+        kind: One of `JOB_PAIR`, `JOB_RESOLVE`, `JOB_SPECIFY`.
+    """
+    done["kind"] = kind
+    with state._jobs_lock:
+        state.jobs[ticket] = done
+    _save_job(state, ticket, done)
+
+
+def _ticket_kind(state: State, ticket: str) -> str | None:
+    """What kind of run a ticket names, in memory or on disk.
+
+    Args:
+        state: Shared handles.
+        ticket: The ticket as the caller sent it.
+
+    Returns:
+        The kind, `JOB_SPECIFY` for a record written before kinds existed, or
+        None when this endpoint has no such run.
+
+    Note:
+        An UNLABELLED record resolves to `JOB_SPECIFY`, the refused kind.
+        Finished runs outlive the process, so `_load_job` reads records from
+        older builds; reading those as proposals would widen what a default
+        bind serves, and a spending gate may not be weakened by a file's age.
+    """
+    with state._jobs_lock:
+        job = state.jobs.get(ticket)
+    if job is None:
+        job = _load_job(state, ticket)
+    if job is None:
+        return None
+    return str(job.get("kind") or JOB_SPECIFY)
 
 
 def _job_path(state: State, ticket: str) -> Path:
@@ -1434,7 +1506,7 @@ def _specify_payload(res: Any, identity: Any, version: str, model: str,
             "screened_from": 0,
             "selection_mode": "externally_posed",
             # A silent rewrite of the caller's input is its own small version of
-            # the substitution problem: say what was changed and to what.
+            # the substitution problem: say what was changed and to what. The
             "key_case_corrected": canonical or None,
             "allow_unresolvable": allow_unresolvable,
             # Stamped on EVERY run, whatever its selection mode. A posed pair
@@ -1670,14 +1742,17 @@ class Handler(BaseHTTPRequestHandler):
         if not self._gate():
             return
         route = self.path.split("?")[0]
-        if route.startswith("/api/specify") and not self.state.enable_specify:
-            # Disabled rather than merely rate-limited: every call spends a named
-            # human's Claude seat with no per-caller accounting, and runs
-            # serialise, so one visitor holds the lock for ten minutes.
-            self._send(403, {"error": "/api/specify is disabled on this endpoint "
-                                      "(start with --enable-specify). Each run "
-                                      "spends the operator's Claude seat and "
-                                      "blocks every other caller while it runs."})
+        # THE PREFIX MATCH WAS THE BUG. `route.startswith("/api/specify")` also
+        # caught `/api/specify/status`, the one route the cheap proposal routes
+        # share, so a single flag governed three routes with different costs:
+        # `/api/pair` accepted a request on a default bind, spent its model
+        # call, returned a ticket -- and every poll of it answered 403. It
+        # failed in the shape that reads as "the server is broken" rather than
+        # "this route is off" (found by running the site's own flow,
+        # 2026-09-15). So the expensive route is named exactly, and the status
+        # route is judged on the TICKET's kind, below, once the body is parsed.
+        if route == "/api/specify" and not self.state.enable_specify:
+            self._send(403, self._specify_disabled())
             return
         routes = {"/api/retrieve": _retrieve, "/api/specify": _specify,
                   "/api/specify/status": _specify_status,
@@ -1710,6 +1785,18 @@ class Handler(BaseHTTPRequestHandler):
         if not isinstance(body, dict):
             self._send(400, {"error": "body must be a JSON object"})
             return
+        if route == "/api/specify/status" and not self.state.enable_specify:
+            # Judged on the ticket, not the path: a proposal already ran and
+            # cost what it cost, so withholding its result protects nothing and
+            # loses work already paid for. A Specifier ticket is still refused,
+            # and so is an unlabelled one -- `_ticket_kind` says why.
+            kind = _ticket_kind(self.state, str(body.get("ticket") or "").strip())
+            if kind is not None and kind not in POLLABLE_WHILE_DISABLED:
+                self._send(403, self._specify_disabled())
+                return
+            # kind is None: this endpoint never issued the ticket. The route's
+            # own 400 tells the truth ("no run with this ticket"); a 403 would
+            # send the caller looking for a flag that is not their problem.
         try:
             self._send(200, fn(self.state, body))
         except Busy as exc:
@@ -1721,6 +1808,22 @@ class Handler(BaseHTTPRequestHandler):
             # The whole failure, not its first line: a run that costs a model
             # call is exactly where the reason has to survive.
             self._send(500, self._scrubbed_error(exc, prefix=True))
+
+    def _specify_disabled(self) -> dict[str, Any]:
+        """The refusal both gate branches send, worded once.
+
+        Disabled rather than merely rate-limited: every call spends a named
+        human's Claude seat with no per-caller accounting, and runs serialise,
+        so one visitor holds the lock for ten minutes. That reasoning is
+        unchanged by serving proposal tickets -- a proposal runs neither.
+
+        Returns:
+            The error body.
+        """
+        return {"error": "/api/specify is disabled on this endpoint "
+                         "(start with --enable-specify). Each run "
+                         "spends the operator's Claude seat and "
+                         "blocks every other caller while it runs."}
 
     def _scrubbed_error(self, exc: Exception, *, prefix: bool = False) -> dict[str, Any]:
         """Filter an exception message before it is sent.
