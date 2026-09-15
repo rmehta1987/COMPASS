@@ -2,8 +2,7 @@
 
     export COMPASS_CLAUDE_CONFIG_DIR=~/.claude-enterprise   # which seat pays
     export COMPASS_DICTIONARY=/home/mehta5/COMPASS/dictionary.json
-    export COMPASS_SITE_DIR=/home/mehta5/compass-site/site
-    ./.venv/bin/python -m serve.api --port 8080
+    python -m serve.api --port 8080          # --site-dir defaults to ROOT/site
 
 WHAT THIS IS, AND WHAT IT IS NOT
 --------------------------------
@@ -2076,6 +2075,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     Returns:
         The parsed arguments.
     """
+    # WHAT IS IN THAT DOCSTRING IS PRINTED BY `--help`, which is why two lines
+    # came out of it on 2026-09-15. It exported
+    # `COMPASS_SITE_DIR=/home/mehta5/compass-site/site` -- one occurrence in the
+    # tracked tree, so read by NO code (`argparse` owns that path, below) and
+    # naming a clone that has not held the page since `0606136` -- and it told
+    # the reader to run `./.venv/bin/python`, which cannot work: that venv has
+    # `ruff` and neither `pydantic` nor `pytest`.
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8080)

@@ -710,7 +710,7 @@ and in §2 and §6, is the all-shapes joint and is read with this beside it.
 #### 2. What that does to §4's rewriter, at the depths these routes read
 
 §4 reports R@1, R@5 and R@10. `_resolve` offers 8 and `_pair` offers 20, and
-`compass-site:site/index.html::askResolver` sends no `k`, so `_pair`'s default applies.
+`site/index.html::askResolver` sends no `k`, so `_pair`'s default applies.
 Re-read from the committed `per_row_rank` by
 [`src/fusion_pool_depth.py`](src/fusion_pool_depth.py) (VERIFIED 2026-09-10):
 

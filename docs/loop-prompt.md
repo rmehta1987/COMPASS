@@ -5,19 +5,27 @@ tree on that date; re-check before trusting a count, a path or a hash.
 
 ## Where you run
 
-| clone / branch | has `serve/` | has `build/` `fixtures/` `raw/` `targets.json` | has `benchmark/prevalence_key.py` | runs the suite |
+| clone / branch | has `serve/` `site/` | has `build/` `fixtures/` `raw/` `targets.json` | has `benchmark/prevalence_key.py` | runs the suite |
 |---|---|---|---|---|
-| `COMPASS` @ `merge-code-and-docs` | no | no | no | no |
+| `COMPASS` @ `merge-code-and-docs` | **yes**, tracked | no | no | no |
 | `compass-gen` @ `ralph-loop` | no | **yes** (untracked, survive a checkout) | no | no — 4 modules fail to import |
-| `COMPASS/.claude/worktrees/serve-endpoint` @ `worktree-serve-endpoint` | **yes** | `build/` only (symlink) | no | no |
-| `compass-score` @ `ralph-loop` | no | yes | **yes** | yes — 993 pass / 1 fail of 994 |
+| `compass-score` @ `ralph-loop` | no | yes | **yes** | yes |
+
+🛑 **`worktree-serve-endpoint` IS DEAD — do not check it out.** This section routed a
+`/loop` session to it as "23 commits ahead". VERIFIED 2026-09-15: `git rev-list
+--left-right --count HEAD...worktree-serve-endpoint` reports **`70 0`**. It is an
+ANCESTOR of `merge-code-and-docs`, zero ahead, and carries nothing that is not already
+in the tree; `0606136` moved the page in-tree and `serve/` and `site/` are now tracked on
+the branch above (4 and 25 files). A session sent there would have worked on a stale copy
+of files it already had. Operating instructions pointing at a dead branch is the failure
+this line exists to prevent.
 
 **Run in a dedicated clone**, made once by the operator, not by you:
-`git clone /home/mehta5/COMPASS`, `git checkout worktree-serve-endpoint` (23 commits ahead
-of `merge-code-and-docs`, zero behind, merge base `c7a27eb1`), then link `build/`,
+`git clone /home/mehta5/COMPASS`, stay on `merge-code-and-docs`, then link `build/`,
 `benchmark/fixtures/`, `raw/` and `deploy/targets.json` from `compass-gen`. Those four are
 untracked, so they survive every checkout. Do not hijack `compass-gen` or `compass-score`;
-both carry live work.
+both carry live work. The suite-count column above is deliberately unnumbered: read a
+count from a run, never from this table.
 
 🛑 **Never open `compass-score`.** No currently-actionable item needs it. It holds the
 answer key, and you author prompts and docstrings — reading it is the channel, and a fresh

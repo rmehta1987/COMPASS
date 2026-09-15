@@ -172,9 +172,16 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 
 - Files: A = `agent/specifier.py schema.py tool_authority.py cli_backend.py backends.py
   prompt_contract.py`;
-  B = `curated/ env/ benchmark/ mcp/ agent/sealed.py agent/registry.py build.py checks.py`;
+  B = `curated/ env/ benchmark/ mcp/ serve/ site/ agent/sealed.py agent/registry.py
+  build.py checks.py`;
   C = `generate/
   agent/RUNNING.md`. `tests/` follow their module; anything unlisted is unassigned.
+- `serve/` and `site/` were UNASSIGNED until 2026-09-15 and are assigned to B TOGETHER,
+  not split and not given to C as drivers. `serve/redact.py` is a containment boundary of
+  the same family as `benchmark/contamination_check.py`, and it is COUPLED to
+  `serve/api.py`: `WORDING_FIELDS` is derived from api.py's routes by an AST test, so a
+  route change in one lane reddens a test in the other — the cross-lane semantic
+  collision git cannot see. One lane, and B is the lane that already owns containment.
 
 ## Code Standards
 - `ruff` and `mypy` config: `pyproject.toml` (`google`, `E W F I UP B ANN D RUF`).

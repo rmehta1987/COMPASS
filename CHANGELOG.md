@@ -70,6 +70,17 @@ against the whole file first.
   framing pinned instead. The helper's documented return also named a key (`candidates`)
   that no caller could index.
 
+- **The page came in-tree, and `CHANGELOG.md` did not say so** (`0606136`, 29 files,
+  5,884 insertions). `site/` was named ZERO times here and `serve/` once, while the line
+  in `TASKS.md` §C29 that cites this entry is about the page MOVE. `--site-dir` had
+  defaulted to `/home/mehta5/compass-site/site`, the only copy of the page that existed,
+  so `python -m serve.api` exited 2 on any box but one and the endpoint could not be
+  started from a clean checkout. The page is now `site/` here, `--site-dir` defaults to
+  it, and the pair of defaults is checked against `_refuse_unsafe_site_dir` by a test,
+  because a `site/` inside the repository sits one directory from `build/dictionary.json`.
+  The `compass-site` clone keeps 80 commits of its own history that were NOT brought over
+  (`README.md`) and has no `serve/`, so it could never have run the endpoint.
+
 - Live confirmation, 2026-09-15, both defects driven end to end on a private port and
   reported beside the server's own log: a default bind polled a pair ticket to `done`
   (HTTP 200 throughout, `kind: pair` on disk) while `/api/specify` still answered 403;
