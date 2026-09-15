@@ -467,8 +467,23 @@ experts until much later, which is why the dashboard exists.
   C9 reopens, its conditions are in `DESIGN.md` §6.
 
 ## Known-open defects, no task yet
-- **C35 — how does an area-measure exposure reach CONFIRMED? 🛑 USER DECISION, and it
-  gates the `EXPOSURE_KEYS` fix below.** `scorability.py` accepts exactly one form of
+- **C35 — how does an area-measure exposure reach CONFIRMED?
+  ✅ DECIDED by the operator 2026-09-14: answer **C now, B later**, and the open
+  sub-question takes the THIRD STATUS — `blocked_on_delivery`.** The four answers and
+  their trade-offs are kept below unchanged, because the decision is only readable
+  against what it declined; D stays forbidden. What the decision commits this repository
+  to: an area-measure exposure is explicitly OUT OF SCOPE rather than unfilled, it is
+  recorded as an anchor of kind `area_measure` carrying `blocked_on:
+  area_measure_inventory` and NO key, and the side it sits on is neither REFUTED nor
+  UNDETERMINED but `blocked_on_delivery` — "nothing in this repository changes this; a
+  study-team delivery would". The benchmark's claim narrows to survey-anchored designs
+  and says so. B is not foreclosed: adding `resolve_area_measure` later changes which
+  branch the `area_measure` kind takes and nothing else. Implemented as part of C36
+  below, which is the structure the decision needs. Because the decision RELAXES nothing
+  — no paper reaches CONFIRMED that could not before — it cannot move a verdict from
+  UNDETERMINED to CONFIRMED, and the three papers it covers stop presenting as one paste
+  away from scorable.
+  The original statement follows. `scorability.py` accepts exactly one form of
   positive evidence — a key resolving `unique` through `env/tools.py::resolve_variable` —
   and it accepts only that because word presence wrongly admitted four papers. An
   `AreaMeasureRef` has no key, so that evidence is structurally unavailable for a whole
@@ -491,7 +506,8 @@ experts until much later, which is why the dashboard exists.
   - **D — confirm on the descriptor alone.** 🛑 DO NOT. A row naming a `measure_id` and
     `source` that nothing checks is the word-presence failure in a new costume, and this
     file exists to prevent it.
-  - RECOMMENDED: **C now, B later.** Open sub-question if C: an explicitly-`unknown`
+  - RECOMMENDED, and CHOSEN: **C now, B later.** Open sub-question if C — ANSWERED the
+    third status: an explicitly-`unknown`
     exposure row makes the side REFUTED ("never scorable here" — overstates it, the
     inventory could arrive) or UNDETERMINED ("not yet" — understates it, nothing in this
     repo changes it). Neither fits, which argues for a THIRD status, e.g.
@@ -503,7 +519,8 @@ experts until much later, which is why the dashboard exists.
   - C36 below does NOT decide this; it removes the type obstacle to every answer but D,
     and makes the third status a property of a recorded row rather than a new enum member.
 - **`EXPOSURE_KEYS`'s implemented type cannot express its own settled key form, NOR an
-  entire `Ref` kind the schema supports.** BLOCKED on C35. Two faults in one type.
+  entire `Ref` kind the schema supports.** Was BLOCKED on C35; C35 is DECIDED
+  2026-09-14, so this is unblocked and C36 is its fix. Two faults in one type.
   (a) C12 records the form as "explicit `unknown` plus a named blocker", and
   `benchmark/scorability.py::EXPOSURE_KEYS` is `dict[str, tuple[str, ...]]` — a bare key
   tuple with no slot for either, so a provably-uncarryable exposure reads as an unfilled
@@ -517,7 +534,10 @@ experts until much later, which is why the dashboard exists.
 - **C36 — a design-arrow key: one stored row per paper, both sides, typed anchors.
   PROPOSED 2026-09-14; the structural fix for C35 and for the `EXPOSURE_KEYS` type
   above.** 🛑 USER AMENDMENT — it changes what the benchmark measures and where an answer
-  key lives, so it is not a lane's.
+  key lives, so it is not a lane's. **AUTHORISED by the operator 2026-09-14, in full,
+  with C35 answered C + third status.** The amendment is granted for the SHAPE and the
+  wiring below; it does not authorise writing a row. Rows stay the operator's, in
+  `compass-score`, and no agent writes one.
   WHY, and this part is not about tidiness: `EXPOSURE_KEYS` lives in
   `benchmark/scorability.py` in the WORKING clone, and that is safe only while it is `{}`.
   The first row makes the clone where prompts, `agent/schema.py` docstrings and
