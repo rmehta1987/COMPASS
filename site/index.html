@@ -694,7 +694,11 @@ function specifierPanel(){
     h+=`<p class="sec">attempts &middot; one per seed</p><div class="tools">`+j.samples.map(a=>
       `<div class="t"><span class="call">seed ${a.seed} &middot; <b>${esc(a.gate)}</b></span>`
       +`<span class="ret">${a.tool_calls} lookup(s), ${a.transductions} structuring pass(es)</span></div>`
-      +(Array.isArray(a.distinct_tools)?`<div class="t"><span class="call">${esc(a.distinct_tools.join(" &middot; "))}</span></div>`:"")
+      /* ESCAPE EACH ITEM, THEN JOIN. Joining first and escaping the result put
+         the separator through `esc`, which turns `&` into `&amp;` -- so the
+         reader saw the literal text `&middot;` between every tool name. Every
+         other list on this page maps `esc` over its items for this reason. */
+      +(Array.isArray(a.distinct_tools)?`<div class="t"><span class="call">${a.distinct_tools.map(esc).join(" &middot; ")}</span></div>`:"")
     ).join("")+`</div>`;
   }
   const rec=j.selected||j.refusal;

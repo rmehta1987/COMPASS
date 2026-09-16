@@ -44,6 +44,48 @@ def unstyled_status_classes(html: str) -> list[str]:
             f"(defined: {', '.join(sorted(defined)) or 'none'})"
             for v in sorted(used - defined)]
 
+ENTITY_RE = re.compile(r"&[a-zA-Z][a-zA-Z0-9]*;")
+
+
+def double_escaped_entities(html: str) -> list[str]:
+    """`esc(...)` calls whose ARGUMENT already contains an HTML entity.
+
+    `esc` maps `&` to `&amp;`, so an entity inside its argument reaches the
+    reader as literal text: joining a list with `" &middot; "` and escaping the
+    RESULT printed `&middot;` between every item. Found in the wild on the
+    Specifier panel's tool list, where neither render harness could see it --
+    that panel needs a real Specifier run, which no fixture produces. A
+    source-level check needs no fixture and covers every panel at once.
+
+    The argument is read with balanced parentheses rather than a line regex:
+    `esc(a.join(" x "))` nests, and this page is full of lines that legitimately
+    put an entity OUTSIDE an `esc` call, so a same-line match would be noise.
+
+    Args:
+        html: The page source.
+
+    Returns:
+        One line per offending call; empty when none.
+    """
+    out: list[str] = []
+    for m in re.finditer(r"\besc\(", html):
+        i, depth = m.end(), 1
+        while i < len(html) and depth:
+            if html[i] == "(":
+                depth += 1
+            elif html[i] == ")":
+                depth -= 1
+            i += 1
+        arg = html[m.end():i - 1]
+        hit = ENTITY_RE.search(arg)
+        if hit:
+            line = html.count("\n", 0, m.start()) + 1
+            out.append(f"line {line}: esc() is given {hit.group(0)!r}, which the "
+                       f"reader sees as literal text. Escape each item and then "
+                       f"join, rather than joining and escaping the result.")
+    return out
+
+
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
         "param", "source", "track", "wbr"}
 
@@ -100,6 +142,7 @@ def main() -> None:
             problems.append(f"{rel}: <html> has no lang")
         if b.mains != 1:
             problems.append(f"{rel}: expected one <main>, found {b.mains}")
+        problems.extend(f"{rel}: {e}" for e in double_escaped_entities(html))
         for i, body in enumerate(scripts(html)):
             with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
                 f.write(body)
