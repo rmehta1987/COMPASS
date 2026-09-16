@@ -92,8 +92,13 @@ const PAIR_REPLY = {
   // reply with both roles resolved tested only the happy path, and the panel
   // was silently dropping the declined one.
   roles: {
+    // `below_threshold` sits on the declined role because that is where it was
+    // MEASURED: "discriminated against" retrieved a top cosine of 0.699991
+    // against the manifest's 0.729476, so the deployed retriever would have
+    // abstained and this route offered the pool anyway.
     exposure: { verdict: "ambiguous", reason: "several operationalisations",
                 missing_dimension: "WHICH_OPERATIONALIZATION",
+                top_cos: 0.699991, min_cos: 0.729476, below_threshold: true,
                 proposed_indices: [],
                 candidates: [{ index: 1, key: "EXP_ASKED", wording: "WORDING_EXP",
                                proposed: false, cos: 0.5 }] },
@@ -239,6 +244,15 @@ global.fetch = async (rel, opts) => {
       }
       if (!/data-anchor="exposure"[^>]*data-key="EXP_ASKED"/.test(filled)) {
         fail("the panel offers no way to pick a candidate for a declined role");
+      }
+      // A POOL THE RETRIEVER WOULD HAVE REFUSED must say so. `/api/retrieve`
+      // calls `select`, which abstains below the manifest threshold;
+      // `/api/pair` calls `search`, which does not -- so a construct whose
+      // distinctive words occur zero times in the build was offered as a
+      // candidate and the model resolved it. The warning is the only thing
+      // standing between that and a confident-looking list.
+      if (!/abstention threshold/.test(filled)) {
+        fail("a sub-threshold pool does not say the retriever would have refused");
       }
     }
 

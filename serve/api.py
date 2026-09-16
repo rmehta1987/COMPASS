@@ -675,7 +675,7 @@ def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str,
 
     cands = PC.candidates_from_keys(keys, facts)
     return {"cands": cands, "cos": cos_by_key, "skipped": skipped,
-            "rendered": rendered}
+            "rendered": rendered, "min_cos": r.min_cos}
 
 
 #: Where a scored baseline run is read from. Scoring happens in the clone that
@@ -879,6 +879,7 @@ def _union_pools(parts: list[dict[str, Any]]) -> dict[str, Any]:
     for p in parts:
         skipped += [s for s in p["skipped"] if s not in skipped]
     return {"cands": PC.candidates_from_keys(keys, facts), "cos": cos,
+            "min_cos": next((p["min_cos"] for p in parts if p.get("min_cos")), None),
             "skipped": skipped,
             "rendered": " | ".join(p["rendered"] for p in parts)}
 
@@ -934,6 +935,37 @@ def _split_pools(state: State, backend: Any, request: str, k: int,
         pools[role] = _union_pools(parts)
     return pools, {**note, "status": "used", "exposures": list(split.exposures),
                    "outcomes": list(split.outcomes), "per_phrase_k": each}
+
+
+def _abstention_note(pool: dict[str, Any]) -> dict[str, Any]:
+    """Whether the deployed retriever would have abstained on this pool.
+
+    `/api/retrieve` calls `select`, which refuses below the manifest's
+    threshold and reports `abstained`. `/api/pair` calls `search`, which does
+    not -- so a construct the retriever would REFUSE is offered to the model as
+    a candidate. MEASURED 2026-09-16 on the split phrase "discriminated
+    against": top cosine 0.699991 against a threshold of 0.729476, and the
+    model answered `resolved`, for a construct whose distinctive words occur
+    zero times in the build.
+
+    Reported, never enforced. Refusing here would change what the model is
+    asked, and the threshold was derived for single-construct queries rather
+    than for a split phrase at a share of `k`, so tightening it into a refusal
+    needs its own measurement.
+
+    Args:
+        pool: A pool as `_role_candidates` or `_union_pools` returns it. A
+            stubbed pool carries no `min_cos`, and then no verdict is claimed --
+            absence of a threshold is not evidence the pool cleared one.
+
+    Returns:
+        `top_cos`, `min_cos` and `below_threshold`.
+    """
+    cos = pool.get("cos") or {}
+    top = max(cos.values()) if cos else None
+    thr = pool.get("min_cos")
+    return {"top_cos": top, "min_cos": thr,
+            "below_threshold": bool(top is not None and thr and top < thr)}
 
 
 def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
@@ -1033,6 +1065,25 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                     "missing_dimension": chosen.missing_dimension or None,
                     "proposed_indices": proposed,
                     "skipped_uncitable": pool["skipped"],
+                    **_abstention_note(pool),
+                    # THE ABSTENTION VERDICT, REPORTED ON THIS PATH TOO.
+                    # `/api/retrieve` calls `select`, which refuses below the
+                    # manifest's threshold and says `abstained`. This route
+                    # calls `search`, which does not -- so a construct the
+                    # deployed retriever would REFUSE was handed to the model
+                    # as a candidate and resolved. MEASURED 2026-09-16 on
+                    # "discriminated against": top cosine 0.7000 against a
+                    # threshold of 0.729476, and the model answered `resolved`
+                    # -- for a construct whose distinctive words occur ZERO
+                    # times in the build, which `scorability.py`'s docstring
+                    # already names as the word test's worst false survivor.
+                    #
+                    # REPORTED, NOT ENFORCED. Refusing here would change what
+                    # the model is asked, and the threshold was derived for
+                    # single-construct queries, not for a split phrase at a
+                    # share of k. So the number and the verdict travel with the
+                    # pool and the reader sees them; tightening it into a
+                    # refusal needs its own measurement.
                     "candidates": [
                         {"index": c.index,
                          "key": c.key if state.show_instrument else None,

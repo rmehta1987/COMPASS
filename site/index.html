@@ -399,6 +399,22 @@ function roleBlock(role,v){
   if(v.reason) h+=`<div class="none">${esc(v.reason)}</div>`;
   if(v.missing_dimension) h+=`<div class="none" style="color:var(--signal)">`
     +`what would settle it: ${esc(v.missing_dimension)}</div>`;
+  /* A `derive` verdict's RECIPE was dropped. `roleBlock` showed the verdict,
+     the reason, the missing dimension and the candidates -- and not the one
+     field that says what to compute, which on a `derive` is the whole answer.
+     MEASURED on "have you felt discriminated against and resulting in
+     depression, anxiety, or bipolar": the outcome came back `derive` over
+     three indices with a composite recipe, and the reader saw none of it. */
+  if(v.recipe) h+=`<div class="none" style="color:var(--signal)">`
+    +`how to compute it: ${esc(v.recipe)}</div>`;
+  /* The retriever would have ABSTAINED on this pool and this route did not ask
+     it to. Said where the candidates are, because a list that looks confident
+     is what a sub-threshold pool looks like. */
+  if(v.below_threshold) h+=`<div class="none" style="color:var(--signal)">`
+    +`The best candidate here scores below the deployed retriever's own`
+    +` abstention threshold, so on <b>Search only</b> it would have refused to`
+    +` answer rather than offered these. Treat a pick from this list as`
+    +` unsupported until you have checked the instrument yourself.</div>`;
   h+=`<div class="tools">`+v.candidates.map(c=>
       `<div class="t${c.proposed?" gate pass":""}"><span class="call">`
       +`${c.proposed?"&#10003; ":""}${c.index}. <b>${esc(c.key||"")}</b> ${esc(c.wording)}</span>`

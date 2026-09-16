@@ -2069,3 +2069,84 @@ def test_the_guard_names_every_output_this_endpoint_writes(
         (site / "pages" / "deep" / marker).mkdir()
         why = _refuse_unsafe_site_dir(site.resolve(), (tmp_path / "run").resolve())
         assert why is not None and marker in why, f"{marker} was cleared"
+
+
+def test_a_pool_the_retriever_would_refuse_is_reported_as_such() -> None:
+    """`/api/pair` never asked the retriever whether to abstain.
+
+    `/api/retrieve` calls `select`, which refuses below the manifest's
+    threshold; `/api/pair` calls `search`, which does not. MEASURED 2026-09-16
+    on the split phrase "discriminated against": top cosine 0.699991 against a
+    threshold of 0.729476, so the deployed retriever would have abstained --
+    and the route offered the pool anyway, whereupon the model answered
+    `resolved` for a construct whose distinctive words occur ZERO times in the
+    build. `benchmark/scorability.py`'s docstring already names that exposure as
+    the word test's worst false survivor; this is the same false positive one
+    layer up.
+
+    Unit-tested on the note rather than through the route: the route needs a
+    model call and a real bundle, and seeding the inline form it replaced to
+    report False left all 87 tests in this file green.
+    """
+    from serve.api import _abstention_note
+
+    thr = 0.729476
+    below = _abstention_note({"cos": {"a": 0.699991, "b": 0.61}, "min_cos": thr})
+    assert below["below_threshold"] is True
+    assert below["top_cos"] == 0.699991
+    assert below["min_cos"] == thr
+
+    # Anti-vacuity: a note that always said True would pass the above.
+    above = _abstention_note({"cos": {"a": 0.943238}, "min_cos": thr})
+    assert above["below_threshold"] is False
+    assert above["top_cos"] == 0.943238
+
+    # The TOP candidate decides, not the last or the worst: a pool whose best
+    # clears the threshold is not refused because something below it does not.
+    mixed = _abstention_note({"cos": {"a": 0.61, "b": 0.80}, "min_cos": thr})
+    assert mixed["below_threshold"] is False
+
+    # NO THRESHOLD CLAIMS NOTHING. A scripted pool carries no `min_cos`, and
+    # absence of a threshold is not evidence the pool cleared one -- reporting
+    # False there would be the "could not detect X is not X is absent" defect
+    # `AGENTS.md` §Verification Discipline names.
+    for stub in ({"cos": {"a": 0.1}}, {"cos": {}, "min_cos": thr}, {}):
+        note = _abstention_note(stub)
+        assert note["below_threshold"] is False
+        assert note["min_cos"] == stub.get("min_cos")
+
+
+def test_every_pool_carries_the_threshold_it_was_retrieved_under() -> None:
+    """Wiring, by AST: the abstention note is only as good as what reaches it.
+
+    `_abstention_note` claims nothing when a pool carries no `min_cos`, which is
+    right for a scripted pool and wrong if the real builders stop supplying one
+    -- the note would then report `below_threshold: False` for every pool and
+    the warning would vanish silently. Seeded exactly that way: deleting
+    `min_cos` from `_role_candidates`'s return left all 88 tests in this file
+    green, because the note's own tests build their pools by hand.
+
+    An `ast.Return` over the function's own source, per `AGENTS.md` §Testing
+    Patterns -- a substring search would pass on the word appearing in a
+    docstring.
+    """
+    import ast
+    import inspect
+
+    from serve import api
+
+    for fn in (api._role_candidates, api._union_pools):
+        tree = ast.parse(inspect.getsource(fn))
+        keys: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Return) and isinstance(node.value, ast.Dict):
+                keys |= {k.value for k in node.value.keys
+                         if isinstance(k, ast.Constant) and isinstance(k.value, str)}
+        # Anti-vacuity: a walk that matched no dict return would pass below.
+        assert "cands" in keys, (
+            f"{fn.__name__} has no dict return this walk can see; the check "
+            f"stopped matching, not the function")
+        assert "min_cos" in keys, (
+            f"{fn.__name__} no longer returns `min_cos`, so "
+            f"`_abstention_note` cannot tell whether the pool cleared the "
+            f"deployed retriever's threshold and will report that it did")
