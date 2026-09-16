@@ -837,11 +837,11 @@ function liveIntakePanel(){
     +`No language-model call, no network.</div>`;
   h+=`<p class="sec">RetrievalRequest &middot; live, not a committed run</p><dl>`
     +row("request",esc(j.query||j.request))
-    +row("construct",esc(q.construct),true)
+    +row("construct &middot; what is searched for",esc(q.construct),true)
     +row("role",`${esc(q.role)} &middot; never rendered`,true)
-    +row("instances",(q.instances&&q.instances.length)?esc(q.instances.join(", ")):"<em>none</em>",true)
+    +row("instances &middot; examples you named",(q.instances&&q.instances.length)?esc(q.instances.join(", ")):"<em>none</em>",true)
     +row("population",`<em>unset</em> &middot; shipped contract leaves it empty`,true)
-    +row("rendered query",esc(j.rendered_query),true)
+    +row("rendered query &middot; what the search model receives",esc(j.rendered_query),true)
     +row("dropped as covered",dropped.length
         ?`${esc(dropped.join(", "))} &middot; every content word already in the construct`
         :"<em>nothing</em>",true)
@@ -940,12 +940,12 @@ function intakePanel(){
   const q=cur.request, p=DATA.runs.provenance;
   let h=`<p class="sec">lookups</p><div class="none">None. The template is deterministic string concatenation: same fields, same query, every run. No language-model call, no network.</div>`;
   h+=`<p class="sec">RetrievalRequest · run ${esc(p.run_id)}</p><dl>`
-    +row("request",esc(q.text))
-    +row("construct",esc(q.construct),true)
+    +row("request &middot; your words as typed",esc(q.text))
+    +row("construct &middot; what is searched for",esc(q.construct),true)
     +row("role",`${esc(q.role)} · never rendered`,true)
-    +row("instances",q.instances.length?esc(q.instances.join(", ")):"<em>none</em>",true)
+    +row("instances &middot; examples you named",q.instances.length?esc(q.instances.join(", ")):"<em>none</em>",true)
     +row("population",`<em>unset</em> · shipped contract leaves it empty`,true)
-    +row("rendered query",esc(cur.rendered_query),true)
+    +row("rendered query &middot; what the search model receives",esc(cur.rendered_query),true)
     +row("dropped as covered",cur.instances_dropped_as_covered.length?`${esc(cur.instances_dropped_as_covered.join(", "))} · every content word already in the construct`:"<em>nothing</em>",true)
     +row("origin",esc(cur.origin))
     +`</dl>`;
