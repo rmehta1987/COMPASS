@@ -124,11 +124,13 @@ const fire = (attr, val) => {
   if (after !== chosen) {
     fail(`the completing run dragged the reader from ${JSON.stringify(chosen)} to ${JSON.stringify(after)}`);
   }
-  // ...and the answer was kept, not thrown away: the record stage now has one.
-  // Assert the run's own anchor is present, not merely that the empty-panel
-  // marker is absent: "no PLACEHOLDER" also holds for a panel showing some other
-  // run, and it reads as passing when the stub string happens to contain the word.
-  fire("s", "record");
+  // ...and the answer was kept, not thrown away: the Specifier stage now shows
+  // one. Was `record`, a stop that no longer exists -- the record is read in
+  // the stage that produced it. Assert the run's own anchor is present, not
+  // merely that the empty-panel marker is absent: "no PLACEHOLDER" also holds
+  // for a panel showing some other run, and it reads as passing when the stub
+  // string happens to contain the word.
+  fire("s", "specifier");
   const rec = node("#panel").innerHTML;
   if (!rec.includes(KEY.exposure)) fail("the run's own record was discarded, not merely un-steered");
 
@@ -151,13 +153,23 @@ const fire = (attr, val) => {
     fail(`the specifier chip does not report the finished run: ${JSON.stringify(chip("specifier"))}`);
   }
   const marked = [...railHtml.matchAll(/data-s="([^"]+)" aria-current="true"/g)].map(m => m[1]);
-  if (marked.length !== 1 || marked[0] !== "record") {
-    fail(`the rail marks ${JSON.stringify(marked)}; the reader is on "record"`);
+  if (marked.length !== 1 || marked[0] !== "specifier") {
+    fail(`the rail marks ${JSON.stringify(marked)}; the reader is on "specifier"`);
+  }
+  // And the stop that was removed is not still in the rail: the record has to
+  // be READ somewhere, so dropping the stage without moving its contents is
+  // the failure this pairs with.
+  if (railHtml.includes('data-s="record"')) {
+    fail("the rail still offers a `record` stop");
+  }
+  if (!rec.includes("what the record carries")) {
+    fail("the Specifier panel does not state what the record type cannot carry");
   }
 
   // The footer lost its three-paragraph summary to the Metrics tab and kept one
   // job: saying that the figures directly above came from this session and are
-  // not committed. The reader is on `record`, a live panel, so it must be there.
+  // not committed. The reader is on `specifier`, a live panel, so it must be
+  // there.
   const foot = node("#foot").innerHTML;
   if (!/<b>not<\/b> committed/.test(foot)) {
     fail(`the footer does not mark a live panel's figures as uncommitted: ${JSON.stringify(foot.slice(0, 80))}`);

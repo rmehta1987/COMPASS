@@ -250,15 +250,6 @@ function liveStatus(id){
     if(spec.error) return {cls:"blocked",label:"failed"};
     return {cls:"built",label:"ran"};
   }
-  if(id==="record"){
-    if(!spec) return served?{cls:"built",label:"waiting for you"}:null;
-    /* The reader cannot run this stage; the Specifier fills it. So it mirrors
-       that run rather than sitting on "nothing to show" while one is in flight. */
-    if(spec.running) return {cls:"built",label:"running&hellip;"};
-    if(spec.error) return null;
-    if(spec.selected||spec.refusal) return {cls:"built",label:"ran"};
-    return null;
-  }
   if(id==="generate"&&gen&&!gen.running&&!gen.error) return {cls:"built",label:"ran"};
   return null;
 }
@@ -491,7 +482,9 @@ async function runSpecifier(nav){
   }finally{
     specBusy=false;
     /* Land the reader on the object, not on the machinery that made it. */
-    if(spec&&(spec.selected||spec.refusal)) steer(nav,"record");
+    /* Was `record`, a stop that no longer exists. A finished run leaves the
+       reader on the stage that produced it, where the record now is. */
+    if(spec&&(spec.selected||spec.refusal)) steer(nav,"specifier");
     draw();
   }
 }
@@ -650,24 +643,14 @@ function generatePanel(){
   return h;
 }
 
-function recordPanel(){
-  const j=spec;
-  if(!j||j.running) return `<p class="sec">output</p><div class="ph"><b>NO RECORD YET</b>`
-    +` &mdash; run the Specifier; whatever it produces lands here.</div>`;
-  const rec=j.selected||j.refusal;
-  if(!rec) return `<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; `
-    +`${esc(j.reason||"the run produced neither a protocol nor a refusal")}. `
-    +`The Specifier tab has the run and the design the gate rejected.</div>`;
-  let h=`<p class="sec">${j.selected?"ProtocolSpecification":"NotSpecifiable"}`
-    +` &middot; the record's type</p>`
-    +(j.selected?readableProtocol(rec):readableRefusal(rec))
-    +`<details><summary>the record as JSON &middot; provenance</summary>`
-    +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre></details>`;
-  /* What the type carries and what it does not. An earlier stage description
-     advertised a HypothesisRecord with a typed DAG and a critique seam, and
-     this block was its retraction, shown only to readers with a live record;
-     the description now says the same thing as this block, to every reader. */
-  h+=`<p class="sec">what the record carries, and what it cannot</p><div class="tools">`
+/* What the TYPE carries and what it does not. This was the tail of
+   `recordPanel`, which no longer exists: an earlier stage description
+   advertised a HypothesisRecord with a typed DAG and a critique seam, and this
+   block is its retraction. Kept as a helper because it is a statement about the
+   schema, not about any one run -- deleting it with the panel would have
+   dropped a stated limitation rather than a tab. */
+function recordCarries(){
+  return `<p class="sec">what the record carries, and what it cannot</p><div class="tools">`
     +`<div class="t gate pass"><span class="call">full wording per variable, never a bare key</span>`
     +`<span class="ret">in the record</span></div>`
     +`<div class="t gate pass"><span class="call">estimability stamped on the record</span>`
@@ -680,7 +663,6 @@ function recordPanel(){
     +`<span class="ret">no such field; a mediator is rejected by the role it was given in a list</span></div></div>`
     +`<div class="none">The object above is a <code>ProtocolSpecification</code> or a `
     +`<code>NotSpecifiable</code> refusal. Nothing else is built.</div>`;
-  return h;
 }
 
 function specifierPanel(){
@@ -710,10 +692,16 @@ function specifierPanel(){
   }
   const rec=j.selected||j.refusal;
   if(rec){
-    /* The object lives in Record; this stage is the run that produced it. */
-    h+=`<p class="sec">outcome</p><div class="none">`
-      +`This run produced a <b>${j.selected?"protocol":"refusal the environment upheld"}</b>.`
-      +` The <b>Record</b> tab has it.</div>`;
+    /* THE RECORD IS READ HERE. It had a rail stop of its own, `record`, which
+       put the run and the thing the run produced two clicks apart under a name
+       that said nothing about what was in it. The Specifier is the stage that
+       builds this, so this is where it is read. */
+    h+=`<p class="sec">what it produced &middot; `
+      +`${j.selected?"a protocol":"a refusal the environment upheld"}</p>`
+      +(j.selected?readableProtocol(rec):readableRefusal(rec))
+      +`<details><summary>the record as JSON &middot; provenance</summary>`
+      +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre></details>`
+      +recordCarries();
   }else{
     h+=`<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.reason||"the run produced neither a protocol nor a refusal")}</div>`;
     /* A rejected design is still a design. The sample kept it, so show it: a
@@ -1321,7 +1309,6 @@ function specifierStart(){
 
 function stagePanel(s){
   panelLive=true;
-  if(spec&&sel==="record") return recordPanel();
   if(spec&&sel==="specifier") return specifierPanel();
   /* Before the committed branches: a posed run has no retrieval of its own, and
      falling through would show the previous one as if it were this one. */
