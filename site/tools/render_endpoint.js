@@ -88,9 +88,20 @@ const ENUMERATE = {
             estimable: 0, unknown: PAIRS.length, requires_derivation: 0 },
   pairs: PAIRS,
 };
-global.fetch = async (rel) => rel === "/api/enumerate"
-  ? ({ status: 200, json: async () => ENUMERATE })
-  : ({ json: async () => JSON.parse(fs.readFileSync(path.join(site, rel), "utf8")) });
+// The stub took only the URL, so nothing could assert what a button POSTED --
+// a handler that sent the outcome as the exposure would have passed. It now
+// records the last POST body. `/api/specify` answers WITHOUT a ticket on
+// purpose: `runSpecifier` stores a ticketless reply and renders it, so the
+// assertion runs with no poll loop to wait out.
+let lastPost = null;
+global.fetch = async (rel, opts) => {
+  if (opts && opts.method === "POST") lastPost = { rel, body: JSON.parse(opts.body) };
+  if (rel === "/api/enumerate") return { status: 200, json: async () => ENUMERATE };
+  if (rel === "/api/specify") {
+    return { status: 403, json: async () => ({ error: "refused by this harness" }) };
+  }
+  return { json: async () => JSON.parse(fs.readFileSync(path.join(site, rel), "utf8")) };
+};
 
 (async () => {
   for (const s of scripts) new Function(s)();
@@ -119,6 +130,47 @@ global.fetch = async (rel) => rel === "/api/enumerate"
   const want = `data-genex="${QUOTE_KEY.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")}"`;
   if (!g.includes(want)) {
     fail(`a key carrying a double quote escaped its attribute; expected ${JSON.stringify(want)}`);
+  }
+
+  // --- the Specifier tab's empty state ----------------------------------
+  // It was a dashed placeholder with no way to act, on the stage a reader
+  // most wants to trigger. Two things are asserted, and the second is the
+  // one a wrong handler would fail: the form is THERE, and the button sends
+  // what was typed in the RIGHT ROLES. The prose path takes direction from
+  // position, so a form that swapped them would look identical on screen.
+  document.querySelectorAll("[data-s]");
+  const specTab = byData.filter(x => x.dataset.s === "specifier" && x.onclick).pop();
+  if (!specTab) fail("no specifier tab handler");
+  else {
+    specTab.onclick();
+    const sp = node("#panel").innerHTML;
+    for (const id of ["spec-ex", "spec-out", "spec-go"]) {
+      if (!sp.includes(`id="${id}"`)) fail(`the specifier tab offers no ${id}`);
+    }
+    for (const bad of ["undefined", "NaN", "[object Object]"]) {
+      if (sp.includes(bad)) fail(`the specifier start form contains "${bad}"`);
+    }
+    const go = node("#spec-go");
+    if (!go.onclick) fail("the specifier start button has no handler");
+    else {
+      node("#spec-ex").value = PAIRS[0].exposure;
+      node("#spec-out").value = PAIRS[0].outcome;
+      lastPost = null;
+      go.onclick();
+      await new Promise(r => setTimeout(r, 50));
+      if (!lastPost) fail("the specifier start button posted nothing");
+      else {
+        if (lastPost.rel !== "/api/specify") {
+          fail(`the start button posted to ${lastPost.rel}, not /api/specify`);
+        }
+        if (lastPost.body.exposure !== PAIRS[0].exposure) {
+          fail(`exposure posted as ${JSON.stringify(lastPost.body.exposure)}`);
+        }
+        if (lastPost.body.outcome !== PAIRS[0].outcome) {
+          fail(`outcome posted as ${JSON.stringify(lastPost.body.outcome)}`);
+        }
+      }
+    }
   }
 
   // --- the posed launch ----------------------------------------------------

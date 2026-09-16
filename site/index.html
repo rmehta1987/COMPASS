@@ -114,6 +114,10 @@
   dl>:nth-last-child(-n+2){border-bottom:0}
   .flag{color:var(--signal);font-weight:600}
   .good{color:var(--ok);font-weight:600}
+  .pair{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+  .pair input{flex:1 1 210px;min-width:0;font:400 13px var(--mono);color:var(--ink);
+    background:#fff;border:1px solid var(--rule);padding:9px 10px}
+  .pair input:focus-visible{outline:2px solid var(--ink);outline-offset:-1px}
   .after{display:flex;gap:8px;flex-wrap:wrap}
   .after button{font-family:var(--mono);font-size:12px;padding:8px 12px}
 
@@ -1281,6 +1285,40 @@ function posedIntakePanel(){
    +`<p class="sec">the pair</p>`+posedPair();
 }
 
+/* THE SPECIFIER TAB WAS A DEAD END when nothing had run: a dashed placeholder
+   with no way to act, on the one stage a reader most wants to trigger. The
+   capability already existed -- two keys in the search bar are pinned BY
+   POSITION and start this stage with no retrieval and no language-model call
+   (`serve/api.py::_pin_keys_from_prose`) -- but you had to know to type them,
+   and the positional rule is only explained after the fact.
+
+   TWO LABELLED FIELDS, not one box, and that is the whole gain: naming the role
+   per field removes the ambiguity the prose path must warn about, where "is X
+   predicted by Y" pins the OUTCOME as the exposure because direction is taken
+   from position and never from grammar.
+
+   Posts straight to `/api/specify`. The pair is already stated, so there is
+   nothing to retrieve and nothing to infer, and going through `/api/pair` would
+   spend a model call to learn what the reader just typed. */
+function specifierStart(){
+  return `<p class="sec">run this stage on a stated pair</p>`
+    +`<div class="none">Two variable keys, one per role. They are honoured as`
+    +` typed: nothing is retrieved and no language model picks them, so this is`
+    +` the Specifier on its own. A key naming a sub-item is read as its construct`
+    +` and the translation is reported back; a key the codebook does not carry is`
+    +` refused before any model call. One run at a time &mdash; a second is`
+    +` refused rather than queued, not silently made to wait.</div>`
+    +`<div class="pair">`
+    +`<input id="spec-ex" aria-label="exposure key" placeholder="exposure key">`
+    +`<input id="spec-out" aria-label="outcome key" placeholder="outcome key">`
+    +`</div>`
+    +`<div class="after"><button class="g" id="spec-go">Run the Specifier</button></div>`
+    +`<div class="none">Keys are instrument content, and this page withholds them,`
+    +` so there is nothing to pick from here. Without the codebook use <b>Ask</b>`
+    +` instead: it proposes both anchors from your question and hands them to this`
+    +` stage.</div>`;
+}
+
 function stagePanel(s){
   panelLive=true;
   if(spec&&sel==="record") return recordPanel();
@@ -1303,6 +1341,7 @@ function stagePanel(s){
   if(sel==="generate") return generatePanel();
   if(sel==="score") return scorePanel();
   if(sel==="metrics") return metricsPanel();
+  if(sel==="specifier"&&window.COMPASS_ENDPOINT) return specifierStart();
   return placeholder(s);
 }
 
@@ -1332,6 +1371,15 @@ function draw(){
   document.querySelectorAll("[data-anchor]").forEach(b=>b.onclick=()=>{
     anchors[b.dataset.anchor]=b.dataset.key; draw();});
   const go=el("#go-spec"); if(go) go.onclick=runSpecifier;
+  const sg=el("#spec-go");
+  if(sg) sg.onclick=()=>{
+    /* Straight into the same `anchors` the resolver fills, so one code path
+       runs the stage however the pair was arrived at. `runSpecifier` already
+       returns early on a blank field, so an empty form is a no-op. */
+    anchors.exposure=el("#spec-ex").value.trim()||null;
+    anchors.outcome=el("#spec-out").value.trim()||null;
+    runSpecifier();
+  };
   /* Dead and silent was the worst moment on the published page: the darkest
      control did nothing. Off, with the reason beside it, when there is no
      server to ask. Re-read on every draw because the server sets the flag. */
