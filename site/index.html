@@ -297,13 +297,20 @@ function placeholder(s){
    claims nothing about which. */
 let live=null, ask=null;
 
-async function askResolver(){
+async function askResolver(stay){
   /* The button is disabled on the static page (see `draw`), so this branch is
      a keyboard or scripted reach; it still says something rather than nothing. */
   if(!window.COMPASS_ENDPOINT){ el("#served").textContent=servedNote(); return; }
   const q=el("#q").value.trim(); if(!q) return;
   const gen=(liveGen={}), nav=(navGen={});
-  live=null; posed=null; cur=null; typed=null; ask={running:true}; sel="ask"; draw();
+  /* `stay` keeps the reader where they are. The Specifier tab asks for two
+     variable KEYS, which a reader who has not been given the codebook does not
+     have -- so it offers a question instead and runs this, filling the key
+     fields from what comes back. Same request, same ticket, same poll, same
+     `adoptProposals`: a second copy of this loop would drift from it. */
+  live=null; posed=null; cur=null; typed=null; ask={running:true};
+  if(!stay) sel="ask";
+  draw();
   try{
     const r=await fetch("/api/pair",{method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -1288,23 +1295,57 @@ function posedIntakePanel(){
    Posts straight to `/api/specify`. The pair is already stated, so there is
    nothing to retrieve and nothing to infer, and going through `/api/pair` would
    spend a model call to learn what the reader just typed. */
+/* The wording behind a proposed anchor, when a proposal has been made. A key
+   on its own is unreadable -- which is the whole complaint this answers -- so
+   the field is shown with the question it points at whenever that is known. */
+function proposedWording(role){
+  const v=ask&&ask.roles&&ask.roles[role]; if(!v) return "";
+  if(v.verdict==="pinned") return v.pinned_wording||"";
+  const pick=(v.candidates||[]).find(c=>c.proposed&&c.key);
+  return pick?(pick.wording||""):"";
+}
+
 function specifierStart(){
-  return `<p class="sec">run this stage on a stated pair</p>`
-    +`<div class="none">Two variable keys, one per role. They are honoured as`
-    +` typed: nothing is retrieved and no language model picks them, so this is`
-    +` the Specifier on its own. A key naming a sub-item is read as its construct`
-    +` and the translation is reported back; a key the codebook does not carry is`
-    +` refused before any model call. One run at a time &mdash; a second is`
-    +` refused rather than queued, not silently made to wait.</div>`
+  const busy=ask&&ask.running;
+  /* LEADS WITH A QUESTION. This panel used to ask only for two variable keys,
+     which is instrument content the page withholds -- so the field was a box a
+     reader could not fill, and the advice was to go to another tab. Asking
+     proposes the pair INTO the fields and leaves them visible with their
+     wording, because the press of Run is the confirmation and confirming
+     something unreadable is not confirming. */
+  let h=`<p class="sec">ask for a pair</p>`
+    +`<div class="none">Type what you want to measure. Retrieval offers`
+    +` candidates, a language model proposes which is the exposure and which the`
+    +` outcome, and both land in the fields below for you to check. Nothing runs`
+    +` until you press Run.</div>`
     +`<div class="pair">`
-    +`<input id="spec-ex" aria-label="exposure key" placeholder="exposure key">`
-    +`<input id="spec-out" aria-label="outcome key" placeholder="outcome key">`
+    +`<input id="spec-q" aria-label="what to measure"`
+    +` value="${att((el("#q")&&el("#q").value)||"")}"`
+    +` placeholder="does smoking cause hypertension">`
     +`</div>`
+    +`<div class="after"><button class="g" id="spec-ask"${busy?" disabled":""}>`
+    +`${busy?"proposing&hellip;":"Propose a pair"}</button></div>`;
+  const ew=proposedWording("exposure"), ow=proposedWording("outcome");
+  h+=`<p class="sec">the pair this stage will run</p>`
+    +`<div class="none">A variable key names one question in the codebook. You do`
+    +` not have to know one: fill these by asking above. Typed by hand they are`
+    +` honoured as typed &mdash; a key naming a sub-item is read as its construct`
+    +` and the translation is reported back, and a key the codebook does not`
+    +` carry is refused before any model call.</div>`
+    +`<div class="pair">`
+    +`<input id="spec-ex" aria-label="exposure key" placeholder="exposure key"`
+    +` value="${att(anchors.exposure||"")}">`
+    +`<input id="spec-out" aria-label="outcome key" placeholder="outcome key"`
+    +` value="${att(anchors.outcome||"")}">`
+    +`</div>`
+    +(ew||ow?`<div class="tools">`
+      +`<div class="t"><span class="call">exposure &middot; ${esc(ew||"not proposed")}</span></div>`
+      +`<div class="t"><span class="call">outcome &middot; ${esc(ow||"not proposed")}</span></div>`
+      +`</div>`:"")
     +`<div class="after"><button class="g" id="spec-go">Run the Specifier</button></div>`
-    +`<div class="none">Keys are instrument content, and this page withholds them,`
-    +` so there is nothing to pick from here. Without the codebook use <b>Ask</b>`
-    +` instead: it proposes both anchors from your question and hands them to this`
-    +` stage.</div>`;
+    +`<div class="none">One run at a time &mdash; a second is refused rather than`
+    +` queued, not silently made to wait.</div>`;
+  return h;
 }
 
 function stagePanel(s){
@@ -1358,6 +1399,14 @@ function draw(){
   document.querySelectorAll("[data-anchor]").forEach(b=>b.onclick=()=>{
     anchors[b.dataset.anchor]=b.dataset.key; draw();});
   const go=el("#go-spec"); if(go) go.onclick=runSpecifier;
+  const sa=el("#spec-ask");
+  if(sa) sa.onclick=()=>{
+    /* Mirrored into the main bar so there is ONE request on the page: the bar
+       is what `askResolver` reads, and a reader who then looks up sees the
+       question that was actually asked. */
+    el("#q").value=el("#spec-q").value;
+    askResolver(true);
+  };
   const sg=el("#spec-go");
   if(sg) sg.onclick=()=>{
     /* Straight into the same `anchors` the resolver fills, so one code path

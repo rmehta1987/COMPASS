@@ -78,6 +78,22 @@ const PAIRS = [
   { pair_id: "P_TWO", exposure: QUOTE_KEY, outcome: "OUT_TWO",
     exposure_stem: 'a stem carrying a " double quote', outcome_stem: "stem for the second outcome" },
 ];
+// A pair reply whose anchors are RESOLVED, so `adoptProposals` adopts them.
+// Synthetic keys and wording, like PAIRS above: no instrument content here.
+const PAIR_REPLY = {
+  request: "ASKED_TEXT",
+  model_id: "harness",
+  anchors_proposed_by: "harness",
+  not_a_selection: "candidates only",
+  roles: {
+    exposure: { verdict: "resolved", reason: "because", proposed_indices: [1],
+                candidates: [{ index: 1, key: "EXP_ASKED", wording: "WORDING_EXP",
+                               proposed: true, cos: 0.5 }] },
+    outcome: { verdict: "resolved", reason: "because", proposed_indices: [1],
+               candidates: [{ index: 1, key: "OUT_ASKED", wording: "WORDING_OUT",
+                              proposed: true, cos: 0.5 }] },
+  },
+};
 const ENUMERATE = {
   note: "a synthesised enumerate reply, for this harness only",
   shown: PAIRS.length,
@@ -94,11 +110,27 @@ const ENUMERATE = {
 // purpose: `runSpecifier` stores a ticketless reply and renders it, so the
 // assertion runs with no poll loop to wait out.
 let lastPost = null;
+const posts = [];
 global.fetch = async (rel, opts) => {
-  if (opts && opts.method === "POST") lastPost = { rel, body: JSON.parse(opts.body) };
+  if (opts && opts.method === "POST") {
+    lastPost = { rel, body: JSON.parse(opts.body) };
+    posts.push(lastPost);
+  }
   if (rel === "/api/enumerate") return { status: 200, json: async () => ENUMERATE };
   if (rel === "/api/specify") {
     return { status: 403, json: async () => ({ error: "refused by this harness" }) };
+  }
+  // A TICKET, because that is what the route returns. The first version of this
+  // stub answered without one, which took `askResolver`'s ticketless branch --
+  // an error shape -- so `adoptProposals` never ran and the harness was testing
+  // a path the endpoint does not produce.
+  if (rel === "/api/pair") {
+    return { status: 200, json: async () => ({ ticket: "TCK", status: "running",
+                                               poll_after_ms: 1 }) };
+  }
+  if (rel === "/api/specify/status") {
+    return { status: 200,
+             json: async () => Object.assign({ status: "done" }, PAIR_REPLY) };
   }
   return { json: async () => JSON.parse(fs.readFileSync(path.join(site, rel), "utf8")) };
 };
@@ -150,6 +182,35 @@ global.fetch = async (rel, opts) => {
     for (const bad of ["undefined", "NaN", "[object Object]"]) {
       if (sp.includes(bad)) fail(`the specifier start form contains "${bad}"`);
     }
+    // ASKING MUST FILL THE KEY FIELDS. That is the whole point of the panel: a
+    // reader without the codebook cannot type a key, so the question is the
+    // entry and the fields are filled from what comes back -- with the wording,
+    // because confirming an unreadable key is not confirming.
+    const ab = node("#spec-ask");
+    if (!ab || !ab.onclick) fail("the specifier tab has no propose handler");
+    else {
+      node("#spec-q").value = "ASKED_TEXT";
+      posts.length = 0;
+      await ab.onclick();
+      await new Promise(r => setTimeout(r, 120));
+      const asked = posts.find(x => x.rel === "/api/pair");
+      if (!asked) fail("proposing did not post to /api/pair");
+      else if (asked.body.request !== "ASKED_TEXT") {
+        fail(`proposing sent ${JSON.stringify(asked.body.request)}`);
+      }
+      // Asserted on the RENDERED HTML, not on a node's `.value`: this DOM stub
+      // fabricates nodes on demand and never parses an assigned innerHTML, so a
+      // node's `.value` is whatever the stub initialised and would pass or fail
+      // for reasons that have nothing to do with the page.
+      const filled = node("#panel").innerHTML;
+      for (const want of ['value="EXP_ASKED"', 'value="OUT_ASKED"',
+                          "WORDING_EXP", "WORDING_OUT"]) {
+        if (!filled.includes(want)) {
+          fail(`asking did not put ${want} in front of the reader`);
+        }
+      }
+    }
+
     const go = node("#spec-go");
     if (!go.onclick) fail("the specifier start button has no handler");
     else {
