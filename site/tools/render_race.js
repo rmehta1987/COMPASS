@@ -130,7 +130,7 @@ const fire = (attr, val) => {
   // merely that the empty-panel marker is absent: "no PLACEHOLDER" also holds
   // for a panel showing some other run, and it reads as passing when the stub
   // string happens to contain the word.
-  fire("s", "specifier");
+  fire("s", "ask");
   const rec = node("#panel").innerHTML;
   if (!rec.includes(KEY.exposure)) fail("the run's own record was discarded, not merely un-steered");
 
@@ -145,16 +145,16 @@ const fire = (attr, val) => {
     const m = new RegExp(`data-s="${id}"[\\s\\S]*?<span class="st[^"]*">([^<]*)</span>`).exec(railHtml);
     return m ? m[1].trim() : null;
   };
-  if (/no run yet/.test(chip("specifier") || "")) {
-    fail(`the specifier chip still reads ${JSON.stringify(chip("specifier"))} after a finished run`);
+  if (/no run yet/.test(chip("ask") || "")) {
+    fail(`the ask chip still reads ${JSON.stringify(chip("ask"))} after a finished run`);
   }
   // Vocabulary changed in the chip rewrite: a finished Specifier run says "ran".
-  if (!/\bran\b|complete|record|refused/i.test(chip("specifier") || "")) {
-    fail(`the specifier chip does not report the finished run: ${JSON.stringify(chip("specifier"))}`);
+  if (!/\bran\b|complete|record|refused/i.test(chip("ask") || "")) {
+    fail(`the ask chip does not report the finished run: ${JSON.stringify(chip("ask"))}`);
   }
   const marked = [...railHtml.matchAll(/data-s="([^"]+)" aria-current="true"/g)].map(m => m[1]);
-  if (marked.length !== 1 || marked[0] !== "specifier") {
-    fail(`the rail marks ${JSON.stringify(marked)}; the reader is on "specifier"`);
+  if (marked.length !== 1 || marked[0] !== "ask") {
+    fail(`the rail marks ${JSON.stringify(marked)}; the reader is on "ask"`);
   }
   // And the stop that was removed is not still in the rail: the record has to
   // be READ somewhere, so dropping the stage without moving its contents is

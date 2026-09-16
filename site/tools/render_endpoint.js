@@ -179,13 +179,17 @@ global.fetch = async (rel, opts) => {
   // what was typed in the RIGHT ROLES. The prose path takes direction from
   // position, so a form that swapped them would look identical on screen.
   document.querySelectorAll("[data-s]");
-  const specTab = byData.filter(x => x.dataset.s === "specifier" && x.onclick).pop();
-  if (!specTab) fail("no specifier tab handler");
+  const specTab = byData.filter(x => x.dataset.s === "ask" && x.onclick).pop();
+  if (!specTab) fail("no ask tab handler");
   else {
     specTab.onclick();
     const sp = node("#panel").innerHTML;
-    for (const id of ["spec-ex", "spec-out", "spec-go"]) {
-      if (!sp.includes(`id="${id}"`)) fail(`the specifier tab offers no ${id}`);
+    // In the HTML, not through `node()`: this stub CACHES a node once wired,
+    // so a control deleted from the panel keeps its handler and an assertion
+    // on `node("#x").onclick` passes for a form that is no longer rendered.
+    // Removing `askForm` from the panel went green exactly that way.
+    for (const id of ["spec-q", "spec-ask", "spec-ex", "spec-out", "spec-go"]) {
+      if (!sp.includes(`id="${id}"`)) fail(`the Ask tab offers no ${id}`);
     }
     for (const bad of ["undefined", "NaN", "[object Object]"]) {
       if (sp.includes(bad)) fail(`the specifier start form contains "${bad}"`);
@@ -211,17 +215,21 @@ global.fetch = async (rel, opts) => {
       // node's `.value` is whatever the stub initialised and would pass or fail
       // for reasons that have nothing to do with the page.
       const filled = node("#panel").innerHTML;
-      // The ADOPTED role is filled in, with its wording beside it.
-      for (const want of ['value="OUT_ASKED"', "WORDING_OUT"]) {
+      // Once a proposal exists the key form is REPLACED by it -- two Run
+      // buttons and two sets of fields would leave the reader guessing which
+      // one runs -- so the adopted anchor appears in the proposal's chosen-pair
+      // block as text, not as an input value. Asserted where it actually is.
+      for (const want of ["OUT_ASKED", "WORDING_OUT"]) {
         if (!filled.includes(want)) {
           fail(`asking did not put ${want} in front of the reader`);
         }
       }
-      // The DECLINED role is not filled -- filling it would be picking one to
-      // be helpful -- but everything needed to choose must be on screen: why
-      // it declined, what would settle it, and a `use` button per candidate.
-      if (filled.includes('value="EXP_ASKED"')) {
-        fail("a declined role was filled in anyway");
+      // THE DECLINED ROLE MUST NOT READ AS CHOSEN. `adoptProposals` carries
+      // over only `resolved` and `pinned`, so the chosen pair has to say the
+      // exposure was not picked -- while still showing why, what would settle
+      // it, and a `use` button so the reader can settle it themselves.
+      if (!/<dt>exposure<\/dt><dd[^>]*><em>none picked<\/em>/.test(filled)) {
+        fail("a declined role reads as the chosen exposure");
       }
       if (!filled.includes("WHICH_OPERATIONALIZATION")) {
         fail("the panel hides what would settle a declined role");

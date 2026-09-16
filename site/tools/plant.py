@@ -124,7 +124,7 @@ def main() -> int:
         # 4b the five 2026-09-09 review fixes, each re-seeded: render.js must
         # catch the defect coming back, not only the page as it stands.
         root = copy_site(tmp / "h3")
-        plant_page(root, 'if(typed!==null&&!cur&&(sel==="ask"||sel==="intake")) return noRun();',
+        plant_page(root, 'if(typed!==null&&!cur&&sel==="intake") return noRun();',
                    'if(typed!==null&&!cur) return noRun();')
         results.append(("parse", "unmatched query hides Metrics", run("parse", root) != 0))
         root = copy_site(tmp / "h4")
@@ -137,7 +137,13 @@ def main() -> int:
         plant_page(root, 'if(e.key==="Enter")', 'if(e.key==="Escape")')
         results.append(("parse", "Enter in the search box does nothing", run("parse", root) != 0))
         root = copy_site(tmp / "h7")
-        plant_page(root, "<b>NO RECORD ON THIS PAGE</b>", "<b>NO RECORD ON THIS ENDPOINT</b>")
+        # Was planted in `placeholder()`. After `record` and `specifier` merged
+        # away, no stage renders a placeholder in the STATIC drive -- every
+        # remaining stop has an artifact or a committed example -- so the plant
+        # landed on a string `render.js` never rendered and the step silently
+        # stopped proving anything. Moved onto the retriever panel's own
+        # withholding note, which is rendered for all five examples.
+        plant_page(root, "withheld on this page", "withheld on this endpoint")
         results.append(("parse", "jargon reaches the reader", run("parse", root) != 0))
         # 5 an external script, a font stylesheet, a fetch to a host
         root = copy_site(tmp / "i")

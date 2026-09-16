@@ -233,22 +233,27 @@ function liveStatus(id){
   const noRun=typed!==null&&!cur;
   if(id==="ask"){
     if(posed) return {cls:"built",label:"nothing to show"};
+    /* THE LATER PHASE WINS. One stop now covers proposing a pair and running
+       the Specifier on it, and what the reader is waiting on is whichever is in
+       flight -- a finished proposal saying "ran" over a run still going would
+       describe the wrong half. `spec.error` is the only `blocked` on this chip:
+       a refusal the environment upheld is a RESULT, and `spec` carries it as a
+       record, not as an error. */
+    if(spec){
+      if(spec.running) return {cls:"built",label:"running&hellip;"};
+      if(spec.error) return {cls:"blocked",label:"failed"};
+      return {cls:"built",label:"ran"};
+    }
     if(ask) return ask.running?{cls:"built",label:"running&hellip;"}:{cls:"built",label:"ran"};
     if(live) return {cls:"built",label:"ran"};
     if(noRun) return {cls:"built",label:"nothing to show"};
-    return null;
+    return served?{cls:"built",label:"waiting for you"}:null;
   }
   if(id==="intake"){
     if(posed) return {cls:"built",label:"nothing to show"};
     if(live||(ask&&ask.rendered_query)) return {cls:"built",label:"ran"};
     if(noRun) return {cls:"built",label:"nothing to show"};
     return null;
-  }
-  if(id==="specifier"){
-    if(!spec) return served?{cls:"built",label:"waiting for you"}:null;
-    if(spec.running) return {cls:"built",label:"running&hellip;"};
-    if(spec.error) return {cls:"blocked",label:"failed"};
-    return {cls:"built",label:"ran"};
   }
   if(id==="generate"&&gen&&!gen.running&&!gen.error) return {cls:"built",label:"ran"};
   return null;
@@ -457,7 +462,7 @@ async function runSpecifier(nav){
   /* Clicked directly this is the reader's own intent, so it takes a fresh
      ticket; chained from the resolver it inherits that request's. */
   if(nav===undefined) nav=(navGen={});
-  specBusy=true; spec={running:true}; steer(nav,"specifier"); draw();
+  specBusy=true; spec={running:true}; steer(nav,"ask"); draw();
   try{
     const r=await fetch("/api/specify",{method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -489,9 +494,9 @@ async function runSpecifier(nav){
   }finally{
     specBusy=false;
     /* Land the reader on the object, not on the machinery that made it. */
-    /* Was `record`, a stop that no longer exists. A finished run leaves the
-       reader on the stage that produced it, where the record now is. */
-    if(spec&&(spec.selected||spec.refusal)) steer(nav,"specifier");
+    /* Was `record`, then `specifier`; both are gone. A finished run leaves the
+       reader on the stop that produced it, where the record now is. */
+    if(spec&&(spec.selected||spec.refusal)) steer(nav,"ask");
     draw();
   }
 }
@@ -1325,7 +1330,7 @@ function declinedRoles(){
   return h;
 }
 
-function specifierStart(){
+function askForm(){
   const busy=ask&&ask.running;
   /* LEADS WITH A QUESTION. This panel used to ask only for two variable keys,
      which is instrument content the page withholds -- so the field was a box a
@@ -1345,8 +1350,16 @@ function specifierStart(){
     +`</div>`
     +`<div class="after"><button class="g" id="spec-ask"${busy?" disabled":""}>`
     +`${busy?"proposing&hellip;":"Propose a pair"}</button></div>`;
+  return h;
+}
+
+/* The operator's entry: a pair stated as two keys, for whoever has the
+   codebook. Rendered only when no proposal exists -- a proposal shows its own
+   roles, its own candidates and its own Run button, and a second set of both
+   would leave the reader guessing which one runs. */
+function keyForm(){
   const ew=proposedWording("exposure"), ow=proposedWording("outcome");
-  h+=`<p class="sec">the pair this stage will run</p>`
+  let h=`<p class="sec">or state the pair yourself</p>`
     +`<div class="none">A variable key names one question in the codebook. You do`
     +` not have to know one: fill these by asking above. Typed by hand they are`
     +` honoured as typed &mdash; a key naming a sub-item is read as its construct`
@@ -1384,28 +1397,62 @@ function specifierStart(){
   return h;
 }
 
+/* ASK IS ONE STOP, and it COMPOSES. `Specifier` was a second stop holding the
+   run and, since the `record` fold, the record -- so the hypothesis, the
+   analysis model and all four covariate blocks lived two clicks from the
+   question that produced them. MEASURED from real job files: `/api/pair`
+   returns no `question`, no `model_spec` and no covariates at all; they exist
+   only in `/api/specify`'s record. So there was nothing to render on Ask and
+   nothing to do but put the stages together.
+
+   Concatenated, not selected: a reader who asks, proposes, runs and reads the
+   record does all of it without moving, and every earlier branch of this
+   function returned ONE panel, which is what split the arc in the first place. */
+function askPanel(s){
+  /* A posed pair has no retrieval and no question of its own, so it replaces
+     the panel rather than stacking under it. */
+  if(posed) return posedRetrieverPanel();
+  let h="";
+  /* THE FORM IS NEVER SHADOWED. The first version of this put the committed
+     example ahead of the form, so with an example selected -- which is the
+     page's state at load -- the stop rendered the example and the question box
+     was unreachable. Caught by the endpoint harness, which reported none of
+     the form's controls present. Whatever else is being shown, a served page
+     can always be asked. */
+  if(window.COMPASS_ENDPOINT) h+=askForm();
+  /* A proposal renders its own roles and its own Run button; the key form is
+     the entry for when there is no proposal. Never both. */
+  if(ask) h+=resolverPanel();
+  else if(window.COMPASS_ENDPOINT) h+=keyForm();
+  if(spec) h+=specifierPanel();
+  /* The committed and live halves, below whatever this session produced. Only
+     when this session produced nothing: a stale example under a fresh run is
+     the "answer a different run's numbers" defect `posed` exists to avoid. */
+  if(!ask&&!spec){
+    if(live) h+=livePanel();
+    else if(typed!==null&&!cur) h+=noRun();
+    else if(cur) h+=retrieverPanel();
+  }
+  return h||placeholder(s);
+}
+
 function stagePanel(s){
   panelLive=true;
-  if(spec&&sel==="specifier") return specifierPanel();
   /* Before the committed branches: a posed run has no retrieval of its own, and
      falling through would show the previous one as if it were this one. */
-  if(posed&&sel==="ask") return posedRetrieverPanel();
   if(posed&&sel==="intake") return posedIntakePanel();
-  if(ask&&sel==="ask") return resolverPanel();
-  if(live&&sel==="ask") return livePanel();
+  if(sel==="ask") return askPanel(s);
   if((live||(ask&&ask.rendered_query))&&sel==="intake") return liveIntakePanel();
   if(sel==="generate"&&gen) return generatePanel();
   panelLive=false;
   /* Only the two stages a query feeds. This test used to sit above every
      committed branch, so one unrecognised query made Generate, Score and
      Metrics unreachable until a reload. */
-  if(typed!==null&&!cur&&(sel==="ask"||sel==="intake")) return noRun();
-  if(sel==="ask"&&cur) return retrieverPanel();
+  if(typed!==null&&!cur&&sel==="intake") return noRun();
   if(sel==="intake"&&cur) return intakePanel();
   if(sel==="generate") return generatePanel();
   if(sel==="score") return scorePanel();
   if(sel==="metrics") return metricsPanel();
-  if(sel==="specifier"&&window.COMPASS_ENDPOINT) return specifierStart();
   return placeholder(s);
 }
 
