@@ -85,10 +85,18 @@ const PAIR_REPLY = {
   model_id: "harness",
   anchors_proposed_by: "harness",
   not_a_selection: "candidates only",
+  // ONE ADOPTED ROLE AND ONE DECLINED, which is the shape a real request
+  // produces. MEASURED on "does marijuana cause prostate cancer": the outcome
+  // resolved and the exposure came back `ambiguous` naming six
+  // operationalisations, with the exposure block in the pool at rank seven. A
+  // reply with both roles resolved tested only the happy path, and the panel
+  // was silently dropping the declined one.
   roles: {
-    exposure: { verdict: "resolved", reason: "because", proposed_indices: [1],
+    exposure: { verdict: "ambiguous", reason: "several operationalisations",
+                missing_dimension: "WHICH_OPERATIONALIZATION",
+                proposed_indices: [],
                 candidates: [{ index: 1, key: "EXP_ASKED", wording: "WORDING_EXP",
-                               proposed: true, cos: 0.5 }] },
+                               proposed: false, cos: 0.5 }] },
     outcome: { verdict: "resolved", reason: "because", proposed_indices: [1],
                candidates: [{ index: 1, key: "OUT_ASKED", wording: "WORDING_OUT",
                               proposed: true, cos: 0.5 }] },
@@ -203,11 +211,26 @@ global.fetch = async (rel, opts) => {
       // node's `.value` is whatever the stub initialised and would pass or fail
       // for reasons that have nothing to do with the page.
       const filled = node("#panel").innerHTML;
-      for (const want of ['value="EXP_ASKED"', 'value="OUT_ASKED"',
-                          "WORDING_EXP", "WORDING_OUT"]) {
+      // The ADOPTED role is filled in, with its wording beside it.
+      for (const want of ['value="OUT_ASKED"', "WORDING_OUT"]) {
         if (!filled.includes(want)) {
           fail(`asking did not put ${want} in front of the reader`);
         }
+      }
+      // The DECLINED role is not filled -- filling it would be picking one to
+      // be helpful -- but everything needed to choose must be on screen: why
+      // it declined, what would settle it, and a `use` button per candidate.
+      if (filled.includes('value="EXP_ASKED"')) {
+        fail("a declined role was filled in anyway");
+      }
+      if (!filled.includes("WHICH_OPERATIONALIZATION")) {
+        fail("the panel hides what would settle a declined role");
+      }
+      if (!filled.includes("WORDING_EXP")) {
+        fail("the panel offers no candidate wording for a declined role");
+      }
+      if (!/data-anchor="exposure"[^>]*data-key="EXP_ASKED"/.test(filled)) {
+        fail("the panel offers no way to pick a candidate for a declined role");
       }
     }
 

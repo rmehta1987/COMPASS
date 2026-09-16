@@ -1305,6 +1305,22 @@ function proposedWording(role){
   return pick?(pick.wording||""):"";
 }
 
+/* Roles the model would not commit to, rendered in full so the reader can act.
+   Empty when both were adopted -- there is nothing to choose. */
+function declinedRoles(){
+  if(!ask||!ask.roles) return "";
+  let h="";
+  for(const role of ["exposure","outcome"]){
+    const v=ask.roles[role];
+    if(!v||v.verdict==="resolved"||v.verdict==="pinned") continue;
+    h+=`<div class="none" style="color:var(--signal)">The language model would`
+      +` not commit to the <b>${esc(role)}</b>, so nothing was filled in for it.`
+      +` Pick one below, or ask again more specifically.</div>`
+      +roleBlock(role,v);
+  }
+  return h;
+}
+
 function specifierStart(){
   const busy=ask&&ask.running;
   /* LEADS WITH A QUESTION. This panel used to ask only for two variable keys,
@@ -1343,6 +1359,22 @@ function specifierStart(){
       +`<div class="t"><span class="call">outcome &middot; ${esc(ow||"not proposed")}</span></div>`
       +`</div>`:"")
     +`<div class="after"><button class="g" id="spec-go">Run the Specifier</button></div>`
+    /* A ROLE THE MODEL DECLINED IS THE MOST USEFUL THING ON THIS PANEL, and it
+       was being thrown away. `adoptProposals` carries over only `resolved` and
+       `pinned`, so an `ambiguous`, `absent`, `derive` or `family` verdict
+       leaves the field empty -- correctly, since filling it would be picking
+       one to be helpful. But the panel then said "not proposed" and stopped,
+       hiding the reason AND `missing_dimension`, which is the sentence that
+       says what would settle it. MEASURED on "does marijuana cause prostate
+       cancer": retrieval put the exposure block in the pool at rank seven and
+       the model answered `ambiguous`, naming six operationalisations and
+       asking which is the primary exposure. That is an answer, not a failure,
+       and the reader could not see it.
+
+       `roleBlock` already renders the verdict, the reason, the missing
+       dimension and every candidate with a `use` button wired by the handler
+       below, so it is reused rather than reimplemented. */
+    +declinedRoles()
     +`<div class="none">One run at a time &mdash; a second is refused rather than`
     +` queued, not silently made to wait.</div>`;
   return h;
