@@ -111,6 +111,11 @@
   dt,dd{margin:0;padding:8px 12px;border-bottom:1px solid var(--rule-2);font-size:14px}
   dt{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);background:var(--paper)}
   dd.m{font-family:var(--mono);font-size:13.5px;word-break:break-word}
+  /* The exposure and the outcome are what the reader came for, and they were
+     set at the same size as every other field on the panel. */
+  .sec.role{font-size:13px;letter-spacing:.04em;color:var(--ink)}
+  .anchors dt{font-size:13px}
+  .anchors dd,.anchors dd.m{font-size:16px;line-height:1.45}
   dl>:nth-last-child(-n+2){border-bottom:0}
   .flag{color:var(--signal);font-weight:600}
   .good{color:var(--ok);font-weight:600}
@@ -319,7 +324,28 @@ async function askResolver(stay){
   try{
     const r=await fetch("/api/pair",{method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({request:q})});
+      /* SPLIT ON. A shared pool carries every construct a request names in only
+         a minority of composed requests -- the share, and the oracle ceiling
+         beside it, are in `out/pool_coverage.json` and `TASKS.md` §C29; no
+         figure is restated here, because this page states none. That shortfall
+         is why an exposure list came back full of outcome-side items: the role
+         never reaches the encoder, so both roles were offered the identical
+         pool. With `split` a model names the exposure and outcome phrases
+         first, each is retrieved alone at an equal share of the same budget,
+         and `prompt_contract.py::parse_split` refuses any phrase that is not
+         the request's own words.
+
+         `_split_pools` FALLS BACK to the shared pool whenever the split cannot
+         be used and says why, so the failure it cannot catch is a split that is
+         usable but WRONG. That one has no fallback, so `poolNote` prints the
+         phrases it split on -- an operator can see a wrong split rather than
+         reading a confident pool built from the wrong words.
+
+         C29's ACCEPT is still owed: a split fixture authored without sight of
+         the gold wording, reported against that file's shared row. The
+         published ceiling was measured on the fixture's OWN phrases, so it
+         bounds a perfect decomposition, not this splitter. */
+      body:JSON.stringify({request:q,split:true})});
     const j=await r.json().catch(()=>null);
     if(!j||typeof j!=="object"){ ask={error:`the server answered ${r.status}`}; return; }
     if(!j.ticket){ ask=j; return; }
@@ -366,7 +392,7 @@ function adoptProposals(j){
 }
 
 function roleBlock(role,v){
-  let h=`<p class="sec">${role} &middot; <b>${esc(v.verdict)}</b></p>`;
+  let h=`<p class="sec role">${role} &middot; <b>${esc(v.verdict)}</b></p>`;
   if(v.verdict==="pinned") return h+`<div class="tools"><div class="t gate pass">`
     +`<span class="call"><b>${esc(v.pinned_key||"")}</b> ${esc(v.pinned_wording||"")}</span>`
     +`<span class="ret">named in the request &mdash; not inferred</span></div></div>`;
@@ -408,11 +434,29 @@ function poolNote(j){
     +`${n} candidate(s) from the encoder&mdash;fine-tuned bge-small,`
     +` cosine over precomputed target vectors, no language-model call in that step`
     +`&mdash;scoring cos ${f4(hi)} down to ${f4(lo)}.`
-    +(split?` Each role was retrieved from its own phrases (split ${esc(j.split.status)}).`
+    +(split?` Each role was retrieved from its OWN phrases, not from one shared`
+            +` pool.`
            :` One pool, offered to both roles: the encoder turns your whole question`
             +` into a single vector, so it cannot tell an exposure from an outcome.`
             +` Assigning them is what the model above did.`)
-    +`</div>`;
+    +`</div>`
+    /* The phrases, because a split that is usable but WRONG has no fallback:
+       `_split_pools` catches a refused or unsplittable reply and returns the
+       shared pool saying why, but nothing catches a phrase put under the wrong
+       role. Printing them is what makes that visible instead of silent. */
+    +(split&&(j.split.exposures||j.split.outcomes)
+      ?`<div class="tools">`
+        +`<div class="t"><span class="call">split on &middot; exposure</span>`
+        +`<span class="ret">${(j.split.exposures||[]).map(esc).join(" &middot; ")||"none"}</span></div>`
+        +`<div class="t"><span class="call">split on &middot; outcome</span>`
+        +`<span class="ret">${(j.split.outcomes||[]).map(esc).join(" &middot; ")||"none"}</span></div>`
+        +`</div>`
+      :"")
+    +(j.split&&j.split.status==="fallback"
+      ?`<div class="none" style="color:var(--signal)">The split could not be`
+       +` used, so both roles were offered one shared pool:`
+       +` ${esc(j.split.why||"no reason given")}</div>`
+      :"");
 }
 
 function resolverPanel(){
@@ -439,7 +483,7 @@ function resolverPanel(){
       +` was filled in there. Pick one yourself, or ask again more specifically.</div>`
       :`<div class="none">Filled from what the language model committed to. Change either`
       +` before running.</div>`)
-    +`<dl>`
+    +`<dl class="anchors">`
     +row("exposure",anchors.exposure?esc(anchors.exposure):"<em>none picked</em>",true)
     +row("outcome",anchors.outcome?esc(anchors.outcome):"<em>none picked</em>",true)
     +`</dl>`
