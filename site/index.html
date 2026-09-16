@@ -165,7 +165,7 @@
    figure is fetched from site/artifacts/*.json, each carrying its provenance.
    site-check.sh fails the build if a numeric literal appears here. */
 const DATA={};
-let sel="retriever", cur=null, typed=null;
+let sel="ask", cur=null, typed=null;
 const el=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 /* Attribute context. `esc` leaves a double quote alone, which is harmless in
@@ -227,7 +227,7 @@ function liveStatus(id){
   /* Mirrors `stagePanel`'s own `noRun` test. Drift here and the chip describes
      a panel the reader is not looking at. */
   const noRun=typed!==null&&!cur;
-  if(id==="retriever"){
+  if(id==="ask"){
     if(posed) return {cls:"built",label:"nothing to show"};
     if(ask) return ask.running?{cls:"built",label:"running&hellip;"}:{cls:"built",label:"ran"};
     if(live) return {cls:"built",label:"ran"};
@@ -308,7 +308,7 @@ async function askResolver(){
   if(!window.COMPASS_ENDPOINT){ el("#served").textContent=servedNote(); return; }
   const q=el("#q").value.trim(); if(!q) return;
   const gen=(liveGen={}), nav=(navGen={});
-  live=null; posed=null; cur=null; typed=null; ask={running:true}; sel="retriever"; draw();
+  live=null; posed=null; cur=null; typed=null; ask={running:true}; sel="ask"; draw();
   try{
     const r=await fetch("/api/pair",{method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -375,6 +375,39 @@ function roleBlock(role,v){
   return h;
 }
 
+/* WHERE THE CANDIDATES CAME FROM, stated once above the two role blocks.
+   The `retriever` rail stop became `ask` because a standalone cosine panel is
+   not something a reader can act on -- so the encoder has to account for
+   itself HERE, where the answer it produced is being read. The stop it used to
+   have is still reachable as the `Search only` button, which is also the only
+   thing the static page can run.
+
+   ONLY WHAT THE ROUTE RETURNED. `/api/pair` offers a pool; it does not run the
+   abstention check, so there is no threshold and no `abstained` verdict in this
+   payload and none is printed. Those belong to `/api/retrieve` and are shown on
+   a selected example, which is where they are actually measured. Printing a
+   threshold here would be a figure this run did not produce. */
+function poolNote(j){
+  const roles=["exposure","outcome"].map(r=>j.roles&&j.roles[r]).filter(Boolean);
+  const cands=roles.map(v=>v.candidates||[]).filter(c=>c.length);
+  if(!cands.length) return "";
+  /* The shared pool is one list offered to both roles, so the larger is the
+     pool; under `split` each role has its own and they are reported separately. */
+  const split=j.split&&j.split.status&&j.split.status!=="off";
+  const n=Math.max(...cands.map(c=>c.length));
+  const all=[].concat(...cands).map(c=>c.cos).filter(x=>typeof x==="number");
+  const hi=Math.max(...all), lo=Math.min(...all);
+  return `<p class="sec">how these were found</p><div class="none">`
+    +`${n} candidate(s) from the encoder&mdash;fine-tuned bge-small,`
+    +` cosine over precomputed target vectors, no language-model call in that step`
+    +`&mdash;scoring cos ${f4(hi)} down to ${f4(lo)}.`
+    +(split?` Each role was retrieved from its own phrases (split ${esc(j.split.status)}).`
+           :` One pool, offered to both roles: the encoder turns your whole question`
+            +` into a single vector, so it cannot tell an exposure from an outcome.`
+            +` Assigning them is what the model above did.`)
+    +`</div>`;
+}
+
 function resolverPanel(){
   const j=ask;
   if(j.running) return `<p class="sec">reading the request</p><div class="ph"><b>IN PROGRESS</b>`
@@ -385,7 +418,8 @@ function resolverPanel(){
   let h=`<p class="sec">request read by ${esc(j.model_id)} &middot; not a committed run</p><dl>`
     +row("request",esc(j.request))
     +row("proposed by",esc(j.anchors_proposed_by),true)
-    +`</dl>`;
+    +`</dl>`
+    +poolNote(j);
   for(const role of ["exposure","outcome"]) if(j.roles&&j.roles[role]) h+=roleBlock(role,j.roles[role]);
   const declined=["exposure","outcome"].filter(r=>j.roles&&j.roles[r]
     &&j.roles[r].verdict!=="resolved"&&j.roles[r].verdict!=="pinned");
@@ -1253,18 +1287,18 @@ function stagePanel(s){
   if(spec&&sel==="specifier") return specifierPanel();
   /* Before the committed branches: a posed run has no retrieval of its own, and
      falling through would show the previous one as if it were this one. */
-  if(posed&&sel==="retriever") return posedRetrieverPanel();
+  if(posed&&sel==="ask") return posedRetrieverPanel();
   if(posed&&sel==="intake") return posedIntakePanel();
-  if(ask&&sel==="retriever") return resolverPanel();
-  if(live&&sel==="retriever") return livePanel();
+  if(ask&&sel==="ask") return resolverPanel();
+  if(live&&sel==="ask") return livePanel();
   if((live||(ask&&ask.rendered_query))&&sel==="intake") return liveIntakePanel();
   if(sel==="generate"&&gen) return generatePanel();
   panelLive=false;
   /* Only the two stages a query feeds. This test used to sit above every
      committed branch, so one unrecognised query made Generate, Score and
      Metrics unreachable until a reload. */
-  if(typed!==null&&!cur&&(sel==="retriever"||sel==="intake")) return noRun();
-  if(sel==="retriever"&&cur) return retrieverPanel();
+  if(typed!==null&&!cur&&(sel==="ask"||sel==="intake")) return noRun();
+  if(sel==="ask"&&cur) return retrieverPanel();
   if(sel==="intake"&&cur) return intakePanel();
   if(sel==="generate") return generatePanel();
   if(sel==="score") return scorePanel();
@@ -1345,7 +1379,7 @@ el("#run").onclick=async()=>{
   /* Only pull the reader to the retriever if they are not deliberately
      somewhere else: a reply arriving while they read another stage should not
      move them. */
-  if(j){ live=j; if(sel!=="specifier") steer(nav,"retriever"); draw(); }
+  if(j){ live=j; if(sel!=="specifier") steer(nav,"ask"); draw(); }
 };
 /* Enter is the reader's first action; without this it did nothing. */
 el("#q").onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); el("#run").onclick(); } };

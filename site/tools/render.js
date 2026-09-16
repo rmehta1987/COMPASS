@@ -145,7 +145,7 @@ function checkFoot(label) {
   }
   // And the retriever still says so, with the query verbatim.
   document.querySelectorAll("[data-s]");
-  const rb = byData.filter(x => x.dataset.s === "retriever" && x.onclick).pop();
+  const rb = byData.filter(x => x.dataset.s === "ask" && x.onclick).pop();
   if (rb) rb.onclick();
   if (!/NO COMMITTED RUN/.test(node("#panel").innerHTML)) { console.error("render: typed/no-run: retriever does not say so"); failed++; }
   // download and png handlers, if present

@@ -124,7 +124,7 @@ def main() -> int:
         # 4b the five 2026-09-09 review fixes, each re-seeded: render.js must
         # catch the defect coming back, not only the page as it stands.
         root = copy_site(tmp / "h3")
-        plant_page(root, 'if(typed!==null&&!cur&&(sel==="retriever"||sel==="intake")) return noRun();',
+        plant_page(root, 'if(typed!==null&&!cur&&(sel==="ask"||sel==="intake")) return noRun();',
                    'if(typed!==null&&!cur) return noRun();')
         results.append(("parse", "unmatched query hides Metrics", run("parse", root) != 0))
         root = copy_site(tmp / "h4")

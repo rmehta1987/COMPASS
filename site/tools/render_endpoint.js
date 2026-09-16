@@ -130,7 +130,7 @@ global.fetch = async (rel) => rel === "/api/enumerate"
   // is what makes the clearing below observable.
   node("#q").value = "a query whose retrieval must not survive the launch";
   document.querySelectorAll("[data-s]");
-  const retTab = byData.filter(x => x.dataset.s === "retriever" && x.onclick).pop();
+  const retTab = byData.filter(x => x.dataset.s === "ask" && x.onclick).pop();
   if (retTab) retTab.onclick();
 
   document.querySelectorAll("[data-genex]");
@@ -146,7 +146,7 @@ global.fetch = async (rel) => rel === "/api/enumerate"
     launch.onclick();
     await new Promise(r => setTimeout(r, 50));
 
-    for (const [stage, must] of [["retriever", "NO RETRIEVAL WAS RUN"],
+    for (const [stage, must] of [["ask", "NO RETRIEVAL WAS RUN"],
                                  ["intake", "NO QUERY WAS RENDERED"]]) {
       document.querySelectorAll("[data-s]");
       const t = byData.filter(x => x.dataset.s === stage && x.onclick).pop();
@@ -167,7 +167,7 @@ global.fetch = async (rel) => rel === "/api/enumerate"
     // vacuous the moment the vocabulary changed, so assert BOTH that the chip
     // moved off its committed default and what it moved to.
     const railHtml = node("#rail").innerHTML;
-    for (const id of ["retriever", "intake"]) {
+    for (const id of ["ask", "intake"]) {
       const m = new RegExp(`data-s="${id}"[\\s\\S]*?<span class="st[^"]*">([^<]*)</span>`).exec(railHtml);
       const txt = m ? m[1].trim() : "";
       if (/example|past run|committed run|not yet run/i.test(txt)) {
