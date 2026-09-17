@@ -187,6 +187,13 @@
      rates, the page having no literal hundred to multiply by. */
   .rocw{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 16px;
     align-items:start;margin:0 0 8px}
+  /* The plot is 250px, too narrow to carry a tick, an axis name and a tick on
+     one line: `space-between` collided them into "0%accepted, of those it
+     should decline100%". The two ticks keep the line, the name wraps below and
+     centres under them. `costFig`'s plot is full-width, so it needs none of
+     this and keeps the shared rule. */
+  .rocw .xl{flex-wrap:wrap}
+  .rocw .xl .ax{flex-basis:100%;text-align:center;padding-top:3px}
   /* `to bottom right`, NOT `to top right`. A gradient's constant-colour band is
      PERPENDICULAR to its axis, so `to bottom right` lays the 50% band across the
      bottom-left and top-right corners -- which is where chance lies, because
@@ -1332,22 +1339,42 @@ function whyGap(R){
 function rocFig(R){
   /* Destructured, not indexed: subscripting the array would put a literal on
      the page, which the fabrication gate reads as an untraceable figure. */
-  const [A,B]=R.curves, ab=R.abstention, op=ab.operating_point;
+  const [A,B]=R.curves, ab=R.abstention, op=ab.operating_point, ax=R.axes;
   const dots=(c,cls)=>c.points.map(q=>
     `<span class="p ${cls}" style="--x:${q.x};--y:${q.y}"></span>`).join("");
-  return `<div class="rocw"><div class="roc">`+dots(A,"a")+dots(B,"b")
+  /* AXES, NAMED AND SCALED. Neither was: searching the page for either rate's
+     name found nothing, and the range lived only in a comment. So a reader
+     could not tell what either direction meant, which way better ran, or --
+     the reason it mattered -- whether the diagonal the legend calls chance is
+     the right diagonal. It had been the wrong one, and nothing rendered
+     contradicted it.
+
+     Named for what the score DOES rather than by the usual rate names, because
+     the two curves have different classes: "should accept" is an answerable
+     request on the upper curve and a correct top match on the lower one, and
+     the legend says which is which. The bounds come from `roc.json::axes`,
+     since the page may hold no numeral of its own, and the furniture is
+     `costFig`'s own `.fig`/`.yl`/`.xl` grid, so this adds no stylesheet. */
+  const lo=`${ax.min}%`, hi=`${ax.max}%`;
+  return `<div class="rocw"><div class="fig">`
+   +`<div class="yl">accepted, of those it should accept</div>`
+   +`<div class="roc">`+dots(A,"a")+dots(B,"b")
    +`<span class="op" style="--x:${op.x};--y:${op.y}"><b>where it runs</b></span></div>`
+   +`<div class="xl"><span>${lo}</span><span>${hi}</span>`
+   +`<span class="ax">accepted, of those it should decline</span></div></div>`
    +`<div class="key"><i class="a"></i><b>${esc(A.what)}</b><br>`
    +`area under the curve ${A.auroc.toFixed(4)} &middot; ${A.n_positive} answerable`
    +` against ${A.n_negative} absent<br><br>`
    +`<i class="b"></i><b>${esc(B.what)}</b><br>`
    +`area under the curve ${B.auroc.toFixed(4)} &middot; ${B.n_positive} right against`
    +` ${B.n_negative} wrong<br><br>`
-   +`<i></i>a score that knew nothing would follow the diagonal<br><br>`
+   +`<i></i>both axes run from ${lo} at the bottom-left corner to ${hi} at the far`
+   +` end, and a score that knew nothing would fall on the diagonal between that`
+   +` corner and the opposite one, where the two shares are equal<br><br>`
    +`<b>where it runs</b><br>threshold ${ab.min_cos}, which declines`
    +` ${ab.negatives_rejected} of the ${ab.n_negatives} requests the codebook cannot`
-   +` answer. Up and to the left is better; the lower curve has almost nowhere`
-   +` better to be.</div></div>`;
+   +` answer. Up and to the left is better. The lower curve sits only just above`
+   +` that diagonal, which is what its area means.</div></div>`;
 }
 
 /* COST AGAINST RECALL, for the frozen-encoder sweep. Eleven columns over five

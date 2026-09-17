@@ -124,6 +124,7 @@ def main() -> int:
     # the project's own summaries of the same rows, and a second estimator of a
     # median is a second number for one quantity.
     cos, cbc = sep["cos_top1"], cal["cos_top1_by_correctness"]
+    pts_match, pts_right = curve(p_all, n_all), curve(ok, bad)
     doc: dict[str, Any] = {
         "schema": "compass_site/roc/1",
         "provenance": {
@@ -160,19 +161,32 @@ def main() -> int:
                 sum(1 for r in posr if r["right_construct"] and not r["correct"]),
             "n_gold_is_a_folded_family": sum(1 for r in posr if r["gold_folded"]),
         },
+        # The axes' own bounds and sense, read off the emitted points rather
+        # than assumed. The page may not hold a numeric literal, so without
+        # these it could print no tick at all -- and it printed none: neither
+        # axis was named or scaled anywhere, which left the reader no way to
+        # check the chance diagonal, or even to know which way "better" runs.
+        # `y_measured_from` states the convention that `curve` applies and that
+        # `parse.py::roc_reference_line_corners` holds the stylesheet to.
+        "axes": {
+            "unit": "percent",
+            "min": min(q[k] for c in (pts_match, pts_right) for q in c for k in "xy"),
+            "max": max(q[k] for c in (pts_match, pts_right) for q in c for k in "xy"),
+            "y_measured_from": "top",
+        },
         "curves": [
             {"id": "match",
              "what": "does this request have any match in the codebook at all",
              "positive": "a request whose construct is in the codebook",
              "negative": "a held-out request whose construct is absent",
              "auroc": a_match, "n_positive": len(p_all), "n_negative": len(n_all),
-             "points": curve(p_all, n_all)},
+             "points": pts_match},
             {"id": "right",
              "what": "is the top match the right item",
              "positive": "the top match was the gold target",
              "negative": "the top match was some other target",
              "auroc": a_right, "n_positive": len(ok), "n_negative": len(bad),
-             "points": curve(ok, bad)},
+             "points": pts_right},
         ],
         "abstention": {
             # Where the shipped threshold actually sits on the match curve, so

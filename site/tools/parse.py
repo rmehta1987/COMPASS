@@ -164,6 +164,48 @@ def roc_section_names_its_arm(html: str) -> list[str]:
     return []
 
 
+def roc_axes_are_named_and_scaled(html: str) -> list[str]:
+    """`rocFig` must name both axes and take their bounds from the artifact.
+
+    MEASURED 2026-09-16: neither axis was named or scaled anywhere on the page.
+    Searching it for either rate's name found nothing, and "the axis is 0..1"
+    existed only in a source comment. The consequence was not cosmetic: the
+    reference band was drawn on the wrong diagonal, and with no axis names and
+    no bounds a reader had nothing to check it against -- the legend asserted
+    which line was chance and the page offered no way to disagree.
+
+    Both halves are required. A name with no bounds leaves the scale unknown,
+    and bounds retyped into the page rather than read from `roc.json::axes`
+    would be an untraceable figure, which is the whole reason the builder emits
+    percentages.
+
+    Args:
+        html: The page source.
+
+    Returns:
+        One line per missing piece; empty when both axes are named and scaled,
+        and when the page draws no ROC.
+    """
+    if ".roc{" not in html.replace(" ", ""):
+        return []
+    m = re.search(r"function rocFig\(.*?\n\}", html, re.S)
+    if not m:
+        return ["the page draws a ROC but has no `rocFig` to label its axes"]
+    body = m.group(0)
+    out = []
+    if 'class="yl"' not in body:
+        out.append("rocFig names no vertical axis (no `.yl` label), so a reader cannot "
+                   "tell what height means or which way better runs")
+    if 'class="xl"' not in body:
+        out.append("rocFig names no horizontal axis (no `.xl` row), so a reader cannot "
+                   "tell what width means")
+    if "ax.min" not in body or "ax.max" not in body:
+        out.append("rocFig prints no axis bounds from `roc.json::axes`, so the plot has "
+                   "no scale -- and the page may not hold a numeral of its own, so the "
+                   "bounds have to come from the artifact")
+    return out
+
+
 def topic_bars_cover_the_fixture(html: str) -> list[str]:
     """Every test question must sit in some bar of the by-topic chart.
 
@@ -318,6 +360,7 @@ def main() -> None:
         problems.extend(f"{rel}: {e}" for e in unstyled_status_classes(html))
         problems.extend(f"{rel}: {e}" for e in roc_reference_line_corners(html))
         problems.extend(f"{rel}: {e}" for e in roc_section_names_its_arm(html))
+        problems.extend(f"{rel}: {e}" for e in roc_axes_are_named_and_scaled(html))
         problems.extend(f"{rel}: {e}" for e in topic_bars_cover_the_fixture(html))
     r = subprocess.run(["node", str(Path(__file__).with_name("render.js")), str(SITE)],
                        capture_output=True, text=True)

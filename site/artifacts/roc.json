@@ -24,6 +24,12 @@
   "n_right_construct_wrong_item": 11,
   "n_gold_is_a_folded_family": 56
  },
+ "axes": {
+  "unit": "percent",
+  "min": 0.0,
+  "max": 100.0,
+  "y_measured_from": "top"
+ },
  "curves": [
   {
    "id": "match",
