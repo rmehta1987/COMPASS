@@ -38,6 +38,13 @@ KEY_RE = re.compile(
     re.IGNORECASE)
 N = 5
 SKIP_SUFFIXES = {".safetensors", ".png", ".pt", ".bin"}
+# Generated caches are not site content, and counting them made the scanned
+# total a property of whatever was last imported rather than of the tree:
+# MEASURED 2026-09-16, it read 29, 30, 31 and 32 within one session with the
+# site unchanged. The scan was never weaker for it -- it covered MORE than it
+# had to -- but a printed denominator that moves on its own is the defect this
+# project audits pages for. `plant.py` already ignores the same directory.
+SKIP_DIRS = {".git", "__pycache__"}
 
 
 def grams(text: str) -> set[tuple[str, ...]]:
@@ -99,9 +106,21 @@ def key_re_coverage(dic: Path) -> tuple[list[str], int]:
              for s, c in sorted(seen.items())], total)
 
 
-def site_files() -> list[Path]:
-    return sorted(p for p in SITE.rglob("*")
-                  if p.is_file() and p.suffix not in SKIP_SUFFIXES and ".git" not in p.parts)
+def site_files(root: Path | None = None) -> list[Path]:
+    """Every file under the site root that the scan can read.
+
+    Args:
+        root: Directory to walk. Defaults to the site root, which is what
+            `main` uses; a test passes its own tree so the exclusions are
+            checkable without reaching for the real one.
+
+    Returns:
+        The files, sorted, with generated caches and binary formats dropped.
+    """
+    base = SITE if root is None else root
+    return sorted(p for p in base.rglob("*")
+                  if p.is_file() and p.suffix not in SKIP_SUFFIXES
+                  and not SKIP_DIRS & set(p.parts))
 
 
 def main() -> None:
@@ -132,8 +151,10 @@ def main() -> None:
         for s in problems:
             print("      " + s)
         fail(f"no_instrument: {len(problems)} problem(s) across {n} file(s)")
-    ok(f"no_instrument: {n} file(s) scanned against {len(corpus)} five-word runs "
-       f"and {keys_checked} key(s), all covered by KEY_RE, from {dic.name}")
+    ok(f"no_instrument: {n} file(s) under {SITE.name}/ scanned, excluding "
+       f"{'/'.join(sorted(SKIP_DIRS))} and {len(SKIP_SUFFIXES)} binary suffix(es), "
+       f"against {len(corpus)} five-word runs and {keys_checked} key(s), all covered "
+       f"by KEY_RE, from {dic.name}")
 
 
 if __name__ == "__main__":
