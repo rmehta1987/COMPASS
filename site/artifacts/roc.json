@@ -7,11 +7,11 @@
  },
  "top1_accuracy": 0.567,
  "scores": {
-  "what": "median top match score, and the worst overlap",
-  "absent_median": 0.5961,
-  "answerable_median": 0.8795,
-  "right_median": 0.907,
-  "wrong_median": 0.8356,
+  "what": "top match score at the nearest rank for the midpoint, and the worst overlap. Not a median: on an even-sized group it is the value just above the middle, and it is always one of the observed scores. src/char_report.py::pct is the rule, and build_roc.py re-derives every figure here from the rows",
+  "absent_p50": 0.5961,
+  "answerable_p50": 0.8795,
+  "right_p50": 0.907,
+  "wrong_p50": 0.8356,
   "wrong_max": 0.9777,
   "right_min": 0.6464
  },

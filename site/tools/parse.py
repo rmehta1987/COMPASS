@@ -206,6 +206,46 @@ def roc_axes_are_named_and_scaled(html: str) -> list[str]:
     return out
 
 
+def score_spread_is_not_called_a_median(html: str) -> list[str]:
+    """`whyGap` must not call `roc.json::scores`'s nearest-rank figures medians.
+
+    MEASURED 2026-09-16: it did, for four figures, and two of them were not
+    medians. `src/char_report.py::pct` is a nearest-rank percentile -- on an
+    even-sized group the value just above the middle rather than the average of
+    the two -- and the `absent` and `answerable` groups are even-sized, so the
+    page printed 0.5961 and 0.8795 where the medians are 0.5908 and 0.8781. The
+    other two matched only because 127 and 97 are odd.
+
+    Scoped to `whyGap`, and to the word used as a LABEL -- next to one of the
+    figures it names. "median" is correct elsewhere on the page, where a latency
+    really is one, and the paragraph itself has to be free to say that these are
+    NOT medians. Writing that sentence is what first reddened this check.
+
+    A word check, so it catches the label coming back and not every vague way of
+    describing the same figure; the arithmetic is held by `build_roc.py`, which
+    re-derives all six figures from the rows.
+
+    Args:
+        html: The page source.
+
+    Returns:
+        One line when the label is back, else empty; also empty when the page has
+        no `whyGap`.
+    """
+    m = re.search(r"function whyGap\(.*?\n\}", html, re.S)
+    if not m:
+        return []
+    body = m.group(0)
+    label = re.compile(r"median[^\n]{0,24}\$\{s\.|\$\{s\.[^}]*\}[^\n]{0,24}median")
+    if not label.search(body):
+        return []
+    return ["whyGap calls its figures medians, and they are nearest-rank percentiles "
+            "-- on an even-sized group the value just above the middle, not the average "
+            "of the two, so two of the four are not the median they would claim to be. "
+            "Say what the figure is instead: at least half the group scored at or below "
+            "it, and it is one of the scores that occurred"]
+
+
 def topic_bars_cover_the_fixture(html: str) -> list[str]:
     """Every test question must sit in some bar of the by-topic chart.
 
@@ -361,6 +401,7 @@ def main() -> None:
         problems.extend(f"{rel}: {e}" for e in roc_reference_line_corners(html))
         problems.extend(f"{rel}: {e}" for e in roc_section_names_its_arm(html))
         problems.extend(f"{rel}: {e}" for e in roc_axes_are_named_and_scaled(html))
+        problems.extend(f"{rel}: {e}" for e in score_spread_is_not_called_a_median(html))
         problems.extend(f"{rel}: {e}" for e in topic_bars_cover_the_fixture(html))
     r = subprocess.run(["node", str(Path(__file__).with_name("render.js")), str(SITE)],
                        capture_output=True, text=True)

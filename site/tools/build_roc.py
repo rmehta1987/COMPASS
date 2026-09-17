@@ -89,6 +89,30 @@ def curve(pos: list[float], neg: list[float]) -> list[dict[str, float]]:
     return pts
 
 
+def p50(xs: list[float]) -> float:
+    """The nearest-rank 50th percentile, to four places.
+
+    `src/char_report.py::pct` is the convention every figure in this project's
+    characterisation uses, and it is NOT a median: it returns
+    `sorted(xs)[int(q * len(xs))]`, so on an even-sized group it is the value
+    just above the middle rather than the average of the two, and it is always
+    one of the observed values.
+
+    Re-derived here rather than trusted so the page can describe the figure
+    correctly. Copying it and calling it a median is what the page did, and two
+    of the four it printed were not medians: `absent` 0.5961 against a true
+    median of 0.5908 over 44 rows, `answerable` 0.8795 against 0.8781 over 224.
+    The other two matched only because their group sizes are odd.
+
+    Args:
+        xs: The group's scores.
+
+    Returns:
+        The value at the nearest rank for the midpoint, rounded to four places.
+    """
+    return round(sorted(xs)[len(xs) // 2], 4)
+
+
 def main() -> int:
     """Write the artifact, or fail if a computed AUROC contradicts the published one.
 
@@ -124,6 +148,18 @@ def main() -> int:
     # the project's own summaries of the same rows, and a second estimator of a
     # median is a second number for one quantity.
     cos, cbc = sep["cos_top1"], cal["cos_top1_by_correctness"]
+    # Every figure in `scores` re-derived from the rows and asserted against the
+    # published summary, exactly as the two areas are. Quoting them unchecked is
+    # how `p50` came to be printed as a median: nothing tied the label on the
+    # page to the rule that produced the number.
+    for label, published, derived in (
+            ("absent p50", cos["negatives_all"]["p50"], p50(n_all)),
+            ("answerable p50", cos["positives_all"]["p50"], p50(p_all)),
+            ("right p50", cbc["correct"]["p50"], p50(ok)),
+            ("wrong p50", cbc["incorrect"]["p50"], p50(bad)),
+            ("wrong max", cbc["incorrect"]["max"], round(max(bad), 4)),
+            ("right min", cbc["correct"]["min"], round(min(ok), 4))):
+        assert published == derived, f"{label}: published {published} != {derived}"
     pts_match, pts_right = curve(p_all, n_all), curve(ok, bad)
     doc: dict[str, Any] = {
         "schema": "compass_site/roc/1",
@@ -143,11 +179,15 @@ def main() -> int:
         },
         "top1_accuracy": acc,
         "scores": {
-            "what": "median top match score, and the worst overlap",
-            "absent_median": cos["negatives_all"]["p50"],
-            "answerable_median": cos["positives_all"]["p50"],
-            "right_median": cbc["correct"]["p50"],
-            "wrong_median": cbc["incorrect"]["p50"],
+            "what": ("top match score at the nearest rank for the midpoint, and "
+                     "the worst overlap. Not a median: on an even-sized group it "
+                     "is the value just above the middle, and it is always one of "
+                     "the observed scores. src/char_report.py::pct is the rule, "
+                     "and build_roc.py re-derives every figure here from the rows"),
+            "absent_p50": cos["negatives_all"]["p50"],
+            "answerable_p50": cos["positives_all"]["p50"],
+            "right_p50": cbc["correct"]["p50"],
+            "wrong_p50": cbc["incorrect"]["p50"],
             "wrong_max": cbc["incorrect"]["max"],
             "right_min": cbc["correct"]["min"],
         },

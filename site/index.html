@@ -1311,21 +1311,37 @@ function scoreTable(R){
 }
 
 /* WHY ONE SCORE DOES THE TWO JOBS SO DIFFERENTLY. Without this the two areas
-   look like a contradiction. Medians are quoted from the published
-   characterisation through the artifact, not recomputed: a second estimator of
-   a median is a second number for one quantity. */
+   look like a contradiction.
+
+   THESE ARE NOT MEDIANS, and they were labelled as such. Every figure here is
+   `src/char_report.py::pct` at the midpoint -- a nearest-rank percentile, which
+   on an even-sized group is the value just above the middle rather than the
+   average of the two. Two of the four groups are even-sized, so two of the four
+   printed figures were not the median they claimed to be. The gap is small and
+   changes no argument on this panel, which is exactly why it survived.
+
+   Renaming them `p50` would have swapped one piece of jargon for a worse one,
+   so the paragraph now states the rule in words a reader can apply, and
+   `build_roc.py` re-derives all six figures from the rows and asserts them
+   against the published summary -- the label on the page and the rule that
+   produced the number are tied together at build time. */
 function whyGap(R){
   const s=R.scores;
   return `<div class="none"><b>Why one score does those two jobs so differently.</b>`
-   +` <em>An absent request:</em> nothing in the codebook is close, so the best match`
-   +` is weak &mdash; median ${s.absent_median.toFixed(4)} against`
-   +` ${s.answerable_median.toFixed(4)} for a request the codebook can answer. Those`
+   +` Each figure here is a middle-of-the-pack score: at least half the requests in`
+   +` its group scored at or below it, and the figure is itself one of the scores`
+   +` that occurred. It is deliberately not called a median &mdash; on an`
+   +` even-sized group it is the value just above the middle, not the average of`
+   +` the two.`
+   +`<br><br><em>An absent request:</em> nothing in the codebook is close, so the`
+   +` best match is weak &mdash; typically ${s.absent_p50.toFixed(4)} against`
+   +` ${s.answerable_p50.toFixed(4)} for a request the codebook can answer. Those`
    +` two barely overlap, which is the high area.`
    +`<br><br><em>Answerable but wrong:</em> something IS close, it just is not the`
-   +` right entry &mdash; median ${s.right_median.toFixed(4)} when the top match is`
-   +` right against ${s.wrong_median.toFixed(4)} when it is wrong, and those two lie`
+   +` right entry &mdash; ${s.right_p50.toFixed(4)} when the top match is`
+   +` right against ${s.wrong_p50.toFixed(4)} when it is wrong, and those two lie`
    +` on top of each other. The highest-scoring wrong answer is`
-   +` ${s.wrong_max.toFixed(4)}, above the median right one. The score measures how`
+   +` ${s.wrong_max.toFixed(4)}, above the middling right one. The score measures how`
    +` similar the best entry it found is to the request, not whether that entry is the`
    +` one you meant &mdash; so a confidently wrong answer is indistinguishable from a`
    +` confidently right one.</div>`;
