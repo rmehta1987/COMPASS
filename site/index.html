@@ -187,9 +187,19 @@
      rates, the page having no literal hundred to multiply by. */
   .rocw{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 16px;
     align-items:start;margin:0 0 8px}
+  /* `to bottom right`, NOT `to top right`. A gradient's constant-colour band is
+     PERPENDICULAR to its axis, so `to bottom right` lays the 50% band across the
+     bottom-left and top-right corners -- which is where chance lies, because
+     `build_roc.py::curve` measures y from the TOP. `to top right` laid it across
+     the top-left and bottom-right corners instead, joining the PERFECT corner to
+     the WORST one, and both curves crossed it: the weak curve read as below
+     chance over the low-FPR half, which is the half the threshold operates in.
+     The legend calls this line chance in words, so a reader had no way to catch
+     it. `parse.py::roc_reference_line_corners` derives the right pair of corners
+     from the artifact's own endpoints and pins it. */
   .roc{position:relative;width:250px;height:250px;
     border-left:1px solid var(--rule);border-bottom:1px solid var(--rule);
-    background-image:linear-gradient(to top right,transparent calc(50% - 1px),
+    background-image:linear-gradient(to bottom right,transparent calc(50% - 1px),
       var(--rule-2) calc(50% - 1px),var(--rule-2) calc(50% + 1px),
       transparent calc(50% + 1px))}
   .roc .p{--x:0;--y:0;position:absolute;left:calc(var(--x) * 1%);
