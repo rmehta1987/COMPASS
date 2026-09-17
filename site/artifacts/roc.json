@@ -3,7 +3,9 @@
  "provenance": {
   "source": "computed by site/tools/build_roc.py from out/char_pos_bge-small_ft.json and out/char_neg_bge-small_ft.json, the per-row characterisation of the shipped fine-tuned bge-small; out/ is gitignored, so this runs on the training machine only. Each area is asserted against the figure already published for the same pair in out/char_task2_negatives.json and out/char_task3_calibration.json",
   "run_id": "runs/bge-small_nn0_t0.10",
-  "dictionary_version_hash": "3dc8415eccfe"
+  "commit": "deploy/manifest.json dfe3083",
+  "dictionary_version_hash": "3dc8415eccfe",
+  "inputs_note": "every score this artifact is computed from lives under out/, which .gitignore excludes, so it cannot be rebuilt from a public clone at all. REPRODUCIBILITY.md lists the inputs, and PROVENANCE.md carries their checksums. This artifact is the committed record"
  },
  "top1_accuracy": 0.567,
  "scores": {

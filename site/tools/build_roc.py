@@ -28,6 +28,7 @@ the build rather than shipping a second, quieter number.
 from __future__ import annotations
 
 import json
+import subprocess
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,25 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent.parent
 OUT = ROOT / "out"
 ARTIFACTS = ROOT / "site" / "artifacts"
+
+
+def commit_of(path: str) -> str:
+    """The short sha that last touched a tracked path.
+
+    Recorded for the one input this builder has that a public clone also has.
+    Everything else it reads is under `out/`, which `.gitignore` excludes, so
+    there is no commit to name for those -- `REPRODUCIBILITY.md` says which they
+    are and what that costs a reader.
+
+    Args:
+        path: Repository-relative path.
+
+    Returns:
+        The short sha, or `untracked` when git knows nothing about the path.
+    """
+    r = subprocess.run(["git", "-C", str(ROOT), "log", "-1", "--format=%h", "--", path],
+                       capture_output=True, text=True)
+    return r.stdout.strip() or "untracked"
 
 
 def auroc(pos: list[float], neg: list[float]) -> float:
@@ -189,7 +209,17 @@ def main() -> int:
                        "out/char_task3_calibration.json"),
             "run_id": json.loads(
                 (OUT / "char_pos_bge-small_ft.json").read_text())["source"],
+            # roc.json was the only artifact in the index with neither a commit
+            # nor a date, and its run_id names a path under `runs/` that no
+            # public clone has. This is the commit of the one input a public
+            # clone DOES have; the rest are withheld and named below.
+            "commit": f"deploy/manifest.json {commit_of('deploy/manifest.json')}",
             "dictionary_version_hash": man["dictionary_version_hash"],
+            "inputs_note": ("every score this artifact is computed from lives under "
+                            "out/, which .gitignore excludes, so it cannot be rebuilt "
+                            "from a public clone at all. REPRODUCIBILITY.md lists the "
+                            "inputs, and PROVENANCE.md carries their checksums. This "
+                            "artifact is the committed record"),
         },
         "top1_accuracy": acc,
         "scores": {
