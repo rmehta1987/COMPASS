@@ -1453,14 +1453,15 @@ function measureHTML(){
    +[["S",S],["I",I]].map(([k,a])=>`<tr><td>${k} · ${esc(a.label)}</td>${sh.arm_columns.map(([c])=>`<td>${cell(c,a[c])}</td>`).join("")}<td>${a.negatives_rejected} / ${a.n_negatives}</td><td>${a.auroc_absent_vs_present.toFixed(3)}</td></tr>`).join("")
    +`</tbody></table></div>
   <div class="none">Both arms are one model on one machine; they differ only in how the query was rendered. AUROC is shown to three places: it is computed over ${I.n_negatives} negatives and ${n} positives, and the two arms reject the same count.</div>
-  <p class="sec">what the similarity score can and cannot tell apart</p>`
+  <p class="sec">what the similarity score can and cannot tell apart &middot; arm S &middot; ${esc(S.label)}</p>
+  <div class="none">Everything in this section &mdash; the three numbers, both curves, the operating point and the medians &mdash; is arm S, <em>${esc(S.label)}</em>. That is <b>not</b> the arm that ships. The shipped contract is arm I, <em>${esc(I.label)}</em>, and the threshold row that closes this section is arm I. The arms differ only in how the request was rendered, so a figure here and a figure there are not two measurements of one quantity: the coverage tabulated below is arm I's, and it is not the operating point drawn above. Arm I's version of these two curves is not published in any artifact this page loads, which is why the curves shown are arm S's.</div>`
    +scoreTable(R)
    +rocFig(R)
    +whyGap(R)
    +`<div class="tbl"><table><thead><tr><th>threshold</th><th>min_cos</th><th>coverage</th><th>precision</th><th>recall</th><th>F1</th><th>candidate values</th><th>latency</th></tr></thead><tbody>
-   <tr><td>shipped · F1-maximising over the same ${n} positives it is reported on</td><td>${th.min_cos.toFixed(6)}</td><td>${th.coverage.toFixed(4)}</td><td>${th.precision.toFixed(4)}</td><td>${th.recall.toFixed(4)}</td><td>${th.f1.toFixed(4)}</td><td>${th.candidate_taus}</td><td>${lat.query_ms_isolated_single} ms · ${esc(lat.machine)} · ${lat.threads} threads</td></tr>
+   <tr><td>shipped &middot; arm I &middot; F1-maximising over the same ${n} positives it is reported on</td><td>${th.min_cos.toFixed(6)}</td><td>${th.coverage.toFixed(4)}</td><td>${th.precision.toFixed(4)}</td><td>${th.recall.toFixed(4)}</td><td>${th.f1.toFixed(4)}</td><td>${th.candidate_taus}</td><td>${lat.query_ms_isolated_single} ms · ${esc(lat.machine)} · ${lat.threads} threads</td></tr>
   </tbody></table></div>
-  <div class="none">Coverage: ${esc(th.definitions.coverage)}. Precision: ${esc(th.definitions.precision)}. Recall: ${esc(th.definitions.recall)}. This recall is not the ${R1} above: ${R1} counts every query, this one only those that cleared min_cos. ${esc(th.selection_note)}.</div>
+  <div class="none">This row is arm I &mdash; <em>${esc(I.label)}</em> &mdash; not the arm S the curves above are drawn from. Coverage: ${esc(th.definitions.coverage)}. Precision: ${esc(th.definitions.precision)}. Recall: ${esc(th.definitions.recall)}. This recall is not the ${R1} above: ${R1} counts every query, this one only those that cleared min_cos. ${esc(th.selection_note)}.</div>
   <p class="prov">${esc(lat.note)}</p>`;
   h+=`<div class="none">${esc(sh.wrong_pick_detection.note)}.</div>`;
   return h;

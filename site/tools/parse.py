@@ -115,6 +115,55 @@ def roc_reference_line_corners(html: str) -> list[str]:
             "is `to bottom right`"]
 
 
+def roc_section_names_its_arm(html: str) -> list[str]:
+    """The heading over the score table must name the arm `roc.json` came from.
+
+    The panel carries two query arms. `roc.json` is one of them and the threshold
+    row beneath it is the other, and for a while neither said so: the three
+    numbers, both curves and the operating point were arm S -- which does not
+    ship -- sitting directly above an arm-I threshold row labelled `shipped`.
+    They disagreed visibly, the operating point at arm S's coverage and the table
+    at arm I's, one positive row apart.
+
+    The arm is identified by matching the artifact's own headline against the
+    published arms rather than by trusting the label, so relabelling the section
+    without rebuilding the artifact, or rebuilding it from the other arm without
+    relabelling, both redden.
+
+    Args:
+        html: The page source.
+
+    Returns:
+        One line naming the mismatch, or empty when the heading names the arm the
+        artifact matches; also empty when the page draws no ROC.
+    """
+    roc, mea = ARTIFACTS / "roc.json", ARTIFACTS / "measurements.json"
+    if ".roc{" not in html.replace(" ", "") or not (roc.exists() and mea.exists()):
+        return []
+    i = html.find("+scoreTable(")
+    if i < 0:
+        return ["the page draws a ROC but never calls scoreTable(, so the arm the figures "
+                "come from cannot be located"]
+    heads = re.findall(r'<p class="sec">(.*?)</p>', html[max(0, i - 4000):i], re.S)
+    if not heads:
+        return ["no `<p class=\"sec\">` heading introduces the score table, so nothing on "
+                "the page can name the arm its figures come from"]
+    R = json.loads(roc.read_text(encoding="utf-8"))
+    arms = json.loads(mea.read_text(encoding="utf-8"))["shipped"]["arms"]
+    want = round(R["curves"][0]["auroc"], 4)
+    match = [k for k, a in arms.items()
+             if a.get("recall_at_1") == R["top1_accuracy"]
+             and round(a.get("auroc_absent_vs_present", -1), 4) == want]
+    if len(match) != 1:
+        return [f"roc.json's headline figures match {len(match)} of the "
+                f"{len(arms)} published arms ({', '.join(match) or 'none'}), so which arm "
+                "the curves belong to cannot be established from the artifacts"]
+    if f"arm {match[0]}" not in heads[-1]:
+        return [f"roc.json's figures are arm {match[0]}, but the heading over the score "
+                f"table does not say so: {heads[-1].strip()!r}"]
+    return []
+
+
 ENTITY_RE = re.compile(r"&[a-zA-Z][a-zA-Z0-9]*;")
 
 
@@ -230,6 +279,7 @@ def main() -> None:
         rel = page.relative_to(SITE)
         problems.extend(f"{rel}: {e}" for e in unstyled_status_classes(html))
         problems.extend(f"{rel}: {e}" for e in roc_reference_line_corners(html))
+        problems.extend(f"{rel}: {e}" for e in roc_section_names_its_arm(html))
     r = subprocess.run(["node", str(Path(__file__).with_name("render.js")), str(SITE)],
                        capture_output=True, text=True)
     if r.returncode:
