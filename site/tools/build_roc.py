@@ -28,6 +28,7 @@ the build rather than shipping a second, quieter number.
 from __future__ import annotations
 
 import json
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -137,6 +138,19 @@ def main() -> int:
     assert round(a_match, 4) == want_match, f"match AUROC {a_match} != {want_match}"
     assert round(a_right, 4) == want_right, f"right AUROC {a_right} != {want_right}"
 
+    # THE FIXTURE'S SHAPE, derived from the rows rather than parsed from prose.
+    # The 224 requests are 56 codebook entries described four ways each, so a
+    # count out of 224 counts requests, not distinct targets. The page quoted
+    # every one of those counts at 224 and said so nowhere. Only the two counts
+    # leave here -- `gold_key` is instrument content and stays in `out/`.
+    per_item = sorted(set(Counter(r["gold_key"] for r in posr).values()))
+    assert len(per_item) == 1, (
+        f"phrasings per gold item are not uniform: {per_item}. The page says every "
+        "entry was described the same number of ways; if that stops being true the "
+        "sentence has to change, not this assert")
+    n_items = len({r["gold_key"] for r in posr})
+    assert n_items * per_item[0] == len(posr), (n_items, per_item, len(posr))
+
     rejected = sum(1 for v in n_all if v < tau)
     # Top-1 accuracy is the figure both areas are ABOUT, and the panel showed
     # neither it nor its denominator -- so 0.9823 read as "98% accurate". It is
@@ -200,6 +214,15 @@ def main() -> int:
             "n_right_construct_wrong_item":
                 sum(1 for r in posr if r["right_construct"] and not r["correct"]),
             "n_gold_is_a_folded_family": sum(1 for r in posr if r["gold_folded"]),
+            # In ENTRIES as well as rows. Both counts are 56 here for different
+            # reasons -- 56 entries in the fixture, and 56 rows whose gold is a
+            # family -- and the page stated them four sentences apart in one
+            # paragraph, where they read as the same set. They are not: the
+            # family rows are 14 entries described four ways.
+            "n_gold_items_folded_family": len({r["gold_key"] for r in posr
+                                               if r["gold_folded"]}),
+            "n_gold_items": n_items,
+            "phrasings_per_item": per_item[0],
         },
         # The axes' own bounds and sense, read off the emitted points rather
         # than assumed. The page may not hold a numeric literal, so without

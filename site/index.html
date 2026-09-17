@@ -1270,13 +1270,18 @@ function howMeasured(R){
    +` comparison is a language model.`
    +`<br><br>The test set is ${f.n_questions} requests whose right answer is known,`
    +` plus ${f.n_absent_requests} more written deliberately about things the codebook`
-   +` does not ask about. The ${f.n_questions} were written by a language model that was`
+   +` does not ask about. Those ${f.n_questions} are ${f.n_gold_items} codebook`
+   +` entries described ${f.phrasings_per_item} different ways each, so every count`
+   +` out of ${f.n_questions} below counts requests rather than distinct targets:`
+   +` ${f.phrasings_per_item} of them are ${f.phrasings_per_item} attempts at the`
+   +` same entry, and ${f.n_gold_items} is how many entries were tested at all.`
+   +` The ${f.n_questions} were written by a language model that was`
    +` shown the right answer's wording first, so every hit rate below is a best case and`
    +` not a field estimate. The ${f.n_absent_requests} absent requests are the only part`
    +` of this evaluation that was held back from every choice made while building it.`
-   +` For ${f.n_gold_is_a_folded_family} of the ${f.n_questions} the right answer is a`
-   +` family of sibling questions rather than one question, and landing on the family`
-   +` counts as right.`
+   +` For ${f.n_gold_items_folded_family} of those ${f.n_gold_items} entries the right`
+   +` answer is a family of sibling questions rather than one question, and landing on`
+   +` the family counts as right.`
    +`<br><br><b>What each number counts.</b> <em>Top of the list</em> is how often the`
    +` right entry came back first: ${f.n_top_match_right} of ${f.n_questions}.`
    +` Another ${f.n_right_construct_wrong_item} landed on the right subject but the`

@@ -206,6 +206,41 @@ def roc_axes_are_named_and_scaled(html: str) -> list[str]:
     return out
 
 
+def fixture_shape_agrees_across_artifacts(html: str) -> list[str]:
+    """The two artifacts that state the fixture's shape must agree on it.
+
+    The page now says the shape twice, from different sources. `howMeasured`
+    takes it from `roc.json::fixture`, where `build_roc.py` derives it from the
+    rows and asserts that every entry carries the same number of phrasings.
+    `topicFig` takes it from `measurements.json::limitations.phrasing`, which
+    `build_measurements.py` parses out of the manifest's own sentence.
+
+    Two sources for one quantity is the arrangement this project distrusts, and
+    the failure is a page that says the 224 requests are 56 entries in one
+    paragraph and something else further down. Neither builder can see the
+    other's output, so the agreement is checked here, where both are on disk.
+
+    Args:
+        html: The page source.
+
+    Returns:
+        One line when they disagree, else empty; also empty when the page does
+        not state the shape, or an artifact is missing.
+    """
+    roc, mea = ARTIFACTS / "roc.json", ARTIFACTS / "measurements.json"
+    if "topicFig(" not in html or not (roc.exists() and mea.exists()):
+        return []
+    f = json.loads(roc.read_text(encoding="utf-8")).get("fixture", {})
+    ph = json.loads(mea.read_text(encoding="utf-8"))["limitations"]["phrasing"]
+    if "n_gold_items" not in f or "phrasings_per_item" not in f:
+        return []
+    pairs = ((f["n_gold_items"], ph["gold_items"], "entries"),
+             (f["phrasings_per_item"], ph["phrasings_per_item"], "phrasings per entry"))
+    return [f"roc.json says {a} {what} and measurements.json says {b}, so the page "
+            "states the fixture's shape twice from two artifacts that disagree"
+            for a, b, what in pairs if a != b]
+
+
 def score_spread_is_not_called_a_median(html: str) -> list[str]:
     """`whyGap` must not call `roc.json::scores`'s nearest-rank figures medians.
 
@@ -401,6 +436,7 @@ def main() -> None:
         problems.extend(f"{rel}: {e}" for e in roc_reference_line_corners(html))
         problems.extend(f"{rel}: {e}" for e in roc_section_names_its_arm(html))
         problems.extend(f"{rel}: {e}" for e in roc_axes_are_named_and_scaled(html))
+        problems.extend(f"{rel}: {e}" for e in fixture_shape_agrees_across_artifacts(html))
         problems.extend(f"{rel}: {e}" for e in score_spread_is_not_called_a_median(html))
         problems.extend(f"{rel}: {e}" for e in topic_bars_cover_the_fixture(html))
     r = subprocess.run(["node", str(Path(__file__).with_name("render.js")), str(SITE)],

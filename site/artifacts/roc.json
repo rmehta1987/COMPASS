@@ -22,7 +22,10 @@
   "n_top_match_right": 127,
   "n_top_match_wrong": 97,
   "n_right_construct_wrong_item": 11,
-  "n_gold_is_a_folded_family": 56
+  "n_gold_is_a_folded_family": 56,
+  "n_gold_items_folded_family": 14,
+  "n_gold_items": 56,
+  "phrasings_per_item": 4
  },
  "axes": {
   "unit": "percent",
