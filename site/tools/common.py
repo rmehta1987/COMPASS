@@ -19,15 +19,20 @@ import sys
 from html.parser import HTMLParser
 from pathlib import Path
 
-SITE = Path(os.environ.get(
-    "SITE_ROOT", Path(__file__).resolve().parents[2] / "site")).resolve()
-# The repository is the one the SITE directory actually lives in, not the one
-# this file was checked out into. `tracked` asks git about the files it finds,
-# so with SITE_ROOT pointed at a copy, a fixed REPO would check the copy's paths
-# against the real tree's index -- which is why `plant.py`'s untracked-artifact
-# step used to have to doctor the real `site/artifacts/index.json` and put it
-# back. Unset, the two are the same directory and nothing changes.
-REPO = SITE.parent
+# TWO REPOSITORIES, and conflating them cost a working check. `REPO` is the
+# checkout this code lives in, which is where the withheld dictionary is found;
+# `SITE_REPO` is the one the SITE directory lives in, which is what git can
+# answer questions about. They are the same directory unless `SITE_ROOT` points
+# elsewhere.
+#
+# MEASURED 2026-09-16: `REPO` was briefly derived from `SITE`, so `no_instrument`
+# run against a scratch copy looked for the dictionary beside the copy, failed to
+# find it, and exited 2. `plant.py` reads any non-zero exit as "violation
+# caught", so both of its instrument plants went green for the wrong reason and
+# the harness certified a scan it had disabled.
+REPO = Path(__file__).resolve().parents[2]
+SITE = Path(os.environ.get("SITE_ROOT", REPO / "site")).resolve()
+SITE_REPO = SITE.parent
 ARTIFACTS = SITE / "artifacts"
 INDEX = "artifacts/index.json"
 

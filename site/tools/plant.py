@@ -88,6 +88,22 @@ def main() -> int:
     results: list[tuple[str, str, bool]] = []
     with tempfile.TemporaryDirectory(prefix="site-plant-") as t:
         tmp = Path(t)
+        # CONTROL FIRST. Every step below reads a non-zero exit as "violation
+        # caught", so a check that cannot run at all reports as a check that
+        # works. MEASURED 2026-09-16: `common.REPO` was briefly derived from
+        # `SITE`, so `no_instrument` against a scratch copy could not find the
+        # withheld dictionary and exited 2; both instrument plants went green
+        # while the scan they certify was disabled. An unplanted copy must be
+        # clean, and the harness stops if it is not.
+        clean = copy_site(tmp / "control")
+        for step in ("no_fabrication", "no_instrument", "links", "parse", "offline"):
+            code = run(step, clean)
+            if code != 0:
+                raise SystemExit(
+                    f"plant: {step} exits {code} on an UNPLANTED copy, so every red "
+                    f"below could be this rather than the planted violation. Run "
+                    f"`SITE_ROOT={clean} python site/tools/{step}.py` and fix the "
+                    "harness, not the check.")
         # 1a a literal on the page
         root = copy_site(tmp / "a")
         plant_page(root, "<main class=\"wrap\">", "<main class=\"wrap\"><p>cos 0.8214</p>")

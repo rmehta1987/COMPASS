@@ -9,16 +9,16 @@ from __future__ import annotations
 
 import subprocess
 
-from common import REPO, SITE, fail, loaded_artifacts, ok, pages
+from common import SITE, SITE_REPO, fail, loaded_artifacts, ok, pages
 
 
 def git(*args: str) -> int:
-    return subprocess.run(["git", "-C", str(REPO), *args], capture_output=True).returncode
+    return subprocess.run(["git", "-C", str(SITE_REPO), *args], capture_output=True).returncode
 
 
 def main() -> None:
-    files = [str(p.relative_to(REPO)) for p in pages()] + \
-            [str((SITE / a).relative_to(REPO)) for a in loaded_artifacts()]
+    files = [str(p.relative_to(SITE_REPO)) for p in pages()] + \
+            [str((SITE / a).relative_to(SITE_REPO)) for a in loaded_artifacts()]
     problems: list[str] = []
     for f in files:
         if git("check-ignore", "-q", f) == 0:
