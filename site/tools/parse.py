@@ -164,6 +164,44 @@ def roc_section_names_its_arm(html: str) -> list[str]:
     return []
 
 
+def topic_bars_cover_the_fixture(html: str) -> list[str]:
+    """Every test question must sit in some bar of the by-topic chart.
+
+    MEASURED 2026-09-16: the chart drew the three topics
+    `deploy/manifest.json::known_limitations[1]` names -- the two worst and the
+    biggest -- because the builder regexed them out of that sentence and
+    asserted it had found three. They covered 100 of the fixture's 224 rows and
+    the caption told the reader "the rest are not grouped by topic", which was
+    false: `out/char_task4_strata.json` already carried all eleven topics,
+    summing to the whole fixture. Because the three shown were the extremes,
+    every topic above the best one shown was suppressed, including one at 1.000.
+
+    The completeness of the chart is asserted here rather than left to the
+    sentence beneath it. `no_fabrication` cannot cover that sentence: the false
+    clause carried no digit, so nothing traced it.
+
+    Args:
+        html: The page source.
+
+    Returns:
+        One line when the rows do not account for the fixture, else empty; also
+        empty when the page draws no by-topic chart.
+    """
+    path = ARTIFACTS / "measurements.json"
+    if "topicFig(" not in html or not path.exists():
+        return []
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    topics = doc["limitations"]["topics"]
+    total = doc["fixture"]["n_positive_rows"]
+    covered = sum(t["n"] for t in topics)
+    if covered == total:
+        return []
+    return [f"the by-topic chart's {len(topics)} row(s) cover {covered} of the fixture's "
+            f"{total} requests, so {total - covered} of them are drawn nowhere. A chart "
+            "that omits rows has to say which and how many; the caption that used to "
+            "stand here said they were not grouped by topic, and that was false"]
+
+
 ENTITY_RE = re.compile(r"&[a-zA-Z][a-zA-Z0-9]*;")
 
 
@@ -280,6 +318,7 @@ def main() -> None:
         problems.extend(f"{rel}: {e}" for e in unstyled_status_classes(html))
         problems.extend(f"{rel}: {e}" for e in roc_reference_line_corners(html))
         problems.extend(f"{rel}: {e}" for e in roc_section_names_its_arm(html))
+        problems.extend(f"{rel}: {e}" for e in topic_bars_cover_the_fixture(html))
     r = subprocess.run(["node", str(Path(__file__).with_name("render.js")), str(SITE)],
                        capture_output=True, text=True)
     if r.returncode:

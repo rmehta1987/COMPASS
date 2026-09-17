@@ -216,7 +216,7 @@
   .key i{display:inline-block;width:9px;height:9px;border-radius:50%;
     margin-right:7px;font-style:normal;background:var(--rule)}
   .key i.a{background:var(--signal)} .key i.b{background:var(--ink-3)}
-  /* bars: one row per stratum, width straight off the value. A zero-width bar
+  /* bars: one row per topic, width straight off the value. A zero-width bar
      is left invisible on purpose -- the number beside it says 0.000, and
      padding it to a visible sliver would draw recall that was not measured. */
   .bars{margin:0 0 8px}
@@ -1392,34 +1392,77 @@ function costFig(m,R1){
    +`<span>ms / query &middot; log scale</span><span>${esc(ms(dear))}</span></div></div>`;
 }
 
-/* RECALL BY STRATUM. This was one row of a `dl` where "not uniform" and three
-   figures read as a caveat; as bars the spread IS the finding -- one stratum
-   carries most of the covered queries and another is at zero. Sorted by value
-   because the reader's question is which is worst, not which was listed first.
-   The unmeasured strata are named underneath and given no bar: an absent bar
-   must not be readable as a zero one. */
-function strataFig(L,R1,n){
-  const rows=[...L.strata].sort((a,b)=>b.recall_at_1-a.recall_at_1);
+/* RECALL BY TOPIC. This was one row of a `dl` where "not uniform" and three
+   figures read as a caveat; as bars the spread IS the finding -- one topic
+   carries most of the queries and another is at zero. Sorted by value because
+   the reader's question is which is worst, not which was listed first. The
+   topics with no test questions are named underneath and given no bar: an
+   absent bar must not be readable as a zero one.
+
+   EVERY TOPIC, NOT THREE. This used to draw the three topics the manifest's
+   caveat sentence happens to name -- the two worst and the biggest -- and then
+   told the reader "the rest are not grouped by topic". They were grouped:
+   `out/char_task4_strata.json` carries them all, summing to the whole fixture.
+   Eight were suppressed, and because the three shown were the extremes, every
+   topic above the best one shown was hidden, the perfect one included. The
+   completeness of this chart is now asserted in
+   `build_measurements.py::main` and in `parse.py::topic_bars_cover_the_fixture`,
+   not left to the sentence underneath it. "Stratum" went with it: the word was
+   never on the page, but it was in the field names and in two rendered strings.
+
+   `n` counts TEST QUESTIONS, and each codebook entry was asked several ways, so
+   n is not a count of entries -- the caption says so rather than leaving the
+   reader to assume one bar is n entries. */
+function topicFig(L,n){
+  const rows=[...L.topics].sort((a,b)=>b.recall_at_1-a.recall_at_1);
   const ns=rows.map(s=>s.n), cov=ns.length?ns.reduce((a,b)=>a+b):null;
+  /* Says what a request IS, in the caption, because a reader who arrives at the
+     chart has no reason to know. "Test question" was worse than jargon: the
+     thing typed and the thing retrieved are BOTH questions, so "the right
+     question came back" could be read as the reader's own question coming back.
+     The retrieved thing is an entry -- `howMeasured` defines that word above --
+     and the typed thing is a request. One word each, used everywhere here.
+     Both arithmetic claims are BRANCHED, never asserted: the caption says
+     entries times phrasings makes the whole set only when it does, and claims
+     every topic has a bar only when the rows sum to the set. A caption that
+     cannot be false without the code noticing is the point. */
+  const p=L.phrasing, built=p.gold_items*p.phrasings_per_item;
   /* "a, b, c row" reads as one row; the manifest's own sentence says
      "a, b, c or d row". `pop` rather than a slice index, which would be a
      literal the fabrication gate rejects. */
-  const un=[...L.unmeasured_strata], tail=un.pop();
+  const un=[...L.unmeasured_topics], tail=un.pop();
   const none=un.length?`${un.map(esc).join(", ")} or ${esc(tail)}`:esc(tail);
   return `<div class="bars">`+rows.map(s=>
-     `<div class="b" tabindex="0" role="img" aria-label="${att(s.stratum)}: right`
-     +` question came back top of the list ${s.recall_at_1.toFixed(3)} of the time,`
-     +` over ${s.n} test questions">`
-     +`<span class="nm">${esc(s.stratum)}</span>`
+     `<div class="b" tabindex="0" role="img" title="${att(s.topic)}" aria-label="${att(s.topic)}:`
+     +` search put the right codebook entry first ${s.recall_at_1.toFixed(3)} of the time,`
+     +` over ${s.n} requests, written from ${s.n_items} of the ${p.gold_items}`
+     +` codebook entries">`
+     +`<span class="nm">${esc(s.topic)}</span>`
      +`<span class="track"><span class="fill" style="--v:${s.recall_at_1}"></span></span>`
      +`<span class="vl">${s.recall_at_1.toFixed(3)} &middot; n=${s.n}</span></div>`).join("")
-   +`</div><div class="none">Each bar is how often the right question came back`
-   +` top of the list, for one topic.`
-   +`${cov===null?"":` ${rows.length} topics are broken out here, between them`
-     +` ${cov} of the ${n} test questions; the rest are not grouped by topic.`}`
-   +` There are no test questions at all on ${none}, so those topics have no bar:`
-   +` how well search does there has never been measured, which is not the same`
-   +` as it doing well.</div>`;
+   +`</div><div class="none">Each bar is one topic, and its length is how often`
+   +` search put the right codebook entry first for the requests about that topic.`
+   +`<br><br><b>What a request is.</b> A short description of something someone`
+   +` wants to measure, of the kind you would type into the box at the top of this`
+   +` page. Every request used here was written from a single codebook entry, and`
+   +` that entry is what counts as the right answer for it &mdash; so "first" means`
+   +` the entry the request was written from came back at the top of the list.`
+   +`${built===n
+      ? ` There are ${p.gold_items} such entries, each described`
+        +` ${p.phrasings_per_item} different ways, which is the ${n} requests with a`
+        +` known right answer.`
+      : ` There are ${n} such requests, several per entry.`}`
+   +`<br><br>`
+   +`${cov===null?"":cov===n
+      ? `Every topic those requests fall into has a bar &mdash; ${rows.length} of`
+        +` them, between them all ${n} requests.`
+      : `${rows.length} topics are broken out here, between them ${cov} of the`
+        +` ${n} requests, and the remaining ${n-cov} are not shown.`}`
+   +` n counts requests, not entries, so a bar at n=${p.phrasings_per_item} rests`
+   +` on one entry: the narrowest bars are the least evidence, however long they`
+   +` look. There are no requests at all on ${none}, so those topics have no bar`
+   +` &mdash; how well search does there has never been measured, which is not the`
+   +` same as it doing well.</div>`;
 }
 
 function measureHTML(){
@@ -1435,11 +1478,11 @@ function measureHTML(){
   h+=`<p class="sec">known limitations · ${esc(L.source)}</p><dl>`
     +row("fixture queries",`written by the same generator family as the ${L.training_pairs.toLocaleString()} training pairs, with sight of the gold wording`)
     +row("gain over frozen",`${R1} ${L.gain_r1_over_frozen_bge_small.toFixed(3)} for the fine-tuned model over frozen bge-small on the no-template arm · <span class="flag">${esc(L.register_alignment_share)}</span> share of it is register alignment`,true)
-    +row("lexical leakage",`${L.lexical_leakage.measured?"measured":"not measured"} and it ${L.lexical_leakage.survives?"survives":"does not survive"}: item-level Spearman ${L.lexical_leakage.item_level_spearman} (permutation p ${L.lexical_leakage.permutation_p}); ${R1} by query-to-gold overlap quartile ${L.lexical_leakage.r1_by_query_gold_overlap_quartile.map(q=>q.toFixed(3)).join(" / ")}, ${L.lexical_leakage.monotonic?"monotonic":"non-monotonic"}${L.lexical_leakage.flat_within_query_length_strata?", flat within every query-length stratum":""}`,true)
+    +row("lexical leakage",`${L.lexical_leakage.measured?"measured":"not measured"} and it ${L.lexical_leakage.survives?"survives":"does not survive"}: item-level Spearman ${L.lexical_leakage.item_level_spearman} (permutation p ${L.lexical_leakage.permutation_p}); ${R1} by query-to-gold overlap quartile ${L.lexical_leakage.r1_by_query_gold_overlap_quartile.map(q=>q.toFixed(3)).join(" / ")}, ${L.lexical_leakage.monotonic?"monotonic":"non-monotonic"}${L.lexical_leakage.flat_within_query_length_groups?", flat within every query-length group":""}`,true)
     +row("phrasing",`${L.phrasing.items_retrieved_on_no_phrasing} of ${L.phrasing.gold_items} gold items retrieved on none of their ${L.phrasing.phrasings_per_item} phrasings, ${L.phrasing.items_retrieved_on_one_phrasing} on one`,true)
     +`</dl>`;
-  h+=`<p class="sec">how often the right question came back top of the list · by topic</p>`
-   +strataFig(L,R1,n);
+  h+=`<p class="sec">how often search put the right codebook entry first · by topic</p>`
+   +topicFig(L,n);
   h+=`<p class="sec">encoder sweep · ${esc(m.sweep.what)} · ${esc(m.sweep.machine)}</p>`
    +costFig(m,R1)
    +`<details><summary>the same five rows, as a table</summary>

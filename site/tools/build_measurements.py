@@ -47,6 +47,47 @@ def sweep_rows() -> list[dict]:
     return sorted(rows, key=lambda r: r["params_m"])
 
 
+def by_topic() -> list[dict]:
+    """Every topic the characterisation measured, not the three the prose names.
+
+    ``deploy/manifest.json::known_limitations[1]`` names three topics as
+    examples -- the two worst and the biggest -- and this builder used to regex
+    exactly those three out of that sentence, after which the page said "the
+    rest are not grouped by topic".
+
+    MEASURED 2026-09-16: that sentence was false. ``out/char_task4_strata.json``
+    already groups every one of the fixture's rows into eleven topics whose
+    ``n_rows`` sum to the fixture exactly, so eight were being suppressed --
+    including every topic scoring better than the best one shown, and the single
+    topic at 1.000. A reader saw the two worst and the biggest and concluded
+    recall was uniformly poor by topic.
+
+    The upstream file is withheld from the public tree, so this builder now runs
+    on the training machine only and ``measurements.json`` ships the rows with
+    that note. The manifest sentence stays the tracked public record and
+    ``limitations`` cross-checks it against these rows.
+
+    Returns:
+        One row per topic, worst first: the topic, its R@1, the number of test
+        questions, and the number of codebook entries those questions came from.
+
+    Raises:
+        SystemExit: When the withheld characterisation file is absent.
+    """
+    path = REPO / "out" / "char_task4_strata.json"
+    if not path.exists():
+        raise SystemExit(
+            f"{path.relative_to(REPO)} is withheld from the public tree, so this builder "
+            "runs on the training machine only. site/artifacts/measurements.json is the "
+            "committed record of these figures; do not rebuild it here.")
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    rows = doc["models"]["bge-small_ft"]["by_domain"]
+    return sorted(({"topic": k, "recall_at_1": v["R@1"],
+                    "n": v["n_rows"], "n_items": v["n_items"]}
+                   for k, v in rows.items()),
+                  key=lambda r: (r["recall_at_1"], r["topic"]))
+
+
 def limitations(man: dict) -> dict:
     """Parse every figure out of the manifest's ``known_limitations`` prose.
 
@@ -72,13 +113,25 @@ def limitations(man: dict) -> dict:
     (gain,) = grab(r"An unknown share of the \+([\d.]+) over frozen bge-small is register alignment", kl[0])
     rho, pval = grab(r"Spearman (-?[\d.]+) \(permutation p ([\d.]+)\)", kl[0])
     quart = grab(r"quartile ([\d.]+) / ([\d.]+) / ([\d.]+) / ([\d.]+), non-monotonic", kl[0])
-    strata = re.findall(r"([\w/]+)(?: R@1)? ([\d.]+) \(n=(\d+)\)", kl[1])
-    assert len(strata) == 3, strata
+    named = re.findall(r"([\w/]+)(?: R@1)? ([\d.]+) \(n=(\d+)\)", kl[1])
+    assert len(named) == 3, named
+    topics = by_topic()
+    index = {t["topic"]: t for t in topics}
+    # The manifest sentence remains the TRACKED public record of these figures
+    # while the rows come from a withheld file, so the two must agree or the
+    # build stops: a silent disagreement would publish eleven rows that the one
+    # sentence a public reader can check does not support. Names differ by
+    # separator only -- the prose writes `residence/commute`, the artifact keys
+    # it `residence_commute`.
+    for name, r1, n_rows in named:
+        t = index.get(name.replace("/", "_"))
+        assert t, (name, sorted(index))
+        assert t["recall_at_1"] == float(r1) and t["n"] == int(n_rows), (name, t, r1, n_rows)
     (missing,) = grab(r"contains no (.+?) row", kl[2])
     unmeasured = [x.strip() for x in re.split(r", | or ", missing)]
     never, gold, phr, once = grab(r"(\d+) of (\d+) gold items are retrieved on 0 of their (\d+) phrasings and (\d+) on 1 of", kl[3])
     return {
-        "source": "deploy/manifest.json known_limitations, parsed by site/tools/build_measurements.py; the strata and phrasing files those sentences cite are not in the public tree, so the manifest sentence is the tracked record",
+        "source": "deploy/manifest.json known_limitations, parsed by site/tools/build_measurements.py, with the by-topic rows read from out/char_task4_strata.json and cross-checked against the three topics that sentence names; the per-topic and phrasing files are not in the public tree, so the manifest sentence is the tracked record and this artifact ships the rows",
         "generator_family_shared_with_training": True,
         "training_pairs": int(pairs.replace(",", "")),
         "gain_r1_over_frozen_bge_small": float(gain),
@@ -90,10 +143,10 @@ def limitations(man: dict) -> dict:
             "permutation_p": float(pval),
             "r1_by_query_gold_overlap_quartile": [float(q) for q in quart],
             "monotonic": False,
-            "flat_within_query_length_strata": True,
+            "flat_within_query_length_groups": True,
         },
-        "strata": [{"stratum": n, "recall_at_1": float(r), "n": int(k)} for n, r, k in strata],
-        "unmeasured_strata": unmeasured,
+        "topics": topics,
+        "unmeasured_topics": unmeasured,
         "phrasing": {"gold_items": int(gold), "phrasings_per_item": int(phr),
                      "items_retrieved_on_no_phrasing": int(never), "items_retrieved_on_one_phrasing": int(once)},
     }
@@ -158,6 +211,15 @@ def main() -> int:
                                      "note": "detecting its own wrong pick was measured, the artifact was withdrawn from git, and the figure is not reproducible from anything on this page; it is not unmeasured, and it is not shown"},
         },
     }
+    # The by-topic rows must account for every positive row in the fixture. The
+    # three-topic version did not -- it carried 100 of them and told the reader
+    # the rest were not grouped by topic -- so the completeness of that chart is
+    # asserted here rather than left to the prose that describes it.
+    covered = sum(t["n"] for t in out["limitations"]["topics"])
+    assert covered == out["fixture"]["n_positive_rows"], (
+        f"the by-topic rows cover {covered} of the fixture's "
+        f"{out['fixture']['n_positive_rows']} positive rows; a bar chart that drops rows "
+        "must say which, and how many")
     (REPO / "site" / "artifacts" / "measurements.json").write_text(json.dumps(out, indent=1) + "\n")
     print("wrote site/artifacts/measurements.json;", [r["model"] for r in out["sweep"]["rows"]], out["provenance"]["commit"])
     return 0
