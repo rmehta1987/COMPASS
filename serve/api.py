@@ -789,6 +789,48 @@ def _metrics(state: State, body: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _spread_by_exposure(cands: list[Any], limit: int) -> list[Any]:
+    """Take `limit` candidates spread across exposures, not the head of the list.
+
+    `generate/funnel.py::s1_enumerate` is an exposure-major `product()`, so the
+    first N candidates are all one exposure until N passes the outcome count.
+    On the shipped frame that is 64, and the page asks for 25 -- so every pair a
+    reader could ever see on the Generate tab was `m3:Q16.1 -> ...`, and the
+    panel's honest "showing 25 of 384" read as a sample of the 384 rather than
+    as the first 39% of one exposure. Round-robin here and the same 25 span
+    every exposure the frame has.
+
+    Display only. Enumeration order is the frame's and is left alone: it decides
+    every reported denominator (`generate/funnel.py::Frame`, T7) and `counts` is
+    computed over the whole list before this runs, so nothing here moves a
+    number. Pruned candidates are kept rather than filtered -- the count says
+    384 and the reader should be able to see what the other 128 are -- which is
+    why `pairs` carries `state` and the page refuses them a launch button.
+
+    Args:
+        cands: Every candidate the funnel produced, in enumeration order.
+        limit: How many to return.
+
+    Returns:
+        At most `limit` candidates, taking one per exposure per pass in the
+        order the exposures first appear.
+    """
+    lanes: dict[str, list[Any]] = {}
+    for c in cands:
+        lanes.setdefault(c.exposure.construct_key, []).append(c)
+    rows = list(lanes.values())
+    if not rows:
+        return []
+    out: list[Any] = []
+    for depth in range(max(len(r) for r in rows)):
+        for row in rows:
+            if depth < len(row):
+                out.append(row[depth])
+                if len(out) == limit:
+                    return out
+    return out
+
+
 def _enumerate(state: State, body: dict[str, Any]) -> dict[str, Any]:
     """Run the funnel: enumerate pairs, prune, and report the gate.
 
@@ -828,7 +870,7 @@ def _enumerate(state: State, body: dict[str, Any]) -> dict[str, Any]:
             f"module {out_mod} {out_pre!r}")
 
     cands, counts = funnel_run(exposures, outcomes)
-    shown = cands[:limit]
+    shown = _spread_by_exposure(cands, limit)
     return {
         "dictionary_version": version,
         "sets": {"exposures": len(exposures), "outcomes": len(outcomes),
@@ -840,7 +882,14 @@ def _enumerate(state: State, body: dict[str, Any]) -> dict[str, Any]:
              "exposure": c.exposure.construct_key if state.show_instrument else None,
              "outcome": c.outcome.construct_key if state.show_instrument else None,
              "exposure_stem": c.exposure.stem_text,
-             "outcome_stem": c.outcome.stem_text}
+             "outcome_stem": c.outcome.stem_text,
+             # A pruned pair used to be indistinguishable from a live one here,
+             # and the page gave every row a launch button. Invisible while the
+             # slice was the head of the list -- the prunes sit at index 256 --
+             # and reachable the moment the slice spreads.
+             "state": c.state,
+             "stage": c.stage,
+             "reason": c.reason}
             for c in shown],
         "shown": len(shown),
         "note": ("The funnel enumerates and prunes with no model call. A pair "

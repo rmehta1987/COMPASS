@@ -73,11 +73,20 @@ global.URL = { createObjectURL: () => "blob:x", revokeObjectURL() {} };
 // with the shape the route returns. QUOTE_KEY is the planted attribute break.
 const QUOTE_KEY = 'EXP_Q" onmouseover="x';
 const PAIRS = [
-  { pair_id: "P_ONE", exposure: "EXP_ONE", outcome: "OUT_ONE",
+  { pair_id: "P_ONE", exposure: "EXP_ONE", outcome: "OUT_ONE", state: "live",
+    stage: null, reason: null,
     exposure_stem: "stem for the first exposure", outcome_stem: "stem for the first outcome" },
-  { pair_id: "P_TWO", exposure: QUOTE_KEY, outcome: "OUT_TWO",
+  { pair_id: "P_TWO", exposure: QUOTE_KEY, outcome: "OUT_TWO", state: "live",
+    stage: null, reason: null,
     exposure_stem: 'a stem carrying a " double quote', outcome_stem: "stem for the second outcome" },
+  // A PRUNED pair, so the no-button branch is exercised rather than assumed.
+  // It only became reachable when the shown slice started spreading across
+  // exposures; before that the prunes sat past the end of the head slice.
+  { pair_id: "P_PRUNED", exposure: "EXP_CUT", outcome: "OUT_CUT", state: "pruned",
+    stage: "S2", reason: "free_text_anchor: no response coding exists",
+    exposure_stem: "stem for the pruned exposure", outcome_stem: "stem for the pruned outcome" },
 ];
+const LIVE_PAIRS = PAIRS.filter(p => p.state === "live");
 // A pair reply whose anchors are RESOLVED, so `adoptProposals` adopts them.
 // Synthetic keys and wording, like PAIRS above: no instrument content here.
 const PAIR_REPLY = {
@@ -113,8 +122,9 @@ const ENUMERATE = {
   sets: { exposures: PAIRS.length, outcomes: PAIRS.length,
           exposure_module: "MOD_A", exposure_prefix: "PFX_A",
           outcome_module: "MOD_B", outcome_prefix: "PFX_B" },
-  counts: { enumerated: PAIRS.length, pruned_S2: 0, live: PAIRS.length,
-            estimable: 0, unknown: PAIRS.length, requires_derivation: 0 },
+  counts: { enumerated: PAIRS.length, pruned_S2: PAIRS.length - LIVE_PAIRS.length,
+            live: LIVE_PAIRS.length,
+            estimable: 0, unknown: LIVE_PAIRS.length, requires_derivation: 0 },
   pairs: PAIRS,
 };
 // The stub took only the URL, so nothing could assert what a button POSTED --
@@ -168,7 +178,13 @@ global.fetch = async (rel, opts) => {
     if (g.includes(bad)) fail(`the enumerated panel contains "${bad}"`);
   }
   const runs = [...g.matchAll(/data-genex="([^"]+)"/g)].length;
-  if (runs !== PAIRS.length) fail(`run buttons: ${runs}, expected ${PAIRS.length}`);
+  if (runs !== LIVE_PAIRS.length) fail(`run buttons: ${runs}, expected ${LIVE_PAIRS.length}`);
+  // A pruned pair is rendered -- the reader should see what the count's other
+  // rows are -- but it must carry its reason and no way to spend a model call.
+  const cut = PAIRS.find(p => p.state !== "live");
+  if (!g.includes(cut.pair_id)) fail("a pruned pair is not rendered at all");
+  if (g.includes(`data-genex="${cut.exposure}"`)) fail("a pruned pair carries a launch button");
+  if (!g.includes(cut.reason)) fail("a pruned pair does not say why it was pruned");
 
   // A key carrying a double quote must not break out of its attribute. Assert
   // the exact attribute text: counting runs cannot see a broken-out value.

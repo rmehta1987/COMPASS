@@ -11,6 +11,7 @@
   "funnel.json",
   "score.json",
   "measurements.json",
-  "metrics.json"
+  "metrics.json",
+  "roc.json"
  ]
 }

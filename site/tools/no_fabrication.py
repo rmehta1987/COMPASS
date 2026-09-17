@@ -34,6 +34,7 @@ ALLOW: list[tuple[str, str]] = [
     (r"width=\"100%\"|height=\"100%\"", "foreignObject fills the SVG"),
     (r"\b(?:indent|null,\s*)2\)", "JSON.stringify indent"),
     (r"setTimeout\([^)]*,\s*0\)", "yield to the event loop"),
+    (r'tabindex="0"', "ARIA idiom: the only focusable-in-order value there is"),
 ]
 NUM_RE = re.compile(r"(?<![\w#.\-/])\d[\d,]*(?:\.\d+)?")
 FIGURE_RE = re.compile(r"\d+\.\d+|\d{1,3}(?:,\d{3})+|(?<![\w.-])\d{3,}(?![\w.-])")
