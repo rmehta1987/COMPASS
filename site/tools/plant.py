@@ -1,12 +1,19 @@
 """Prove each check goes red on a planted violation.
 
-A scan that has never fired is not known to work. For steps 1–5, 7 and 8 the
-site is copied to a scratch directory, one violation is planted, and the check
-runs against the copy; it must exit non-zero. Steps 1–5 take the copy through
-``SITE_ROOT``; steps 7 and 8 are node and take it as an argument. Step 6 needs
-the real repository: an untracked artifact is created, the check runs, and
-the file is removed again. The instrument run planted for step 2 is taken
-from the dictionary at run time and written only to the scratch copy.
+A scan that has never fired is not known to work. The site is copied to a
+scratch directory, one violation is planted, and the check runs against the
+copy; it must exit non-zero. Steps 1–6 take the copy through ``SITE_ROOT``;
+steps 7 and 8 are node and take it as an argument. The instrument run planted
+for step 2 is taken from the dictionary at run time and written only to the
+scratch copy.
+
+NOTHING HERE TOUCHES THE REAL TREE. Step 6 is about a fact that only a git
+repository has -- whether a file is tracked -- and it used to get that by
+doctoring the real ``site/artifacts/index.json`` and restoring it afterwards.
+That made the harness unsafe to run twice at once: two overlapping runs each
+restore the other's stale copy, over uncommitted work. It now commits the copy
+into a throwaway repository instead, which `common.REPO` follows because it is
+derived from ``SITE_ROOT``.
 
     python3 site/tools/plant.py
 """
@@ -25,8 +32,8 @@ SITE = HERE.parent
 REPO = SITE.parent
 
 
-def run(step: str, root: Path) -> int:
-    env = dict(os.environ, SITE_ROOT=str(root), PYTHONDONTWRITEBYTECODE="1")
+def run(step: str, root: Path, **extra: str) -> int:
+    env = dict(os.environ, SITE_ROOT=str(root), PYTHONDONTWRITEBYTECODE="1", **extra)
     r = subprocess.run([sys.executable, str(HERE / f"{step}.py")], env=env,
                        capture_output=True, text=True)
     return r.returncode
@@ -189,26 +196,42 @@ def main() -> int:
                    "function steer(nav,stage){ sel=stage; }")
         results.append(("render_race", "a finished run drags the reader off the stage they picked",
                         run_node("render_race", root) != 0))
-    # 6 an untracked artifact in the real tree
-    art = SITE / "artifacts"
-    art.mkdir(exist_ok=True)
-    planted = art / "planted_untracked.json"
-    idx = art / "index.json"
-    had_index = idx.exists()
-    saved = idx.read_text(encoding="utf-8") if had_index else None
-    try:
-        planted.write_text(json.dumps({"provenance": {"source": "plant", "run_id": "x"}}))
-        files = (json.loads(saved).get("files", []) if saved else []) + ["planted_untracked.json"]
-        idx.write_text(json.dumps({"files": files, "provenance": {"source": "plant", "run_id": "x"}}))
-        results.append(("tracked", "untracked artifact", run("tracked", SITE) != 0))
-    finally:
-        planted.unlink(missing_ok=True)
-        if had_index:
-            idx.write_text(saved, encoding="utf-8")
-        else:
-            idx.unlink(missing_ok=True)
-            if not any(art.iterdir()):
-                art.rmdir()
+    # 6 an untracked artifact. THIS USED TO DOCTOR THE REAL TREE: it wrote a
+    # planted artifact into `site/artifacts/`, overwrote the real `index.json`,
+    # and restored both in a `finally`. Whether a file is tracked is a fact
+    # about a git repository, so a copy alone was not enough -- but it does not
+    # have to be THIS repository. Five review sessions ran in one checkout on
+    # 2026-09-16 and none of them was allowed to run this harness, because two
+    # overlapping runs would each restore the other's stale `index.json` over
+    # uncommitted work. A throwaway repo removes the hazard and the check is
+    # unchanged: `common.REPO` follows `SITE_ROOT`, so `tracked` asks git about
+    # the tree it was pointed at.
+    with tempfile.TemporaryDirectory(prefix="site-plant-repo-") as t:
+        repo = Path(t)
+        git = ["git", "-C", str(repo)]
+        subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True,
+                       capture_output=True)
+        dst = repo / "site"
+        shutil.copytree(SITE, dst, ignore=shutil.ignore_patterns("__pycache__"))
+        subprocess.run([*git, "add", "-A"], check=True, capture_output=True)
+        subprocess.run([*git, "-c", "user.email=plant@invalid",
+                        "-c", "user.name=plant", "commit", "-qm", "seed"],
+                       check=True, capture_output=True)
+        # Green on the copy first: without this the red below could come from
+        # the repository being wrong rather than from the planted file.
+        control = run("tracked", dst)
+        idx = dst / "artifacts" / "index.json"
+        doc = json.loads(idx.read_text(encoding="utf-8"))
+        (dst / "artifacts" / "planted_untracked.json").write_text(json.dumps(
+            {"provenance": {"source": "plant", "run_id": "x"}}))
+        doc["files"] = list(doc.get("files", [])) + ["planted_untracked.json"]
+        idx.write_text(json.dumps(doc))
+        if control != 0:
+            raise SystemExit(
+                "plant: the freshly committed copy is not clean before anything is "
+                "planted, so a red result below would say nothing about the planted "
+                "file. Fix the harness, not the check.")
+        results.append(("tracked", "untracked artifact", run("tracked", dst) != 0))
     bad = 0
     for step, what, red in results:
         print(f"{'red ' if red else 'MISS'}  {step:16s} {what}")

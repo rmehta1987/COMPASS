@@ -19,8 +19,15 @@ import sys
 from html.parser import HTMLParser
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
-SITE = Path(os.environ.get("SITE_ROOT", REPO / "site")).resolve()
+SITE = Path(os.environ.get(
+    "SITE_ROOT", Path(__file__).resolve().parents[2] / "site")).resolve()
+# The repository is the one the SITE directory actually lives in, not the one
+# this file was checked out into. `tracked` asks git about the files it finds,
+# so with SITE_ROOT pointed at a copy, a fixed REPO would check the copy's paths
+# against the real tree's index -- which is why `plant.py`'s untracked-artifact
+# step used to have to doctor the real `site/artifacts/index.json` and put it
+# back. Unset, the two are the same directory and nothing changes.
+REPO = SITE.parent
 ARTIFACTS = SITE / "artifacts"
 INDEX = "artifacts/index.json"
 
