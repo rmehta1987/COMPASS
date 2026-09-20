@@ -1,0 +1,1693 @@
+{
+ "schema": "compass_site/copy/1",
+ "provenance": {
+  "source": "extracted from site/index.html (template literals, and the label argument of row/tr/covBlock/alert) and serve/api.py (upper-case constants, values under a wire key, and the message of a raised ValueError/Busy/Unresolvable); maintained by hand thereafter, like index.json and stages.json",
+  "frozen": "2026-09-20",
+  "extractor": "one-off, not committed: a rerun would overwrite edits, which is why no site/tools/build_copy.py exists"
+ },
+ "what_this_is": "Every sentence and field label a reader sees, in one place, so prose can be rewritten without editing JavaScript. Nothing loads this file yet: the page still carries the strings inline, and this is the editing surface. When a render function starts reading an id from here, move the file under artifacts/ and list it in artifacts/index.json, whose contract is the artifacts the page loads.",
+ "fields": {
+  "id": "dotted, render-function then a slug of the sentence",
+  "kind": "static, markup outside <script> (title, masthead, nav, tooltips); block, a rendered sentence; label, a field or button name; server, a string the API sends and the page prints verbatim",
+  "where": "path::symbol, never a line number (AGENTS.md)",
+  "slots": "the expression each {n} interpolates, in order; a figure arrives through a slot and is never typed into the text",
+  "text": "the copy, markup stripped, entities resolved"
+ },
+ "rules_for_a_rewrite": [
+  "No numeral in the text. site/tools/no_fabrication.py fails the page on a numeric literal, and every figure must arrive through a slot from an artifact.",
+  "No instrument wording and no variable key. site/tools/no_instrument.py scans every file under site/, this one included, for a five-word run shared with a dictionary entry.",
+  "Keep the slot markers and their order. Dropping a {n} drops the value; reordering them silently relabels it.",
+  "A server string is the API's, not the page's. Rewriting one changes the response body, so edit serve/api.py and copy the new wording here, not the other way round.",
+  "Voice and register are set by the compass-prose skill, which the user invokes; this file fixes only where the words live."
+ ],
+ "not_covered": [
+  "serve/console.html, the loopback dev rig, which renders raw JSON",
+  "site/artifacts/*.json prose fields: metrics.json headline, score.json why_the_gate_blocks and scored_run_note, metrics.json denominator_note, stages.json labels",
+  "text built from a variable rather than written out, such as a status chip label read from stages.json",
+  "one aria-label on the cost figure in costFig: a comparison operator inside a slot closed the tag early, so the extraction could not tell its text from its attributes and it was left out rather than catalogued wrong",
+  "a one-word label inside a ternary, which is indistinguishable from a CSS class name without parsing the expression"
+ ],
+ "counts": {
+  "static": 12,
+  "block": 60,
+  "label": 104,
+  "server": 31
+ },
+ "strings": [
+  {
+   "id": "askForm.ask-pair-type-what",
+   "kind": "block",
+   "where": "site/index.html::askForm",
+   "slots": [
+    "att((el(\"#q\")&&el(\"#q\").value)||\"\")",
+    "busy?\" disabled\":\"\"",
+    "busy?\"proposing&hellip;\":\"Propose a pair\""
+   ],
+   "text": "ask for a pair Type what you want to measure. Retrieval offers candidates, a language model proposes which is the exposure and which the outcome, and both land in the fields below for you to check. Nothing runs until you press Run. {2}"
+  },
+  {
+   "id": "cell.both-arms-one-model",
+   "kind": "block",
+   "where": "site/index.html::cell",
+   "slots": [
+    "I.n_negatives",
+    "n",
+    "esc(S.label)",
+    "esc(S.label)",
+    "esc(I.label)"
+   ],
+   "text": "Both arms are one model on one machine; they differ only in how the query was rendered. AUROC is shown to three places: it is computed over {0} negatives and {1} positives, and the two arms reject the same count. what the similarity score can and cannot tell apart · arm S · {2} Everything in this section — the three numbers, both curves, the operating point and the medians — is arm S, {3} . That is not the arm that ships. The shipped contract is arm I, {4} , and the threshold row that closes this section is arm I. The arms differ only in how the request was rendered, so a figure here and a figure there are not two measurements of one quantity: the coverage tabulated below is arm I's, and it is not the operating point drawn above. Arm I's version of these two curves is not published in any artifact this page loads, which is why the curves shown are arm S's."
+  },
+  {
+   "id": "cell.fine-tuned-model-over",
+   "kind": "block",
+   "where": "site/index.html::cell",
+   "slots": [
+    "R1",
+    "L.gain_r1_over_frozen_bge_small.toFixed(3)",
+    "esc(L.register_alignment_share)"
+   ],
+   "text": "{0} {1} for the fine-tuned model over frozen bge-small on the no-template arm · {2} share of it is register alignment"
+  },
+  {
+   "id": "cell.gold-items-retrieved-none",
+   "kind": "block",
+   "where": "site/index.html::cell",
+   "slots": [
+    "L.phrasing.items_retrieved_on_no_phrasing",
+    "L.phrasing.gold_items",
+    "L.phrasing.phrasings_per_item",
+    "L.phrasing.items_retrieved_on_one_phrasing"
+   ],
+   "text": "{0} of {1} gold items retrieved on none of their {2} phrasings, {3} on one"
+  },
+  {
+   "id": "cell.how-often-search-put",
+   "kind": "block",
+   "where": "site/index.html::cell",
+   "slots": [],
+   "text": "how often search put the right codebook entry first · by topic"
+  },
+  {
+   "id": "cell.item-level-spearman-permutation",
+   "kind": "block",
+   "where": "site/index.html::cell",
+   "slots": [
+    "L.lexical_leakage.measured?\"measured\":\"not measured\"",
+    "L.lexical_leakage.survives?\"survives\":\"does not survive\"",
+    "L.lexical_leakage.item_level_spearman",
+    "L.lexical_leakage.permutation_p",
+    "R1",
+    "L.lexical_leakage.r1_by_query_gold_overlap_quartile.map(q=>q.toFixed(3)).join(\" / \")",
+    "L.lexical_leakage.monotonic?\"monotonic\":\"non-monotonic\"",
+    "L.lexical_leakage.flat_within_query_length_groups?\", flat within every query-length group\":\"\""
+   ],
+   "text": "{0} and it {1}: item-level Spearman {2} (permutation p {3}); {4} by query-to-gold overlap quartile {5}, {6}{7}"
+  },
+  {
+   "id": "cell.r-k-share-positive",
+   "kind": "block",
+   "where": "site/index.html::cell",
+   "slots": [
+    "esc(m.provenance.sweep_artifacts_note)",
+    "n",
+    "n"
+   ],
+   "text": "{0} R@k is the share of the {1} positive queries whose gold target ranked in the top k. No row is marked best: differences of a few hundredths between rows are within what a {2}-row fixture can resolve, and no interval is computed here."
+  },
+  {
+   "id": "cell.same-five-rows-as",
+   "kind": "block",
+   "where": "site/index.html::cell",
+   "slots": [
+    "m.sweep.columns.map(([,l])=>`<th>${esc(l)}</th>`).join(\"\")"
+   ],
+   "text": "the same five rows, as a table {0}"
+  },
+  {
+   "id": "cell.shipped-model-m-params",
+   "kind": "block",
+   "where": "site/index.html::cell",
+   "slots": [
+    "esc(sh.model)",
+    "sh.params_m",
+    "esc(sh.training.negatives)",
+    "sh.n_targets.toLocaleString()",
+    "sh.arm_columns.map(([,l])=>`<th>${esc(l)}</th>`).join(\"\")"
+   ],
+   "text": "shipped model · {0} · {1}M params · {2} · {3} targets query arm {4} negatives rejected AUROC absent vs present"
+  },
+  {
+   "id": "cell.threshold-min-cos-coverage",
+   "kind": "block",
+   "where": "site/index.html::cell",
+   "slots": [
+    "n",
+    "th.min_cos.toFixed(6)",
+    "th.coverage.toFixed(4)",
+    "th.precision.toFixed(4)",
+    "th.recall.toFixed(4)",
+    "th.f1.toFixed(4)",
+    "th.candidate_taus",
+    "lat.query_ms_isolated_single",
+    "esc(lat.machine)",
+    "lat.threads",
+    "esc(I.label)",
+    "esc(th.definitions.coverage)",
+    "esc(th.definitions.precision)",
+    "esc(th.definitions.recall)",
+    "R1",
+    "R1",
+    "esc(th.selection_note)",
+    "esc(lat.note)"
+   ],
+   "text": "threshold min_cos coverage precision recall F1 candidate values latency shipped · arm I · F1-maximising over the same {0} positives it is reported on {1} {2} {3} {4} {5} {6} {7} ms · {8} · {9} threads This row is arm I — {10} — not the arm S the curves above are drawn from. Coverage: {11}. Precision: {12}. Recall: {13}. This recall is not the {14} above: {15} counts every query, this one only those that cleared min_cos. {16}. {17}"
+  },
+  {
+   "id": "cell.written-by-same-generator",
+   "kind": "block",
+   "where": "site/index.html::cell",
+   "slots": [
+    "L.training_pairs.toLocaleString()"
+   ],
+   "text": "written by the same generator family as the {0} training pairs, with sight of the gold wording"
+  },
+  {
+   "id": "declinedRoles.language-model-would-commit",
+   "kind": "block",
+   "where": "site/index.html::declinedRoles",
+   "slots": [
+    "esc(role)"
+   ],
+   "text": "The language model would not commit to the {0} , so nothing was filled in for it. Pick one below, or ask again more specifically."
+  },
+  {
+   "id": "dots.accepted-those-should-accept",
+   "kind": "block",
+   "where": "site/index.html::dots",
+   "slots": [],
+   "text": "accepted, of those it should accept"
+  },
+  {
+   "id": "dots.where-runs-accepted-those",
+   "kind": "block",
+   "where": "site/index.html::dots",
+   "slots": [
+    "op.x",
+    "op.y",
+    "lo",
+    "hi",
+    "esc(A.what)",
+    "A.auroc.toFixed(4)",
+    "A.n_positive",
+    "A.n_negative",
+    "esc(B.what)",
+    "B.auroc.toFixed(4)",
+    "B.n_positive",
+    "B.n_negative",
+    "lo",
+    "hi",
+    "ab.min_cos",
+    "ab.negatives_rejected",
+    "ab.n_negatives"
+   ],
+   "text": "where it runs {2} {3} accepted, of those it should decline {4} area under the curve {5} · {6} answerable against {7} absent {8} area under the curve {9} · {10} right against {11} wrong both axes run from {12} at the bottom-left corner to {13} at the far end, and a score that knew nothing would fall on the diagonal between that corner and the opposite one, where the two shares are equal where it runs threshold {14}, which declines {15} of the {16} requests the codebook cannot answer. Up and to the left is better. The lower curve sits only just above that diagonal, which is what its area means."
+  },
+  {
+   "id": "draw.download-record-as-json",
+   "kind": "block",
+   "where": "site/index.html::draw",
+   "slots": [],
+   "text": "Download this record as JSON"
+  },
+  {
+   "id": "draw.panel-could-be-drawn",
+   "kind": "block",
+   "where": "site/index.html::draw",
+   "slots": [
+    "esc(String(err&&err.message||err))"
+   ],
+   "text": "This panel could not be drawn. The rest of the page still works: pick another stage, or run the request again. The browser console has the full error. {0}"
+  },
+  {
+   "id": "dropped.encoder-did-see-what",
+   "kind": "block",
+   "where": "site/index.html::dropped",
+   "slots": [],
+   "text": "The encoder did NOT see what you typed. Compare the two rows above."
+  },
+  {
+   "id": "dropped.every-content-word-already",
+   "kind": "block",
+   "where": "site/index.html::dropped",
+   "slots": [
+    "esc(dropped.join(\", \"))"
+   ],
+   "text": "{0} · every content word already in the construct"
+  },
+  {
+   "id": "dropped.unset-shipped-contract-leaves",
+   "kind": "block",
+   "where": "site/index.html::dropped",
+   "slots": [],
+   "text": "unset · shipped contract leaves it empty"
+  },
+  {
+   "id": "dropped.what-encoded-live-committed",
+   "kind": "block",
+   "where": "site/index.html::dropped",
+   "slots": [],
+   "text": "what was encoded · live, not a committed run"
+  },
+  {
+   "id": "funnelPanel.candidate-pairs-over-distinct",
+   "kind": "block",
+   "where": "site/index.html::funnelPanel",
+   "slots": [
+    "st.S1_enumerated"
+   ],
+   "text": "{0} candidate pairs over distinct constructs"
+  },
+  {
+   "id": "funnelPanel.two-exports-survey-metadata",
+   "kind": "block",
+   "where": "site/index.html::funnelPanel",
+   "slots": [],
+   "text": "The two exports are survey-metadata counts the study team holds. Until they arrive every pair carries the marker above and nothing reaches the Specifier by default."
+  },
+  {
+   "id": "gen.artifacts-did-load-data",
+   "kind": "block",
+   "where": "site/index.html::gen",
+   "slots": [
+    "esc(e.message)"
+   ],
+   "text": "Artifacts did not load NO DATA — {0}. Serve this directory over HTTP; a file:// open cannot fetch the artifacts."
+  },
+  {
+   "id": "howMeasured.where-data-came-from",
+   "kind": "block",
+   "where": "site/index.html::howMeasured",
+   "slots": [
+    "f.n_targets.toLocaleString()",
+    "f.n_questions",
+    "f.n_absent_requests",
+    "f.n_questions",
+    "f.n_gold_items",
+    "f.phrasings_per_item",
+    "f.n_questions",
+    "f.phrasings_per_item",
+    "f.phrasings_per_item",
+    "f.n_gold_items",
+    "f.n_questions",
+    "f.n_absent_requests",
+    "f.n_gold_items_folded_family",
+    "f.n_gold_items",
+    "f.n_top_match_right",
+    "f.n_questions",
+    "f.n_right_construct_wrong_item"
+   ],
+   "text": "Where the data came from. The search index holds {0} entries built from the codebook: some are a single question, some a question paired with one of its answer options, and some stand for a family of sibling questions that share a stem. A request is turned into one line of text and compared against every entry; the closest entry is the answer. Nothing in that comparison is a language model. The test set is {1} requests whose right answer is known, plus {2} more written deliberately about things the codebook does not ask about. Those {3} are {4} codebook entries described {5} different ways each, so every count out of {6} below counts requests rather than distinct targets: {7} of them are {8} attempts at the same entry, and {9} is how many entries were tested at all. The {10} were written by a language model that was shown the right answer's wording first, so every hit rate below is a best case and not a field estimate. The {11} absent requests are the only part of this evaluation that was held back from every choice made while building it. For {12} of those {13} entries the right answer is a family of sibling questions rather than one question, and landing on the family counts as right. What each number counts. Top of the list is how often the right entry came back first: {14} of {15}. Another {16} landed on the right subject but the wrong question, and those count as misses rather than partial credit. Has a match at all is how well the similarity score tells an answerable request from an absent one. Is the top match right is how well that same score tells a correct answer from a wrong one, which is a different and much harder question. Threshold is the score below which the system declines to answer instead of guessing."
+  },
+  {
+   "id": "id.tool-calls-none-output",
+   "kind": "block",
+   "where": "site/index.html::id",
+   "slots": [],
+   "text": "tool calls None. output NO QUERY WAS RENDERED — intake turns a request into a query for the retriever. Both anchors were already keys, so there was nothing to render and nothing to drop as covered. the pair"
+  },
+  {
+   "id": "intakePanel.every-content-word-already",
+   "kind": "block",
+   "where": "site/index.html::intakePanel",
+   "slots": [
+    "esc(cur.instances_dropped_as_covered.join(\", \"))"
+   ],
+   "text": "{0} · every content word already in the construct"
+  },
+  {
+   "id": "intakePanel.unset-shipped-contract-leaves",
+   "kind": "block",
+   "where": "site/index.html::intakePanel",
+   "slots": [],
+   "text": "unset · shipped contract leaves it empty"
+  },
+  {
+   "id": "keyForm.one-run-at-time",
+   "kind": "block",
+   "where": "site/index.html::keyForm",
+   "slots": [],
+   "text": "One run at a time — a second is refused rather than queued, not silently made to wait."
+  },
+  {
+   "id": "keyForm.or-state-pair-yourself",
+   "kind": "block",
+   "where": "site/index.html::keyForm",
+   "slots": [
+    "att(anchors.exposure||\"\")",
+    "att(anchors.outcome||\"\")"
+   ],
+   "text": "or state the pair yourself A variable represents one question in the codebook, you can either use a prompt or specific codebook keys, if no key is identified the model refuses."
+  },
+  {
+   "id": "livePanel.live-retrieval-served-by",
+   "kind": "block",
+   "where": "site/index.html::livePanel",
+   "slots": [],
+   "text": "live retrieval · served by this server, not a committed run"
+  },
+  {
+   "id": "livePanel.pick-both-anchors-run",
+   "kind": "block",
+   "where": "site/index.html::livePanel",
+   "slots": [],
+   "text": "Pick both anchors to run the Specifier. Search one construct, use it as exposure; search the other, use it as outcome."
+  },
+  {
+   "id": "livePanel.run-specifier-pair",
+   "kind": "block",
+   "where": "site/index.html::livePanel",
+   "slots": [],
+   "text": "Run the Specifier on this pair"
+  },
+  {
+   "id": "metricsPanel.ceiling-highest-score-available",
+   "kind": "block",
+   "where": "site/index.html::metricsPanel",
+   "slots": [],
+   "text": "ceiling · the highest score that was available"
+  },
+  {
+   "id": "metricsPanel.cohort-bibliography-indexed-what",
+   "kind": "block",
+   "where": "site/index.html::metricsPanel",
+   "slots": [
+    "m.papers.length"
+   ],
+   "text": "Cohort bibliography · {0} indexed What the literature published. Nothing here came from the pipeline. The count is a floor on the literature, and the fixed denominator of the ceiling above. PMID year venue, as recorded design, as the bibliography records it n, as the paper reports it exposure terms the retriever abstained on"
+  },
+  {
+   "id": "metricsPanel.how-scored-set-produced",
+   "kind": "block",
+   "where": "site/index.html::metricsPanel",
+   "slots": [],
+   "text": "how the scored set was produced"
+  },
+  {
+   "id": "metricsPanel.question-run-answers",
+   "kind": "block",
+   "where": "site/index.html::metricsPanel",
+   "slots": [
+    "esc(m.question_answered)"
+   ],
+   "text": "the question this run answers {0}"
+  },
+  {
+   "id": "metricsPanel.rows-marked-late-they",
+   "kind": "block",
+   "where": "site/index.html::metricsPanel",
+   "slots": [
+    "late",
+    "m.papers.length",
+    "m.papers.length",
+    "noVenue",
+    "esc(m.abstained_note)"
+   ],
+   "text": "{0} of {1} rows are marked late : they entered the bibliography when it was rebuilt, shortly before this run. The ceiling above counts all {2}, late rows included. {3} rows carry no venue in the bibliography and read as such. The design column is the bibliography's own prose, exposure to outcome as it wrote it, and the n column is each paper's own unit. {4}."
+  },
+  {
+   "id": "metricsPanel.verdicts-scoring-run",
+   "kind": "block",
+   "where": "site/index.html::metricsPanel",
+   "slots": [],
+   "text": "verdicts on this scoring run"
+  },
+  {
+   "id": "metricsPanel.what-shipped-what-these",
+   "kind": "block",
+   "where": "site/index.html::metricsPanel",
+   "slots": [
+    "shippedSummary()"
+   ],
+   "text": "What is shipped, and what these figures are The whole run in three paragraphs, closing the tab that scores it. {0}"
+  },
+  {
+   "id": "metricsPanel.what-still-missing-from",
+   "kind": "block",
+   "where": "site/index.html::metricsPanel",
+   "slots": [
+    "esc(gap.why)"
+   ],
+   "text": "what is still missing from the key NOT BUILT — {0}."
+  },
+  {
+   "id": "noRun.output-committed-run-page",
+   "kind": "block",
+   "where": "site/index.html::noRun",
+   "slots": [
+    "esc(typed)"
+   ],
+   "text": "output NO COMMITTED RUN — this page has no encoder and never invents a score. The request is shown verbatim and nothing else: {0} . The example buttons above load the runs that were committed with this page; the Generate, Score and Metrics stages do not depend on what you typed and still show their committed runs."
+  },
+  {
+   "id": "pairIntakePanel.one-query-served-both",
+   "kind": "block",
+   "where": "site/index.html::pairIntakePanel",
+   "slots": [],
+   "text": "ONE query served both roles. deploy/template.py never renders the role, so an exposure request and an outcome request build the identical string — the two anchors are separated by the language model reading one shared candidate pool, not by two different searches."
+  },
+  {
+   "id": "pairIntakePanel.what-encoded-live-committed",
+   "kind": "block",
+   "where": "site/index.html::pairIntakePanel",
+   "slots": [],
+   "text": "what was encoded · live, not a committed run"
+  },
+  {
+   "id": "posedRetrieverPanel.question-pair-stands",
+   "kind": "block",
+   "where": "site/index.html::posedRetrieverPanel",
+   "slots": [
+    "esc(posed.question)"
+   ],
+   "text": "the question this pair stands for {0}"
+  },
+  {
+   "id": "posedRetrieverPanel.tool-calls-none-nothing",
+   "kind": "block",
+   "where": "site/index.html::posedRetrieverPanel",
+   "slots": [
+    "esc(posed.source_label)"
+   ],
+   "text": "tool calls None. Nothing was retrieved for this run. output NO RETRIEVAL WAS RUN — this pair was posed directly from {0}, so the deployed retriever scored no vectors. There is no cosine, no threshold decision and no abstention to show, and this panel will not borrow another run's. what went to the Specifier instead"
+  },
+  {
+   "id": "provenanceLine.panels-marked-record-page",
+   "kind": "block",
+   "where": "site/index.html::provenanceLine",
+   "slots": [
+    "panelLive\n      ? `The panel above was produced by this server during this session. Its figures come from that run and are <b>not</b> committed &mdash; nothing on this page pins them, and a second run may differ. Every other figure here is loaded from <code>site/artifacts/</code> with its run id or commit.`\n      : `Every figure above is loaded from <code>site/artifacts/</code> with its run id or commit; nothing on this panel was produced by your query.`"
+   ],
+   "text": "{0} Panels marked NO RECORD ON THIS PAGE carry no committed record and show no numbers."
+  },
+  {
+   "id": "retrieverPanel.all-negative-domains-absent",
+   "kind": "block",
+   "where": "site/index.html::retrieverPanel",
+   "slots": [
+    "a.all_domains_absent?\"pass\":\"fail\"",
+    "a.domains.length",
+    "a.n_dictionary_entries.toLocaleString()",
+    "a.n_targets.toLocaleString()",
+    "a.all_domains_absent"
+   ],
+   "text": "all {1} negative domains absent from {2} entries and {3} targets: {4}"
+  },
+  {
+   "id": "retrieverPanel.dictionary-entries-matching-targets",
+   "kind": "block",
+   "where": "site/index.html::retrieverPanel",
+   "slots": [
+    "esc(d.domain)",
+    "d.dictionary_entries_matching",
+    "d.targets_matching",
+    "d.adjacent_constructs_present"
+   ],
+   "text": "{0} dictionary entries matching {1} · targets matching {2} · adjacent constructs present {3}"
+  },
+  {
+   "id": "retrieverPanel.pseudonym-matched-variable-s",
+   "kind": "block",
+   "where": "site/index.html::retrieverPanel",
+   "slots": [
+    "esc(t.pseudonym)"
+   ],
+   "text": "{0} · a pseudonym: the matched variable's key and wording are withheld on this page"
+  },
+  {
+   "id": "retrieverPanel.roster-row-s-folded",
+   "kind": "block",
+   "where": "site/index.html::retrieverPanel",
+   "slots": [
+    "t.fold_size"
+   ],
+   "text": "{0} roster row(s) folded into this target"
+  },
+  {
+   "id": "scorePanel.off-every-scored-record",
+   "kind": "block",
+   "where": "site/index.html::scorePanel",
+   "slots": [
+    "DATA.funnel.gate.estimability_marks.map(esc).join(\", \")"
+   ],
+   "text": "off · every scored record carries {0}"
+  },
+  {
+   "id": "shippedSummary.retrieval-use-m-parameters",
+   "kind": "block",
+   "where": "site/index.html::shippedSummary",
+   "slots": [
+    "sh.params_m",
+    "lat.query_ms_isolated_single",
+    "DATA.funnel.gate.passed",
+    "DATA.funnel.gate.live",
+    "esc(DATA.funnel.gate.estimability_marks.join(\", \"))",
+    "o.scored",
+    "o.matched",
+    "DATA.metrics.ceiling.max_matched",
+    "I.negatives_rejected",
+    "I.n_negatives",
+    "I.auroc_absent_vs_present.toFixed(3)",
+    "provenanceLine()"
+   ],
+   "text": "Retrieval is in use: {0}M parameters, {1} ms per query on the serving machine, no language-model call. Hypothesis generation is gated: the estimability gate passes {2} of {3} pairs without two survey-metadata exports, so every design carries {4} . The one scored run switched that gate off; it emitted {5} records, of which {6} matched against a ceiling of {7}. Abstention on constructs the instrument does not measure: {8} of {9} held-out negatives rejected on this fixture (AUROC {10}). Its recall is an upper bound, not an open question: the fixture's queries were written with sight of the gold wording, by the same generator family as the training pairs. Detecting its own wrong pick is a different question; that figure was measured, withdrawn from git, and is not reproducible from this page. {11}"
+  },
+  {
+   "id": "specifierPanel.design-gate-rejected",
+   "kind": "block",
+   "where": "site/index.html::specifierPanel",
+   "slots": [],
+   "text": "the design the gate rejected"
+  },
+  {
+   "id": "specifierPanel.what-language-model-established",
+   "kind": "block",
+   "where": "site/index.html::specifierPanel",
+   "slots": [
+    "esc(a.analysis)"
+   ],
+   "text": "what the language model established the reasoning, in full {0}"
+  },
+  {
+   "id": "topicFig.each-bar-one-topic",
+   "kind": "block",
+   "where": "site/index.html::topicFig",
+   "slots": [
+    "built===n\n      ? ` There are ${p.gold_items} such entries, each described`\n        +` ${p.phrasings_per_item} different ways, which is the ${n} requests with a`\n        +` known right answer.`\n      : ` There are ${n} such requests, several per entry.`",
+    "cov===null?\"\":cov===n\n      ? `Every topic those requests fall into has a bar &mdash; ${rows.length} of`\n        +` them, between them all ${n} requests.`\n      : `${rows.length} topics are broken out here, between them ${cov} of the`\n        +` ${n} requests, and the remaining ${n-cov} are not shown.`",
+    "p.phrasings_per_item",
+    "none"
+   ],
+   "text": "Each bar is one topic, and its length is how often search put the right codebook entry first for the requests about that topic. What a request is. A short description of something someone wants to measure, of the kind you would type into the box at the top of this page. Every request used here was written from a single codebook entry, and that entry is what counts as the right answer for it — so \"first\" means the entry the request was written from came back at the top of the list.{0} {1} n counts requests, not entries, so a bar at n={2} rests on one entry: the narrowest bars are the least evidence, however long they look. There are no requests at all on {3}, so those topics have no bar — how well search does there has never been measured, which is not the same as it doing well."
+  },
+  {
+   "id": "tr.pick-random-answerable-request",
+   "kind": "block",
+   "where": "site/index.html::tr",
+   "slots": [],
+   "text": "pick a random answerable request and a random absent one; this is how often the answerable one scores higher"
+  },
+  {
+   "id": "tr.pick-random-right-hit",
+   "kind": "block",
+   "where": "site/index.html::tr",
+   "slots": [],
+   "text": "pick a random right hit and a random wrong hit; this is how often the right one scores higher"
+  },
+  {
+   "id": "tr.right-entry-came-back",
+   "kind": "block",
+   "where": "site/index.html::tr",
+   "slots": [
+    "f.n_top_match_right",
+    "f.n_questions"
+   ],
+   "text": "{0} of {1} — the right entry came back first"
+  },
+  {
+   "id": "tr.what-measured-value-what",
+   "kind": "block",
+   "where": "site/index.html::tr",
+   "slots": [],
+   "text": "what was measured value what it means"
+  },
+  {
+   "id": "whyGap.why-one-score-does",
+   "kind": "block",
+   "where": "site/index.html::whyGap",
+   "slots": [
+    "s.absent_p50.toFixed(4)",
+    "s.answerable_p50.toFixed(4)",
+    "s.right_p50.toFixed(4)",
+    "s.wrong_p50.toFixed(4)",
+    "s.wrong_max.toFixed(4)"
+   ],
+   "text": "Why one score does those two jobs so differently. Each figure here is a middle-of-the-pack score: at least half the requests in its group scored at or below it, and the figure is itself one of the scores that occurred. It is deliberately not called a median — on an even-sized group it is the value just above the middle, not the average of the two. An absent request: nothing in the codebook is close, so the best match is weak — typically {0} against {1} for a request the codebook can answer. Those two barely overlap, which is the high area. Answerable but wrong: something IS close, it just is not the right entry — {2} when the top match is right against {3} when it is wrong, and those two lie on top of each other. The highest-scoring wrong answer is {4}, above the middling right one. The score measures how similar the best entry it found is to the request, not whether that entry is the one you meant — so a confidently wrong answer is indistinguishable from a confidently right one."
+  },
+  {
+   "id": "slot.propose-pair",
+   "kind": "label",
+   "where": "site/index.html::askForm (inside a slot)",
+   "slots": [],
+   "text": "Propose a pair"
+  },
+  {
+   "id": "slot.does-survive",
+   "kind": "label",
+   "where": "site/index.html::cell (inside a slot)",
+   "slots": [],
+   "text": "does not survive"
+  },
+  {
+   "id": "slot.flat-within-every-query",
+   "kind": "label",
+   "where": "site/index.html::cell (inside a slot)",
+   "slots": [],
+   "text": ", flat within every query-length group"
+  },
+  {
+   "id": "slot.measured",
+   "kind": "label",
+   "where": "site/index.html::cell (inside a slot)",
+   "slots": [],
+   "text": "not measured"
+  },
+  {
+   "id": "cell.fixture-queries",
+   "kind": "label",
+   "where": "site/index.html::cell (row)",
+   "slots": [],
+   "text": "fixture queries"
+  },
+  {
+   "id": "cell.gain-over-frozen",
+   "kind": "label",
+   "where": "site/index.html::cell (row)",
+   "slots": [],
+   "text": "gain over frozen"
+  },
+  {
+   "id": "cell.lexical-leakage",
+   "kind": "label",
+   "where": "site/index.html::cell (row)",
+   "slots": [],
+   "text": "lexical leakage"
+  },
+  {
+   "id": "cell.phrasing",
+   "kind": "label",
+   "where": "site/index.html::cell (row)",
+   "slots": [],
+   "text": "phrasing"
+  },
+  {
+   "id": "slot.middot-shipped-base",
+   "kind": "label",
+   "where": "site/index.html::costFig (inside a slot)",
+   "slots": [],
+   "text": "&middot; shipped base"
+  },
+  {
+   "id": "dropped.construct-what-searched",
+   "kind": "label",
+   "where": "site/index.html::dropped (row)",
+   "slots": [],
+   "text": "construct · what is searched for"
+  },
+  {
+   "id": "dropped.dropped-as-covered",
+   "kind": "label",
+   "where": "site/index.html::dropped (row)",
+   "slots": [],
+   "text": "dropped as covered"
+  },
+  {
+   "id": "dropped.instances-examples-you-named",
+   "kind": "label",
+   "where": "site/index.html::dropped (row)",
+   "slots": [],
+   "text": "instances · examples you named"
+  },
+  {
+   "id": "dropped.population",
+   "kind": "label",
+   "where": "site/index.html::dropped (row)",
+   "slots": [],
+   "text": "population"
+  },
+  {
+   "id": "dropped.rendered-query-what-search",
+   "kind": "label",
+   "where": "site/index.html::dropped (row)",
+   "slots": [],
+   "text": "rendered query · what the search model receives"
+  },
+  {
+   "id": "dropped.request",
+   "kind": "label",
+   "where": "site/index.html::dropped (row)",
+   "slots": [],
+   "text": "request"
+  },
+  {
+   "id": "dropped.role",
+   "kind": "label",
+   "where": "site/index.html::dropped (row)",
+   "slots": [],
+   "text": "role"
+  },
+  {
+   "id": "funnelPanel.blocked",
+   "kind": "label",
+   "where": "site/index.html::funnelPanel (row)",
+   "slots": [],
+   "text": "blocked on"
+  },
+  {
+   "id": "funnelPanel.estimability",
+   "kind": "label",
+   "where": "site/index.html::funnelPanel (row)",
+   "slots": [],
+   "text": "estimability"
+  },
+  {
+   "id": "funnelPanel.gate",
+   "kind": "label",
+   "where": "site/index.html::funnelPanel (row)",
+   "slots": [],
+   "text": "gate"
+  },
+  {
+   "id": "funnelPanel.live",
+   "kind": "label",
+   "where": "site/index.html::funnelPanel (row)",
+   "slots": [],
+   "text": "live"
+  },
+  {
+   "id": "funnelPanel.n-source",
+   "kind": "label",
+   "where": "site/index.html::funnelPanel (row)",
+   "slots": [],
+   "text": "n source"
+  },
+  {
+   "id": "funnelPanel.pairs-emitted",
+   "kind": "label",
+   "where": "site/index.html::funnelPanel (row)",
+   "slots": [],
+   "text": "pairs emitted"
+  },
+  {
+   "id": "funnelPanel.s1-enumerate",
+   "kind": "label",
+   "where": "site/index.html::funnelPanel (row)",
+   "slots": [],
+   "text": "S1 enumerate"
+  },
+  {
+   "id": "funnelPanel.s2-prune",
+   "kind": "label",
+   "where": "site/index.html::funnelPanel (row)",
+   "slots": [],
+   "text": "S2 prune"
+  },
+  {
+   "id": "funnelPanel.s3-screen",
+   "kind": "label",
+   "where": "site/index.html::funnelPanel (row)",
+   "slots": [],
+   "text": "S3 screen"
+  },
+  {
+   "id": "generatePanel.enumerated-s1",
+   "kind": "label",
+   "where": "site/index.html::generatePanel (row)",
+   "slots": [],
+   "text": "enumerated (S1)"
+  },
+  {
+   "id": "generatePanel.estimable-s3",
+   "kind": "label",
+   "where": "site/index.html::generatePanel (row)",
+   "slots": [],
+   "text": "estimable (S3)"
+  },
+  {
+   "id": "generatePanel.live",
+   "kind": "label",
+   "where": "site/index.html::generatePanel (row)",
+   "slots": [],
+   "text": "live"
+  },
+  {
+   "id": "generatePanel.pruned-s2",
+   "kind": "label",
+   "where": "site/index.html::generatePanel (row)",
+   "slots": [],
+   "text": "pruned (S2)"
+  },
+  {
+   "id": "generatePanel.requires-derivation",
+   "kind": "label",
+   "where": "site/index.html::generatePanel (row)",
+   "slots": [],
+   "text": "requires derivation"
+  },
+  {
+   "id": "generatePanel.sets",
+   "kind": "label",
+   "where": "site/index.html::generatePanel (row)",
+   "slots": [],
+   "text": "sets"
+  },
+  {
+   "id": "intakePanel.construct-what-searched",
+   "kind": "label",
+   "where": "site/index.html::intakePanel (row)",
+   "slots": [],
+   "text": "construct · what is searched for"
+  },
+  {
+   "id": "intakePanel.dropped-as-covered",
+   "kind": "label",
+   "where": "site/index.html::intakePanel (row)",
+   "slots": [],
+   "text": "dropped as covered"
+  },
+  {
+   "id": "intakePanel.instances-examples-you-named",
+   "kind": "label",
+   "where": "site/index.html::intakePanel (row)",
+   "slots": [],
+   "text": "instances · examples you named"
+  },
+  {
+   "id": "intakePanel.origin",
+   "kind": "label",
+   "where": "site/index.html::intakePanel (row)",
+   "slots": [],
+   "text": "origin"
+  },
+  {
+   "id": "intakePanel.population",
+   "kind": "label",
+   "where": "site/index.html::intakePanel (row)",
+   "slots": [],
+   "text": "population"
+  },
+  {
+   "id": "intakePanel.rendered-query-what-search",
+   "kind": "label",
+   "where": "site/index.html::intakePanel (row)",
+   "slots": [],
+   "text": "rendered query · what the search model receives"
+  },
+  {
+   "id": "intakePanel.request-your-words-as",
+   "kind": "label",
+   "where": "site/index.html::intakePanel (row)",
+   "slots": [],
+   "text": "request · your words as typed"
+  },
+  {
+   "id": "intakePanel.role",
+   "kind": "label",
+   "where": "site/index.html::intakePanel (row)",
+   "slots": [],
+   "text": "role"
+  },
+  {
+   "id": "livePanel.abstained",
+   "kind": "label",
+   "where": "site/index.html::livePanel (row)",
+   "slots": [],
+   "text": "abstained"
+  },
+  {
+   "id": "livePanel.exposure",
+   "kind": "label",
+   "where": "site/index.html::livePanel (row)",
+   "slots": [],
+   "text": "exposure"
+  },
+  {
+   "id": "livePanel.margin-rank-two",
+   "kind": "label",
+   "where": "site/index.html::livePanel (row)",
+   "slots": [],
+   "text": "margin to rank two"
+  },
+  {
+   "id": "livePanel.min-cos",
+   "kind": "label",
+   "where": "site/index.html::livePanel (row)",
+   "slots": [],
+   "text": "min_cos"
+  },
+  {
+   "id": "livePanel.outcome",
+   "kind": "label",
+   "where": "site/index.html::livePanel (row)",
+   "slots": [],
+   "text": "outcome"
+  },
+  {
+   "id": "livePanel.query",
+   "kind": "label",
+   "where": "site/index.html::livePanel (row)",
+   "slots": [],
+   "text": "query"
+  },
+  {
+   "id": "livePanel.top-cosine",
+   "kind": "label",
+   "where": "site/index.html::livePanel (row)",
+   "slots": [],
+   "text": "top cosine"
+  },
+  {
+   "id": "metricsPanel.papers-matchable-needing-both",
+   "kind": "label",
+   "where": "site/index.html::metricsPanel (row)",
+   "slots": [],
+   "text": "papers matchable, needing both"
+  },
+  {
+   "id": "metricsPanel.papers-table",
+   "kind": "label",
+   "where": "site/index.html::metricsPanel (row)",
+   "slots": [],
+   "text": "papers in the table"
+  },
+  {
+   "id": "metricsPanel.records-could-have-matched",
+   "kind": "label",
+   "where": "site/index.html::metricsPanel (row)",
+   "slots": [],
+   "text": "records that could have matched"
+  },
+  {
+   "id": "metricsPanel.with-exposure-retriever-resolved",
+   "kind": "label",
+   "where": "site/index.html::metricsPanel (row)",
+   "slots": [],
+   "text": "with an exposure the retriever resolved"
+  },
+  {
+   "id": "metricsPanel.with-outcome-key-record",
+   "kind": "label",
+   "where": "site/index.html::metricsPanel (row)",
+   "slots": [],
+   "text": "with an outcome key on record"
+  },
+  {
+   "id": "pairIntakePanel.rendered-query",
+   "kind": "label",
+   "where": "site/index.html::pairIntakePanel (row)",
+   "slots": [],
+   "text": "rendered query"
+  },
+  {
+   "id": "pairIntakePanel.request",
+   "kind": "label",
+   "where": "site/index.html::pairIntakePanel (row)",
+   "slots": [],
+   "text": "request"
+  },
+  {
+   "id": "readableProtocol.adjusted",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (covBlock)",
+   "slots": [],
+   "text": "adjusted"
+  },
+  {
+   "id": "readableProtocol.excluded-purpose",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (covBlock)",
+   "slots": [],
+   "text": "excluded on purpose"
+  },
+  {
+   "id": "readableProtocol.undetermined",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (covBlock)",
+   "slots": [],
+   "text": "undetermined"
+  },
+  {
+   "id": "readableProtocol.access",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "access"
+  },
+  {
+   "id": "readableProtocol.analysis-model",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "analysis model"
+  },
+  {
+   "id": "readableProtocol.analytic-n",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "analytic n"
+  },
+  {
+   "id": "readableProtocol.contrast",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "contrast"
+  },
+  {
+   "id": "readableProtocol.expected-direction",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "expected direction"
+  },
+  {
+   "id": "readableProtocol.exposure",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "exposure"
+  },
+  {
+   "id": "readableProtocol.falsifier",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "falsifier"
+  },
+  {
+   "id": "readableProtocol.modules-required",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "modules required"
+  },
+  {
+   "id": "readableProtocol.outcome",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "outcome"
+  },
+  {
+   "id": "readableProtocol.question",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "question"
+  },
+  {
+   "id": "readableProtocol.threshold",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "threshold"
+  },
+  {
+   "id": "readableRefusal.pair",
+   "kind": "label",
+   "where": "site/index.html::readableRefusal (row)",
+   "slots": [],
+   "text": "pair"
+  },
+  {
+   "id": "readableRefusal.reason",
+   "kind": "label",
+   "where": "site/index.html::readableRefusal (row)",
+   "slots": [],
+   "text": "reason"
+  },
+  {
+   "id": "readableRefusal.statement",
+   "kind": "label",
+   "where": "site/index.html::readableRefusal (row)",
+   "slots": [],
+   "text": "statement"
+  },
+  {
+   "id": "readableRefusal.what-would-unblock",
+   "kind": "label",
+   "where": "site/index.html::readableRefusal (row)",
+   "slots": [],
+   "text": "what would unblock it"
+  },
+  {
+   "id": "resolverPanel.exposure",
+   "kind": "label",
+   "where": "site/index.html::resolverPanel (row)",
+   "slots": [],
+   "text": "exposure"
+  },
+  {
+   "id": "resolverPanel.outcome",
+   "kind": "label",
+   "where": "site/index.html::resolverPanel (row)",
+   "slots": [],
+   "text": "outcome"
+  },
+  {
+   "id": "resolverPanel.proposed-by",
+   "kind": "label",
+   "where": "site/index.html::resolverPanel (row)",
+   "slots": [],
+   "text": "proposed by"
+  },
+  {
+   "id": "resolverPanel.request",
+   "kind": "label",
+   "where": "site/index.html::resolverPanel (row)",
+   "slots": [],
+   "text": "request"
+  },
+  {
+   "id": "retrieverPanel.abstained",
+   "kind": "label",
+   "where": "site/index.html::retrieverPanel (row)",
+   "slots": [],
+   "text": "abstained"
+  },
+  {
+   "id": "retrieverPanel.domain",
+   "kind": "label",
+   "where": "site/index.html::retrieverPanel (row)",
+   "slots": [],
+   "text": "domain"
+  },
+  {
+   "id": "retrieverPanel.level",
+   "kind": "label",
+   "where": "site/index.html::retrieverPanel (row)",
+   "slots": [],
+   "text": "level"
+  },
+  {
+   "id": "retrieverPanel.margin-rank-two",
+   "kind": "label",
+   "where": "site/index.html::retrieverPanel (row)",
+   "slots": [],
+   "text": "margin to rank two"
+  },
+  {
+   "id": "retrieverPanel.min-cos",
+   "kind": "label",
+   "where": "site/index.html::retrieverPanel (row)",
+   "slots": [],
+   "text": "min_cos"
+  },
+  {
+   "id": "retrieverPanel.option",
+   "kind": "label",
+   "where": "site/index.html::retrieverPanel (row)",
+   "slots": [],
+   "text": "option"
+  },
+  {
+   "id": "retrieverPanel.query-time",
+   "kind": "label",
+   "where": "site/index.html::retrieverPanel (row)",
+   "slots": [],
+   "text": "query time"
+  },
+  {
+   "id": "retrieverPanel.roster-fold",
+   "kind": "label",
+   "where": "site/index.html::retrieverPanel (row)",
+   "slots": [],
+   "text": "roster fold"
+  },
+  {
+   "id": "retrieverPanel.target",
+   "kind": "label",
+   "where": "site/index.html::retrieverPanel (row)",
+   "slots": [],
+   "text": "target"
+  },
+  {
+   "id": "retrieverPanel.targets-scored",
+   "kind": "label",
+   "where": "site/index.html::retrieverPanel (row)",
+   "slots": [],
+   "text": "targets scored"
+  },
+  {
+   "id": "retrieverPanel.top-cosine",
+   "kind": "label",
+   "where": "site/index.html::retrieverPanel (row)",
+   "slots": [],
+   "text": "top cosine"
+  },
+  {
+   "id": "scorePanel.branch",
+   "kind": "label",
+   "where": "site/index.html::scorePanel (row)",
+   "slots": [],
+   "text": "branch"
+  },
+  {
+   "id": "scorePanel.clean-scoring",
+   "kind": "label",
+   "where": "site/index.html::scorePanel (row)",
+   "slots": [],
+   "text": "clean_for_scoring"
+  },
+  {
+   "id": "scorePanel.estimable-denominator",
+   "kind": "label",
+   "where": "site/index.html::scorePanel (row)",
+   "slots": [],
+   "text": "estimable denominator"
+  },
+  {
+   "id": "scorePanel.gate",
+   "kind": "label",
+   "where": "site/index.html::scorePanel (row)",
+   "slots": [],
+   "text": "gate"
+  },
+  {
+   "id": "scorePanel.key-fetchable",
+   "kind": "label",
+   "where": "site/index.html::scorePanel (row)",
+   "slots": [],
+   "text": "key_fetchable"
+  },
+  {
+   "id": "scorePanel.key-present",
+   "kind": "label",
+   "where": "site/index.html::scorePanel (row)",
+   "slots": [],
+   "text": "key_present"
+  },
+  {
+   "id": "scorePanel.matched",
+   "kind": "label",
+   "where": "site/index.html::scorePanel (row)",
+   "slots": [],
+   "text": "matched"
+  },
+  {
+   "id": "scorePanel.scored",
+   "kind": "label",
+   "where": "site/index.html::scorePanel (row)",
+   "slots": [],
+   "text": "scored"
+  },
+  {
+   "id": "scorePanel.status",
+   "kind": "label",
+   "where": "site/index.html::scorePanel (row)",
+   "slots": [],
+   "text": "status"
+  },
+  {
+   "id": "scorePanel.tree-clean",
+   "kind": "label",
+   "where": "site/index.html::scorePanel (row)",
+   "slots": [],
+   "text": "tree_clean"
+  },
+  {
+   "id": "specifierPanel.key-case-corrected",
+   "kind": "label",
+   "where": "site/index.html::specifierPanel (row)",
+   "slots": [],
+   "text": "key case corrected"
+  },
+  {
+   "id": "specifierPanel.language-model",
+   "kind": "label",
+   "where": "site/index.html::specifierPanel (row)",
+   "slots": [],
+   "text": "language model"
+  },
+  {
+   "id": "specifierPanel.pair",
+   "kind": "label",
+   "where": "site/index.html::specifierPanel (row)",
+   "slots": [],
+   "text": "pair"
+  },
+  {
+   "id": "specifierPanel.records-produced",
+   "kind": "label",
+   "where": "site/index.html::specifierPanel (row)",
+   "slots": [],
+   "text": "records produced"
+  },
+  {
+   "id": "specifierPanel.selection",
+   "kind": "label",
+   "where": "site/index.html::specifierPanel (row)",
+   "slots": [],
+   "text": "selection"
+  },
+  {
+   "id": "tr.auroc-answerable-vs-absent",
+   "kind": "label",
+   "where": "site/index.html::tr (tr)",
+   "slots": [],
+   "text": "AUROC, answerable vs absent"
+  },
+  {
+   "id": "tr.auroc-correct-vs-wrong",
+   "kind": "label",
+   "where": "site/index.html::tr (tr)",
+   "slots": [],
+   "text": "AUROC, correct vs wrong"
+  },
+  {
+   "id": "tr.top-1-accuracy",
+   "kind": "label",
+   "where": "site/index.html::tr (tr)",
+   "slots": [],
+   "text": "top-1 accuracy"
+  },
+  {
+   "id": "(module).request-named-key-key",
+   "kind": "server",
+   "where": "serve/api.py::(module) [constant PINNED_REASON]",
+   "slots": [],
+   "text": "the request named this key, so the key was not inferred. Its role was assigned by position -- the first key named is the exposure, the second the outcome -- not read from the sentence. Check the direction before confirming."
+  },
+  {
+   "id": "enumerate.nothing-enumerate-exposure-s",
+   "kind": "server",
+   "where": "serve/api.py::_enumerate [raise ValueError]",
+   "slots": [
+    "len(exposures)",
+    "ex_mod",
+    "ex_pre",
+    "len(outcomes)",
+    "out_mod",
+    "out_pre"
+   ],
+   "text": "nothing to enumerate: {0} exposure(s) matching module {1} {2} and {3} outcome(s) matching module {4} {5}"
+  },
+  {
+   "id": "enumerate.funnel-enumerates-prunes-model",
+   "kind": "server",
+   "where": "serve/api.py::_enumerate [wire key 'note']",
+   "slots": [],
+   "text": "The funnel enumerates and prunes with no model call. A pair run from here carries `enumerated_screen` and a real denominator, unlike a pair you type, which carries `externally_posed` and zero. Every run this endpoint makes is stamped `produced_by: serve-endpoint` either way."
+  },
+  {
+   "id": "first_json.model-returned-json-object",
+   "kind": "server",
+   "where": "serve/api.py::_first_json [raise ValueError]",
+   "slots": [],
+   "text": "the model returned no JSON object"
+  },
+  {
+   "id": "first_json.model-returned-unbalanced-json",
+   "kind": "server",
+   "where": "serve/api.py::_first_json [raise ValueError]",
+   "slots": [],
+   "text": "the model returned an unbalanced JSON object"
+  },
+  {
+   "id": "get.path-escapes-site-directory",
+   "kind": "server",
+   "where": "serve/api.py::_get [wire key 'error']",
+   "slots": [],
+   "text": "path escapes the site directory"
+  },
+  {
+   "id": "int_arg.must-finite-number-got",
+   "kind": "server",
+   "where": "serve/api.py::_int_arg [raise ValueError]",
+   "slots": [
+    "name",
+    "raw"
+   ],
+   "text": "{0} must be a finite number, got {1}"
+  },
+  {
+   "id": "metrics.scored-run-machine-scoring",
+   "kind": "server",
+   "where": "serve/api.py::_metrics [raise ValueError]",
+   "slots": [
+    "run"
+   ],
+   "text": "no scored run {0} on this machine. Scoring runs in the clone that holds the prevalence key, on a tag, and this endpoint reads the result rather than producing it. Set COMPASS_SCORED_RUNS if that clone is elsewhere."
+  },
+  {
+   "id": "metrics.read-run-scored-clone",
+   "kind": "server",
+   "where": "serve/api.py::_metrics [wire key 'note']",
+   "slots": [],
+   "text": "read from a run scored in the clone that holds the prevalence key. This endpoint cannot score: the key is not here, and scoring runs once, on a tag, before any tuning."
+  },
+  {
+   "id": "pair.model-run-already-progress",
+   "kind": "server",
+   "where": "serve/api.py::_pair [raise Busy]",
+   "slots": [],
+   "text": "a model run is already in progress on this endpoint."
+  },
+  {
+   "id": "pair.model-offered-endpoint",
+   "kind": "server",
+   "where": "serve/api.py::_pair [raise ValueError]",
+   "slots": [
+    "model"
+   ],
+   "text": "model {0} is not offered by this endpoint."
+  },
+  {
+   "id": "pair.request-required-route-takes",
+   "kind": "server",
+   "where": "serve/api.py::_pair [raise ValueError]",
+   "slots": [],
+   "text": "request is required: this route takes prose"
+  },
+  {
+   "id": "pair.both-anchors-proposed-then",
+   "kind": "server",
+   "where": "serve/api.py::_pair [wire key 'note']",
+   "slots": [],
+   "text": "Both anchors are proposed, then you confirm. Ask /api/specify/status for this ticket."
+  },
+  {
+   "id": "pin_keys_from_prose.request-names-distinct-keys",
+   "kind": "server",
+   "where": "serve/api.py::_pin_keys_from_prose [raise ValueError]",
+   "slots": [
+    "len(seen)"
+   ],
+   "text": "the request names {0} distinct keys and this route pins at most two, by position: the first is the exposure, the second the outcome. Name two, or send exposure and outcome to /api/specify."
+  },
+  {
+   "id": "resolve.model-run-already-progress",
+   "kind": "server",
+   "where": "serve/api.py::_resolve [raise Busy]",
+   "slots": [],
+   "text": "a model run is already in progress on this endpoint. Runs are serialised. Try again in a moment."
+  },
+  {
+   "id": "resolve.candidate-pool-could-bound",
+   "kind": "server",
+   "where": "serve/api.py::_resolve [raise ValueError]",
+   "slots": [],
+   "text": "no candidate in the pool could be bound to wording; nothing can be offered for selection"
+  },
+  {
+   "id": "resolve.model-offered-endpoint-allowed",
+   "kind": "server",
+   "where": "serve/api.py::_resolve [raise ValueError]",
+   "slots": [
+    "model",
+    "', '.join(sorted(state.allowed_models))"
+   ],
+   "text": "model {0} is not offered by this endpoint. Allowed: {1}."
+  },
+  {
+   "id": "resolve.model-reads-request-candidate",
+   "kind": "server",
+   "where": "serve/api.py::_resolve [wire key 'note']",
+   "slots": [],
+   "text": "A model reads the request and the candidate pool. Ask /api/specify/status for this ticket."
+  },
+  {
+   "id": "resolver_model.resolver-model-must-model",
+   "kind": "server",
+   "where": "serve/api.py::_resolver_model [raise ValueError]",
+   "slots": [],
+   "text": "resolver_model must be a model id such as claude-haiku-4-5"
+  },
+  {
+   "id": "role_candidates.candidate-could-bound-wording",
+   "kind": "server",
+   "where": "serve/api.py::_role_candidates [raise ValueError]",
+   "slots": [
+    "role"
+   ],
+   "text": "no candidate for the {0} could be bound to wording"
+  },
+  {
+   "id": "run.candidates-only-route-never",
+   "kind": "server",
+   "where": "serve/api.py::_run [wire key 'not_a_selection']",
+   "slots": [],
+   "text": "Candidates only. This route never commits an anchor: pick one yourself, including when the verdict is `resolved`."
+  },
+  {
+   "id": "run.proposals-only-nothing-committed",
+   "kind": "server",
+   "where": "serve/api.py::_run [wire key 'not_a_selection']",
+   "slots": [],
+   "text": "Proposals only. Nothing is committed: confirm each anchor before running the Specifier. A pair proposed by a model is still externally posed -- screened_from stays 0 and it never enters a benchmark denominator."
+  },
+  {
+   "id": "specify.specifier-run-already-progress",
+   "kind": "server",
+   "where": "serve/api.py::_specify [raise Busy]",
+   "slots": [],
+   "text": "a Specifier run is already in progress on this endpoint. Runs are serialised because each one allocates a sealed worktree and an MCP server. Try again in a few minutes."
+  },
+  {
+   "id": "specify.exposure-outcome-both-required",
+   "kind": "server",
+   "where": "serve/api.py::_specify [raise ValueError]",
+   "slots": [],
+   "text": "exposure and outcome are both required"
+  },
+  {
+   "id": "specify.model-offered-endpoint-allowed",
+   "kind": "server",
+   "where": "serve/api.py::_specify [raise ValueError]",
+   "slots": [
+    "model",
+    "', '.join(sorted(state.allowed_models))"
+   ],
+   "text": "model {0} is not offered by this endpoint. Allowed: {1}. Every run spends the operator's Claude seat, so which model runs is the operator's choice (--allow-model), not the caller's."
+  },
+  {
+   "id": "specify.run-takes-minutes-ask",
+   "kind": "server",
+   "where": "serve/api.py::_specify [wire key 'note']",
+   "slots": [],
+   "text": "A run takes minutes. Ask /api/specify/status for this ticket; the run continues whatever happens to this page."
+  },
+  {
+   "id": "specify_disabled.api-specify-disabled-endpoint",
+   "kind": "server",
+   "where": "serve/api.py::_specify_disabled [wire key 'error']",
+   "slots": [],
+   "text": "/api/specify is disabled on this endpoint (start with --enable-specify). Each run spends the operator's Claude seat and blocks every other caller while it runs."
+  },
+  {
+   "id": "specify_payload.externally-posed-screened-0",
+   "kind": "server",
+   "where": "serve/api.py::_specify_payload [wire key 'not_a_measurement']",
+   "slots": [],
+   "text": "externally posed, screened_from=0, no grammar enforcement, no seed. Never cite this as a result (AGENTS.md §Verification Discipline)."
+  },
+  {
+   "id": "specify_status.run-ticket-endpoint-run",
+   "kind": "server",
+   "where": "serve/api.py::_specify_status [raise ValueError]",
+   "slots": [
+    "ticket"
+   ],
+   "text": "no run with ticket {0} on this endpoint. A run that was still going when the endpoint restarted is lost -- the model call dies with the process. Finished runs are kept on disk and would have been found. Start it again."
+  },
+  {
+   "id": "do_POST.body-must-json-object",
+   "kind": "server",
+   "where": "serve/api.py::do_POST [wire key 'error']",
+   "slots": [],
+   "text": "body must be a JSON object"
+  },
+  {
+   "id": "do_POST.content-length-number",
+   "kind": "server",
+   "where": "serve/api.py::do_POST [wire key 'error']",
+   "slots": [],
+   "text": "Content-Length is not a number"
+  },
+  {
+   "id": "shell.pipeline-stage",
+   "kind": "static",
+   "where": "site/index.html (aria-label attribute)",
+   "slots": [],
+   "text": "pipeline stage"
+  },
+  {
+   "id": "shell.request",
+   "kind": "static",
+   "where": "site/index.html (aria-label attribute)",
+   "slots": [],
+   "text": "request"
+  },
+  {
+   "id": "shell.ask-pipeline",
+   "kind": "static",
+   "where": "site/index.html (markup outside <script>)",
+   "slots": [],
+   "text": "Ask the pipeline"
+  },
+  {
+   "id": "shell.compass",
+   "kind": "static",
+   "where": "site/index.html (markup outside <script>)",
+   "slots": [],
+   "text": "COMPASS"
+  },
+  {
+   "id": "shell.compass-survey-variable-retrieval",
+   "kind": "static",
+   "where": "site/index.html (markup outside <script>)",
+   "slots": [],
+   "text": "COMPASS — survey variable retrieval and study design"
+  },
+  {
+   "id": "shell.download-page",
+   "kind": "static",
+   "where": "site/index.html (markup outside <script>)",
+   "slots": [],
+   "text": "Download this page"
+  },
+  {
+   "id": "shell.repo",
+   "kind": "static",
+   "where": "site/index.html (markup outside <script>)",
+   "slots": [],
+   "text": "Repo"
+  },
+  {
+   "id": "shell.search-only",
+   "kind": "static",
+   "where": "site/index.html (markup outside <script>)",
+   "slots": [],
+   "text": "Search only"
+  },
+  {
+   "id": "shell.type-what-you-want",
+   "kind": "static",
+   "where": "site/index.html (markup outside <script>)",
+   "slots": [],
+   "text": "Type what you want to measure. Watch each stage retrieve, refuse, or block — with the dictionary lookups it made."
+  },
+  {
+   "id": "shell.question-construct-two-keys",
+   "kind": "static",
+   "where": "site/index.html (placeholder attribute)",
+   "slots": [],
+   "text": "a question, or a construct, or two keys"
+  },
+  {
+   "id": "shell.deployed-retriever-alone-cosine",
+   "kind": "static",
+   "where": "site/index.html (title attribute)",
+   "slots": [],
+   "text": "the deployed retriever alone: cosine over the target vectors, no language-model call, no cost, and the way to load a committed example"
+  },
+  {
+   "id": "shell.pipeline-retrieve-candidates-then",
+   "kind": "static",
+   "where": "site/index.html (title attribute)",
+   "slots": [],
+   "text": "the pipeline: retrieve candidates, then the language model reasons about which serve as exposure and which as outcome. Needs the live server"
+  }
+ ]
+}

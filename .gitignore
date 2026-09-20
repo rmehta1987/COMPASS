@@ -81,6 +81,13 @@ benchmark/leak_facts.py
 # any variable key, and passed over all of site/ on 2026-09-15 (exit 0, 9,424
 # runs and 5,608 keys checked). That gate is the reason these may be tracked.
 !site/artifacts/*.json
+# the page's copy catalogue: every sentence and label a reader sees, extracted
+# so prose can be rewritten without editing JavaScript. It is NOT under
+# artifacts/ because nothing fetches it, and `artifacts/index.json` says it
+# lists the artifacts the page loads -- a file in there that no route reads
+# would make that sentence false. It is still covered by the gate above:
+# `no_instrument.py` rglobs every file under site/, this one included.
+!site/copy.json
 # the page's example requests: the INPUT to `site/tools/run_examples.py`, which
 # generates the tracked `site/artifacts/runs.json`. Ignored by `*.json` and so
 # left behind when `0606136` carried the page in-tree, which meant the runs
