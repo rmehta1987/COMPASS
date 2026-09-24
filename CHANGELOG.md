@@ -23,8 +23,9 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
   for a scan that ran on nothing. Now `tests/test_contamination_skip.py` withholds every
   key through `sys.modules`, so this holds in the scoring clone too. It then drives the
   three sections that read one, directly and through `main`'s own table, and requires
-  SKIP, never `ok`. An AST scan pins `_KEY_READERS` to every function under the gate
-  that imports a key, in both directions. The same audit found a second route to the
+  SKIP, never `ok`. An AST scan pins `_KEY_READERS`, in both directions, to every
+  function under the gate that imports a key with an import statement (`from` or
+  plain); a dynamic `importlib` import escapes it — rule binding, test partial. The same audit found a second route to the
   same false `ok`: `benchmark/input_leakage.py::scan_frame` read the prevalence key per
   prompt, so an empty frame never touched it. It now reads the key once before its loop.
   Seeded red, each over the whole file: the platform wrap, the same wrap on

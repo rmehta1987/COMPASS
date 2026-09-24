@@ -444,17 +444,28 @@ def test_main_prints_skip_and_never_ok_for_a_section_whose_key_is_withheld(
 
 
 def test_every_key_reader_under_the_gate_is_listed() -> None:
-    """Both ways: a reader added or removed reddens this until it is declared."""
+    """Both ways: a reader added or removed reddens this until it is declared.
+
+    Catches both import statements, `from benchmark.X import ...` and
+    `import benchmark.X`. It does NOT catch `importlib.import_module` or any
+    other dynamic import: the rule binds, the test is partial, as with the
+    `env/` network regex (`AGENTS.md` §Hard Constraints).
+    """
     import ast
+
+    def reads_a_key(n: ast.AST) -> bool:
+        if isinstance(n, ast.ImportFrom):
+            return n.module in cc.WITHHELD_MODULES
+        if isinstance(n, ast.Import):
+            return any(a.name in cc.WITHHELD_MODULES for a in n.names)
+        return False
 
     found: set[tuple[str, str]] = set()
     for module in ("contamination_check", "input_leakage"):
         tree = ast.parse((ROOT / "benchmark" / f"{module}.py").read_text())
         for fn in ast.walk(tree):
             if isinstance(fn, ast.FunctionDef) and any(
-                    isinstance(n, ast.ImportFrom)
-                    and n.module in cc.WITHHELD_MODULES
-                    for n in ast.walk(fn)):
+                    reads_a_key(n) for n in ast.walk(fn)):
                 found.add((module, fn.name))
     assert found == set(_KEY_READERS), (
         f"functions importing a withheld key: {sorted(found)}; declared: "
