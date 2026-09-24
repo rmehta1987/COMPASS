@@ -1027,7 +1027,7 @@ function livePanel(){
     +row("query",esc(j.query),true)
     +row("top similarity (cosine)",f4(top.cos),true)
     +row("threshold (min_cos)",`${f4(j.threshold)} &middot; ${j.abstained?`<span class="flag">not cleared</span>`:"cleared"}`,true)
-    +row("abstained",j.abstained?`<span class="flag">true</span>`:"false",true)
+    +row("abstained",j.abstained?`<span class="flag">yes</span>`:"no",true)
     +(typeof j.margin_12==="number"?row("lead over rank two",f4(j.margin_12),true):"")
     +`</dl>`;
   h+=`<p class="sec">candidates</p><div class="tools">`+j.hits.map(c=>
@@ -1085,7 +1085,7 @@ function retrieverPanel(){
     +row("level",esc(t.level),true)
     +row("top similarity (cosine)",f4(r.top_cos),true)
     +row("threshold (min_cos)",`${f4(DATA.runs.threshold.min_cos)} · ${r.abstained?`<span class="flag">not cleared, short by ${f4(-r.gap_above_threshold)}</span>`:`cleared by ${f4(r.gap_above_threshold)}`}`,true)
-    +row("abstained",r.abstained?`<span class="flag">true</span>`:"false",true)
+    +row("abstained",r.abstained?`<span class="flag">yes</span>`:"no",true)
     +row("lead over rank two",f4(r.margin_12),true)
     +row("roster rows merged",`${t.fold_size} roster row(s) merged into this target`,true)
     +row("option",t.option_position?`option ${t.option_position} of ${t.option_count}`:"stem-level target, no option",true)
@@ -1204,7 +1204,7 @@ function metricsPanel(){
      bibliography and the key rather than with the pipeline's output. */
   h+=`<p class="sec">verdicts on this scoring run</p><div class="tools">`
     +Object.entries(m.verdicts).map(([k,v])=>
-      `<div class="t gate ${v==="ok"?"pass":"fail"}"><span class="call">${esc(k)}</span>`
+      `<div class="t gate ${v==="ok"?"pass":"fail"}"><span class="call">${esc(k.replace(/_/g," "))}</span>`
       +`<span class="ret">${esc(v)}</span></div>`).join("")+`</div>`
     +`<div class="none">${esc(m.verdicts_note)}.</div>`;
 
@@ -1236,25 +1236,25 @@ function scorePanel(){
   /* Plain labels, not the stamp's field names: a reader met `key_present` and
      `clean_for_scoring` with no gloss. The field names survive in the JSON
      download, which carries the artifact as committed. */
-  const b=v=>v?`<span class="flag">yes</span>`:`no <span class="good">required</span>`;
+  const b=v=>v?`<span class="flag">yes</span>`:`<span class="good">no, as required</span>`;
   const yn=v=>v?"yes":"no";
   const mp=DATA.metrics.provenance;
   let h=`<p class="sec">the environment that generated the records</p>`
     +`<div class="none">Scoring is only valid if the records were generated where the answer key`
-    +` could not be read, so the pipeline could not have seen it.</div><dl>`
+    +` was unreachable, neither present nor fetchable, so the pipeline could not have seen it.</div><dl>`
     +row("answer key present",b(e.key_present),true)
     +row("answer key fetchable",b(e.key_fetchable),true)
     +row("branch",esc(e.branch),true)
     +row("no uncommitted changes",yn(e.tree_clean),true)
-    +row("safe to score",e.clean_for_scoring?`<span class="good">yes</span>`:`<span class="flag">no</span>`,true)
-    +row("pairs that passed the estimability screen",`<span class="flag">${sc.estimable_denominator}</span>`,true)
+    +row("clean for scoring",e.clean_for_scoring?`<span class="good">yes</span>`:`<span class="flag">no</span>`,true)
+    +row("pairs the estimability screen marked estimable",`<span class="flag">${sc.estimable_denominator}</span>`,true)
     +row("status",`<span class="flag">${esc(sc.status)}</span> · scored in this clone: ${yn(sc.scored_in_generation_clone)}`,true)
     +`</dl>`;
   h+=`<p class="sec">why nothing is scored here</p><ul class="does">${sc.why_the_gate_blocks.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`;
   h+=`<p class="sec">the one scored run</p><dl>`
     +row("estimability gate",`<span class="flag">off</span> · every scored record is marked ${DATA.funnel.gate.estimability_marks.map(esc).join(", ")}`,true)
     +row("records scored",String(DATA.metrics.observed.scored),true)
-    +row("records matching a published finding",`<span class="flag">${DATA.metrics.observed.matched}</span> · the most that could have matched: ${DATA.metrics.ceiling.max_matched}`,true)
+    +row("records matching a paper's exposure–outcome pair",`<span class="flag">${DATA.metrics.observed.matched}</span> · the most that could have matched: ${DATA.metrics.ceiling.max_matched}`,true)
     +`</dl><div class="none">${esc(sc.scored_run_note)}.</div>`;
   return h;
 }
@@ -1267,8 +1267,8 @@ function scorePanel(){
    file retyping it. */
 function howMeasured(R){
   const f=R.fixture;
-  return `<div class="none"><b>Where the data came from.</b> I built the search index`
-   +` from the codebook, and it holds ${f.n_targets.toLocaleString()} entries. An entry`
+  return `<div class="none"><b>Where the data came from.</b> The search index holds`
+   +` ${f.n_targets.toLocaleString()} entries built from the codebook. An entry`
    +` is a single question, a question paired with one of its response options, or a`
    +` family of sibling questions that share a stem. The retriever renders each request`
    +` as one line of text, scores it against every entry, and returns the closest.`
@@ -1283,14 +1283,15 @@ function howMeasured(R){
    +` A language model wrote the ${f.n_questions} after seeing the reference wording, so`
    +` every hit rate below is optimistically biased: an upper bound, not an estimate of`
    +` field performance. The ${f.n_absent_requests} absent requests are the only part`
-   +` of this evaluation I held out from every development decision.`
+   +` of this evaluation held out from every development decision, and a language`
+   +` model wrote those too.`
    +` For ${f.n_gold_items_folded_family} of the ${f.n_gold_items} entries the reference`
    +` is a family of sibling questions, and a hit anywhere in the family counts as`
    +` correct.`
    +`<br><br><b>What each number counts.</b> <em>Top-1 accuracy</em> is how often the`
    +` reference entry ranked first: ${f.n_top_match_right} of ${f.n_questions}.`
    +` Another ${f.n_right_construct_wrong_item} reached the right construct but the`
-   +` wrong question, and I score those as misses, not partial credit.`
+   +` wrong question, and those count as misses, not partial credit.`
    +` <em>AUROC, answerable vs absent</em> is discrimination between answerable and`
    +` absent requests: how well the similarity score separates the two groups.`
    +` <em>AUROC, correct vs wrong</em> is discrimination between correct and incorrect`
@@ -1339,10 +1340,10 @@ function scoreTable(R){
 function whyGap(R){
   const s=R.scores;
   return `<div class="none"><b>Why one score discriminates so differently on the two`
-   +` tasks.</b> Each figure here is a mid-distribution score: at least half the`
+   +` tasks.</b> Each figure here is an upper median: at least half the`
    +` requests in its group scored at or below it, and the figure is one of the`
-   +` observed scores. I do not call it a median, because on an even-sized group it`
-   +` is the value just above the middle, not the mean of the two middle values.`
+   +` observed scores. On an even-sized group it is the upper of the two middle`
+   +` values, not their mean, which is why it is not called the median.`
    +`<br><br><em>An absent request:</em> nothing in the codebook is close, so the`
    +` best match is weak &mdash; typically ${s.absent_p50.toFixed(4)}, against`
    +` ${s.answerable_p50.toFixed(4)} for a request the codebook can answer. The two`
@@ -1526,7 +1527,7 @@ function measureHTML(){
   h+=howMeasured(R);
   /* The whole of the manifest's known limitations, not the first clause. The
      comparison below is exactly the one these sentences qualify. */
-  h+=`<p class="sec">known limitations · ${esc(L.source)}</p><dl>`
+  h+=`<p class="sec">known limitations</p><p class="prov">${esc(L.source)}</p><dl>`
     +row("fixture queries",`written by the same generator family as the ${L.training_pairs.toLocaleString()} training pairs, after seeing the reference wording`)
     +row("gain over the frozen model",`${R1} ${L.gain_r1_over_frozen_bge_small.toFixed(3)} for the fine-tuned model over frozen bge-small on the no-template arm · <span class="flag">${esc(L.register_alignment_share)}</span> share of it is register alignment`,true)
     +row("word overlap with the answer (lexical leakage)",`${L.lexical_leakage.measured?"measured":"not measured"} and it ${L.lexical_leakage.survives?"survives":"does not survive"}: item-level Spearman ${L.lexical_leakage.item_level_spearman} (permutation p ${L.lexical_leakage.permutation_p}); ${R1} by query-to-gold overlap quartile ${L.lexical_leakage.r1_by_query_gold_overlap_quartile.map(q=>q.toFixed(3)).join(" / ")}, ${L.lexical_leakage.monotonic?"monotonic":"non-monotonic"}${L.lexical_leakage.flat_within_query_length_groups?", flat within every query-length group":""}`,true)
@@ -1548,14 +1549,14 @@ function measureHTML(){
    +`</tbody></table></div>
   <div class="none">Both arms run one model on one machine and differ only in how the query was rendered. AUROC is shown to three places because it is computed over ${I.n_negatives} negatives and ${n} positives, and the two arms reject the same count.</div>
   <p class="sec">what the similarity score can and cannot discriminate &middot; arm S &middot; ${esc(S.label)}</p>
-  <div class="none">Everything in this section is arm S, <em>${esc(S.label)}</em>: the three numbers, both curves, the operating point and the mid-distribution scores. Arm S is <b>not</b> the arm that ships. The shipped contract is arm I, <em>${esc(I.label)}</em>, and the threshold row at the end of this section is arm I. Because the arms differ in how the request was rendered, a figure from each is not two measurements of one quantity: the coverage in the table below is arm I's, and it is not the operating point drawn above. No artifact this page loads publishes arm I's version of these curves, so the curves shown are arm S's.</div>`
+  <div class="none">Everything in this section is arm S, <em>${esc(S.label)}</em>: the three numbers, both curves, the operating point and the upper medians. Arm S is <b>not</b> the arm that ships. The shipped contract is arm I, <em>${esc(I.label)}</em>, and the threshold row at the end of this section is arm I. Because the arms differ in how the request was rendered, a figure from each is not two measurements of one quantity: the coverage in the table below is arm I's, and it is not the operating point drawn above. No artifact this page loads publishes arm I's version of these curves, so the curves shown are arm S's.</div>`
    +scoreTable(R)
    +rocFig(R)
    +whyGap(R)
-   +`<div class="tbl"><table><thead><tr><th>threshold</th><th>min_cos</th><th>coverage</th><th>precision</th><th>recall</th><th>F1</th><th>candidate values</th><th>latency</th></tr></thead><tbody>
+   +`<div class="tbl"><table><thead><tr><th>threshold</th><th>cutoff (min_cos)</th><th>coverage</th><th>precision</th><th>recall</th><th>F1</th><th>candidate values</th><th>latency</th></tr></thead><tbody>
    <tr><td>shipped &middot; arm I &middot; F1-maximising over the same ${n} positives it is reported on</td><td>${th.min_cos.toFixed(6)}</td><td>${th.coverage.toFixed(4)}</td><td>${th.precision.toFixed(4)}</td><td>${th.recall.toFixed(4)}</td><td>${th.f1.toFixed(4)}</td><td>${th.candidate_taus}</td><td>${lat.query_ms_isolated_single} ms · ${esc(lat.machine)} · ${lat.threads} threads</td></tr>
   </tbody></table></div>
-  <div class="none">This row is arm I, <em>${esc(I.label)}</em>, not arm S, which the curves above are drawn from. Coverage: ${esc(th.definitions.coverage)}. Precision, the positive predictive value: ${esc(th.definitions.precision)}. Recall, the sensitivity: ${esc(th.definitions.recall)}. This recall differs from the ${R1} above in its numerator only: both are over all positives, but ${R1} counts every query whose top match is right, and this recall counts only those that also cleared min_cos, so abstaining costs recall. ${esc(th.selection_note)}.</div>
+  <div class="none">This row is arm I, <em>${esc(I.label)}</em>, not arm S, which the curves above are drawn from. Coverage: ${esc(th.definitions.coverage)}. Precision: ${esc(th.definitions.precision)}. Recall: ${esc(th.definitions.recall)}. This recall differs from the ${R1} above in its numerator only: both are over all positives, but ${R1} counts every query whose top match is right, and this recall counts only those that also cleared min_cos, so abstaining costs recall. ${esc(th.selection_note)}.</div>
   <p class="prov">${esc(lat.note)}</p>`;
   h+=`<div class="none">${esc(sh.wrong_pick_detection.note)}.</div>`;
   return h;
@@ -1587,7 +1588,7 @@ function provenanceLine(){
 function shippedSummary(){
   const m=DATA.measurements, sh=m.shipped, I=sh.arms.I, lat=sh.latency, o=DATA.metrics.observed;
   return `<p>Retrieval is in use: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, and no language-model call. Hypothesis generation is gated. Without two survey-metadata exports, the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} exposure–outcome pairs, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>. The one scored run switched that gate off and emitted ${o.scored} records; ${o.matched} matched, against a ceiling of ${DATA.metrics.ceiling.max_matched}.</p>
-  <p>The retriever abstains on constructs the instrument does not measure: it rejected ${I.negatives_rejected} of ${I.n_negatives} held-out negatives on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(3)}). Its recall is an upper bound by construction, because the same generator family that wrote the training pairs wrote the fixture's queries after seeing the reference wording. Detecting its own wrong pick is a separate question: that figure was measured, then withdrawn from git, and this page cannot reproduce it.</p>
+  <p>The retriever abstains on constructs the instrument does not measure: it rejected ${I.negatives_rejected} of ${I.n_negatives} held-out negatives on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(3)}). Its recall is an upper bound, because the same generator family that wrote the training pairs wrote the fixture's queries after seeing the reference wording. Detecting its own wrong pick is a separate question: that figure was measured, but its artifact was withdrawn from git and this page cannot reproduce it.</p>
   <p>${provenanceLine()}</p>`;
 }
 

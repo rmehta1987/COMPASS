@@ -90,9 +90,9 @@ def main() -> int:
              " switched off, and the Metrics tab reports it"),
         ],
         "scored_run_note": ("The checks above describe the generation clone when it "
-                            "was captured. The scored run's own tree and run id are in"
-                            " its own artifact and in REPRODUCIBILITY.md, not on this "
-                            "page, which prints no run stamps"),
+                             "was captured. The scored run's own tree and run id are "
+                             "in metrics.json's provenance, not printed on this page, "
+                             "which prints no run stamps"),
         "estimable_denominator": ex["estimable"],
     })
     write("absence.json", {

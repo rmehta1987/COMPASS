@@ -224,12 +224,11 @@ def main() -> int:
                                  "differ, and the run artifacts on this page report "
                                  "their own")},
             "wrong_pick_detection": {"available": False,
-                                     "note": ("How well the retriever detects its own "
-                                              "wrong picks was measured, but the "
-                                              "artifact was withdrawn from git and "
-                                              "nothing on this page can reproduce the "
-                                              "figure. It is measured, not missing, and"
-                                              " it is not shown")},
+                                     "note": ("Detecting its own wrong pick was "
+                                               "measured, but the artifact was withdrawn"
+                                               " from git, and nothing on this page can "
+                                               "reproduce the figure. It is not "
+                                               "unmeasured; it is not shown")},
         },
     }
     # The by-topic rows must account for every positive row in the fixture. The

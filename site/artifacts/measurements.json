@@ -319,7 +319,7 @@
   },
   "wrong_pick_detection": {
    "available": false,
-   "note": "How well the retriever detects its own wrong picks was measured, but the artifact was withdrawn from git and nothing on this page can reproduce the figure. It is measured, not missing, and it is not shown"
+   "note": "Detecting its own wrong pick was measured, but the artifact was withdrawn from git, and nothing on this page can reproduce the figure. It is not unmeasured; it is not shown"
   }
  }
 }

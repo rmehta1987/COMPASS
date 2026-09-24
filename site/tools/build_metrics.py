@@ -159,15 +159,15 @@ def main() -> int:
               "(--allow-unestimable). With the gate on, no language-model call is "
               "made. Every scored record carries the gate's own blocking mark, so the "
               "analysis set exists only because the main quality gate was disabled"),
-            ("The sampling frame was the narrow one: medication and "
+            ("The frame of variable pairs was the narrow one: medication and "
               "reproductive-hormonal exposures crossed with chronic-condition "
               "outcomes, run through the same funnel the Generate tab shows for a "
               "different frame"),
             ("The generated pairs were a seeded subset of that frame; the artifacts "
               "this page ships do not record the seed or the limit"),
             ("The Generate and Score tabs describe the generation clone at a "
-              "different tree. This run's own tree is recorded in its artifact and in "
-              "REPRODUCIBILITY.md, not on this page, which prints no run stamps"),
+              "different tree. This run's own tree is recorded in metrics.json's "
+              "provenance (tree_sha), not printed on this page"),
         ],
         "artifacts": artifacts,
         "papers": [
@@ -202,7 +202,7 @@ def main() -> int:
                                         "treats a retriever miss and a true non-match "
                                         "the same way: the ceiling depends on the "
                                         "retriever"),
-            "the_frame": ("The sampling frame is the set of pairs the funnel "
+            "the_frame": ("The frame is the set of variable pairs the funnel "
                            "enumerated for this run: one group of exposure questions "
                            "crossed with one group of outcome questions, here "
                            "medication and reproductive-hormonal exposures by "

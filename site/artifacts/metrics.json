@@ -43,9 +43,9 @@
  "headline_source": "quoted verbatim from artefacts/b3-20260904/BASELINE.md, which spells artefact and writes the singular as a plural; the record is not edited to read better",
  "how_produced": [
   "The estimability gate was switched off for this run (--allow-unestimable). With the gate on, no language-model call is made. Every scored record carries the gate's own blocking mark, so the analysis set exists only because the main quality gate was disabled",
-  "The sampling frame was the narrow one: medication and reproductive-hormonal exposures crossed with chronic-condition outcomes, run through the same funnel the Generate tab shows for a different frame",
+  "The frame of variable pairs was the narrow one: medication and reproductive-hormonal exposures crossed with chronic-condition outcomes, run through the same funnel the Generate tab shows for a different frame",
   "The generated pairs were a seeded subset of that frame; the artifacts this page ships do not record the seed or the limit",
-  "The Generate and Score tabs describe the generation clone at a different tree. This run's own tree is recorded in its artifact and in REPRODUCIBILITY.md, not on this page, which prints no run stamps"
+  "The Generate and Score tabs describe the generation clone at a different tree. This run's own tree is recorded in metrics.json's provenance (tree_sha), not printed on this page"
  ],
  "artifacts": [
   {
@@ -630,7 +630,7 @@
   "is_not": "a measurement of hypothesis quality: with a ceiling of zero the run cannot separate a good pipeline from a bad one, and no score above zero was attainable under this key and this frame",
   "unit_of_analysis": "The numerator counts records, not papers: a record matches when one paper's outcome key and resolved exposure are both its own. The ceiling counts how many scored records could have matched any paper, and a paper is matchable when at least one record could match it. Each denominator is stated beside its count",
   "why_the_ceiling_is_low": "A paper is matchable only when its outcome key is on record and its exposure resolves against the instrument; one paper of sixteen meets both conditions. Resolution runs through the deployed retriever, so the score treats a retriever miss and a true non-match the same way: the ceiling depends on the retriever",
-  "the_frame": "The sampling frame is the set of pairs the funnel enumerated for this run: one group of exposure questions crossed with one group of outcome questions, here medication and reproductive-hormonal exposures by chronic-condition outcomes. No record can match a paper whose pair lies outside the frame, however the pipeline reasoned",
+  "the_frame": "The frame is the set of variable pairs the funnel enumerated for this run: one group of exposure questions crossed with one group of outcome questions, here medication and reproductive-hormonal exposures by chronic-condition outcomes. No record can match a paper whose pair lies outside the frame, however the pipeline reasoned",
   "attrition": "the scored denominator is the emitted rows only. The pairs lost to a backend error were dropped without a missingness argument, and an error is not obviously independent of how hard a pair is; the rate is stated beside this sentence",
   "one_cell": "every scored record has the same outcome stratum, so the set is one cell of the instrument, not a spread. Self-reported medication against a self-reported chronic condition is the pairing an epidemiologist would query first, for confounding by indication and reverse causation; nothing in the estimability column speaks to either. Whether rows sharing a pair and differing only in their covariate sets are independent is not established here",
   "excluded_floor": "the schema requires at least one excluded variable, so a count of one in that column is a floor the record was made to meet, not a finding",

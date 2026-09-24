@@ -56,7 +56,7 @@
     "esc(S.label)",
     "esc(I.label)"
    ],
-   "text": "Both arms run one model on one machine and differ only in how the query was rendered. AUROC is shown to three places because it is computed over {0} negatives and {1} positives, and the two arms reject the same count. what the similarity score can and cannot discriminate · arm S · {2} Everything in this section is arm S, {3} : the three numbers, both curves, the operating point and the mid-distribution scores. Arm S is not the arm that ships. The shipped contract is arm I, {4} , and the threshold row at the end of this section is arm I. Because the arms differ in how the request was rendered, a figure from each is not two measurements of one quantity: the coverage in the table below is arm I's, and it is not the operating point drawn above. No artifact this page loads publishes arm I's version of these curves, so the curves shown are arm S's."
+   "text": "Both arms run one model on one machine and differ only in how the query was rendered. AUROC is shown to three places because it is computed over {0} negatives and {1} positives, and the two arms reject the same count. what the similarity score can and cannot discriminate · arm S · {2} Everything in this section is arm S, {3} : the three numbers, both curves, the operating point and the upper medians. Arm S is not the arm that ships. The shipped contract is arm I, {4} , and the threshold row at the end of this section is arm I. Because the arms differ in how the request was rendered, a figure from each is not two measurements of one quantity: the coverage in the table below is arm I's, and it is not the operating point drawn above. No artifact this page loads publishes arm I's version of these curves, so the curves shown are arm S's."
   },
   {
    "id": "cell.fine-tuned-model-over",
@@ -161,7 +161,7 @@
     "esc(th.selection_note)",
     "esc(lat.note)"
    ],
-   "text": "threshold min_cos coverage precision recall F1 candidate values latency shipped · arm I · F1-maximising over the same {0} positives it is reported on {1} {2} {3} {4} {5} {6} {7} ms · {8} · {9} threads This row is arm I, {10} , not arm S, which the curves above are drawn from. Coverage: {11}. Precision, the positive predictive value: {12}. Recall, the sensitivity: {13}. This recall differs from the {14} above in its numerator only: both are over all positives, but {15} counts every query whose top match is right, and this recall counts only those that also cleared min_cos, so abstaining costs recall. {16}. {17}"
+   "text": "threshold cutoff (min_cos) coverage precision recall F1 candidate values latency shipped · arm I · F1-maximising over the same {0} positives it is reported on {1} {2} {3} {4} {5} {6} {7} ms · {8} · {9} threads This row is arm I, {10} , not arm S, which the curves above are drawn from. Coverage: {11}. Precision: {12}. Recall: {13}. This recall differs from the {14} above in its numerator only: both are over all positives, but {15} counts every query whose top match is right, and this recall counts only those that also cleared min_cos, so abstaining costs recall. {16}. {17}"
   },
   {
    "id": "cell.written-by-same-generator",
@@ -307,7 +307,7 @@
     "f.n_questions",
     "f.n_right_construct_wrong_item"
    ],
-   "text": "Where the data came from. I built the search index from the codebook, and it holds {0} entries. An entry is a single question, a question paired with one of its response options, or a family of sibling questions that share a stem. The retriever renders each request as one line of text, scores it against every entry, and returns the closest. No language model takes part in that step. The test set holds {1} requests with a known reference entry and {2} requests written about constructs the codebook does not measure. The {3} cover {4} codebook entries, each phrased {5} ways, so every count out of {6} below counts requests, not distinct entries: each block of {7} requests is {8} phrasings of one entry, and {9} entries were tested in all. A language model wrote the {10} after seeing the reference wording, so every hit rate below is optimistically biased: an upper bound, not an estimate of field performance. The {11} absent requests are the only part of this evaluation I held out from every development decision. For {12} of the {13} entries the reference is a family of sibling questions, and a hit anywhere in the family counts as correct. What each number counts. Top-1 accuracy is how often the reference entry ranked first: {14} of {15}. Another {16} reached the right construct but the wrong question, and I score those as misses, not partial credit. AUROC, answerable vs absent is discrimination between answerable and absent requests: how well the similarity score separates the two groups. AUROC, correct vs wrong is discrimination between correct and incorrect top matches, using the same score, and it is a much harder task. Threshold is the score below which the system abstains instead of guessing."
+   "text": "Where the data came from. The search index holds {0} entries built from the codebook. An entry is a single question, a question paired with one of its response options, or a family of sibling questions that share a stem. The retriever renders each request as one line of text, scores it against every entry, and returns the closest. No language model takes part in that step. The test set holds {1} requests with a known reference entry and {2} requests written about constructs the codebook does not measure. The {3} cover {4} codebook entries, each phrased {5} ways, so every count out of {6} below counts requests, not distinct entries: each block of {7} requests is {8} phrasings of one entry, and {9} entries were tested in all. A language model wrote the {10} after seeing the reference wording, so every hit rate below is optimistically biased: an upper bound, not an estimate of field performance. The {11} absent requests are the only part of this evaluation held out from every development decision, and a language model wrote those too. For {12} of the {13} entries the reference is a family of sibling questions, and a hit anywhere in the family counts as correct. What each number counts. Top-1 accuracy is how often the reference entry ranked first: {14} of {15}. Another {16} reached the right construct but the wrong question, and those count as misses, not partial credit. AUROC, answerable vs absent is discrimination between answerable and absent requests: how well the similarity score separates the two groups. AUROC, correct vs wrong is discrimination between correct and incorrect top matches, using the same score, and it is a much harder task. Threshold is the score below which the system abstains instead of guessing."
   },
   {
    "id": "id.tool-calls-none-output",
@@ -531,7 +531,7 @@
    "slots": [
     "t.fold_size"
    ],
-   "text": "{0} roster row(s) folded into this target"
+   "text": "{0} roster row(s) merged into this target"
   },
   {
    "id": "scorePanel.off-every-scored-record",
@@ -560,7 +560,7 @@
     "I.auroc_absent_vs_present.toFixed(3)",
     "provenanceLine()"
    ],
-   "text": "Retrieval is in use: {0}M parameters, {1} ms per query on the serving machine, and no language-model call. Hypothesis generation is gated. Without two survey-metadata exports, the estimability gate passes {2} of {3} exposure–outcome pairs, so every design carries {4} . The one scored run switched that gate off and emitted {5} records; {6} matched, against a ceiling of {7}. The retriever abstains on constructs the instrument does not measure: it rejected {8} of {9} held-out negatives on this fixture (AUROC {10}). Its recall is an upper bound by construction, because the same generator family that wrote the training pairs wrote the fixture's queries after seeing the reference wording. Detecting its own wrong pick is a separate question: that figure was measured, then withdrawn from git, and this page cannot reproduce it. {11}"
+   "text": "Retrieval is in use: {0}M parameters, {1} ms per query on the serving machine, and no language-model call. Hypothesis generation is gated. Without two survey-metadata exports, the estimability gate passes {2} of {3} exposure–outcome pairs, so every design carries {4} . The one scored run switched that gate off and emitted {5} records; {6} matched, against a ceiling of {7}. The retriever abstains on constructs the instrument does not measure: it rejected {8} of {9} held-out negatives on this fixture (AUROC {10}). Its recall is an upper bound, because the same generator family that wrote the training pairs wrote the fixture's queries after seeing the reference wording. Detecting its own wrong pick is a separate question: that figure was measured, but its artifact was withdrawn from git and this page cannot reproduce it. {11}"
   },
   {
    "id": "specifierPanel.design-gate-rejected",
@@ -632,7 +632,7 @@
     "s.wrong_p50.toFixed(4)",
     "s.wrong_max.toFixed(4)"
    ],
-   "text": "Why one score discriminates so differently on the two tasks. Each figure here is a mid-distribution score: at least half the requests in its group scored at or below it, and the figure is one of the observed scores. I do not call it a median, because on an even-sized group it is the value just above the middle, not the mean of the two middle values. An absent request: nothing in the codebook is close, so the best match is weak — typically {0}, against {1} for a request the codebook can answer. The two distributions barely overlap, which is why that area is high. Answerable but wrong: a close entry exists, but it is not the reference entry. A correct top match scores {2} and an incorrect one {3}, so the two distributions lie on top of each other. The highest-scoring incorrect match reaches {4}, above the typical correct one. The score measures how similar the best entry is to the request, not whether it is the entry you meant, so it cannot separate a confident wrong answer from a confident right one."
+   "text": "Why one score discriminates so differently on the two tasks. Each figure here is an upper median: at least half the requests in its group scored at or below it, and the figure is one of the observed scores. On an even-sized group it is the upper of the two middle values, not their mean, which is why it is not called the median. An absent request: nothing in the codebook is close, so the best match is weak — typically {0}, against {1} for a request the codebook can answer. The two distributions barely overlap, which is why that area is high. Answerable but wrong: a close entry exists, but it is not the reference entry. A correct top match scores {2} and an incorrect one {3}, so the two distributions lie on top of each other. The highest-scoring incorrect match reaches {4}, above the typical correct one. The score measures how similar the best entry is to the request, not whether it is the entry you meant, so it cannot separate a confident wrong answer from a confident right one."
   },
   {
    "id": "slot.propose-pair",
@@ -674,14 +674,14 @@
    "kind": "label",
    "where": "site/index.html::cell (row)",
    "slots": [],
-   "text": "gain over frozen"
+   "text": "gain over the frozen model"
   },
   {
    "id": "cell.lexical-leakage",
    "kind": "label",
    "where": "site/index.html::cell (row)",
    "slots": [],
-   "text": "lexical leakage"
+   "text": "word overlap with the answer (lexical leakage)"
   },
   {
    "id": "cell.phrasing",
@@ -1248,14 +1248,14 @@
    "kind": "label",
    "where": "site/index.html::scorePanel (row)",
    "slots": [],
-   "text": "safe to score"
+   "text": "clean for scoring"
   },
   {
    "id": "scorePanel.estimable-denominator",
    "kind": "label",
    "where": "site/index.html::scorePanel (row)",
    "slots": [],
-   "text": "pairs that passed the estimability screen"
+   "text": "pairs the estimability screen marked estimable"
   },
   {
    "id": "scorePanel.gate",
@@ -1283,7 +1283,7 @@
    "kind": "label",
    "where": "site/index.html::scorePanel (row)",
    "slots": [],
-   "text": "records matching a published finding"
+   "text": "records matching a paper's exposure–outcome pair"
   },
   {
    "id": "scorePanel.scored",
