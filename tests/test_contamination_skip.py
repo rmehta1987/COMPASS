@@ -357,7 +357,16 @@ _KEY_READERS = {
     # Reached through `scan_frame`, which reads it before its loop.
     ("input_leakage", "_prevalence_tokens"):
         "input does not contain the answer",
+    # The `--live` scorer, reached through `SealedWorktree.verify`.
+    ("sealed", "score"): "live seal probes",
 }
+
+#: Where each module in `_KEY_READERS` lives.
+_READER_PATHS = {"contamination_check": "benchmark/contamination_check.py",
+                 "input_leakage": "benchmark/input_leakage.py",
+                 "sealed": "agent/sealed.py"}
+
+_LIVE = "live seal probes"
 
 #: The function `main` calls for each keyed section, and whether it takes the
 #: surface.
@@ -461,8 +470,8 @@ def test_every_key_reader_under_the_gate_is_listed() -> None:
         return False
 
     found: set[tuple[str, str]] = set()
-    for module in ("contamination_check", "input_leakage"):
-        tree = ast.parse((ROOT / "benchmark" / f"{module}.py").read_text())
+    for module, path in _READER_PATHS.items():
+        tree = ast.parse((ROOT / path).read_text())
         for fn in ast.walk(tree):
             if isinstance(fn, ast.FunctionDef) and any(
                     reads_a_key(n) for n in ast.walk(fn)):
@@ -471,5 +480,48 @@ def test_every_key_reader_under_the_gate_is_listed() -> None:
         f"functions importing a withheld key: {sorted(found)}; declared: "
         f"{sorted(_KEY_READERS)}. A reader not declared has no test that it "
         f"skips rather than passes.")
-    assert set(_KEY_READERS.values()) == set(_KEYED_SECTIONS), (
+    assert set(_KEY_READERS.values()) == set(_KEYED_SECTIONS) | {_LIVE}, (
         "every key reader must map to a section the SKIP tests drive")
+
+
+def test_the_live_scorer_raises_when_its_key_is_withheld(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """The real `score`, not a stub: without the key it has nothing to score by."""
+    from agent import sealed
+    _withhold_every_key(monkeypatch)
+    with pytest.raises(ModuleNotFoundError) as exc:
+        sealed.score("NO.", question=sealed.PROBES[0][1])
+    assert exc.value.name in cc.WITHHELD_MODULES
+
+
+def test_a_live_run_without_the_key_skips_the_probes_through_the_real_scorer(
+        monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """Only the model call is faked; `verify` and `score` run as shipped.
+
+    `_live_run_without_the_scorer` replaces `verify` with a stub that raises, so
+    the scorer it stands in for is never run. MEASURED 2026-09-24 by seeding a
+    `try/except ModuleNotFoundError: return CLEAN, []` around `score`'s key
+    import, this test's stubs otherwise: every probe printed `ok`, the run
+    printed `clean`, no skip was recorded, and `--live` exited 0 — a full pass
+    with nothing scored. Every other test in this file stayed green.
+    """
+    from agent import sealed
+    monkeypatch.setattr(sealed.SealedWorktree, "run",
+                        lambda self, argv, timeout=900.0: {"result": "NO, planted"})
+    monkeypatch.setattr(cc, "model_visible_surface", lambda: dict(_EMPTY_SURFACE))
+    for function in _SECTIONS:
+        monkeypatch.setattr(cc, function, lambda *a, **k: [])
+    monkeypatch.setattr(sys, "argv", ["contamination_check", "--live"])
+    _withhold_every_key(monkeypatch)
+    rc = cc.main()
+    out = capsys.readouterr().out
+
+    assert f"SKIP  {_LIVE}" in out, (
+        "the live probes ran with the scorer's key withheld and did not say they "
+        "were unscored")
+    scored = [n for n, _ in sealed.PROBES
+              if any(line.split() == ["ok", n] for line in out.splitlines())]
+    assert not scored, f"probes scored clean with no key to score by: {scored}"
+    assert rc == 1, (
+        f"--live exited {rc} with every probe unscored; it implies "
+        f"--require-complete, so an unscored probe must fail the run")

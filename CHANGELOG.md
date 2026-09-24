@@ -30,7 +30,15 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
   prompt, so an empty frame never touched it. It now reads the key once before its loop.
   Seeded red, each over the whole file: the platform wrap, the same wrap on
   `_prevalence_tokens`, the read moved back into the loop, and an undeclared key reader.
-  The `--live` scorer is not covered yet; that is open in `TASKS.md`.
+- **The `--live` scorer is under the same test, and its gap was a full pass.**
+  `_live_run_without_the_scorer` replaced `SealedWorktree.verify` with a stub that
+  raises, so `agent/sealed.py::score` never ran without its key. Seeded with
+  `try/except ModuleNotFoundError: return CLEAN, []` around its `leak_facts` import:
+  every probe printed `ok`, the run printed `clean`, and `--live` exited 0, with every
+  other test green. `tests/test_contamination_skip.py` now runs the real `verify` and
+  `score` with only the model call faked and the keys withheld, and requires
+  `SKIP  live seal probes` and exit 1; `score` joins `_KEY_READERS`, whose scan now
+  covers `agent/sealed.py`.
 
 `TASKS.md` reconciled against the code. Seven items had landed and were still listed as
 open; they move here, each with the commit that closed it. Nothing below is new work.

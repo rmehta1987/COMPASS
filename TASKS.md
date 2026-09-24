@@ -801,14 +801,6 @@ experts until much later, which is why the dashboard exists.
   `tests/test_env_tools.py::test_no_tool_accepts_a_parameter_it_ignores`.
 - `benchmark/contamination_check.py::check_seal_config` checks what the seal denies, never
   that `agent/sealed.py::SealedWorktree.base_argv` carries no `--mcp-config`.
-- **The live seal-probe scorer's real skip path is untested.** The three keyed gate
-  sections are now driven with their keys withheld (`CHANGELOG.md` 2026-09-24,
-  `tests/test_contamination_skip.py::_KEY_READERS`). The `--live` path is not:
-  `agent/sealed.py`'s scorer imports `benchmark.leak_facts` in-function, and
-  `tests/test_contamination_skip.py::_live_run_without_the_scorer` replaces
-  `SealedWorktree.verify` with a stub that raises, so a `try/except` laundering that
-  import would go unseen. ACCEPT: the real scorer runs with the key withheld and the
-  probes print SKIP, seeded red by that wrap; add its reader to `_KEY_READERS`' scan.
 - **`tests/test_contamination_skip.py::test_require_complete_does_not_turn_a_clean_run_red`
   cannot go red** under the current shape of `main()`: the exit code reads
   `require_complete` only inside `if skipped:`. (Its one other read builds the printed
