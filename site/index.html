@@ -1123,7 +1123,7 @@ function funnelPanel(){
   const f=DATA.funnel, st=f.stages, g=f.gate;
   let h=`<p class="sec">screen</p><dl>`
     +row("S1 · list pairs",`${st.S1_enumerated} candidate pairs over distinct constructs`,true)
-    +row("S2 · prune",`${st.S2_pruned} removed · same construct, same battery, free text, or scale`,true)
+    +row("S2 · prune",`${st.S2_pruned} removed · free-text anchor or same battery`,true)
     +row("S3 · estimability screen",`${st.S3_estimable} estimable · ${st.S3_unknown} unknown · ${st.S3_requires_derivation} need a derivation · ${st.S3_parked} parked`,true)
     +row("live pairs",`${st.live} pairs reach the gate`,true)
     +row("estimability gate",`passed <span class="flag">${g.passed}</span> · blocked <span class="flag">${g.blocked}</span> of ${g.live} · override (allow_unestimable): ${g.allow_unestimable}`,true)
