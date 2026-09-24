@@ -17,6 +17,7 @@ surface does not sample must FAIL, not pass.
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 import sys
@@ -1488,6 +1489,111 @@ def test_a_genuine_block_is_still_exempt_and_the_count_is_reported():
         "the reported exemption size does not match what was masked, so the "
         "printed number would not move when the exemption grows.")
     assert CC._masked_index_chars({"nothing": "no candidate block here"}) == 0
+
+
+def _subscript_map(node: ast.Dict) -> dict[str, str]:
+    """`{"a": x["b"], ...}` as `{"a": "b"}`, for the entries of that form.
+
+    Args:
+        node: A dict literal.
+
+    Returns:
+        Each constant key mapped to the constant it subscripts.
+    """
+    return {k.value: v.slice.value for k, v in zip(node.keys, node.values, strict=True)
+            if isinstance(k, ast.Constant) and isinstance(v, ast.Subscript)
+            and isinstance(v.slice, ast.Constant)}
+
+
+def _serve_fact_sources() -> dict[str, str]:
+    """Every fact `serve/api.py` attaches to a pool candidate, and its hit field.
+
+    Read from every `facts[<key>] = {...}` literal in the module, so a fact a
+    pool builder adds, drops or re-sources reaches this test without anyone
+    retyping it. All builders must agree; if they diverge there is more than
+    one production shape and the scan must render each.
+
+    Returns:
+        Fact name to the retriever-hit field it is copied from, in the order
+        serve inserts them, which is the order they render.
+    """
+    tree = ast.parse((ROOT / "serve" / "api.py").read_text(encoding="utf-8"))
+    shapes = [list(_subscript_map(n.value).items()) for n in ast.walk(tree)
+              if isinstance(n, ast.Assign) and isinstance(n.value, ast.Dict)
+              and any(isinstance(t, ast.Subscript) and isinstance(t.value, ast.Name)
+                      and t.value.id == "facts" for t in n.targets)]
+    assert shapes, "no `facts[key] = {...}` in serve/api.py; re-derive the shape"
+    assert all(s == shapes[0] for s in shapes), (
+        f"serve/api.py builds candidate facts in {len(set(map(tuple, shapes)))} "
+        f"shapes: {shapes}. The scan renders one.")
+    return dict(shapes[0])
+
+
+def test_the_retrieval_prompt_is_scanned_in_the_shape_serve_sends():
+    """C32's exemption is checked on the shape that ships, not only the catalogue.
+
+    `retrieval_prompt` renders the whole instrument with no facts. `serve/`
+    sends a pool with typed integer facts between the positions, which is the
+    shape the index exemption has to get right: mask the position, never the
+    `roster_family_size` beside it. A pool with the facts stripped, or with
+    only 1s in them, would pass the marker scan without testing that.
+    """
+    fields = list(_serve_fact_sources())
+    pool = CC._retrieval_pool()
+    text = CC.model_visible_surface()["retrieval_prompt:pool"]
+    assert text == PC.retrieval_contract(
+        "<the researcher's request, supplied per call>", pool).render(), (
+        "the scanned pool is not the pool `_retrieval_pool` builds")
+    bare = [c.key for c in pool if list(c.facts) != fields]
+    assert not bare, (
+        f"{len(bare)} of {len(pool)} pooled candidates do not carry exactly the "
+        f"facts serve/api.py attaches ({fields}), in that order: {bare}. That "
+        f"is the facts-free catalogue shape again, which never ships.")
+    for f in fields:
+        assert text.count(f'"{f}": ') == len(pool), (
+            f"`{f}` is not rendered once per candidate in the scanned prompt")
+    sizes = {c.facts["roster_family_size"] for c in pool}
+    assert 1 in sizes and any(isinstance(s, int) and s > 1 for s in sizes), (
+        f"the pool's family sizes are {sorted(sizes, key=str)}; it needs a singleton and "
+        f"a real family, or no integer beyond a position's own shape is tested.")
+    assert CC._masked_index_chars({"pool": text}) == sum(
+        len(str(c.index)) for c in pool), (
+        "the exemption removed more than the positions from the pooled "
+        "prompt, so a typed fact beside a position went unscanned.")
+    assert not CC.check_markers({"retrieval_prompt:pool": text})
+
+
+def test_the_pooled_facts_equal_what_the_retriever_hit_carries():
+    """The scan's facts come from the dictionary; serve's from the retriever.
+
+    `serve/` copies each fact from a hit field (`_serve_fact_sources`), and
+    `deploy/retriever.py::_hit` copies each hit field from a target in
+    `deploy/targets.json`. Both hops are read from source here, so the check
+    is against what serve would attach for these keys, not against a retyped
+    field name. MEASURED 2026-09-24 over all 1,353 targets: they agree on
+    1,350 once the dictionary's null is read as 1, and disagree on three,
+    none of which this pool draws.
+    """
+    if not CC.RETRIEVER_TARGETS.is_file():
+        pytest.skip("the deploy bundle is not in this tree")
+    tree = ast.parse((ROOT / "deploy" / "retriever.py").read_text(encoding="utf-8"))
+    hit = next(n for n in ast.walk(tree)
+               if isinstance(n, ast.FunctionDef) and n.name == "_hit")
+    ret = next(n.value for n in ast.walk(hit) if isinstance(n, ast.Return))
+    assert isinstance(ret, ast.Dict)
+    from_target = _subscript_map(ret)
+    targets = {t["canonical_key"]: t for t in json.loads(
+        CC.RETRIEVER_TARGETS.read_text(encoding="utf-8"))["targets"]}
+    wrong = []
+    for c in CC._retrieval_pool():
+        assert targets[c.key][from_target["key"]] == c.key
+        for fact, hit_field in _serve_fact_sources().items():
+            served = targets[c.key][from_target[hit_field]]
+            if c.facts.get(fact) != served:
+                wrong.append((c.key, fact, c.facts.get(fact), served))
+    assert not wrong, (
+        f"the scanned pool's facts differ from what serve/ would attach for the "
+        f"same keys, as (key, fact, scanned, served): {wrong}")
 
 
 def test_the_capture_fails_loudly_when_the_emission_loop_stops_sending(monkeypatch):

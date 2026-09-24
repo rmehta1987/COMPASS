@@ -630,6 +630,86 @@ def _catalogue_surface() -> dict[str, str]:
     }
 
 
+#: What the deployed retriever can return as a hit's `key`. Read for its KEY
+#: list only: its `module` and `fold_size` are what `serve/` attaches, and this
+#: scan takes those from the dictionary so the two can be checked against each
+#: other (`tests/test_contamination_surface.py`) rather than one echoing the other.
+RETRIEVER_TARGETS = ROOT / "deploy" / "targets.json"
+
+
+def _retrieval_pool() -> tuple[PC.Candidate, ...]:
+    """A retrieval pool in the shape `serve/api.py` sends, facts and all.
+
+    `_catalogue_surface` renders `retrieval_prompt` over the whole instrument
+    with no per-key facts. `serve/api.py::_role_candidates` and the `/api/resolve`
+    route send a top-k pool instead, with `module` and `roster_family_size` on
+    every candidate, so a scan over the catalogue alone validates the C32 index
+    exemption on a shape that never ships: in the real one, integer facts sit
+    between the positions.
+
+    The pool is one candidate per distinct `(module, roster_family_size)` pair,
+    the first in the retriever's target order. That covers every fact value the
+    route can attach for a key the dictionary agrees on; the three keys where
+    the two disagree (serve sends a fold of 2 or 3 the dictionary does not call
+    a roster family) are never drawn, because their dictionary pair is already
+    taken by an earlier key. It cannot be the pool for a real request:
+    that needs the deployed encoder, which this stdlib scan must not load. What
+    varies between real pools is which wordings appear, and wordings are
+    instrument content, already exempt from `MARKERS`.
+
+    Where each value comes from:
+        key: `deploy/targets.json`'s `canonical_key`, which
+            `deploy/retriever.py::_hit` returns as the hit's `key`.
+        module: the dictionary entry's `module`.
+        roster_family_size: the dictionary entry's `roster_family_size`, with
+            null written as 1. `serve/` sends the hit's `fold_size`, the count of
+            members folded into one target, so an item in no family goes out as
+            a fold of one; the dictionary writes the same fact as null.
+
+    Returns:
+        The candidates, indexed 1..n, built by `PC.candidates_from_keys`.
+
+    Raises:
+        FileNotFoundError: If the deploy bundle's target list is absent.
+    """
+    if not RETRIEVER_TARGETS.is_file():
+        raise FileNotFoundError(
+            f"{RETRIEVER_TARGETS} is missing, so no production-shaped retrieval "
+            "pool can be drawn. It ships with the deploy bundle; a scan that "
+            "silently dropped the pool would scan a smaller surface and say clean.")
+    by_key = {e["key"]: e for e in T._load()["entries"]}
+    keys: list[str] = []
+    facts: dict[str, dict[str, Any]] = {}
+    seen: set[tuple[str, int]] = set()
+    for t in json.loads(RETRIEVER_TARGETS.read_text())["targets"]:
+        e = by_key[t["canonical_key"]]
+        size = e["roster_family_size"]
+        fact = {"module": e["module"],
+                "roster_family_size": 1 if size is None else size}
+        pair = (fact["module"], fact["roster_family_size"])
+        if pair in seen:
+            continue
+        seen.add(pair)
+        keys.append(e["key"])
+        facts[e["key"]] = fact
+    return PC.candidates_from_keys(keys, facts)
+
+
+def _pool_surface() -> dict[str, str]:
+    """`retrieval_prompt` rendered over `_retrieval_pool`, as `/api/resolve` does.
+
+    Beside the catalogue rendering, not instead of it: the catalogue is the
+    largest candidate block this contract can carry, the pool is the shape it
+    actually carries.
+
+    Returns:
+        Mapping of surface name to the text the selecting model would read.
+    """
+    return {"retrieval_prompt:pool": PC.retrieval_contract(
+        "<the researcher's request, supplied per call>",
+        _retrieval_pool()).render()}
+
+
 def _hybrid_surface() -> dict[str, str]:
     """The hybrid E→D pool prompt, as the selecting model receives it.
 
@@ -722,6 +802,9 @@ def model_visible_surface(mode: Mode = "benchmark") -> dict[str, str]:
         # Arm D. Its prompt carries the WHOLE instrument by design, which is
         # the opposite claim and needs the same scan.
         **_catalogue_surface(),
+        # The same retrieval contract in the shape `serve/` sends it: a small
+        # pool with typed facts on every candidate, which the catalogue lacks.
+        **_pool_surface(),
         # The hybrid's pool prompt: a different renderer, so a scan over arm D's
         # catalogue is not a scan over this.
         **_hybrid_surface(),
