@@ -134,8 +134,10 @@ the collision is recorded, not resolved.
   instrument covers it. `outcome_keys_on_record` returns a distinct tuple, so two keys on
   one side is the form, not a workaround. The paste is therefore mechanical and nothing
   else is owed on these two rows: 38397711 -> `m2:Q9.117`; 38961645 -> `m2:Q5.15#1_3`,
-  `m2:Q5.15#1_9`, `m2:Q5.15#1_15`, `m2:Q5.15#1_37`. It does not move either verdict —
-  `_side` confirms on ANY resolving key, and both papers stay blocked on their exposures.
+  `m2:Q5.15#1_9`, `m2:Q5.15#1_15`, `m2:Q5.15#1_37`. Neither paper reaches CONFIRMED —
+  both are held by their exposures. CORRECTED 2026-09-24: this line said `_side` confirms
+  on ANY resolving key; since C36 it needs EVERY design-line term answered
+  (`benchmark/scorability.py::_unanswered_terms`), so each anchor's `term` must match.
   🛑 NOT the `Q5.x` keys, and this file said `m2:Q5.30` until 2026-09-14. That is "How old
   were you when you were first told that you had clinical depression?" — an age variable,
   as are `Q5.18`, `Q5.24` and `Q5.52` for the other three. Four age items shadow the four
@@ -157,11 +159,15 @@ the collision is recorded, not resolved.
   or two?") is answered structurally: it has one, and that one is not scoring. The cell
   is still where a published figure is made findable from a variable and filling it is
   not wrong; it just is not the task.
-  Filling the two design-key rows removes two `no_key_to_resolve` blockers and is worth
-  doing even though it does NOT unblock either paper: 38397711's exposure is an area
-  measure, which since C35 reads `blocked_on_delivery` rather than as an unfilled row,
-  and 38961645's is not in the instrument (below) and is now recordable as such with a
-  `not_in_instrument` anchor.
+  Filling the two design-key rows is worth doing even though it does NOT unblock either
+  paper. It moves each paper's status off UNDETERMINED (`no_design_key_row`, the reading
+  with no row), assuming the withheld key holds no row for either today: 38397711's
+  exposure is an area measure, so the paper reads `blocked_on_delivery` (C35), and
+  38961645's is not in the instrument (below), so a `not_in_instrument` exposure anchor
+  makes it REFUTED (`benchmark/scorability.py::_side`, `scorability_for`). CORRECTED
+  2026-09-24: this said the rows remove two `no_key_to_resolve` blockers, but that
+  blocker needs a row with an empty side, and `design_anchor.validate_design_key` rejects
+  one.
 - **38961645's exposure, checked at item level and not just by word.** The word test's
   absence is real — re-measured 2026-09-14 over `searchable_text`: `discriminat` 0,
   `perceived` 0, `unfair` 0, `disrespect` 0, `prejudic` 0. But word absence is not
@@ -222,7 +228,10 @@ publishes or blocks a downstream stage.
 - **R5 — strip piped identifiers from `stem_text`.** LAST, with its own re-baseline. It is
   not a column addition: `stem_text` reaches `agent/specifier.py::user_prompt`, two tool
   returns (`env/tools.py::resolve_variable`, `get_item_group`), every browse construct
-  label, and pins in three test files. It moves `surface_hash`.
+  label, and pins in three test files. It moves `surface_hash`. Added 2026-09-24: it also
+  reaches `serve/api.py`, which sends `stem_text` as `exposure_stem` / `outcome_stem`,
+  and so `serve/redact.py::WORDING_FIELDS` — a containment boundary coupled to that
+  route (`AGENTS.md` §Parallel Lanes).
 
 ## Open — the website's backbone
 *Added 2026-09-10. The operator's framing: the website is the product and this pipeline is
@@ -291,27 +300,21 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   gave ONE key per phrase, so coverage is a lower bound; the author had broad topic hints.
   Artifacts outside the clone, `loop-snapshots/`: `split_coverage_2026-09-11.json`
   (sha256 2e58e9ad…), `split_replies_2026-09-11.json`, `clean_split_requests_2026-09-11.json`,
-  and the `_perturbed` pair; the fixture is also at untracked `fixtures/clean_split_requests.json`.
-  STILL OPEN, and the operator's: `split` is off by default on the site's route. Turning
-  it on is a ship decision under FUSION §6's signed "ship nothing" recommendation.
-- C29 makes **C17 bigger, not smaller**: a splitter is a third model in one run and
-  `agent/schema.py::Provenance.model_id` is one string.
-- **C29a — `absent` is defined as a claim the route cannot support.** Not blocked; smaller
-  than C29 and independent of it. `agent/prompt_contract.py::VariableSelection` documents
-  the verdict as *"the codebook does not measure this"* while `RETRIEVAL_GUIDANCE` scopes
-  the question to *"the survey codebook below"* — the k shown. C29's measurement says the
-  pool is missing a named construct 35% of the time at k=20, so the endpoint can report
-  *the cohort does not measure X* when it does. ACCEPT: a pool miss and an instrument
-  absence are distinguishable in the response, and the surface change re-runs
-  `benchmark.contamination_check`.
-  DONE 2026-09-10 (loop item 6). `absent` is defined on the items listed, not the
-  codebook, in `VariableSelection`, `RETRIEVAL_GUIDANCE` and
-  `benchmark/resolver_eval.py::CriticVerdict`; both `serve/` prose routes return
-  `absent_scope`, naming the k shown and saying the instrument was not searched.
-  RE-BASELINE: `benchmark/resolver_eval.py`'s critic prompt changed with it, so no
-  resolver_eval result from before this commit is comparable to one after. None is
-  quoted in any document (searched 2026-09-10); the next run is the new baseline.
-
+  and the `_perturbed` pair; the fixture is also at untracked
+  `/home/mehta5/compass-loop/fixtures/clean_split_requests.json` (not in this clone).
+  `split` is still off by default on the route (`serve/api.py::_pair`, `split_on`), but
+  the page opts in: `site/index.html::askResolver` has posted `split:true` since
+  `19cefe8` (2026-09-16), whose message records that the operator asked for it. So the
+  ship decision under FUSION §6's signed "ship nothing" recommendation is no longer open
+  for the page (CORRECTED 2026-09-24). The page's
+  own comment beside that call still says "C29's ACCEPT is still owed", which contradicts
+  (i)–(iv) DONE above; the comment is stale, not the ACCEPT.
+- C29 makes **C17 bigger, not smaller**: a splitter is a third model in one run. C17
+  landed (`3676ded`, `CHANGELOG.md`) and built for it — `agent/schema.py::ModelStage`
+  has a `splitter` member — but no record names one: `serve/api.py`'s specify route
+  stamps `models={"resolver": ...}` only, and the splitter survives only as the pair
+  ticket's `splitter_model` note. STILL OPEN: a record whose anchors came through a split
+  names its splitter.
 - **C30 — N outcomes are N records. DECIDED 2026-09-10 by the operator: the convention
   reading, not the schema amendment.** A request naming one exposure against N outcomes
   (or M exposures) is N×M records, one per enumerated pair, produced by the loop that
@@ -338,14 +341,21 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   2,804 rows carry null for the six fields that would hold them (`checks.py`,
   `NULL_BY_CONSTRUCTION`). Do not build around it and do not simulate it.
 - **Module co-completion counts — how many participants completed each PAIR of modules.**
-  One table, and the single input that unblocks cross-module estimability everywhere.
-  `generate/funnel.py::s3_screen` tags every cross-module pair `unknown` on
+  One table, and the input that unblocks cross-module estimability everywhere — but not
+  alone. `generate/funnel.py::s3_screen` tags every cross-module pair `unknown` on
   `module_co_completion_counts` and `env/tools.py::estimate_n` returns null with the same
-  blocker; the live run of 2026-09-16 (`m3:Q16.1 -> m3:Q855`) reached `draft`, not
-  `ready_for_review`, with it first in `blocked_on`. `s3_screen`'s docstring states the
-  switchover: `estimate_n` becomes `computed_from_counts`, n enters the ordering, the
-  screen is re-run, and nothing else changes. Do not derive it from cohort size and do
-  not simulate it — see C41(2) for why frame width is not a substitute.
+  blocker for any key set spanning two modules. A single-module set is null too, blocked
+  on `per_item_non_missing_counts`, a separate missing input. `s3_screen`'s docstring
+  states the switchover only "when both arrive": `estimate_n` becomes
+  `computed_from_counts`, n enters the ordering, the screen is re-run, and nothing else
+  changes. The live run of 2026-09-16 (`run/serve/jobs/124202-ab6f37.json`) reached
+  `draft`, not `ready_for_review`, with this blocker first in `blocked_on` — but its
+  pair `m3:Q16.1 -> m3:Q855` is within module 3 and person-posed; the blocker came from
+  its covariates, which put m1 and m2 keys into `estimate_n`'s set (tool log
+  `run/logs/tool_log.20260916T124202-2154038.00.jsonl`). So a within-module pair is
+  still blocked the moment it adjusts across modules (CORRECTED 2026-09-24). Do not
+  derive it from cohort size and do not simulate it — see C41(2) for why frame width is
+  not a substitute.
 
 ## Open — not blocked on C12
 - **C16 — prose entry with a confirmation step.** Not blocked; must not delay C12. A model
@@ -364,27 +374,32 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   under the fixture's `KNOWN_BIAS`, n=22, one run: a direction, not an accuracy. The
   k-shortlist procedure (`evaluate`) stays as a measured alternative, not a second
   resolver. Reports kept outside the clone, `loop-snapshots/resolver_eval_single_*`.
+  Since the page turned `split` on (C29), each role's pool is `_role_candidates` over the
+  splitter's phrases (`serve/api.py::_split_pools`), not over the whole sentence; the
+  20/22 above predates that. RE-BASELINE rule, from C29a (`5202762`, `CHANGELOG.md`): the
+  critic prompt changed with it, so no `benchmark/resolver_eval.py` result from before
+  that commit is comparable to one after.
 - C16 second acceptance: `benchmark/input_leakage.py` scans a SUBMITTED prompt with a
   red-turning positive control; its `environment_supplied` currently rests on enumeration
   choosing the pair.
-- **C17 — provenance for a run with two models.** BLOCKED on C16.
-  `agent/schema.py::Provenance.model_id` is one string and the Haiku pin covers the
-  Specifier, not a resolver, so a larger resolver is legitimate and a record hiding it is
-  not. ACCEPT: a record whose resolver differs from its specifier fails validation unless
-  both are named.
-- **C19 — persist the repair channel.** A record can carry a value no tool in its log
-  returned — observed live with `get_derivation` never called, enforced only by
-  `agent/schema.py::DerivationRef._matches_the_signature_it_names`. ACCEPT: the rejected
-  transduction or a `provenance` repair count is persisted, and a test traces every value
-  to log or repair.
-- **C27 — a failed seal probe must not score as evidence of a good seal.**
-  `agent/sealed.py::SealedWorktree.run` raises only on a non-zero return code and never
-  checks `is_error`, so an exit-0 CLI error lets "I cannot answer that." score `clean`.
-  ACCEPT: `run` checks `is_error` as `agent/cli_backend.py::_run` does and an errored
-  probe never scores `clean`, seeded with three error strings.
-- **C18 sweep unrun** (pilot only). `rescore`/`--repartition` re-derives the partition
-  from persisted records with no model call, so its threshold is revisable for free.
-  ACCEPT: a sweep run with the threshold fixed before it.
+- **C19 residue — `serve/`'s job record does not carry the repairs.** C19 landed
+  (`b869c85`, `CHANGELOG.md`): `generate/live_specifier.py` writes `.repairs.json` beside
+  each record and `agent/specifier.py::untraced_derivation_values` traces every
+  derivation value to log or repair. That commit states `serve/api.py`'s job record is
+  not yet extended, so a record specified through the endpoint keeps no repair history.
+  ACCEPT: an endpoint job persists its attempt's repairs, and the trace runs over it.
+- **C18 sweep RUN 2026-09-11; its result is recorded nowhere.** CORRECTED 2026-09-24:
+  this said "unrun (pilot only)". `run/unaided_sweep_2026-09-11/partition.json`
+  (untracked, `run/` is gitignored) carries `generated` 2026-09-11, `min_specifiable` 1
+  and rubric `694100e1ea900ddb` — the pre-registered values below — with counts probed
+  257, flagged 63, unflagged 194, arm_pool 193, and `withholding_control.json` beside
+  it. Probed 257 is one more than the pre-registered frame's 256 live pairs; a
+  `lab_assay_*` record sits in the directory beside the `m3_Q16.*` ones, and which of
+  the two accounts for the extra probe is UNVERIFIED. Its `controls` field is empty, so
+  whether both controls ran is UNVERIFIED from that file. What is open: read the sweep against the pre-registration and record it —
+  in `CHANGELOG.md` if it is history, `DESIGN.md` §7 if it bounds a claim. Not re-run.
+  `rescore`/`--repartition` re-derives the partition from persisted records with no
+  model call, so its threshold is revisable for free.
   PRE-REGISTERED 2026-09-11, committed before any sweep call (loop): threshold
   `min_specifiable` = **1 of k = 5** responses (the module default, the pilot's value);
   model claude-haiku-4-5; rubric `694100e1ea900ddb`; frame `m3q16_x_m2q5` (digest
@@ -392,36 +407,15 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   withholding check. Command: `python -m benchmark.unaided_specifiability --controls
   --verify-withholding --pilot 256 --out run/unaided_sweep_2026-09-11`. Another
   threshold may be reported only as a `--repartition` beside this one, never instead.
-- **T4 — `--system-prompt` in place of `--append-system-prompt`.** `agent/cli_backend.py`
-  appends, so the Specifier reasons inside Claude Code's persona. UNVERIFIED whether
-  replacing it breaks MCP tool-calling. ACCEPT: one cheap Haiku call under it invoking
-  `mcp__compass__resolve_variable`.
-- **T7 — scheduler and frame.** Nothing orders the live pairs,
-  `generate/live_specifier.py` hardcodes one, and the frame is an unauthored list
-  comprehension in both drivers (`generate/funnel.py`) that sets every reported
-  denominator. ACCEPT: a named, hashed frame walked in enumeration order — value-based
-  priority is a second selection effect. An m2×m2 frame would make it scorable.
-- **C28 — RESOLVED 2026-09-11, user amendment.** `_rank`'s covariate-count term paid a
-  record for adjusting for a wrong-construct key over one that filed the gap in
-  `sought_covariates`. The term is removed. The user asked three independent reviews
-  (enterprise account, opus) whether `sought_covariates` should become a term instead. All
-  three said no: it is prose nothing checks, so "more gaps rank higher" picks padding and
-  "fewer rank higher" rebuilds C28. The fix is neutral, not a win: the two records now tie,
-  and the hash picks one.
-- **C28 follow-ups the reviews found, VERIFIED in the code 2026-09-11.** (a) RESOLVED:
-  `specify`'s dedup kept the first seed when two same-hash samples recorded equally many
-  gaps, which is seed order. (b) RESOLVED (`02cf793`): `generate/live_specifier.py` copied
-  the first same-hash attempt's tool log, audit and repairs beside the saved record, which
-  was the wrong sample's when a disclosing twin beat a silent one. (c) RESOLVED, user
-  decision: `_disclosure` was a raw count, so a padded twin beat an honest one, and the
-  loser was dropped. Now `specifier::_twin_order` decides: any gap beats none, the count
-  does not matter, then a hash of the record's content. Every losing twin is parked.
 - **C33 — `len(blocked_on)` ascending still charges disclosures other than gaps.**
   User-level. LEFT AS IS by the user, 2026-09-11, after three independent reviews
   (enterprise account, opus). All three said to drop the blocker count AND the `status`
   term, leaving `_rank` = access, `n_source`, hash. Checked in the code:
-  - The environment writes one blocker, `outcome_prevalence_unconfirmed`, on every record,
-    so it separates nothing. Every other member is the model's.
+  - The environment writes one blocker, `outcome_prevalence_unconfirmed`. Every other
+    member is the model's. CORRECTED 2026-09-24: this said "on every record, so it
+    separates nothing"; `agent/tool_authority.py` appends it only when the record
+    carries an `asserted_baseline_prevalence`, so it separates records that assert one
+    from records that do not.
   - `n_source` is `unknown` on both `estimate_n` branches, so today the blocker count is
     the only term that separates designs.
   - `blocked_on` and `falsifier_threshold` are outside `canonical_form`, so twins that
@@ -462,10 +456,16 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   `generate/funnel.py::run` directly, touching neither `FRAMES`, `Frame` nor `walk`, so an
   endpoint enumeration carries no frame name and no `Frame.digest` — the unnamed
   list-comprehension-per-driver state `Frame` was introduced to end
-  (`generate/funnel.py::Frame` docstring, T7).
+  (`generate/funnel.py::Frame` docstring, T7). It survived T7 because
+  `tests/test_funnel.py::test_no_driver_builds_the_frame_by_hand` scans `serve/` but
+  matches only `startswith(<constant>)`, and `_enumerate` passes variables. Its
+  docstring's "the ones `live_specifier.py::main` uses" is stale too: `main` walks
+  `FRAMES` now.
   (2) The default sides are cross-module (`m3:Q16.` → `m2:Q5.`) and
   `generate/funnel.py::s3_screen` tags `estimable` only when the two modules match, so
-  `estimable` is 0 on all 384 pairs BY CONSTRUCTION, not by observation. Same exposure
+  `estimable` is 0 of the 256 live pairs BY CONSTRUCTION, not by observation (the other
+  128 of 384 are pruned at S2 and never screened; CORRECTED 2026-09-24 from "0 on all
+  384"). Same exposure
   block pointed within module 3 (`m3:Q16.` → `m3:Q15.`): 68 live, 68 estimable.
   `m2:Q5.` → `m2:Q9.`: 7,424 live, 7,424 estimable. Widening the default frame without
   moving it within-module multiplies `unknown` and yields nothing.
@@ -473,15 +473,25 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   `product()`; the first 25 of 384 are all `m3:Q16.1 -> ...`. The panel's "showing 25 of
   384" reads as a sample of the 384 and is a head slice of one exposure.
   Also latent: `shown = cands[:limit]` slices pruned candidates too and the `pairs`
-  payload carries no `state`, so at `limit >= 257` the page offers the `m3:Q16.5` and
-  `m3:Q16.6` pairs — S2 `free_text_anchor` — with a working launch button.
+  payload carries no `state`. ERROR IN THIS ENTRY AS MEASURED, CORRECTED 2026-09-24: it
+  said "at `limit >= 257` the page offers the `m3:Q16.5` and `m3:Q16.6` pairs — S2
+  `free_text_anchor` — with a working launch button". That never held on the route:
+  `_enumerate` has clamped `limit` to 200 since `258750b` (2026-09-09), a week before
+  the measurement, and the first prune sits at index 256, so no head slice reached one.
+  Pruned pairs became reachable only through (b)'s spread, which is why (c) matters.
   ACCEPT, each seedable: (a) `_enumerate` resolves its sides through `Frame`, and the
   payload names the frame and its `digest`, asserted with an AST `Call` node, not a
   source substring; (b) no `limit` at or above the live exposure count returns a single
   exposure — seeded by requesting the default frame and asserting more than one distinct
   exposure in `pairs`; (c) `pairs` carries `state` and a pruned pair renders with no
   launch button, seeded at `limit=300` on the default frame. (b) and (c) landed
-  2026-09-16; (a) is open.
+  2026-09-16 in `52284b2` (titled for the Metrics tab; it does not name C41); (a) is
+  open. As landed the seeds differ from the text: `limit=300` runs at 200 under the
+  clamp; (b) is `tests/test_serve_enumerate.py`, which calls
+  `serve/api.py::_spread_by_exposure` directly plus an AST `Call` check that
+  `_enumerate` slices through it; (c) is an AST check that `pairs` carries `state`, plus
+  a synthetic `P_PRUNED` row in `site/tools/render_endpoint.js`. Neither requests the
+  default frame over the route.
   NOT IN SCOPE here: which frame the project should enumerate is a study-design decision
   for the operator, and every reported denominator moves with it.
 
@@ -776,10 +786,13 @@ experts until much later, which is why the dashboard exists.
   `env/tools.py::check_access` returns only `pass|refer`. Kept deliberately; C15 makes it
   unclaimable.
 - `agent/schema.py::RefusalReason.no_contrast_definable` is unreachable:
-  `get_contrast_convention` has no failing branch. Kept deliberately, same as above.
-- `run/`, `build.py` (with `tests/test_dictionary.py` and `tests/test_code_standards.py`),
-  `raw/`, `parked/`, `references/` and `agent/__init__.py` are in no lane assignment
-  (`AGENTS.md` §Parallel Lanes); `build.py` owns one of the two stop conditions.
+  `get_contrast_convention` has no failing branch. Kept deliberately, but NOT as above:
+  C15 does not make it unclaimable — its `REFUSAL_OUTCOMES` entry is `None`, so any call
+  counts as evidence, and only `PAIR_ADJUDICABLE` keeps it off the menu.
+- `run/`, `raw/`, `parked/`, `references/`, `agent/__init__.py` and
+  `tests/test_code_standards.py` are in no lane assignment (`AGENTS.md` §Parallel Lanes).
+  CORRECTED 2026-09-24: this listed `build.py` (with `tests/test_dictionary.py`) as
+  unassigned, but lane B names `build.py checks.py`, and `tests/` follow their module.
 - The lane report `benchmark/cohort_papers.py` cites as the home of design detail is in
   neither tree nor history, though C12's exposure column needed it.
 - `tests/test_specifier.py::test_excluded_variables_do_not_consume_access_budget` cannot
@@ -789,16 +802,27 @@ experts until much later, which is why the dashboard exists.
   that `agent/sealed.py::SealedWorktree.base_argv` carries no `--mcp-config`.
 - **No test drives a contamination section that can actually SKIP.**
   `tests/test_contamination_skip.py` plants its skips on `check_provenance`, which imports
-  nothing and can never raise `ModuleNotFoundError`. The only two sections that really
-  skip are `check_no_platform_name_in_surface` and `check_no_prevalence_figure_in_surface`.
-  The status logic is well covered; the real skip PATH is not, so moving either import to
-  module scope would break it with every test green. Pre-existing, inherited from the
-  2026-09-10 tests. ACCEPT: one test that lets a genuinely-skipping section raise for
-  real, seeded by wrapping its import.
+  nothing and can never raise `ModuleNotFoundError`. Three sections really skip in this
+  clone, not two: `check_no_platform_name_in_surface`,
+  `check_no_prevalence_figure_in_surface`, and `check_input_does_not_contain_the_answer`
+  (through `benchmark/input_leakage.py`). The status logic is well covered; the real skip
+  PATH is not. CORRECTED 2026-09-24 on a seeded mutation, run over
+  `tests/test_contamination_skip.py`, `test_contamination_surface.py` and
+  `test_withheld.py` whole: moving the `leak_facts` import to module scope does NOT pass
+  green — 3 collection errors. The mutation that does is LAUNDERING: wrapping
+  `check_no_platform_name_in_surface`'s import in `try/except ModuleNotFoundError: return
+  []` left all three files at their baseline (88 passed, 25 skipped), and
+  `benchmark.contamination_check` printed `ok    survey platform named in surface` — a
+  section that scanned nothing reported clean, and the exit stayed 2 only because the
+  other two sections still skipped. Pre-existing, inherited from the 2026-09-10 tests.
+  ACCEPT: a test under which a genuinely-skipping section, its key absent, reports SKIP
+  and never `ok`, seeded red by exactly that `try/except` wrap.
 - **`tests/test_contamination_skip.py::test_require_complete_does_not_turn_a_clean_run_red`
-  cannot go red** under the current shape of `main()`: `require_complete` is read only
-  inside `if skipped:`. It guards a future implementation that errors on the flag, which is
-  worth something, but it is not a measurement of today's code.
+  cannot go red** under the current shape of `main()`: the exit code reads
+  `require_complete` only inside `if skipped:`. (Its one other read builds the printed
+  `gate` label and does not reach the exit code.) It guards a future implementation that
+  errors on the flag, which is worth something, but it is not a measurement of today's
+  code.
 - **A failing case was rewritten to match the code rather than pinned.**
   `test_without_the_override_the_seal_behaves_exactly_as_before` was red on 2026-09-14 and
   was rewritten; `AGENTS.md` §Testing Patterns says pin a failing case, never delete it,
@@ -807,7 +831,8 @@ experts until much later, which is why the dashboard exists.
   rule was not followed, and `run/superseded/` is itself untracked (see the dead-reference
   row above). Decide whether that rule survives Phase 5 in its current form.
 - **`tests/withheld.py` pulls the whole `contamination_check` import graph into
-  `tests/test_scorability.py`** to read one `frozenset` of two strings. That module imports
+  `tests/test_scorability.py`** to read one `frozenset` of three strings
+  (`benchmark.design_key` joined the two in C36). That module imports
   `agent.prompt_contract`, `agent.specifier`, `agent.registry`, `benchmark.resolver_eval`,
   `benchmark.retrieval_eval` and more at module scope, so an import-time error in a Lane A
   file now turns every `tests/test_scorability.py` test into a collection error. It is also

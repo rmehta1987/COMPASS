@@ -14,7 +14,49 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ---
 
-## 2026-09-15
+## 2026-09-24
+
+`TASKS.md` reconciled against the code. Seven items had landed and were still listed as
+open; they move here, each with the commit that closed it. Nothing below is new work.
+
+- **C17 — provenance for a run with two models** (`3676ded`, 2026-09-11). TASKS said
+  "BLOCKED on C16". The Haiku pin covers the Specifier, not a resolver, so a larger
+  resolver is legitimate and a record hiding it is not (`benchmark/resolver_eval.py` and
+  `tests/test_resolver_eval.py` cite this as "`TASKS.md` C17").
+  `agent/schema.py::Provenance` gained `models`, keyed by
+  `ModelStage` (resolver, splitter), and `anchors_proposed_by`; a record whose anchors a
+  model proposed fails validation unless its resolver is named. The splitter half is
+  built in the schema but stamped by no route — open under C29 in `TASKS.md`.
+- **C19 — persist the repair channel** (`b869c85`, 2026-09-10).
+  `agent/specifier.py::untraced_derivation_values` traces each derivation value to its
+  log or a kept repair, and `generate/live_specifier.py` writes `.repairs.json` beside
+  each record. The `serve/` job record is not extended — open as "C19 residue".
+- **C27 — a failed seal probe no longer scores clean** (`d188f76`, 2026-09-10).
+  `agent/sealed.py::SealedWorktree.run` raises `SealedRunError` on an exit-0 `is_error`;
+  seeded with the three strings in `tests/test_specifier.py::_CLI_ERROR_RESULTS`.
+- **T4 — `--system-prompt` replaces `--append-system-prompt`** (`d1eaf30`, 2026-09-10).
+  TASKS still said UNVERIFIED; the commit records the live Haiku check (a canary word
+  from the system prompt, and `resolve_variable` called through MCP), and a test pins
+  both calls' argv.
+- **T7 — one named, hashed frame, walked in enumeration order** (`a058c35`, `f82e7ed`,
+  2026-09-11). `generate/funnel.py::Frame`, `FRAMES`, `walk`;
+  `tests/test_funnel.py::test_no_driver_builds_the_frame_by_hand`. The endpoint still
+  builds its own sides, which that test cannot see — open as C41(a).
+- **C29a — `absent` is a claim about the list shown, not the codebook** (`5202762`,
+  2026-09-10). `VariableSelection`, `RETRIEVAL_GUIDANCE` and
+  `benchmark/resolver_eval.py::CriticVerdict` define it on the items listed; both
+  `serve/` prose routes return `absent_scope`. Its re-baseline rule moved to C16 in
+  `TASKS.md`, which is where resolver_eval results are quoted.
+- **C28 — `_rank`'s covariate-count term removed** (user amendment, 2026-09-11). It paid a
+  record for adjusting for a wrong-construct key over one that filed the gap in
+  `sought_covariates`. Three independent reviews (enterprise account, opus) said
+  `sought_covariates` must not become a term instead: it is prose nothing checks, so "more
+  gaps rank higher" picks padding and "fewer rank higher" rebuilds C28. The fix is
+  neutral, not a win: the two records tie and the hash picks one. Follow-ups: (a) dedup
+  no longer keeps the first seed on a tie, and (c) `agent/specifier.py::_twin_order`
+  replaced the raw `_disclosure` count — any gap beats none, the count does not matter,
+  then a content hash; every losing twin is parked (`6030450`). (b) the live driver
+  copies the selected twin's own tool log, audit and repairs (`02cf793`).
 
 The finite list a five-seed review left behind, landed and closed. Two real defects with
 external consequence, two Hard Constraints that were held by prose, and one claim
