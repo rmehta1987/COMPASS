@@ -337,6 +337,15 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   estimability, denominators, power and every semantic validator are unbuildable. All
   2,804 rows carry null for the six fields that would hold them (`checks.py`,
   `NULL_BY_CONSTRUCTION`). Do not build around it and do not simulate it.
+- **Module co-completion counts — how many participants completed each PAIR of modules.**
+  One table, and the single input that unblocks cross-module estimability everywhere.
+  `generate/funnel.py::s3_screen` tags every cross-module pair `unknown` on
+  `module_co_completion_counts` and `env/tools.py::estimate_n` returns null with the same
+  blocker; the live run of 2026-09-16 (`m3:Q16.1 -> m3:Q855`) reached `draft`, not
+  `ready_for_review`, with it first in `blocked_on`. `s3_screen`'s docstring states the
+  switchover: `estimate_n` becomes `computed_from_counts`, n enters the ordering, the
+  screen is re-run, and nothing else changes. Do not derive it from cohort size and do
+  not simulate it — see C41(2) for why frame width is not a substitute.
 
 ## Open — not blocked on C12
 - **C16 — prose entry with a confirmation step.** Not blocked; must not delay C12. A model
@@ -444,6 +453,38 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   label is neither study-team-sourced nor a design choice, so no
   `benchmark/unearned_assertions.py::PROVENANCE_TIERS` tier or `origin` value fits
   (`DESIGN.md` §5.2). Bring a measured benefit and a re-runnable benchmark.
+- **C41 — the funnel's frame is hardcoded at the endpoint, and the shipped default can
+  never be estimable.** Three findings, one cause: `serve/api.py::_enumerate` re-derives
+  its own sides instead of walking a named frame. MEASURED 2026-09-16 against dictionary
+  `3dc8415eccfe`, `POST /api/enumerate` on a loopback server, counts read from the
+  response:
+  (1) `_enumerate` builds `exposures`/`outcomes` with its own comprehension and calls
+  `generate/funnel.py::run` directly, touching neither `FRAMES`, `Frame` nor `walk`, so an
+  endpoint enumeration carries no frame name and no `Frame.digest` — the unnamed
+  list-comprehension-per-driver state `Frame` was introduced to end
+  (`generate/funnel.py::Frame` docstring, T7).
+  (2) The default sides are cross-module (`m3:Q16.` → `m2:Q5.`) and
+  `generate/funnel.py::s3_screen` tags `estimable` only when the two modules match, so
+  `estimable` is 0 on all 384 pairs BY CONSTRUCTION, not by observation. Same exposure
+  block pointed within module 3 (`m3:Q16.` → `m3:Q15.`): 68 live, 68 estimable.
+  `m2:Q5.` → `m2:Q9.`: 7,424 live, 7,424 estimable. Widening the default frame without
+  moving it within-module multiplies `unknown` and yields nothing.
+  (3) The page posts `{}`, so `limit` is 25, and `s1_enumerate` is an exposure-major
+  `product()`; the first 25 of 384 are all `m3:Q16.1 -> ...`. The panel's "showing 25 of
+  384" reads as a sample of the 384 and is a head slice of one exposure.
+  Also latent: `shown = cands[:limit]` slices pruned candidates too and the `pairs`
+  payload carries no `state`, so at `limit >= 257` the page offers the `m3:Q16.5` and
+  `m3:Q16.6` pairs — S2 `free_text_anchor` — with a working launch button.
+  ACCEPT, each seedable: (a) `_enumerate` resolves its sides through `Frame`, and the
+  payload names the frame and its `digest`, asserted with an AST `Call` node, not a
+  source substring; (b) no `limit` at or above the live exposure count returns a single
+  exposure — seeded by requesting the default frame and asserting more than one distinct
+  exposure in `pairs`; (c) `pairs` carries `state` and a pruned pair renders with no
+  launch button, seeded at `limit=300` on the default frame. (b) and (c) landed
+  2026-09-16; (a) is open.
+  NOT IN SCOPE here: which frame the project should enumerate is a study-design decision
+  for the operator, and every reported denominator moves with it.
+
 
 ## PARKED — the full-bibliography key and its chain
 Parked by the operator on 2026-09-14. **Nothing here is cancelled and nothing is
