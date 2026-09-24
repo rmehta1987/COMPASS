@@ -269,13 +269,14 @@ def main() -> int:
         },
         "curves": [
             {"id": "match",
-             "what": "does this request have any match in the codebook at all",
+             "what": ("answerable vs absent: does the codebook hold any match for this"
+                      " request"),
              "positive": "a request whose construct is in the codebook",
              "negative": "a held-out request whose construct is absent",
              "auroc": a_match, "n_positive": len(p_all), "n_negative": len(n_all),
              "points": pts_match},
             {"id": "right",
-             "what": "is the top match the right item",
+             "what": "correct vs incorrect: is the top match the reference entry",
              "positive": "the top match was the gold target",
              "negative": "the top match was some other target",
              "auroc": a_right, "n_positive": len(ok), "n_negative": len(bad),

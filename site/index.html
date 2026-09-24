@@ -694,8 +694,8 @@ function readableProtocol(r){
     +row("outcome",anchorLine(r.outcome),true)
     +row("analysis model",`${esc(m.form||"")} &middot; per ${esc(m.unit_of_analysis||"")}`
         +(m.clustering?` &middot; clustered on ${esc(m.clustering)}`:""),true)
-    +row("falsifier",esc(r.falsifier))
-    +(ft?row("threshold",`${esc(String(ft.comparator||""))} ${esc(String(ft.value))} `
+    +row("falsifier · the result that would refute it",esc(r.falsifier))
+    +(ft?row("falsifier threshold",`${esc(String(ft.comparator||""))} ${esc(String(ft.value))} `
         +`${esc(ft.unit||"")}`,true):"")
     +`</dl>`;
   h+=covBlock("adjusted",r.adjusted_covariates,"none");
@@ -711,12 +711,12 @@ function readableProtocol(r){
           ?`<div class="t"><span class="call">tried: ${u.search_phrases.map(esc).join(" &middot; ")}</span></div>`:"")
       ).join("")+`</div>`;
   h+=`<p class="sec">estimability</p><dl>`
-    +row("analytic n",e.analytic_n===null||e.analytic_n===undefined
+    +row("analytic sample size",e.analytic_n===null||e.analytic_n===undefined
         ?`<span class="flag">unknown</span> &middot; ${esc(e.n_source||"")}`
         :`${esc(String(e.analytic_n))} &middot; ${esc(e.n_source||"")}`,true)
     +row("modules required",esc((e.modules_required||[]).join(", ")),true)
-    +(e.exposure_contrast?row("contrast",esc(e.exposure_contrast)):"")
-    +row("access",esc(a.decision||""),true)
+    +(e.exposure_contrast?row("exposure contrast",esc(e.exposure_contrast)):"")
+    +row("data access",esc(a.decision||""),true)
     +`</dl>`;
   h+=`<p class="sec">status</p><div class="tools">`
     +`<div class="t gate ${(r.blocked_on||[]).length?"fail":"pass"}"><span class="call">`
@@ -780,12 +780,12 @@ function generatePanel(){
   if(gen.error) return h+`<div class="ph"><b>NO OUTPUT</b> &mdash; ${esc(gen.error)}</div>`;
   const c=gen.counts;
   h+=`<p class="sec">this run of the funnel</p><dl>`
-    +row("sets",`${gen.sets.exposures} exposure(s) &times; ${gen.sets.outcomes} outcome(s)`
+    +row("question groups",`${gen.sets.exposures} exposure(s) &times; ${gen.sets.outcomes} outcome(s)`
         +` &middot; module ${esc(gen.sets.exposure_module)} ${esc(gen.sets.exposure_prefix)}`
         +` &rarr; module ${esc(gen.sets.outcome_module)} ${esc(gen.sets.outcome_prefix)}`,true)
     +row("enumerated (S1)",String(c.enumerated),true)
     +row("pruned (S2)",String(c.pruned_S2),true)
-    +row("live",String(c.live),true)
+    +row("live pairs",String(c.live),true)
     +row("estimable (S3)",`<span class="flag">${c.estimable}</span> &middot; unknown ${c.unknown}`,true)
     +row("requires derivation",String(c.requires_derivation),true)
     +`</dl>`;
@@ -1025,10 +1025,10 @@ function livePanel(){
   let h=`<p class="sec">live retrieval &middot; served by this server, not a committed run</p>`;
   h+=`<dl>`
     +row("query",esc(j.query),true)
-    +row("top cosine",f4(top.cos),true)
-    +row("min_cos",`${f4(j.threshold)} &middot; ${j.abstained?`<span class="flag">not cleared</span>`:"cleared"}`,true)
+    +row("top similarity (cosine)",f4(top.cos),true)
+    +row("threshold (min_cos)",`${f4(j.threshold)} &middot; ${j.abstained?`<span class="flag">not cleared</span>`:"cleared"}`,true)
     +row("abstained",j.abstained?`<span class="flag">true</span>`:"false",true)
-    +(typeof j.margin_12==="number"?row("margin to rank two",f4(j.margin_12),true):"")
+    +(typeof j.margin_12==="number"?row("lead over rank two",f4(j.margin_12),true):"")
     +`</dl>`;
   h+=`<p class="sec">candidates</p><div class="tools">`+j.hits.map(c=>
       `<div class="t"><span class="call"><b>${esc(c.target)}</b>`
@@ -1083,11 +1083,11 @@ function retrieverPanel(){
     +row("target",r.abstained?`<span class="flag">none — abstained</span> · nearest ${pseud}`:pseud,true)
     +row("domain",esc(t.domain),true)
     +row("level",esc(t.level),true)
-    +row("top cosine",f4(r.top_cos),true)
-    +row("min_cos",`${f4(DATA.runs.threshold.min_cos)} · ${r.abstained?`<span class="flag">not cleared, short by ${f4(-r.gap_above_threshold)}</span>`:`cleared by ${f4(r.gap_above_threshold)}`}`,true)
+    +row("top similarity (cosine)",f4(r.top_cos),true)
+    +row("threshold (min_cos)",`${f4(DATA.runs.threshold.min_cos)} · ${r.abstained?`<span class="flag">not cleared, short by ${f4(-r.gap_above_threshold)}</span>`:`cleared by ${f4(r.gap_above_threshold)}`}`,true)
     +row("abstained",r.abstained?`<span class="flag">true</span>`:"false",true)
-    +row("margin to rank two",f4(r.margin_12),true)
-    +row("roster fold",`${t.fold_size} roster row(s) folded into this target`,true)
+    +row("lead over rank two",f4(r.margin_12),true)
+    +row("roster rows merged",`${t.fold_size} roster row(s) merged into this target`,true)
     +row("option",t.option_position?`option ${t.option_position} of ${t.option_count}`:"stem-level target, no option",true)
     +row("query time",`${r.query_ms_median} ms median, isolated, this machine (${esc(p.machine.machine)}, ${p.machine.threads} threads)`,true)
     +row("targets scored",`${DATA.runs.corpus.n_targets.toLocaleString()} targets, one vector each`,true)
@@ -1122,14 +1122,14 @@ function intakePanel(){
 function funnelPanel(){
   const f=DATA.funnel, st=f.stages, g=f.gate;
   let h=`<p class="sec">screen</p><dl>`
-    +row("S1 enumerate",`${st.S1_enumerated} candidate pairs over distinct constructs`,true)
-    +row("S2 prune",`${st.S2_pruned} removed · construct identity, battery, free text, scale`,true)
-    +row("S3 screen",`${st.S3_estimable} estimable · ${st.S3_unknown} unknown · ${st.S3_requires_derivation} need a derivation · ${st.S3_parked} parked`,true)
-    +row("live",`${st.live} pairs reach the gate`,true)
-    +row("gate",`passed <span class="flag">${g.passed}</span> · blocked <span class="flag">${g.blocked}</span> of ${g.live} · allow_unestimable ${g.allow_unestimable}`,true)
-    +row("estimability",g.estimability_marks.map(m=>`<span class="flag">${esc(m)}</span>`).join(", "),true)
-    +row("blocked on",esc(g.missing_exports.join(" · ")),true)
-    +row("n source",esc(g.n_sources.join(", ")),true)
+    +row("S1 · list pairs",`${st.S1_enumerated} candidate pairs over distinct constructs`,true)
+    +row("S2 · prune",`${st.S2_pruned} removed · same construct, same battery, free text, or scale`,true)
+    +row("S3 · estimability screen",`${st.S3_estimable} estimable · ${st.S3_unknown} unknown · ${st.S3_requires_derivation} need a derivation · ${st.S3_parked} parked`,true)
+    +row("live pairs",`${st.live} pairs reach the gate`,true)
+    +row("estimability gate",`passed <span class="flag">${g.passed}</span> · blocked <span class="flag">${g.blocked}</span> of ${g.live} · override (allow_unestimable): ${g.allow_unestimable}`,true)
+    +row("estimability mark",g.estimability_marks.map(m=>`<span class="flag">${esc(m)}</span>`).join(", "),true)
+    +row("missing exports",esc(g.missing_exports.join(" · ")),true)
+    +row("sample-size source",esc(g.n_sources.join(", ")),true)
     +row("pairs emitted",`<span class="flag">${f.pairs_emitted}</span> without --allow-unestimable`,true)
     +`</dl>`;
   h+=`<div class="none">The study team holds the two exports, which are survey-metadata counts. Until they arrive, every pair carries the marker above, and by default no pair reaches the Specifier.</div>`;
@@ -1233,22 +1233,28 @@ function metricsPanel(){
 
 function scorePanel(){
   const sc=DATA.score, e=sc.generation_env;
-  const b=v=>v?`<span class="flag">true</span>`:`false <span class="good">required</span>`;
+  /* Plain labels, not the stamp's field names: a reader met `key_present` and
+     `clean_for_scoring` with no gloss. The field names survive in the JSON
+     download, which carries the artifact as committed. */
+  const b=v=>v?`<span class="flag">yes</span>`:`no <span class="good">required</span>`;
+  const yn=v=>v?"yes":"no";
   const mp=DATA.metrics.provenance;
-  let h=`<p class="sec">the sealed environment</p><dl>`
-    +row("key_present",b(e.key_present),true)
-    +row("key_fetchable",b(e.key_fetchable),true)
+  let h=`<p class="sec">the environment that generated the records</p>`
+    +`<div class="none">Scoring is only valid if the records were generated where the answer key`
+    +` could not be read, so the pipeline could not have seen it.</div><dl>`
+    +row("answer key present",b(e.key_present),true)
+    +row("answer key fetchable",b(e.key_fetchable),true)
     +row("branch",esc(e.branch),true)
-    +row("tree_clean",String(e.tree_clean),true)
-    +row("clean_for_scoring",e.clean_for_scoring?`<span class="good">true</span>`:`<span class="flag">false</span>`,true)
-    +row("estimable denominator",`<span class="flag">${sc.estimable_denominator}</span>`,true)
-    +row("status",`<span class="flag">${esc(sc.status)}</span> · scored in this clone: ${sc.scored_in_generation_clone}`,true)
+    +row("no uncommitted changes",yn(e.tree_clean),true)
+    +row("safe to score",e.clean_for_scoring?`<span class="good">yes</span>`:`<span class="flag">no</span>`,true)
+    +row("pairs that passed the estimability screen",`<span class="flag">${sc.estimable_denominator}</span>`,true)
+    +row("status",`<span class="flag">${esc(sc.status)}</span> · scored in this clone: ${yn(sc.scored_in_generation_clone)}`,true)
     +`</dl>`;
-  h+=`<p class="sec">why the gate blocks</p><ul class="does">${sc.why_the_gate_blocks.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`;
+  h+=`<p class="sec">why nothing is scored here</p><ul class="does">${sc.why_the_gate_blocks.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`;
   h+=`<p class="sec">the one scored run</p><dl>`
-    +row("gate",`<span class="flag">off</span> · every scored record carries ${DATA.funnel.gate.estimability_marks.map(esc).join(", ")}`,true)
-    +row("scored",String(DATA.metrics.observed.scored),true)
-    +row("matched",`<span class="flag">${DATA.metrics.observed.matched}</span> · ceiling ${DATA.metrics.ceiling.max_matched}`,true)
+    +row("estimability gate",`<span class="flag">off</span> · every scored record is marked ${DATA.funnel.gate.estimability_marks.map(esc).join(", ")}`,true)
+    +row("records scored",String(DATA.metrics.observed.scored),true)
+    +row("records matching a published finding",`<span class="flag">${DATA.metrics.observed.matched}</span> · the most that could have matched: ${DATA.metrics.ceiling.max_matched}`,true)
     +`</dl><div class="none">${esc(sc.scored_run_note)}.</div>`;
   return h;
 }
@@ -1281,13 +1287,13 @@ function howMeasured(R){
    +` For ${f.n_gold_items_folded_family} of the ${f.n_gold_items} entries the reference`
    +` is a family of sibling questions, and a hit anywhere in the family counts as`
    +` correct.`
-   +`<br><br><b>What each number counts.</b> <em>Top of the list</em> is how often the`
+   +`<br><br><b>What each number counts.</b> <em>Top-1 accuracy</em> is how often the`
    +` reference entry ranked first: ${f.n_top_match_right} of ${f.n_questions}.`
    +` Another ${f.n_right_construct_wrong_item} reached the right construct but the`
    +` wrong question, and I score those as misses, not partial credit.`
-   +` <em>Has a match at all</em> is discrimination between answerable and absent`
-   +` requests: how well the similarity score separates the two groups.`
-   +` <em>Is the top match right</em> is discrimination between correct and incorrect`
+   +` <em>AUROC, answerable vs absent</em> is discrimination between answerable and`
+   +` absent requests: how well the similarity score separates the two groups.`
+   +` <em>AUROC, correct vs wrong</em> is discrimination between correct and incorrect`
    +` top matches, using the same score, and it is a much harder task.`
    +` <em>Threshold</em> is the score below which the system abstains instead of`
    +` guessing.</div>`;
@@ -1522,8 +1528,8 @@ function measureHTML(){
      comparison below is exactly the one these sentences qualify. */
   h+=`<p class="sec">known limitations · ${esc(L.source)}</p><dl>`
     +row("fixture queries",`written by the same generator family as the ${L.training_pairs.toLocaleString()} training pairs, after seeing the reference wording`)
-    +row("gain over frozen",`${R1} ${L.gain_r1_over_frozen_bge_small.toFixed(3)} for the fine-tuned model over frozen bge-small on the no-template arm · <span class="flag">${esc(L.register_alignment_share)}</span> share of it is register alignment`,true)
-    +row("lexical leakage",`${L.lexical_leakage.measured?"measured":"not measured"} and it ${L.lexical_leakage.survives?"survives":"does not survive"}: item-level Spearman ${L.lexical_leakage.item_level_spearman} (permutation p ${L.lexical_leakage.permutation_p}); ${R1} by query-to-gold overlap quartile ${L.lexical_leakage.r1_by_query_gold_overlap_quartile.map(q=>q.toFixed(3)).join(" / ")}, ${L.lexical_leakage.monotonic?"monotonic":"non-monotonic"}${L.lexical_leakage.flat_within_query_length_groups?", flat within every query-length group":""}`,true)
+    +row("gain over the frozen model",`${R1} ${L.gain_r1_over_frozen_bge_small.toFixed(3)} for the fine-tuned model over frozen bge-small on the no-template arm · <span class="flag">${esc(L.register_alignment_share)}</span> share of it is register alignment`,true)
+    +row("word overlap with the answer (lexical leakage)",`${L.lexical_leakage.measured?"measured":"not measured"} and it ${L.lexical_leakage.survives?"survives":"does not survive"}: item-level Spearman ${L.lexical_leakage.item_level_spearman} (permutation p ${L.lexical_leakage.permutation_p}); ${R1} by query-to-gold overlap quartile ${L.lexical_leakage.r1_by_query_gold_overlap_quartile.map(q=>q.toFixed(3)).join(" / ")}, ${L.lexical_leakage.monotonic?"monotonic":"non-monotonic"}${L.lexical_leakage.flat_within_query_length_groups?", flat within every query-length group":""}`,true)
     +row("phrasing",`${L.phrasing.items_retrieved_on_no_phrasing} of ${L.phrasing.gold_items} reference entries missed on all ${L.phrasing.phrasings_per_item} of their phrasings, ${L.phrasing.items_retrieved_on_one_phrasing} retrieved on only one`,true)
     +`</dl>`;
   h+=`<p class="sec">how often search ranked the reference entry first · by topic</p>`

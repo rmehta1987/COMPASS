@@ -146,29 +146,28 @@ def main() -> int:
         "verdicts": dict(re.findall(
             r"^- (contamination_check|input_leakage|unearned_assertions): (\w+)$",
             text.split("## Verdicts", 1)[1].split("## ", 1)[0], re.M)),
-        "verdicts_note": ("each verdict is the scoring run's own check, reported "
-                          "as it wrote it. This page does not re-run any of "
-                          "them and shows no positive control, so a green chip "
-                          "says the check ran and passed, not that it would "
-                          "have caught a planted failure"),
+        "verdicts_note": ("Each verdict is the scoring run's own check, reported as "
+                           "the run wrote it. This page re-runs none of them and shows"
+                           " no positive control, so a green chip means the check ran "
+                           "and passed, not that it would have caught a planted "
+                           "failure"),
         "headline_source": (f"quoted verbatim from artefacts/{RUN}/BASELINE.md, "
                             "which spells artefact and writes the singular as "
                             "a plural; the record is not edited to read better"),
         "how_produced": [
-            ("the estimability gate was switched off for this run "
-             "(--allow-unestimable): without it no language-model call is "
-             "made, and every one of the scored records carries the gate's "
-             "own blocking mark, so the analysis set exists only because the "
-             "primary quality gate was disabled"),
-            ("the frame was the narrow one: medication and "
-             "reproductive-hormonal exposures crossed with chronic-condition "
-             "outcomes, through the same funnel the Generate tab shows for a "
-             "different frame"),
-            ("the pairs generated were a seeded subset of that frame; the seed "
-             "and limit are not carried in the artifacts this page ships"),
-            ("the Generate and Score tabs describe the generation clone at a "
-             "different tree; this run's own tree is in the provenance line "
-             "below"),
+            ("The estimability gate was switched off for this run "
+              "(--allow-unestimable). With the gate on, no language-model call is "
+              "made. Every scored record carries the gate's own blocking mark, so the "
+              "analysis set exists only because the main quality gate was disabled"),
+            ("The sampling frame was the narrow one: medication and "
+              "reproductive-hormonal exposures crossed with chronic-condition "
+              "outcomes, run through the same funnel the Generate tab shows for a "
+              "different frame"),
+            ("The generated pairs were a seeded subset of that frame; the artifacts "
+              "this page ships do not record the seed or the limit"),
+            ("The Generate and Score tabs describe the generation clone at a "
+              "different tree. This run's own tree is recorded in its artifact and in "
+              "REPRODUCIBILITY.md, not on this page, which prints no run stamps"),
         ],
         "artifacts": artifacts,
         "papers": [
@@ -188,29 +187,28 @@ def main() -> int:
                        "zero the run cannot separate a good pipeline from a bad "
                        "one, and no score above zero was attainable under this "
                        "key and this frame"),
-            "unit_of_analysis": ("the numerator counts records, not papers: a "
-                                 "record matches when one paper's outcome key "
-                                 "and resolved exposure are both its own. The "
-                                 "ceiling counts how many of the scored records "
-                                 "could have matched any paper; a paper is "
-                                 "matchable when at least one record could match "
-                                 "it. Both denominators are stated beside their "
-                                 "counts"),
-            "why_the_ceiling_is_low": ("a paper is matchable only when its outcome "
-                                       "key is on record and its exposure resolves "
-                                       "against the instrument; one paper of "
-                                       "sixteen clears both. Resolution goes "
-                                       "through the deployed retriever, so a "
-                                       "retriever miss and a genuine non-match are "
-                                       "scored identically: the ceiling is "
-                                       "retriever-dependent"),
-            "the_frame": ("the frame is the set of pairs the funnel enumerated "
-                          "for this run: one group of exposure questions crossed "
-                          "with one group of outcome questions, here medication "
-                          "and reproductive-hormonal exposures by "
-                          "chronic-condition outcomes. A paper whose pair lies "
-                          "outside it cannot be matched by any record, however "
-                          "the pipeline reasoned"),
+            "unit_of_analysis": ("The numerator counts records, not papers: a record "
+                                  "matches when one paper's outcome key and resolved "
+                                  "exposure are both its own. The ceiling counts how "
+                                  "many scored records could have matched any paper, "
+                                  "and a paper is matchable when at least one record "
+                                  "could match it. Each denominator is stated beside "
+                                  "its count"),
+            "why_the_ceiling_is_low": ("A paper is matchable only when its outcome "
+                                        "key is on record and its exposure resolves "
+                                        "against the instrument; one paper of sixteen "
+                                        "meets both conditions. Resolution runs "
+                                        "through the deployed retriever, so the score "
+                                        "treats a retriever miss and a true non-match "
+                                        "the same way: the ceiling depends on the "
+                                        "retriever"),
+            "the_frame": ("The sampling frame is the set of pairs the funnel "
+                           "enumerated for this run: one group of exposure questions "
+                           "crossed with one group of outcome questions, here "
+                           "medication and reproductive-hormonal exposures by "
+                           "chronic-condition outcomes. No record can match a paper "
+                           "whose pair lies outside the frame, however the pipeline "
+                           "reasoned"),
             "attrition": ("the scored denominator is the emitted rows only. The "
                           "pairs lost to a backend error were dropped without a "
                           "missingness argument, and an error is not obviously "
@@ -273,26 +271,24 @@ def main() -> int:
             # exactly what `benchmark/baseline_score.py` does. What C12 has not
             # built is the REST of the per-paper key.
             {"what": "the full per-paper key",
-             "why": ("matching is already automatic -- every emitted record "
-                     "is scored against the whole bibliography, taking each "
-                     "paper's outcome keys from the held-out key and resolving "
-                     "its exposure terms through the deployed retriever. What "
-                     "is missing is the rest of that key: the covariate set, "
-                     "the model form and the tier, which is task C12. Until it "
-                     "exists the comparison reaches only the papers whose "
-                     "outcome keys are on record, and that is what caps the "
-                     "ceiling")},
+             "why": ("Matching is already automatic: every emitted record is scored "
+                      "against the whole bibliography, using each paper's outcome keys"
+                      " from the held-out key and resolving its exposure terms through"
+                      " the deployed retriever. The rest of that key is missing: the "
+                      "covariate set, the model form and the tier, which is task C12. "
+                      "Until it exists, the comparison reaches only the papers whose "
+                      "outcome keys are on record, and that caps the ceiling")},
             {"what": "scoring from this page",
-             "why": ("scoring needs benchmark/prevalence_key.py and runs exactly "
-                     "once, on a tag, before any tuning, so that it cannot become "
-                     "a feedback signal. A button that re-scored on demand would "
-                     "break that, not complete it")},
+             "why": ("Scoring needs benchmark/prevalence_key.py and runs once, on a "
+                      "tagged commit, before any tuning, so the score is never used to"
+                      " tune the pipeline. A button that re-scored on demand would "
+                      "break that rule, not complete it")},
         ],
         "pubmed_base": "https://pubmed.ncbi.nlm.nih.gov/",
-        "abstained_note": ("the count is of the paper's exposure terms the "
-                           "retriever abstained on; BASELINE.md does not record "
-                           "how many terms the line had, so no rate is given. "
-                           "Papers it does not list show none listed"),
+        "abstained_note": ("The count is the number of the paper's exposure terms the"
+                            " retriever abstained on. BASELINE.md does not record how "
+                            "many terms each line had, so no rate is given, and papers"
+                            " it does not list show none listed"),
         # The per-record listing is not published, so nothing on the page is
         # identified by record hash any more and no route serves keys to it.
         # Saying otherwise pointed a reviewer at a path that no longer exists.

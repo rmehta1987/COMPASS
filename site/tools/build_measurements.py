@@ -131,7 +131,12 @@ def limitations(man: dict) -> dict:
     unmeasured = [x.strip() for x in re.split(r", | or ", missing)]
     never, gold, phr, once = grab(r"(\d+) of (\d+) gold items are retrieved on 0 of their (\d+) phrasings and (\d+) on 1 of", kl[3])
     return {
-        "source": "deploy/manifest.json known_limitations, parsed by site/tools/build_measurements.py, with the by-topic rows read from out/char_task4_strata.json and cross-checked against the three topics that sentence names; the per-topic and phrasing files are not in the public tree, so the manifest sentence is the tracked record and this artifact ships the rows",
+        "source": ("deploy/manifest.json known_limitations, parsed by "
+                   "site/tools/build_measurements.py. The by-topic rows come from "
+                   "out/char_task4_strata.json and are cross-checked against the three"
+                   " topics that sentence names. The per-topic and phrasing files are "
+                   "not in the public tree, so the manifest sentence is the tracked "
+                   "record and this artifact ships the rows"),
         "generator_family_shared_with_training": True,
         "training_pairs": int(pairs.replace(",", "")),
         "gain_r1_over_frozen_bge_small": float(gain),
@@ -165,13 +170,16 @@ def main() -> int:
             "source": "site/tools/build_measurements.py parsing arm_hybrid_e_D.md §2 (encoder sweep) and reading out/smoke_report_x86_64_Wright.json + deploy/manifest.json (shipped model)",
             "commit": f"arm_hybrid_e_D.md {sweep_commit}; smoke report {report_commit}; main 265241d",
             "run_id": f"sweep measured 2026-09-02/03 (x86, frozen encoders); smoke report run {rep['run']} on {rep['machine']['hostname']}",
-            "sweep_artifacts_note": "the per-config JSONs the sweep table was written from are withheld from the public tree; the document is the committed record",
+            "sweep_artifacts_note": ("The per-configuration JSON files behind the "
+                                     "sweep table are withheld from the public tree; "
+                                     "the document is the committed record"),
         },
         "fixture": {"n_positive_rows": acc["I"]["ranks"].__len__(), "n_negative_rows": acc["I"]["n_negatives"],
                     "note": "queries were written by a model that saw the gold wording, by the same generator family as the training pairs, so recall is an upper bound and an unknown share of the fine-tuned model's gain over the frozen one is register alignment (manifest known_limitations, parsed below)"},
         "limitations": limitations(man),
         "sweep": {
-            "what": "frozen encoders, no fine-tuning, untemplated fixture queries, full target corpus",
+            "what": ("frozen encoders (no fine-tuning), untemplated fixture queries, "
+                     "full target set"),
             "dictionary_version_hash": "3dc8415eccfe",
             "machine": "x86, CPU only",
             "columns": [["model", "model"], ["params_m", "params"], ["recall_at_1", "R@1"], ["recall_at_5", "R@5"],
@@ -203,12 +211,25 @@ def main() -> int:
                           "definitions": {"coverage": "positives answered (top cosine at or above min_cos) over all positives",
                                           "precision": "correct over answered",
                                           "recall": "correct over all positives, so abstaining costs recall"},
-                          "selection_note": "min_cos is the F1-maximising value over the positives, and its precision, recall, coverage and F1 are reported on those same positives; there is no held-out estimate of any of them. Only the negatives are held out"},
+                          "selection_note": ("min_cos is the value that maximises F1 "
+                                             "on the positives, and its precision, "
+                                             "recall, coverage and F1 are reported on "
+                                             "those same positives, so none of them "
+                                             "has a held-out estimate. Only the "
+                                             "negatives are held out")},
             "latency": {"query_ms_isolated_single": rep["latency"]["query_ms_isolated_single"],
                         "threads": rep["latency"]["threads"], "machine": rep["machine"]["machine"],
-                        "note": "serving machine, one query per forward pass, fp32, warm; other machines differ (the run artifacts on this page report their own)"},
+                        "note": ("measured on the serving machine, one query per "
+                                 "forward pass, fp32, after warm-up; other machines "
+                                 "differ, and the run artifacts on this page report "
+                                 "their own")},
             "wrong_pick_detection": {"available": False,
-                                     "note": "detecting its own wrong pick was measured, the artifact was withdrawn from git, and the figure is not reproducible from anything on this page; it is not unmeasured, and it is not shown"},
+                                     "note": ("How well the retriever detects its own "
+                                              "wrong picks was measured, but the "
+                                              "artifact was withdrawn from git and "
+                                              "nothing on this page can reproduce the "
+                                              "figure. It is measured, not missing, and"
+                                              " it is not shown")},
         },
     }
     # The by-topic rows must account for every positive row in the fixture. The

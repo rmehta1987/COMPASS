@@ -307,7 +307,7 @@
     "f.n_questions",
     "f.n_right_construct_wrong_item"
    ],
-   "text": "Where the data came from. I built the search index from the codebook, and it holds {0} entries. An entry is a single question, a question paired with one of its response options, or a family of sibling questions that share a stem. The retriever renders each request as one line of text, scores it against every entry, and returns the closest. No language model takes part in that step. The test set holds {1} requests with a known reference entry and {2} requests written about constructs the codebook does not measure. The {3} cover {4} codebook entries, each phrased {5} ways, so every count out of {6} below counts requests, not distinct entries: each block of {7} requests is {8} phrasings of one entry, and {9} entries were tested in all. A language model wrote the {10} after seeing the reference wording, so every hit rate below is optimistically biased: an upper bound, not an estimate of field performance. The {11} absent requests are the only part of this evaluation I held out from every development decision. For {12} of the {13} entries the reference is a family of sibling questions, and a hit anywhere in the family counts as correct. What each number counts. Top of the list is how often the reference entry ranked first: {14} of {15}. Another {16} reached the right construct but the wrong question, and I score those as misses, not partial credit. Has a match at all is discrimination between answerable and absent requests: how well the similarity score separates the two groups. Is the top match right is discrimination between correct and incorrect top matches, using the same score, and it is a much harder task. Threshold is the score below which the system abstains instead of guessing."
+   "text": "Where the data came from. I built the search index from the codebook, and it holds {0} entries. An entry is a single question, a question paired with one of its response options, or a family of sibling questions that share a stem. The retriever renders each request as one line of text, scores it against every entry, and returns the closest. No language model takes part in that step. The test set holds {1} requests with a known reference entry and {2} requests written about constructs the codebook does not measure. The {3} cover {4} codebook entries, each phrased {5} ways, so every count out of {6} below counts requests, not distinct entries: each block of {7} requests is {8} phrasings of one entry, and {9} entries were tested in all. A language model wrote the {10} after seeing the reference wording, so every hit rate below is optimistically biased: an upper bound, not an estimate of field performance. The {11} absent requests are the only part of this evaluation I held out from every development decision. For {12} of the {13} entries the reference is a family of sibling questions, and a hit anywhere in the family counts as correct. What each number counts. Top-1 accuracy is how often the reference entry ranked first: {14} of {15}. Another {16} reached the right construct but the wrong question, and I score those as misses, not partial credit. AUROC, answerable vs absent is discrimination between answerable and absent requests: how well the similarity score separates the two groups. AUROC, correct vs wrong is discrimination between correct and incorrect top matches, using the same score, and it is a much harder task. Threshold is the score below which the system abstains instead of guessing."
   },
   {
    "id": "id.tool-calls-none-output",
@@ -540,7 +540,7 @@
    "slots": [
     "DATA.funnel.gate.estimability_marks.map(esc).join(\", \")"
    ],
-   "text": "off · every scored record carries {0}"
+   "text": "off · every scored record is marked {0}"
   },
   {
    "id": "shippedSummary.retrieval-use-m-parameters",
@@ -751,35 +751,35 @@
    "kind": "label",
    "where": "site/index.html::funnelPanel (row)",
    "slots": [],
-   "text": "blocked on"
+   "text": "missing exports"
   },
   {
    "id": "funnelPanel.estimability",
    "kind": "label",
    "where": "site/index.html::funnelPanel (row)",
    "slots": [],
-   "text": "estimability"
+   "text": "estimability mark"
   },
   {
    "id": "funnelPanel.gate",
    "kind": "label",
    "where": "site/index.html::funnelPanel (row)",
    "slots": [],
-   "text": "gate"
+   "text": "estimability gate"
   },
   {
    "id": "funnelPanel.live",
    "kind": "label",
    "where": "site/index.html::funnelPanel (row)",
    "slots": [],
-   "text": "live"
+   "text": "live pairs"
   },
   {
    "id": "funnelPanel.n-source",
    "kind": "label",
    "where": "site/index.html::funnelPanel (row)",
    "slots": [],
-   "text": "n source"
+   "text": "sample-size source"
   },
   {
    "id": "funnelPanel.pairs-emitted",
@@ -793,21 +793,21 @@
    "kind": "label",
    "where": "site/index.html::funnelPanel (row)",
    "slots": [],
-   "text": "S1 enumerate"
+   "text": "S1 · list pairs"
   },
   {
    "id": "funnelPanel.s2-prune",
    "kind": "label",
    "where": "site/index.html::funnelPanel (row)",
    "slots": [],
-   "text": "S2 prune"
+   "text": "S2 · prune"
   },
   {
    "id": "funnelPanel.s3-screen",
    "kind": "label",
    "where": "site/index.html::funnelPanel (row)",
    "slots": [],
-   "text": "S3 screen"
+   "text": "S3 · estimability screen"
   },
   {
    "id": "generatePanel.enumerated-s1",
@@ -828,7 +828,7 @@
    "kind": "label",
    "where": "site/index.html::generatePanel (row)",
    "slots": [],
-   "text": "live"
+   "text": "live pairs"
   },
   {
    "id": "generatePanel.pruned-s2",
@@ -849,7 +849,7 @@
    "kind": "label",
    "where": "site/index.html::generatePanel (row)",
    "slots": [],
-   "text": "sets"
+   "text": "question groups"
   },
   {
    "id": "intakePanel.construct-what-searched",
@@ -926,14 +926,14 @@
    "kind": "label",
    "where": "site/index.html::livePanel (row)",
    "slots": [],
-   "text": "margin to rank two"
+   "text": "lead over rank two"
   },
   {
    "id": "livePanel.min-cos",
    "kind": "label",
    "where": "site/index.html::livePanel (row)",
    "slots": [],
-   "text": "min_cos"
+   "text": "threshold (min_cos)"
   },
   {
    "id": "livePanel.outcome",
@@ -954,7 +954,7 @@
    "kind": "label",
    "where": "site/index.html::livePanel (row)",
    "slots": [],
-   "text": "top cosine"
+   "text": "top similarity (cosine)"
   },
   {
    "id": "metricsPanel.papers-matchable-needing-both",
@@ -1031,7 +1031,7 @@
    "kind": "label",
    "where": "site/index.html::readableProtocol (row)",
    "slots": [],
-   "text": "access"
+   "text": "data access"
   },
   {
    "id": "readableProtocol.analysis-model",
@@ -1045,14 +1045,14 @@
    "kind": "label",
    "where": "site/index.html::readableProtocol (row)",
    "slots": [],
-   "text": "analytic n"
+   "text": "analytic sample size"
   },
   {
    "id": "readableProtocol.contrast",
    "kind": "label",
    "where": "site/index.html::readableProtocol (row)",
    "slots": [],
-   "text": "contrast"
+   "text": "exposure contrast"
   },
   {
    "id": "readableProtocol.expected-direction",
@@ -1073,7 +1073,7 @@
    "kind": "label",
    "where": "site/index.html::readableProtocol (row)",
    "slots": [],
-   "text": "falsifier"
+   "text": "falsifier · the result that would refute it"
   },
   {
    "id": "readableProtocol.modules-required",
@@ -1101,7 +1101,7 @@
    "kind": "label",
    "where": "site/index.html::readableProtocol (row)",
    "slots": [],
-   "text": "threshold"
+   "text": "falsifier threshold"
   },
   {
    "id": "readableRefusal.pair",
@@ -1185,14 +1185,14 @@
    "kind": "label",
    "where": "site/index.html::retrieverPanel (row)",
    "slots": [],
-   "text": "margin to rank two"
+   "text": "lead over rank two"
   },
   {
    "id": "retrieverPanel.min-cos",
    "kind": "label",
    "where": "site/index.html::retrieverPanel (row)",
    "slots": [],
-   "text": "min_cos"
+   "text": "threshold (min_cos)"
   },
   {
    "id": "retrieverPanel.option",
@@ -1213,7 +1213,7 @@
    "kind": "label",
    "where": "site/index.html::retrieverPanel (row)",
    "slots": [],
-   "text": "roster fold"
+   "text": "roster rows merged"
   },
   {
    "id": "retrieverPanel.target",
@@ -1234,7 +1234,7 @@
    "kind": "label",
    "where": "site/index.html::retrieverPanel (row)",
    "slots": [],
-   "text": "top cosine"
+   "text": "top similarity (cosine)"
   },
   {
    "id": "scorePanel.branch",
@@ -1248,49 +1248,49 @@
    "kind": "label",
    "where": "site/index.html::scorePanel (row)",
    "slots": [],
-   "text": "clean_for_scoring"
+   "text": "safe to score"
   },
   {
    "id": "scorePanel.estimable-denominator",
    "kind": "label",
    "where": "site/index.html::scorePanel (row)",
    "slots": [],
-   "text": "estimable denominator"
+   "text": "pairs that passed the estimability screen"
   },
   {
    "id": "scorePanel.gate",
    "kind": "label",
    "where": "site/index.html::scorePanel (row)",
    "slots": [],
-   "text": "gate"
+   "text": "estimability gate"
   },
   {
    "id": "scorePanel.key-fetchable",
    "kind": "label",
    "where": "site/index.html::scorePanel (row)",
    "slots": [],
-   "text": "key_fetchable"
+   "text": "answer key fetchable"
   },
   {
    "id": "scorePanel.key-present",
    "kind": "label",
    "where": "site/index.html::scorePanel (row)",
    "slots": [],
-   "text": "key_present"
+   "text": "answer key present"
   },
   {
    "id": "scorePanel.matched",
    "kind": "label",
    "where": "site/index.html::scorePanel (row)",
    "slots": [],
-   "text": "matched"
+   "text": "records matching a published finding"
   },
   {
    "id": "scorePanel.scored",
    "kind": "label",
    "where": "site/index.html::scorePanel (row)",
    "slots": [],
-   "text": "scored"
+   "text": "records scored"
   },
   {
    "id": "scorePanel.status",
@@ -1304,7 +1304,7 @@
    "kind": "label",
    "where": "site/index.html::scorePanel (row)",
    "slots": [],
-   "text": "tree_clean"
+   "text": "no uncommitted changes"
   },
   {
    "id": "specifierPanel.key-case-corrected",

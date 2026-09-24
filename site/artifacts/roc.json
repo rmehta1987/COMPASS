@@ -38,7 +38,7 @@
  "curves": [
   {
    "id": "match",
-   "what": "does this request have any match in the codebook at all",
+   "what": "answerable vs absent: does the codebook hold any match for this request",
    "positive": "a request whose construct is in the codebook",
    "negative": "a held-out request whose construct is absent",
    "auroc": 0.9823457792207793,
@@ -1113,7 +1113,7 @@
   },
   {
    "id": "right",
-   "what": "is the top match the right item",
+   "what": "correct vs incorrect: is the top match the reference entry",
    "positive": "the top match was the gold target",
    "negative": "the top match was some other target",
    "auroc": 0.6399058365127039,
