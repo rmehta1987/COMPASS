@@ -219,6 +219,17 @@ Three routes by which a published analysis reaches the model. **Only one closes.
 - Its `contrast` and `model_form` are closed lexical lists, so an unusual estimator misses
   into `not_specifiable_unaided` — the expensive direction for a subtraction filter
   (`benchmark/unaided_specifiability.py::RUBRIC`).
+- **C18's unflagged set is mostly refusals, not shown incapacity.** The pre-registered
+  sweep (`run/unaided_sweep_2026-09-11/`, untracked; threshold 1 of 5) flagged 63 of the
+  frame's 256 live pairs. Of the 193 it left unflagged (`partition.json` `arm_pool`), 159
+  drew five responses whose text begins `I cannot`, the one-line exit
+  `benchmark/unaided_specifiability.py::PROMPT` offers, and 1044 of the 1280 frame
+  responses score none of the four elements. So `not_specifiable_unaided` means "declined
+  or incomplete in five draws, under a prompt that permits declining", never "cannot
+  specify unaided". What a prompt without that exit would flag is untested. The stated
+  reasons (an uninterpretable battery stem, no plausible causal path) are in the records.
+  `with_instrument` reads none of them and labels 185 of the 193 `needs_instrument` from
+  the environment's gates alone.
 - Retrieval recall measured here is an upper bound (`AGENTS.md` §Testing Patterns).
 
 ## 8. Open questions
