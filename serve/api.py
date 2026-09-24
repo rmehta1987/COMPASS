@@ -1559,6 +1559,7 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
             payload = _specify_payload(res, identity, version, model, canonical,
                                        allow_unresolvable, backend,
                                        round(time.time() - t0, 2))
+            payload["repairs"] = _keep_repairs(state, ticket, res)
             done = {"status": "done", "run": payload}
         except Exception as exc:
             done = {"status": "error",
@@ -1684,6 +1685,79 @@ def _load_job(state: State, ticket: str) -> dict[str, Any] | None:
         return job
     except (OSError, ValueError):
         return None
+
+
+def _record_attempt(res: Any) -> Any:
+    """The attempt whose record the run selected, protocol or refusal.
+
+    By identity, for the reason `generate/live_specifier.py::winning_attempt`
+    gives: `specify` selects an attempt's own object, while two samples can
+    share a `record_hash`. That function covers the protocol; a refusal is
+    found the same way, since `specify` keeps the first sample's refusal object
+    for each hash.
+
+    Args:
+        res: The `agent.specifier.Result`.
+
+    Returns:
+        The attempt, or None when the run selected no record.
+    """
+    from generate.live_specifier import winning_attempt
+
+    if res.selected is not None:
+        return winning_attempt(res)
+    if res.refusal is not None:
+        return next((a for a in res.attempts if a.refusal is res.refusal), None)
+    return None
+
+
+def _keep_repairs(state: State, ticket: str, res: Any) -> dict[str, Any]:
+    """Persist the selected record's repair history beside its job, and trace it.
+
+    C19 residue. A repair error can quote a signed file, so a record that
+    passed on a later transduction can carry a derivation key set no tool in
+    its log returned. `generate/live_specifier.py` writes the repairs beside
+    each record; the job record kept none, so a record specified here had no
+    visible source for such a value, and `Attempt` does not outlive the run.
+
+    Reuses `generate/live_specifier.py::save_repairs` rather than a copy: it
+    runs `agent/specifier.py::untraced_derivation_values` over the repairs and
+    writes both in the driver's format, so the two paths cannot drift apart.
+    It is given `Attempt.raw_log`, which for the CLI backend is the tool log
+    file's own records (`agent/specifier.py::_reason`), since this route does
+    not copy that file. The file lands under `JOBS_DIR_NAME`, so
+    `OWN_OUTPUT_MARKERS` already refuses a site directory that holds it.
+
+    Args:
+        state: Shared handles.
+        ticket: The run's ticket.
+        res: The `agent.specifier.Result`.
+
+    Returns:
+        How many rejected transductions preceded the record, and every
+        derivation value that traces to neither the log nor a kept repair.
+        With no record selected there is nothing to trace, and it says so.
+    """
+    from generate.live_specifier import save_repairs
+
+    won = _record_attempt(res)
+    if won is None:
+        return {"kept": None, "untraced": None,
+                "note": ("no record was selected, so there is no record to trace; "
+                         "each sample's rejected object is under `samples`.")}
+    path = _job_path(state, ticket)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        written = save_repairs(path, won, won.raw_log)
+        saved = json.loads(written.read_text(encoding="utf-8"))
+    except OSError as exc:
+        # Losing the copy must not lose the answer, as in `_save_job`. But the
+        # trace ran inside the write, so say it is missing rather than empty.
+        return {"kept": len(won.repairs), "untraced": None,
+                "note": f"the repair history could not be written ({exc}), so "
+                        f"this record's derivation values were not traced."}
+    return {"kept": len(saved["repairs"]), "untraced": saved["untraced"],
+            "file": str(written.relative_to(state.run_dir))}
 
 
 def _specify_status(state: State, body: dict[str, Any]) -> dict[str, Any]:
