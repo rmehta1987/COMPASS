@@ -1573,9 +1573,13 @@ def test_the_pooled_facts_equal_what_the_retriever_hit_carries():
     field name. MEASURED 2026-09-24 over all 1,353 targets: they agree on
     1,350 once the dictionary's null is read as 1, and disagree on three,
     none of which this pool draws.
+
+    No skip when the bundle is absent. `model_visible_surface` reads it
+    unconditionally, as it reads `targets.json` and the dictionary, so a clone
+    without it fails the gate and every surface test loudly; a skip here would
+    be the one quiet test among them. SKIP is for withheld MODULES
+    (`tests/withheld.py`), not withheld artifacts.
     """
-    if not CC.RETRIEVER_TARGETS.is_file():
-        pytest.skip("the deploy bundle is not in this tree")
     tree = ast.parse((ROOT / "deploy" / "retriever.py").read_text(encoding="utf-8"))
     hit = next(n for n in ast.walk(tree)
                if isinstance(n, ast.FunctionDef) and n.name == "_hit")

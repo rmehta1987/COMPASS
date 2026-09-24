@@ -670,7 +670,11 @@ def _retrieval_pool() -> tuple[PC.Candidate, ...]:
         The candidates, indexed 1..n, built by `PC.candidates_from_keys`.
 
     Raises:
-        FileNotFoundError: If the deploy bundle's target list is absent.
+        FileNotFoundError: If the deploy bundle's target list is absent. Loud,
+            not a SKIP, which is how this gate already treats the other two
+            gitignored artifacts it reads (`targets.json`, the dictionary):
+            `EXIT_INCOMPLETE` is for a withheld answer-key MODULE, and a
+            missing artifact is a broken clone, not a withheld key.
     """
     if not RETRIEVER_TARGETS.is_file():
         raise FileNotFoundError(
