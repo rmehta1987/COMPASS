@@ -248,13 +248,13 @@
 </head>
 <body>
 <header><div class="wrap mast">
-  <h1>COMPASS<span>Type what you want to measure. Watch each stage retrieve, refuse, or block — with the dictionary lookups it made.</span></h1>
+  <h1>COMPASS<span>Describe what you want to measure, and follow each stage as it retrieves, refuses, or blocks, with the dictionary lookups behind it.</span></h1>
   <nav class="links"><button class="g" id="dl-src">Download this page</button><a href="https://github.com/rmehta1987/COMPASS">Repo</a></nav>
 </div></header>
 
 <div class="bar"><div class="wrap">
-  <input id="q" value="" aria-label="request" placeholder="a question, or a construct, or two keys">
-  <button id="ask" title="the pipeline: retrieve candidates, then the language model reasons about which serve as exposure and which as outcome. Needs the live server">Ask the pipeline</button><button id="run" class="g" title="the deployed retriever alone: cosine over the target vectors, no language-model call, no cost, and the way to load a committed example">Search only</button>
+  <input id="q" value="" aria-label="request" placeholder="a question, a construct, or two variable keys">
+  <button id="ask" title="The full pipeline: retrieve candidate variables, then a language model assigns the exposure and the outcome. Requires the live server.">Ask the pipeline</button><button id="run" class="g" title="The deployed retriever alone: cosine similarity against the target vectors, with no language-model call and no cost. Also loads a committed example.">Search only</button>
   <span class="ex" id="examples"></span>
   <span class="served" id="served"></span>
 </div></div>
@@ -510,9 +510,9 @@ function roleBlock(role,v){
      is what a sub-threshold pool looks like. */
   if(v.below_threshold) h+=`<div class="none" style="color:var(--signal)">`
     +`The best candidate here scores below the deployed retriever's own`
-    +` abstention threshold, so on <b>Search only</b> it would have refused to`
-    +` answer rather than offered these. Treat a pick from this list as`
-    +` unsupported until you have checked the instrument yourself.</div>`;
+    +` abstention threshold, so <b>Search only</b> would have declined to answer`
+    +` instead of offering these. Treat any pick from this list as unsupported`
+    +` until you check the instrument yourself.</div>`;
   h+=`<div class="tools">`+v.candidates.map(c=>
       `<div class="t${c.proposed?" gate pass":""}"><span class="call">`
       +`${c.proposed?"&#10003; ":""}${c.index}. <b>${esc(c.key||"")}</b> ${esc(c.wording)}</span>`
@@ -546,13 +546,13 @@ function poolNote(j){
   const hi=Math.max(...all), lo=Math.min(...all);
   return `<p class="sec">how these were found</p><div class="none">`
     +`${n} candidate(s) from the encoder&mdash;fine-tuned bge-small,`
-    +` cosine over precomputed target vectors, no language-model call in that step`
-    +`&mdash;scoring cos ${f4(hi)} down to ${f4(lo)}.`
-    +(split?` Each role was retrieved from its OWN phrases, not from one shared`
-            +` pool.`
-           :` One pool, offered to both roles: the encoder turns your whole question`
-            +` into a single vector, so it cannot tell an exposure from an outcome.`
-            +` Assigning them is what the model above did.`)
+    +` cosine against precomputed target vectors, with no language-model call in`
+    +` that step&mdash;scoring from cos ${f4(hi)} down to ${f4(lo)}.`
+    +(split?` The server retrieved each role from its OWN phrases, not from one`
+            +` shared pool.`
+           :` One pool serves both roles: the encoder turns your whole question`
+            +` into a single vector, so it cannot distinguish an exposure from an`
+            +` outcome. The language model above assigned the roles.`)
     +`</div>`
     /* The phrases, because a split that is usable but WRONG has no fallback:
        `_split_pools` catches a refused or unsplittable reply and returns the
@@ -567,8 +567,8 @@ function poolNote(j){
         +`</div>`
       :"")
     +(j.split&&j.split.status==="fallback"
-      ?`<div class="none" style="color:var(--signal)">The split could not be`
-       +` used, so both roles were offered one shared pool:`
+      ?`<div class="none" style="color:var(--signal)">The split was unusable,`
+       +` so both roles drew on one shared pool:`
        +` ${esc(j.split.why||"no reason given")}</div>`
       :"");
 }
@@ -590,13 +590,13 @@ function resolverPanel(){
     &&j.roles[r].verdict!=="resolved"&&j.roles[r].verdict!=="pinned");
   h+=`<p class="sec">chosen pair</p>`
     +(allPinned(j)?`<div class="none" style="color:var(--signal)">`
-      +`Both anchors were named in the request, so nothing was inferred and the`
+      +`The request named both anchors, so nothing was inferred and the`
       +` Specifier started automatically.</div>`:"")
     +(declined.length?`<div class="none" style="color:var(--signal)">`
-      +`The language model declined to choose the ${esc(declined.join(" and "))}, so nothing`
-      +` was filled in there. Pick one yourself, or ask again more specifically.</div>`
-      :`<div class="none">Filled from what the language model committed to. Change either`
-      +` before running.</div>`)
+      +`The language model declined to choose the ${esc(declined.join(" and "))}, so no`
+      +` choice is filled in. Pick one yourself, or ask again with a more specific request.</div>`
+      :`<div class="none">Filled from the language model's committed choices. Change either`
+      +` before you run.</div>`)
     +`<dl class="anchors">`
     +row("exposure",anchors.exposure?esc(anchors.exposure):"<em>none picked</em>",true)
     +row("outcome",anchors.outcome?esc(anchors.outcome):"<em>none picked</em>",true)
@@ -700,7 +700,7 @@ function readableProtocol(r){
     +`</dl>`;
   h+=covBlock("adjusted",r.adjusted_covariates,"none");
   h+=covBlock("excluded on purpose",r.excluded_variables,
-              "none &mdash; an empty exclusion list is rejected by the schema, so one entry is a floor, not a finding");
+              "none &mdash; the schema rejects an empty exclusion list, so a single entry is a required minimum, not a finding");
   h+=covBlock("undetermined",r.undetermined_covariates,"none");
   if(r.sought_covariates&&r.sought_covariates.length)
     h+=`<p class="sec">looked for and not found &middot; ${r.sought_covariates.length}</p>`
@@ -769,11 +769,11 @@ function generatePanel(){
   const mp=DATA.metrics.provenance;
   h+=`<div class="none">This is the gate as committed. `
     +`The run scored on the <b>Metrics</b> tab `
-    +`was produced from a different frame with this gate `
-    +`switched off, which is the only way any pair reaches the Specifier today: its `
-    +`${DATA.metrics.observed.scored} records all carry the mark above.</div>`;
-  if(!window.COMPASS_ENDPOINT) return h+`<div class="none">Served statically, so the`
-    +` funnel cannot be run from here. The figures above are the committed run.</div>`;
+    +`came from a different frame with this gate `
+    +`switched off, which is currently the only way a pair reaches the Specifier: all `
+    +`${DATA.metrics.observed.scored} of its records carry the mark above.</div>`;
+  if(!window.COMPASS_ENDPOINT) return h+`<div class="none">Served statically, so you`
+    +` cannot run the funnel from here. The figures above are the committed run.</div>`;
   if(!gen) return h+`<div class="after"><button class="g" id="go-gen">Run the funnel now</button></div>`;
   if(gen.running) return h+`<div class="ph"><b>ENUMERATING</b> &mdash; S1 and S2 are`
     +` deterministic and make no language-model call.</div>`;
@@ -840,18 +840,18 @@ function recordCarries(){
     +`<span class="ret">no such field</span></div>`
     +`<div class="t gate fail"><span class="call">causal structure as a typed DAG</span>`
     +`<span class="ret">no such field; a mediator is rejected by the role it was given in a list</span></div></div>`
-    +`<div class="none">The object above is a <code>ProtocolSpecification</code> or a `
-    +`<code>NotSpecifiable</code> refusal. Nothing else is built.</div>`;
+    +`<div class="none">The object above is either a <code>ProtocolSpecification</code> or a `
+    +`<code>NotSpecifiable</code> refusal; the Specifier builds nothing else.</div>`;
 }
 
 function specifierPanel(){
   const j=spec;
   if(j.running) return `<p class="sec">running</p><div class="ph"><b>IN PROGRESS</b>`
     +`${typeof j.elapsed_s==="number"?` &mdash; ${j.elapsed_s}s elapsed`:""}`
-    +` &mdash; a real run: the language model reasons, looking things up in the`
-    +` dictionary as it goes, then writes the record, then the gate checks it.`
-    +` Minutes, not seconds. The run continues on the server whatever happens to`
-    +` this page. One run at a time: a second is refused rather than queued.</div>`;
+    +` &mdash; a real run: the language model reasons, consults the dictionary as`
+    +` it goes, and writes the record, and then the gate checks it. Expect minutes,`
+    +` not seconds. The run continues on the server whatever happens to this page.`
+    +` One run at a time: the server refuses a second run instead of queuing it.</div>`;
   if(j.error) return `<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.error)}</div>`;
   const id=j.identity||{};
   let h=`<p class="sec">run &middot; not a measurement</p><dl>`
@@ -980,9 +980,9 @@ function pairIntakePanel(){
     +`</dl>`;
   h+=`<div class="none">ONE query served both roles. `
     +`<code>deploy/template.py</code> never renders the role, so an exposure `
-    +`request and an outcome request build the identical string &mdash; the two `
-    +`anchors are separated by the language model reading one shared candidate pool, not `
-    +`by two different searches.</div>`;
+    +`request and an outcome request build the identical string. The language model `
+    +`separates the two anchors by reading one shared candidate pool; there are no `
+    +`separate searches.</div>`;
   h+=`<p class="sec">anchors resolved from it</p><dl>`;
   for(const role of ["exposure","outcome"]){
     const a=anchorOf(j.roles&&j.roles[role]);
@@ -1051,14 +1051,14 @@ function livePanel(){
     +`</dl>`
     +(anchors.exposure&&anchors.outcome
       ?`<div class="after"><button class="g" id="go-spec">Run the Specifier on this pair</button></div>`
-      :`<div class="none">Pick both anchors to run the Specifier. Search one construct, use it as exposure; search the other, use it as outcome.</div>`);
+      :`<div class="none">Pick both anchors to run the Specifier: search one construct and use it as the exposure, then search the other and use it as the outcome.</div>`);
   if(j.note) h+=`<p class="sec">known limitation</p>`
     +`<div class="none" style="color:var(--signal)">${esc(j.note)}</div>`;
   return h;
 }
 
 function noRun(){
-  return `<p class="sec">output</p><div class="ph"><b>NO COMMITTED RUN</b> — this page has no encoder and never invents a score. The request is shown verbatim and nothing else: <em>${esc(typed)}</em>. The example buttons above load the runs that were committed with this page; the Generate, Score and Metrics stages do not depend on what you typed and still show their committed runs.</div>`;
+  return `<p class="sec">output</p><div class="ph"><b>NO COMMITTED RUN</b> — this page has no encoder, so it shows your request verbatim and never invents a score: <em>${esc(typed)}</em>. The example buttons above load the runs committed with this page. The Generate, Score and Metrics stages do not depend on what you typed, and they still show their committed runs.</div>`;
 }
 
 function toolLog(log){
@@ -1132,7 +1132,7 @@ function funnelPanel(){
     +row("n source",esc(g.n_sources.join(", ")),true)
     +row("pairs emitted",`<span class="flag">${f.pairs_emitted}</span> without --allow-unestimable`,true)
     +`</dl>`;
-  h+=`<div class="none">The two exports are survey-metadata counts the study team holds. Until they arrive every pair carries the marker above and nothing reaches the Specifier by default.</div>`;
+  h+=`<div class="none">The study team holds the two exports, which are survey-metadata counts. Until they arrive, every pair carries the marker above, and by default no pair reaches the Specifier.</div>`;
   return h;
 }
 
@@ -1178,8 +1178,8 @@ function metricsPanel(){
   const late=m.papers.filter(r=>!r.inventoried_before_2026_08_27).length;
   const noVenue=m.papers.filter(r=>/not recorded/.test(r.venue)).length;
   h+=`<p class="sec major">Cohort bibliography &middot; ${m.papers.length} indexed`
-    +`<em>What the literature published. Nothing here came from the pipeline. The count is a floor on `
-    +`the literature, and the fixed denominator of the ceiling above.</em></p>`
+    +`<em>What the cohort literature published; none of it came from the pipeline. The count is a `
+    +`lower bound on that literature and the fixed denominator of the ceiling above.</em></p>`
     +`<div class="tbl"><table><thead><tr><th>PMID</th><th>year</th><th>venue, as recorded</th>`
     +`<th>design, as the bibliography records it</th><th>n, as the paper reports it</th>`
     +`<th>exposure terms the retriever abstained on</th>`
@@ -1191,9 +1191,9 @@ function metricsPanel(){
     +`</tbody></table></div>`
     +`<div class="none">${late} of ${m.papers.length} rows are marked <span class="flag">late</span>: they entered `
     +`the bibliography when it was rebuilt, shortly before this run. The ceiling above counts all `
-    +`${m.papers.length}, late rows included. ${noVenue} rows carry no venue in the bibliography and read as `
-    +`such. The design column is the bibliography's own prose, exposure to outcome as it wrote it, `
-    +`and the n column is each paper's own unit. ${esc(m.abstained_note)}.</div>`;
+    +`${m.papers.length}, late rows included. ${noVenue} rows have no venue in the bibliography, and the table `
+    +`says so. The design column is the bibliography's own wording of exposure and outcome, and the `
+    +`n column uses each paper's own unit of analysis. ${esc(m.abstained_note)}.</div>`;
 
   const gap=m.not_built.find(x=>x.what.indexOf("per-paper")>-1);
   h+=`<p class="sec">what is still missing from the key</p>`
@@ -1224,7 +1224,7 @@ function metricsPanel(){
      page simply does not render them. Restoring any of them means restoring a
      section, so weigh that before adding a sentence back on its own. */
   h+=`<p class="sec major">What is shipped, and what these figures are`
-    +`<em>The whole run in three paragraphs, closing the tab that scores it.</em></p>`
+    +`<em>The whole run in three paragraphs, at the end of the tab that scores it.</em></p>`
     +`<div class="none">${shippedSummary()}</div>`;
 
   h+=measureHTML();
@@ -1261,36 +1261,36 @@ function scorePanel(){
    file retyping it. */
 function howMeasured(R){
   const f=R.fixture;
-  return `<div class="none"><b>Where the data came from.</b> The search index holds`
-   +` ${f.n_targets.toLocaleString()} entries built from the codebook: some are a`
-   +` single question, some`
-   +` a question paired with one of its answer options, and some stand for a family of`
-   +` sibling questions that share a stem. A request is turned into one line of text and`
-   +` compared against every entry; the closest entry is the answer. Nothing in that`
-   +` comparison is a language model.`
-   +`<br><br>The test set is ${f.n_questions} requests whose right answer is known,`
-   +` plus ${f.n_absent_requests} more written deliberately about things the codebook`
-   +` does not ask about. Those ${f.n_questions} are ${f.n_gold_items} codebook`
-   +` entries described ${f.phrasings_per_item} different ways each, so every count`
-   +` out of ${f.n_questions} below counts requests rather than distinct targets:`
-   +` ${f.phrasings_per_item} of them are ${f.phrasings_per_item} attempts at the`
-   +` same entry, and ${f.n_gold_items} is how many entries were tested at all.`
-   +` The ${f.n_questions} were written by a language model that was`
-   +` shown the right answer's wording first, so every hit rate below is a best case and`
-   +` not a field estimate. The ${f.n_absent_requests} absent requests are the only part`
-   +` of this evaluation that was held back from every choice made while building it.`
-   +` For ${f.n_gold_items_folded_family} of those ${f.n_gold_items} entries the right`
-   +` answer is a family of sibling questions rather than one question, and landing on`
-   +` the family counts as right.`
+  return `<div class="none"><b>Where the data came from.</b> I built the search index`
+   +` from the codebook, and it holds ${f.n_targets.toLocaleString()} entries. An entry`
+   +` is a single question, a question paired with one of its response options, or a`
+   +` family of sibling questions that share a stem. The retriever renders each request`
+   +` as one line of text, scores it against every entry, and returns the closest.`
+   +` No language model takes part in that step.`
+   +`<br><br>The test set holds ${f.n_questions} requests with a known reference entry`
+   +` and ${f.n_absent_requests} requests written about constructs the codebook does`
+   +` not measure. The ${f.n_questions} cover ${f.n_gold_items} codebook entries,`
+   +` each phrased ${f.phrasings_per_item} ways, so every count out of`
+   +` ${f.n_questions} below counts requests, not distinct entries: each block of`
+   +` ${f.phrasings_per_item} requests is ${f.phrasings_per_item} phrasings of one`
+   +` entry, and ${f.n_gold_items} entries were tested in all.`
+   +` A language model wrote the ${f.n_questions} after seeing the reference wording, so`
+   +` every hit rate below is optimistically biased: an upper bound, not an estimate of`
+   +` field performance. The ${f.n_absent_requests} absent requests are the only part`
+   +` of this evaluation I held out from every development decision.`
+   +` For ${f.n_gold_items_folded_family} of the ${f.n_gold_items} entries the reference`
+   +` is a family of sibling questions, and a hit anywhere in the family counts as`
+   +` correct.`
    +`<br><br><b>What each number counts.</b> <em>Top of the list</em> is how often the`
-   +` right entry came back first: ${f.n_top_match_right} of ${f.n_questions}.`
-   +` Another ${f.n_right_construct_wrong_item} landed on the right subject but the`
-   +` wrong question, and those count as misses rather than partial credit.`
-   +` <em>Has a match at all</em> is how well the similarity score tells an answerable`
-   +` request from an absent one. <em>Is the top match right</em> is how well that same`
-   +` score tells a correct answer from a wrong one, which is a different and much`
-   +` harder question. <em>Threshold</em> is the score below which the system declines`
-   +` to answer instead of guessing.</div>`;
+   +` reference entry ranked first: ${f.n_top_match_right} of ${f.n_questions}.`
+   +` Another ${f.n_right_construct_wrong_item} reached the right construct but the`
+   +` wrong question, and I score those as misses, not partial credit.`
+   +` <em>Has a match at all</em> is discrimination between answerable and absent`
+   +` requests: how well the similarity score separates the two groups.`
+   +` <em>Is the top match right</em> is discrimination between correct and incorrect`
+   +` top matches, using the same score, and it is a much harder task.`
+   +` <em>Threshold</em> is the score below which the system abstains instead of`
+   +` guessing.</div>`;
 }
 
 /* THE THREE NUMBERS, SIDE BY SIDE AND NAMED. The panel showed two areas and
@@ -1304,14 +1304,14 @@ function scoreTable(R){
   return `<div class="tbl"><table><thead><tr><th>what was measured</th>`
    +`<th>value</th><th>what it means</th></tr></thead><tbody>`
    +tr("top-1 accuracy",R.top1_accuracy.toFixed(3),
-      `${f.n_top_match_right} of ${f.n_questions} &mdash; the right entry came back`
+      `${f.n_top_match_right} of ${f.n_questions} &mdash; the reference entry ranked`
       +` first`)
    +tr("AUROC, answerable vs absent",A.auroc.toFixed(4),
-      `pick a random answerable request and a random absent one; this is how often`
-      +` the answerable one scores higher`)
+      `the c-statistic: the probability that a random answerable request scores`
+      +` higher than a random absent one`)
    +tr("AUROC, correct vs wrong",B.auroc.toFixed(4),
-      `pick a random right hit and a random wrong hit; this is how often the right`
-      +` one scores higher`)
+      `the c-statistic: the probability that a random correct top match scores`
+      +` higher than a random incorrect one`)
    +`</tbody></table></div>`;
 }
 
@@ -1332,24 +1332,22 @@ function scoreTable(R){
    produced the number are tied together at build time. */
 function whyGap(R){
   const s=R.scores;
-  return `<div class="none"><b>Why one score does those two jobs so differently.</b>`
-   +` Each figure here is a middle-of-the-pack score: at least half the requests in`
-   +` its group scored at or below it, and the figure is itself one of the scores`
-   +` that occurred. It is deliberately not called a median &mdash; on an`
-   +` even-sized group it is the value just above the middle, not the average of`
-   +` the two.`
+  return `<div class="none"><b>Why one score discriminates so differently on the two`
+   +` tasks.</b> Each figure here is a mid-distribution score: at least half the`
+   +` requests in its group scored at or below it, and the figure is one of the`
+   +` observed scores. I do not call it a median, because on an even-sized group it`
+   +` is the value just above the middle, not the mean of the two middle values.`
    +`<br><br><em>An absent request:</em> nothing in the codebook is close, so the`
-   +` best match is weak &mdash; typically ${s.absent_p50.toFixed(4)} against`
-   +` ${s.answerable_p50.toFixed(4)} for a request the codebook can answer. Those`
-   +` two barely overlap, which is the high area.`
-   +`<br><br><em>Answerable but wrong:</em> something IS close, it just is not the`
-   +` right entry &mdash; ${s.right_p50.toFixed(4)} when the top match is`
-   +` right against ${s.wrong_p50.toFixed(4)} when it is wrong, and those two lie`
-   +` on top of each other. The highest-scoring wrong answer is`
-   +` ${s.wrong_max.toFixed(4)}, above the middling right one. The score measures how`
-   +` similar the best entry it found is to the request, not whether that entry is the`
-   +` one you meant &mdash; so a confidently wrong answer is indistinguishable from a`
-   +` confidently right one.</div>`;
+   +` best match is weak &mdash; typically ${s.absent_p50.toFixed(4)}, against`
+   +` ${s.answerable_p50.toFixed(4)} for a request the codebook can answer. The two`
+   +` distributions barely overlap, which is why that area is high.`
+   +`<br><br><em>Answerable but wrong:</em> a close entry exists, but it is not the`
+   +` reference entry. A correct top match scores ${s.right_p50.toFixed(4)} and an`
+   +` incorrect one ${s.wrong_p50.toFixed(4)}, so the two distributions lie on top of`
+   +` each other. The highest-scoring incorrect match reaches`
+   +` ${s.wrong_max.toFixed(4)}, above the typical correct one. The score measures how`
+   +` similar the best entry is to the request, not whether it is the entry you meant,`
+   +` so it cannot separate a confident wrong answer from a confident right one.</div>`;
 }
 
 /* TWO CURVES, NOT ONE. The bundle publishes a single area, close enough to one
@@ -1378,24 +1376,24 @@ function rocFig(R){
      `costFig`'s own `.fig`/`.yl`/`.xl` grid, so this adds no stylesheet. */
   const lo=`${ax.min}%`, hi=`${ax.max}%`;
   return `<div class="rocw"><div class="fig">`
-   +`<div class="yl">accepted, of those it should accept</div>`
+   +`<div class="yl">sensitivity: accepted, of those it should accept</div>`
    +`<div class="roc">`+dots(A,"a")+dots(B,"b")
    +`<span class="op" style="--x:${op.x};--y:${op.y}"><b>where it runs</b></span></div>`
    +`<div class="xl"><span>${lo}</span><span>${hi}</span>`
-   +`<span class="ax">accepted, of those it should decline</span></div></div>`
+   +`<span class="ax">false-positive rate: accepted, of those it should decline</span></div></div>`
    +`<div class="key"><i class="a"></i><b>${esc(A.what)}</b><br>`
    +`area under the curve ${A.auroc.toFixed(4)} &middot; ${A.n_positive} answerable`
    +` against ${A.n_negative} absent<br><br>`
    +`<i class="b"></i><b>${esc(B.what)}</b><br>`
-   +`area under the curve ${B.auroc.toFixed(4)} &middot; ${B.n_positive} right against`
-   +` ${B.n_negative} wrong<br><br>`
+   +`area under the curve ${B.auroc.toFixed(4)} &middot; ${B.n_positive} correct against`
+   +` ${B.n_negative} incorrect<br><br>`
    +`<i></i>both axes run from ${lo} at the bottom-left corner to ${hi} at the far`
-   +` end, and a score that knew nothing would fall on the diagonal between that`
-   +` corner and the opposite one, where the two shares are equal<br><br>`
+   +` end. A score with no discriminating power falls on the diagonal from that`
+   +` corner to the opposite one, where the two rates are equal<br><br>`
    +`<b>where it runs</b><br>threshold ${ab.min_cos}, which declines`
    +` ${ab.negatives_rejected} of the ${ab.n_negatives} requests the codebook cannot`
-   +` answer. Up and to the left is better. The lower curve sits only just above`
-   +` that diagonal, which is what its area means.</div></div>`;
+   +` answer. Up and to the left is better. The lower curve sits just above that`
+   +` diagonal, and its area says the same.</div></div>`;
 }
 
 /* COST AGAINST RECALL, for the frozen-encoder sweep. Eleven columns over five
@@ -1488,29 +1486,28 @@ function topicFig(L,n){
      +`<span class="nm">${esc(s.topic)}</span>`
      +`<span class="track"><span class="fill" style="--v:${s.recall_at_1}"></span></span>`
      +`<span class="vl">${s.recall_at_1.toFixed(3)} &middot; n=${s.n}</span></div>`).join("")
-   +`</div><div class="none">Each bar is one topic, and its length is how often`
-   +` search put the right codebook entry first for the requests about that topic.`
-   +`<br><br><b>What a request is.</b> A short description of something someone`
-   +` wants to measure, of the kind you would type into the box at the top of this`
-   +` page. Every request used here was written from a single codebook entry, and`
-   +` that entry is what counts as the right answer for it &mdash; so "first" means`
-   +` the entry the request was written from came back at the top of the list.`
+   +`</div><div class="none">Each bar is one topic. Its length is how often search`
+   +` ranked the reference codebook entry first for requests about that topic.`
+   +`<br><br><b>What a request is.</b> A short description of something a`
+   +` researcher wants to measure, like what you would type into the box at the top`
+   +` of this page. A language model wrote every request here from a single codebook`
+   +` entry, and that entry is its reference standard, so "first" means the source entry ranked at`
+   +` the top of the list.`
    +`${built===n
-      ? ` There are ${p.gold_items} such entries, each described`
-        +` ${p.phrasings_per_item} different ways, which is the ${n} requests with a`
-        +` known right answer.`
+      ? ` There are ${p.gold_items} such entries, each phrased`
+        +` ${p.phrasings_per_item} ways, which gives the ${n} requests with a`
+        +` known reference entry.`
       : ` There are ${n} such requests, several per entry.`}`
    +`<br><br>`
    +`${cov===null?"":cov===n
-      ? `Every topic those requests fall into has a bar &mdash; ${rows.length} of`
-        +` them, between them all ${n} requests.`
-      : `${rows.length} topics are broken out here, between them ${cov} of the`
-        +` ${n} requests, and the remaining ${n-cov} are not shown.`}`
+      ? `Every topic those requests fall into has a bar &mdash; ${rows.length} in`
+        +` all, covering all ${n} requests.`
+      : `The chart breaks out ${rows.length} topics, covering ${cov} of the`
+        +` ${n} requests, and omits the remaining ${n-cov}.`}`
    +` n counts requests, not entries, so a bar at n=${p.phrasings_per_item} rests`
-   +` on one entry: the narrowest bars are the least evidence, however long they`
-   +` look. There are no requests at all on ${none}, so those topics have no bar`
-   +` &mdash; how well search does there has never been measured, which is not the`
-   +` same as it doing well.</div>`;
+   +` on a single entry: the smallest samples carry the least evidence, however long`
+   +` their bars look. No requests fall on ${none}, so those topics have no bar.`
+   +` Search performance there is unmeasured, which is not the same as good.</div>`;
 }
 
 function measureHTML(){
@@ -1524,12 +1521,12 @@ function measureHTML(){
   /* The whole of the manifest's known limitations, not the first clause. The
      comparison below is exactly the one these sentences qualify. */
   h+=`<p class="sec">known limitations · ${esc(L.source)}</p><dl>`
-    +row("fixture queries",`written by the same generator family as the ${L.training_pairs.toLocaleString()} training pairs, with sight of the gold wording`)
+    +row("fixture queries",`written by the same generator family as the ${L.training_pairs.toLocaleString()} training pairs, after seeing the reference wording`)
     +row("gain over frozen",`${R1} ${L.gain_r1_over_frozen_bge_small.toFixed(3)} for the fine-tuned model over frozen bge-small on the no-template arm · <span class="flag">${esc(L.register_alignment_share)}</span> share of it is register alignment`,true)
     +row("lexical leakage",`${L.lexical_leakage.measured?"measured":"not measured"} and it ${L.lexical_leakage.survives?"survives":"does not survive"}: item-level Spearman ${L.lexical_leakage.item_level_spearman} (permutation p ${L.lexical_leakage.permutation_p}); ${R1} by query-to-gold overlap quartile ${L.lexical_leakage.r1_by_query_gold_overlap_quartile.map(q=>q.toFixed(3)).join(" / ")}, ${L.lexical_leakage.monotonic?"monotonic":"non-monotonic"}${L.lexical_leakage.flat_within_query_length_groups?", flat within every query-length group":""}`,true)
-    +row("phrasing",`${L.phrasing.items_retrieved_on_no_phrasing} of ${L.phrasing.gold_items} gold items retrieved on none of their ${L.phrasing.phrasings_per_item} phrasings, ${L.phrasing.items_retrieved_on_one_phrasing} on one`,true)
+    +row("phrasing",`${L.phrasing.items_retrieved_on_no_phrasing} of ${L.phrasing.gold_items} reference entries missed on all ${L.phrasing.phrasings_per_item} of their phrasings, ${L.phrasing.items_retrieved_on_one_phrasing} retrieved on only one`,true)
     +`</dl>`;
-  h+=`<p class="sec">how often search put the right codebook entry first · by topic</p>`
+  h+=`<p class="sec">how often search ranked the reference entry first · by topic</p>`
    +topicFig(L,n);
   h+=`<p class="sec">encoder sweep · ${esc(m.sweep.what)} · ${esc(m.sweep.machine)}</p>`
    +costFig(m,R1)
@@ -1538,21 +1535,21 @@ function measureHTML(){
    +m.sweep.rows.map(r=>`<tr>${m.sweep.columns.map(([k])=>`<td>${cell(k,r[k])}</td>`).join("")}</tr>`).join("")
    +`</tbody></table></div></details>
   <p class="prov">${esc(m.provenance.sweep_artifacts_note)}</p>
-  <div class="none">R@k is the share of the ${n} positive queries whose gold target ranked in the top k. No row is marked best: differences of a few hundredths between rows are within what a ${n}-row fixture can resolve, and no interval is computed here.</div>`;
+  <div class="none">R@k is the share of the ${n} positive queries whose reference target ranked in the top k. I mark no row as best: a difference of a few hundredths is within what a ${n}-row fixture can resolve, and I compute no confidence interval here.</div>`;
   h+=`<p class="sec">shipped model · ${esc(sh.model)} · ${sh.params_m}M params · ${esc(sh.training.negatives)} · ${sh.n_targets.toLocaleString()} targets</p>
   <div class="tbl"><table><thead><tr><th>query arm</th>${sh.arm_columns.map(([,l])=>`<th>${esc(l)}</th>`).join("")}<th>negatives rejected</th><th>AUROC absent vs present</th></tr></thead><tbody>`
    +[["S",S],["I",I]].map(([k,a])=>`<tr><td>${k} · ${esc(a.label)}</td>${sh.arm_columns.map(([c])=>`<td>${cell(c,a[c])}</td>`).join("")}<td>${a.negatives_rejected} / ${a.n_negatives}</td><td>${a.auroc_absent_vs_present.toFixed(3)}</td></tr>`).join("")
    +`</tbody></table></div>
-  <div class="none">Both arms are one model on one machine; they differ only in how the query was rendered. AUROC is shown to three places: it is computed over ${I.n_negatives} negatives and ${n} positives, and the two arms reject the same count.</div>
-  <p class="sec">what the similarity score can and cannot tell apart &middot; arm S &middot; ${esc(S.label)}</p>
-  <div class="none">Everything in this section &mdash; the three numbers, both curves, the operating point and the medians &mdash; is arm S, <em>${esc(S.label)}</em>. That is <b>not</b> the arm that ships. The shipped contract is arm I, <em>${esc(I.label)}</em>, and the threshold row that closes this section is arm I. The arms differ only in how the request was rendered, so a figure here and a figure there are not two measurements of one quantity: the coverage tabulated below is arm I's, and it is not the operating point drawn above. Arm I's version of these two curves is not published in any artifact this page loads, which is why the curves shown are arm S's.</div>`
+  <div class="none">Both arms run one model on one machine and differ only in how the query was rendered. AUROC is shown to three places because it is computed over ${I.n_negatives} negatives and ${n} positives, and the two arms reject the same count.</div>
+  <p class="sec">what the similarity score can and cannot discriminate &middot; arm S &middot; ${esc(S.label)}</p>
+  <div class="none">Everything in this section is arm S, <em>${esc(S.label)}</em>: the three numbers, both curves, the operating point and the mid-distribution scores. Arm S is <b>not</b> the arm that ships. The shipped contract is arm I, <em>${esc(I.label)}</em>, and the threshold row at the end of this section is arm I. Because the arms differ in how the request was rendered, a figure from each is not two measurements of one quantity: the coverage in the table below is arm I's, and it is not the operating point drawn above. No artifact this page loads publishes arm I's version of these curves, so the curves shown are arm S's.</div>`
    +scoreTable(R)
    +rocFig(R)
    +whyGap(R)
    +`<div class="tbl"><table><thead><tr><th>threshold</th><th>min_cos</th><th>coverage</th><th>precision</th><th>recall</th><th>F1</th><th>candidate values</th><th>latency</th></tr></thead><tbody>
    <tr><td>shipped &middot; arm I &middot; F1-maximising over the same ${n} positives it is reported on</td><td>${th.min_cos.toFixed(6)}</td><td>${th.coverage.toFixed(4)}</td><td>${th.precision.toFixed(4)}</td><td>${th.recall.toFixed(4)}</td><td>${th.f1.toFixed(4)}</td><td>${th.candidate_taus}</td><td>${lat.query_ms_isolated_single} ms · ${esc(lat.machine)} · ${lat.threads} threads</td></tr>
   </tbody></table></div>
-  <div class="none">This row is arm I &mdash; <em>${esc(I.label)}</em> &mdash; not the arm S the curves above are drawn from. Coverage: ${esc(th.definitions.coverage)}. Precision: ${esc(th.definitions.precision)}. Recall: ${esc(th.definitions.recall)}. This recall is not the ${R1} above: ${R1} counts every query, this one only those that cleared min_cos. ${esc(th.selection_note)}.</div>
+  <div class="none">This row is arm I, <em>${esc(I.label)}</em>, not arm S, which the curves above are drawn from. Coverage: ${esc(th.definitions.coverage)}. Precision, the positive predictive value: ${esc(th.definitions.precision)}. Recall, the sensitivity: ${esc(th.definitions.recall)}. This recall differs from the ${R1} above: ${R1} counts every query, and this one counts only queries that cleared min_cos. ${esc(th.selection_note)}.</div>
   <p class="prov">${esc(lat.note)}</p>`;
   h+=`<div class="none">${esc(sh.wrong_pick_detection.note)}.</div>`;
   return h;
@@ -1577,14 +1574,14 @@ function measureHTML(){
    panel it describes. */
 function provenanceLine(){
   return `${panelLive
-      ? `The panel above was produced by this server during this session. Its figures come from that run and are <b>not</b> committed &mdash; nothing on this page pins them, and a second run may differ. Every other figure here is loaded from <code>site/artifacts/</code> with its run id or commit.`
-      : `Every figure above is loaded from <code>site/artifacts/</code> with its run id or commit; nothing on this panel was produced by your query.`} Panels marked NO RECORD ON THIS PAGE carry no committed record and show no numbers.`;
+      ? `This server produced the panel above during this session. Its figures come from that run and are <b>not</b> committed: nothing on this page pins them, and a second run may differ. Every other figure here loads from <code>site/artifacts/</code> with its run id or commit.`
+      : `Every figure above loads from <code>site/artifacts/</code> with its run id or commit; your query produced nothing on this panel.`} Panels marked NO RECORD ON THIS PAGE have no committed record and show no numbers.`;
 }
 
 function shippedSummary(){
   const m=DATA.measurements, sh=m.shipped, I=sh.arms.I, lat=sh.latency, o=DATA.metrics.observed;
-  return `<p>Retrieval is in use: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, no language-model call. Hypothesis generation is gated: the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} pairs without two survey-metadata exports, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>. The one scored run switched that gate off; it emitted ${o.scored} records, of which ${o.matched} matched against a ceiling of ${DATA.metrics.ceiling.max_matched}.</p>
-  <p>Abstention on constructs the instrument does not measure: ${I.negatives_rejected} of ${I.n_negatives} held-out negatives rejected on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(3)}). Its recall is an upper bound, not an open question: the fixture's queries were written with sight of the gold wording, by the same generator family as the training pairs. Detecting its own wrong pick is a different question; that figure was measured, withdrawn from git, and is not reproducible from this page.</p>
+  return `<p>Retrieval is in use: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, and no language-model call. Hypothesis generation is gated. Without two survey-metadata exports, the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} exposure–outcome pairs, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>. The one scored run switched that gate off and emitted ${o.scored} records; ${o.matched} matched, against a ceiling of ${DATA.metrics.ceiling.max_matched}.</p>
+  <p>The retriever abstains on constructs the instrument does not measure: it rejected ${I.negatives_rejected} of ${I.n_negatives} held-out negatives on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(3)}). Its recall is an upper bound by construction, because the same generator family that wrote the training pairs wrote the fixture's queries after seeing the reference wording. Detecting its own wrong pick is a separate question: that figure was measured, then withdrawn from git, and this page cannot reproduce it.</p>
   <p>${provenanceLine()}</p>`;
 }
 
@@ -1600,7 +1597,7 @@ function foot(){
 /* What the static page can and cannot do, said beside the controls that do it. */
 function servedNote(){
   return window.COMPASS_ENDPOINT?""
-    :"Served statically: the example runs and Search only work here. Asking the pipeline needs the live server, so that button is off.";
+    :"Served statically: the example runs and Search only work here. Ask the pipeline requires the live server, so that button is off.";
 }
 
 function panelPNG(){
@@ -1674,12 +1671,12 @@ function posedPair(){
 
 function posedRetrieverPanel(){
   return `<p class="sec">tool calls</p>`
-   +`<div class="none">None. Nothing was retrieved for this run.</div>`
+   +`<div class="none">None. This run retrieved nothing.</div>`
    +`<p class="sec">output</p>`
-   +`<div class="ph"><b>NO RETRIEVAL WAS RUN</b> &mdash; this pair was posed`
+   +`<div class="ph"><b>NO RETRIEVAL WAS RUN</b> &mdash; you posed this pair`
    +` directly from ${esc(posed.source_label)}, so the deployed retriever scored`
-   +` no vectors. There is no cosine, no threshold decision and no abstention to`
-   +` show, and this panel will not borrow another run's.</div>`
+   +` no vectors. There is no cosine, threshold decision or abstention to show,`
+   +` and this panel does not borrow them from another run.</div>`
    +`<p class="sec">what went to the Specifier instead</p>`+posedPair()
    +(posed.question?`<p class="sec">the question this pair stands for</p>`
      +`<div class="none">${esc(posed.question)}</div>`:``);
@@ -1694,8 +1691,8 @@ function posedIntakePanel(){
   return `<p class="sec">tool calls</p><div class="none">None.</div>`
    +`<p class="sec">output</p>`
    +`<div class="ph"><b>NO QUERY WAS RENDERED</b> &mdash; intake turns a request`
-   +` into a query for the retriever. Both anchors were already keys, so there`
-   +` was nothing to render and nothing to drop as covered.</div>`
+   +` into a query for the retriever. Both anchors arrived as keys, so intake had`
+   +` nothing to render and nothing to drop as covered.</div>`
    +`<p class="sec">the pair</p>`+posedPair();
 }
 
@@ -1732,9 +1729,9 @@ function declinedRoles(){
   for(const role of ["exposure","outcome"]){
     const v=ask.roles[role];
     if(!v||v.verdict==="resolved"||v.verdict==="pinned") continue;
-    h+=`<div class="none" style="color:var(--signal)">The language model would`
-      +` not commit to the <b>${esc(role)}</b>, so nothing was filled in for it.`
-      +` Pick one below, or ask again more specifically.</div>`
+    h+=`<div class="none" style="color:var(--signal)">The language model did not`
+      +` commit to an <b>${esc(role)}</b>, so the field is empty.`
+      +` Pick a candidate below, or ask again with a more specific request.</div>`
       +roleBlock(role,v);
   }
   return h;
@@ -1749,9 +1746,9 @@ function askForm(){
      wording, because the press of Run is the confirmation and confirming
      something unreadable is not confirming. */
   let h=`<p class="sec lead">ask for a pair</p>`
-    +`<div class="none">Type what you want to measure. Retrieval offers`
-    +` candidates, a language model proposes which is the exposure and which the`
-    +` outcome, and both land in the fields below for you to check. Nothing runs`
+    +`<div class="none">Describe the association you want to study. Retrieval`
+    +` offers candidate variables, a language model proposes the exposure and the`
+    +` outcome, and both appear in the fields below for you to check. Nothing runs`
     +` until you press Run.</div>`
     +`<div class="pair">`
     +`<input id="spec-q" aria-label="what to measure"`
@@ -1770,9 +1767,9 @@ function askForm(){
 function keyForm(){
   const ew=proposedWording("exposure"), ow=proposedWording("outcome");
   let h=`<p class="sec lead">or state the pair yourself</p>`
-    +`<div class="none">A variable represents one question in the codebook, you`
-    +` can either use a prompt or specific codebook keys, if no key is identified`
-    +` the model refuses.</div>`
+    +`<div class="none">Each variable is one question in the codebook. Describe the`
+    +` pair in words above, or enter an exposure key and an outcome key here. If no`
+    +` key is identified, the model refuses to run.</div>`
     +`<div class="pair">`
     +`<input id="spec-ex" aria-label="exposure key" placeholder="exposure key"`
     +` value="${att(anchors.exposure||"")}">`
@@ -1800,8 +1797,8 @@ function keyForm(){
        dimension and every candidate with a `use` button wired by the handler
        below, so it is reused rather than reimplemented. */
     +declinedRoles()
-    +`<div class="none">One run at a time &mdash; a second is refused rather than`
-    +` queued, not silently made to wait.</div>`;
+    +`<div class="none">One run at a time: the server refuses a second run instead`
+    +` of queuing it.</div>`;
   return h;
 }
 
@@ -1879,9 +1876,9 @@ function draw(){
   try{ h+=stagePanel(s); }
   catch(err){
     console.error("panel failed", sel, err);
-    h+=`<div class="none"><b>This panel could not be drawn.</b> The rest of the
+    h+=`<div class="none"><b>This panel failed to render.</b> The rest of the
         page still works: pick another stage, or run the request again. The
-        browser console has the full error.<br><code>${esc(String(err&&err.message||err))}</code></div>`;
+        browser console shows the full error.<br><code>${esc(String(err&&err.message||err))}</code></div>`;
   }
   h+=`<div class="after">`
     +(panelHasRecord()?`<button class="g" id="dl-json">Download this record as JSON</button>`:"")

@@ -43,7 +43,7 @@
     "busy?\" disabled\":\"\"",
     "busy?\"proposing&hellip;\":\"Propose a pair\""
    ],
-   "text": "ask for a pair Type what you want to measure. Retrieval offers candidates, a language model proposes which is the exposure and which the outcome, and both land in the fields below for you to check. Nothing runs until you press Run. {2}"
+   "text": "ask for a pair Describe the association you want to study. Retrieval offers candidate variables, a language model proposes the exposure and the outcome, and both appear in the fields below for you to check. Nothing runs until you press Run. {2}"
   },
   {
    "id": "cell.both-arms-one-model",
@@ -56,7 +56,7 @@
     "esc(S.label)",
     "esc(I.label)"
    ],
-   "text": "Both arms are one model on one machine; they differ only in how the query was rendered. AUROC is shown to three places: it is computed over {0} negatives and {1} positives, and the two arms reject the same count. what the similarity score can and cannot tell apart · arm S · {2} Everything in this section — the three numbers, both curves, the operating point and the medians — is arm S, {3} . That is not the arm that ships. The shipped contract is arm I, {4} , and the threshold row that closes this section is arm I. The arms differ only in how the request was rendered, so a figure here and a figure there are not two measurements of one quantity: the coverage tabulated below is arm I's, and it is not the operating point drawn above. Arm I's version of these two curves is not published in any artifact this page loads, which is why the curves shown are arm S's."
+   "text": "Both arms run one model on one machine and differ only in how the query was rendered. AUROC is shown to three places because it is computed over {0} negatives and {1} positives, and the two arms reject the same count. what the similarity score can and cannot discriminate · arm S · {2} Everything in this section is arm S, {3} : the three numbers, both curves, the operating point and the mid-distribution scores. Arm S is not the arm that ships. The shipped contract is arm I, {4} , and the threshold row at the end of this section is arm I. Because the arms differ in how the request was rendered, a figure from each is not two measurements of one quantity: the coverage in the table below is arm I's, and it is not the operating point drawn above. No artifact this page loads publishes arm I's version of these curves, so the curves shown are arm S's."
   },
   {
    "id": "cell.fine-tuned-model-over",
@@ -79,14 +79,14 @@
     "L.phrasing.phrasings_per_item",
     "L.phrasing.items_retrieved_on_one_phrasing"
    ],
-   "text": "{0} of {1} gold items retrieved on none of their {2} phrasings, {3} on one"
+   "text": "{0} of {1} reference entries missed on all {2} of their phrasings, {3} retrieved on only one"
   },
   {
    "id": "cell.how-often-search-put",
    "kind": "block",
    "where": "site/index.html::cell",
    "slots": [],
-   "text": "how often search put the right codebook entry first · by topic"
+   "text": "how often search ranked the reference entry first · by topic"
   },
   {
    "id": "cell.item-level-spearman-permutation",
@@ -113,7 +113,7 @@
     "n",
     "n"
    ],
-   "text": "{0} R@k is the share of the {1} positive queries whose gold target ranked in the top k. No row is marked best: differences of a few hundredths between rows are within what a {2}-row fixture can resolve, and no interval is computed here."
+   "text": "{0} R@k is the share of the {1} positive queries whose reference target ranked in the top k. I mark no row as best: a difference of a few hundredths is within what a {2}-row fixture can resolve, and I compute no confidence interval here."
   },
   {
    "id": "cell.same-five-rows-as",
@@ -161,7 +161,7 @@
     "esc(th.selection_note)",
     "esc(lat.note)"
    ],
-   "text": "threshold min_cos coverage precision recall F1 candidate values latency shipped · arm I · F1-maximising over the same {0} positives it is reported on {1} {2} {3} {4} {5} {6} {7} ms · {8} · {9} threads This row is arm I — {10} — not the arm S the curves above are drawn from. Coverage: {11}. Precision: {12}. Recall: {13}. This recall is not the {14} above: {15} counts every query, this one only those that cleared min_cos. {16}. {17}"
+   "text": "threshold min_cos coverage precision recall F1 candidate values latency shipped · arm I · F1-maximising over the same {0} positives it is reported on {1} {2} {3} {4} {5} {6} {7} ms · {8} · {9} threads This row is arm I, {10} , not arm S, which the curves above are drawn from. Coverage: {11}. Precision, the positive predictive value: {12}. Recall, the sensitivity: {13}. This recall differs from the {14} above: {15} counts every query, and this one counts only queries that cleared min_cos. {16}. {17}"
   },
   {
    "id": "cell.written-by-same-generator",
@@ -170,7 +170,7 @@
    "slots": [
     "L.training_pairs.toLocaleString()"
    ],
-   "text": "written by the same generator family as the {0} training pairs, with sight of the gold wording"
+   "text": "written by the same generator family as the {0} training pairs, after seeing the reference wording"
   },
   {
    "id": "declinedRoles.language-model-would-commit",
@@ -179,14 +179,14 @@
    "slots": [
     "esc(role)"
    ],
-   "text": "The language model would not commit to the {0} , so nothing was filled in for it. Pick one below, or ask again more specifically."
+   "text": "The language model did not commit to an {0} , so the field is empty. Pick a candidate below, or ask again with a more specific request."
   },
   {
    "id": "dots.accepted-those-should-accept",
    "kind": "block",
    "where": "site/index.html::dots",
    "slots": [],
-   "text": "accepted, of those it should accept"
+   "text": "sensitivity: accepted, of those it should accept"
   },
   {
    "id": "dots.where-runs-accepted-those",
@@ -211,7 +211,7 @@
     "ab.negatives_rejected",
     "ab.n_negatives"
    ],
-   "text": "where it runs {2} {3} accepted, of those it should decline {4} area under the curve {5} · {6} answerable against {7} absent {8} area under the curve {9} · {10} right against {11} wrong both axes run from {12} at the bottom-left corner to {13} at the far end, and a score that knew nothing would fall on the diagonal between that corner and the opposite one, where the two shares are equal where it runs threshold {14}, which declines {15} of the {16} requests the codebook cannot answer. Up and to the left is better. The lower curve sits only just above that diagonal, which is what its area means."
+   "text": "where it runs {2} {3} false-positive rate: accepted, of those it should decline {4} area under the curve {5} · {6} answerable against {7} absent {8} area under the curve {9} · {10} correct against {11} incorrect both axes run from {12} at the bottom-left corner to {13} at the far end. A score with no discriminating power falls on the diagonal from that corner to the opposite one, where the two rates are equal where it runs threshold {14}, which declines {15} of the {16} requests the codebook cannot answer. Up and to the left is better. The lower curve sits just above that diagonal, and its area says the same."
   },
   {
    "id": "draw.download-record-as-json",
@@ -227,7 +227,7 @@
    "slots": [
     "esc(String(err&&err.message||err))"
    ],
-   "text": "This panel could not be drawn. The rest of the page still works: pick another stage, or run the request again. The browser console has the full error. {0}"
+   "text": "This panel failed to render. The rest of the page still works: pick another stage, or run the request again. The browser console shows the full error. {0}"
   },
   {
    "id": "dropped.encoder-did-see-what",
@@ -273,7 +273,7 @@
    "kind": "block",
    "where": "site/index.html::funnelPanel",
    "slots": [],
-   "text": "The two exports are survey-metadata counts the study team holds. Until they arrive every pair carries the marker above and nothing reaches the Specifier by default."
+   "text": "The study team holds the two exports, which are survey-metadata counts. Until they arrive, every pair carries the marker above, and by default no pair reaches the Specifier."
   },
   {
    "id": "gen.artifacts-did-load-data",
@@ -307,14 +307,14 @@
     "f.n_questions",
     "f.n_right_construct_wrong_item"
    ],
-   "text": "Where the data came from. The search index holds {0} entries built from the codebook: some are a single question, some a question paired with one of its answer options, and some stand for a family of sibling questions that share a stem. A request is turned into one line of text and compared against every entry; the closest entry is the answer. Nothing in that comparison is a language model. The test set is {1} requests whose right answer is known, plus {2} more written deliberately about things the codebook does not ask about. Those {3} are {4} codebook entries described {5} different ways each, so every count out of {6} below counts requests rather than distinct targets: {7} of them are {8} attempts at the same entry, and {9} is how many entries were tested at all. The {10} were written by a language model that was shown the right answer's wording first, so every hit rate below is a best case and not a field estimate. The {11} absent requests are the only part of this evaluation that was held back from every choice made while building it. For {12} of those {13} entries the right answer is a family of sibling questions rather than one question, and landing on the family counts as right. What each number counts. Top of the list is how often the right entry came back first: {14} of {15}. Another {16} landed on the right subject but the wrong question, and those count as misses rather than partial credit. Has a match at all is how well the similarity score tells an answerable request from an absent one. Is the top match right is how well that same score tells a correct answer from a wrong one, which is a different and much harder question. Threshold is the score below which the system declines to answer instead of guessing."
+   "text": "Where the data came from. I built the search index from the codebook, and it holds {0} entries. An entry is a single question, a question paired with one of its response options, or a family of sibling questions that share a stem. The retriever renders each request as one line of text, scores it against every entry, and returns the closest. No language model takes part in that step. The test set holds {1} requests with a known reference entry and {2} requests written about constructs the codebook does not measure. The {3} cover {4} codebook entries, each phrased {5} ways, so every count out of {6} below counts requests, not distinct entries: each block of {7} requests is {8} phrasings of one entry, and {9} entries were tested in all. A language model wrote the {10} after seeing the reference wording, so every hit rate below is optimistically biased: an upper bound, not an estimate of field performance. The {11} absent requests are the only part of this evaluation I held out from every development decision. For {12} of the {13} entries the reference is a family of sibling questions, and a hit anywhere in the family counts as correct. What each number counts. Top of the list is how often the reference entry ranked first: {14} of {15}. Another {16} reached the right construct but the wrong question, and I score those as misses, not partial credit. Has a match at all is discrimination between answerable and absent requests: how well the similarity score separates the two groups. Is the top match right is discrimination between correct and incorrect top matches, using the same score, and it is a much harder task. Threshold is the score below which the system abstains instead of guessing."
   },
   {
    "id": "id.tool-calls-none-output",
    "kind": "block",
    "where": "site/index.html::id",
    "slots": [],
-   "text": "tool calls None. output NO QUERY WAS RENDERED — intake turns a request into a query for the retriever. Both anchors were already keys, so there was nothing to render and nothing to drop as covered. the pair"
+   "text": "tool calls None. output NO QUERY WAS RENDERED — intake turns a request into a query for the retriever. Both anchors arrived as keys, so intake had nothing to render and nothing to drop as covered. the pair"
   },
   {
    "id": "intakePanel.every-content-word-already",
@@ -337,7 +337,7 @@
    "kind": "block",
    "where": "site/index.html::keyForm",
    "slots": [],
-   "text": "One run at a time — a second is refused rather than queued, not silently made to wait."
+   "text": "One run at a time: the server refuses a second run instead of queuing it."
   },
   {
    "id": "keyForm.or-state-pair-yourself",
@@ -347,7 +347,7 @@
     "att(anchors.exposure||\"\")",
     "att(anchors.outcome||\"\")"
    ],
-   "text": "or state the pair yourself A variable represents one question in the codebook, you can either use a prompt or specific codebook keys, if no key is identified the model refuses."
+   "text": "or state the pair yourself Each variable is one question in the codebook. Describe the pair in words above, or enter an exposure key and an outcome key here. If no key is identified, the model refuses to run."
   },
   {
    "id": "livePanel.live-retrieval-served-by",
@@ -361,7 +361,7 @@
    "kind": "block",
    "where": "site/index.html::livePanel",
    "slots": [],
-   "text": "Pick both anchors to run the Specifier. Search one construct, use it as exposure; search the other, use it as outcome."
+   "text": "Pick both anchors to run the Specifier: search one construct and use it as the exposure, then search the other and use it as the outcome."
   },
   {
    "id": "livePanel.run-specifier-pair",
@@ -384,7 +384,7 @@
    "slots": [
     "m.papers.length"
    ],
-   "text": "Cohort bibliography · {0} indexed What the literature published. Nothing here came from the pipeline. The count is a floor on the literature, and the fixed denominator of the ceiling above. PMID year venue, as recorded design, as the bibliography records it n, as the paper reports it exposure terms the retriever abstained on"
+   "text": "Cohort bibliography · {0} indexed What the cohort literature published; none of it came from the pipeline. The count is a lower bound on that literature and the fixed denominator of the ceiling above. PMID year venue, as recorded design, as the bibliography records it n, as the paper reports it exposure terms the retriever abstained on"
   },
   {
    "id": "metricsPanel.how-scored-set-produced",
@@ -413,7 +413,7 @@
     "noVenue",
     "esc(m.abstained_note)"
    ],
-   "text": "{0} of {1} rows are marked late : they entered the bibliography when it was rebuilt, shortly before this run. The ceiling above counts all {2}, late rows included. {3} rows carry no venue in the bibliography and read as such. The design column is the bibliography's own prose, exposure to outcome as it wrote it, and the n column is each paper's own unit. {4}."
+   "text": "{0} of {1} rows are marked late : they entered the bibliography when it was rebuilt, shortly before this run. The ceiling above counts all {2}, late rows included. {3} rows have no venue in the bibliography, and the table says so. The design column is the bibliography's own wording of exposure and outcome, and the n column uses each paper's own unit of analysis. {4}."
   },
   {
    "id": "metricsPanel.verdicts-scoring-run",
@@ -429,7 +429,7 @@
    "slots": [
     "shippedSummary()"
    ],
-   "text": "What is shipped, and what these figures are The whole run in three paragraphs, closing the tab that scores it. {0}"
+   "text": "What is shipped, and what these figures are The whole run in three paragraphs, at the end of the tab that scores it. {0}"
   },
   {
    "id": "metricsPanel.what-still-missing-from",
@@ -447,14 +447,14 @@
    "slots": [
     "esc(typed)"
    ],
-   "text": "output NO COMMITTED RUN — this page has no encoder and never invents a score. The request is shown verbatim and nothing else: {0} . The example buttons above load the runs that were committed with this page; the Generate, Score and Metrics stages do not depend on what you typed and still show their committed runs."
+   "text": "output NO COMMITTED RUN — this page has no encoder, so it shows your request verbatim and never invents a score: {0} . The example buttons above load the runs committed with this page. The Generate, Score and Metrics stages do not depend on what you typed, and they still show their committed runs."
   },
   {
    "id": "pairIntakePanel.one-query-served-both",
    "kind": "block",
    "where": "site/index.html::pairIntakePanel",
    "slots": [],
-   "text": "ONE query served both roles. deploy/template.py never renders the role, so an exposure request and an outcome request build the identical string — the two anchors are separated by the language model reading one shared candidate pool, not by two different searches."
+   "text": "ONE query served both roles. deploy/template.py never renders the role, so an exposure request and an outcome request build the identical string. The language model separates the two anchors by reading one shared candidate pool; there are no separate searches."
   },
   {
    "id": "pairIntakePanel.what-encoded-live-committed",
@@ -479,16 +479,16 @@
    "slots": [
     "esc(posed.source_label)"
    ],
-   "text": "tool calls None. Nothing was retrieved for this run. output NO RETRIEVAL WAS RUN — this pair was posed directly from {0}, so the deployed retriever scored no vectors. There is no cosine, no threshold decision and no abstention to show, and this panel will not borrow another run's. what went to the Specifier instead"
+   "text": "tool calls None. This run retrieved nothing. output NO RETRIEVAL WAS RUN — you posed this pair directly from {0}, so the deployed retriever scored no vectors. There is no cosine, threshold decision or abstention to show, and this panel does not borrow them from another run. what went to the Specifier instead"
   },
   {
    "id": "provenanceLine.panels-marked-record-page",
    "kind": "block",
    "where": "site/index.html::provenanceLine",
    "slots": [
-    "panelLive\n      ? `The panel above was produced by this server during this session. Its figures come from that run and are <b>not</b> committed &mdash; nothing on this page pins them, and a second run may differ. Every other figure here is loaded from <code>site/artifacts/</code> with its run id or commit.`\n      : `Every figure above is loaded from <code>site/artifacts/</code> with its run id or commit; nothing on this panel was produced by your query.`"
+    "panelLive\n      ? `This server produced the panel above during this session. Its figures come from that run and are <b>not</b> committed: nothing on this page pins them, and a second run may differ. Every other figure here loads from <code>site/artifacts/</code> with its run id or commit.`\n      : `Every figure above loads from <code>site/artifacts/</code> with its run id or commit; your query produced nothing on this panel.`"
    ],
-   "text": "{0} Panels marked NO RECORD ON THIS PAGE carry no committed record and show no numbers."
+   "text": "{0} Panels marked NO RECORD ON THIS PAGE have no committed record and show no numbers."
   },
   {
    "id": "retrieverPanel.all-negative-domains-absent",
@@ -560,7 +560,7 @@
     "I.auroc_absent_vs_present.toFixed(3)",
     "provenanceLine()"
    ],
-   "text": "Retrieval is in use: {0}M parameters, {1} ms per query on the serving machine, no language-model call. Hypothesis generation is gated: the estimability gate passes {2} of {3} pairs without two survey-metadata exports, so every design carries {4} . The one scored run switched that gate off; it emitted {5} records, of which {6} matched against a ceiling of {7}. Abstention on constructs the instrument does not measure: {8} of {9} held-out negatives rejected on this fixture (AUROC {10}). Its recall is an upper bound, not an open question: the fixture's queries were written with sight of the gold wording, by the same generator family as the training pairs. Detecting its own wrong pick is a different question; that figure was measured, withdrawn from git, and is not reproducible from this page. {11}"
+   "text": "Retrieval is in use: {0}M parameters, {1} ms per query on the serving machine, and no language-model call. Hypothesis generation is gated. Without two survey-metadata exports, the estimability gate passes {2} of {3} exposure–outcome pairs, so every design carries {4} . The one scored run switched that gate off and emitted {5} records; {6} matched, against a ceiling of {7}. The retriever abstains on constructs the instrument does not measure: it rejected {8} of {9} held-out negatives on this fixture (AUROC {10}). Its recall is an upper bound by construction, because the same generator family that wrote the training pairs wrote the fixture's queries after seeing the reference wording. Detecting its own wrong pick is a separate question: that figure was measured, then withdrawn from git, and this page cannot reproduce it. {11}"
   },
   {
    "id": "specifierPanel.design-gate-rejected",
@@ -583,26 +583,26 @@
    "kind": "block",
    "where": "site/index.html::topicFig",
    "slots": [
-    "built===n\n      ? ` There are ${p.gold_items} such entries, each described`\n        +` ${p.phrasings_per_item} different ways, which is the ${n} requests with a`\n        +` known right answer.`\n      : ` There are ${n} such requests, several per entry.`",
-    "cov===null?\"\":cov===n\n      ? `Every topic those requests fall into has a bar &mdash; ${rows.length} of`\n        +` them, between them all ${n} requests.`\n      : `${rows.length} topics are broken out here, between them ${cov} of the`\n        +` ${n} requests, and the remaining ${n-cov} are not shown.`",
+    "built===n\n      ? ` There are ${p.gold_items} such entries, each phrased`\n        +` ${p.phrasings_per_item} ways, which gives the ${n} requests with a`\n        +` known reference entry.`\n      : ` There are ${n} such requests, several per entry.`",
+    "cov===null?\"\":cov===n\n      ? `Every topic those requests fall into has a bar &mdash; ${rows.length} in`\n        +` all, covering all ${n} requests.`\n      : `The chart breaks out ${rows.length} topics, covering ${cov} of the`\n        +` ${n} requests, and omits the remaining ${n-cov}.`",
     "p.phrasings_per_item",
     "none"
    ],
-   "text": "Each bar is one topic, and its length is how often search put the right codebook entry first for the requests about that topic. What a request is. A short description of something someone wants to measure, of the kind you would type into the box at the top of this page. Every request used here was written from a single codebook entry, and that entry is what counts as the right answer for it — so \"first\" means the entry the request was written from came back at the top of the list.{0} {1} n counts requests, not entries, so a bar at n={2} rests on one entry: the narrowest bars are the least evidence, however long they look. There are no requests at all on {3}, so those topics have no bar — how well search does there has never been measured, which is not the same as it doing well."
+   "text": "Each bar is one topic. Its length is how often search ranked the reference codebook entry first for requests about that topic. What a request is. A short description of something a researcher wants to measure, like what you would type into the box at the top of this page. A language model wrote every request here from a single codebook entry, and that entry is its reference standard, so \"first\" means the source entry ranked at the top of the list.{0} {1} n counts requests, not entries, so a bar at n={2} rests on a single entry: the smallest samples carry the least evidence, however long their bars look. No requests fall on {3}, so those topics have no bar. Search performance there is unmeasured, which is not the same as good."
   },
   {
    "id": "tr.pick-random-answerable-request",
    "kind": "block",
    "where": "site/index.html::tr",
    "slots": [],
-   "text": "pick a random answerable request and a random absent one; this is how often the answerable one scores higher"
+   "text": "the c-statistic: the probability that a random answerable request scores higher than a random absent one"
   },
   {
    "id": "tr.pick-random-right-hit",
    "kind": "block",
    "where": "site/index.html::tr",
    "slots": [],
-   "text": "pick a random right hit and a random wrong hit; this is how often the right one scores higher"
+   "text": "the c-statistic: the probability that a random correct top match scores higher than a random incorrect one"
   },
   {
    "id": "tr.right-entry-came-back",
@@ -612,7 +612,7 @@
     "f.n_top_match_right",
     "f.n_questions"
    ],
-   "text": "{0} of {1} — the right entry came back first"
+   "text": "{0} of {1} — the reference entry ranked first"
   },
   {
    "id": "tr.what-measured-value-what",
@@ -632,7 +632,7 @@
     "s.wrong_p50.toFixed(4)",
     "s.wrong_max.toFixed(4)"
    ],
-   "text": "Why one score does those two jobs so differently. Each figure here is a middle-of-the-pack score: at least half the requests in its group scored at or below it, and the figure is itself one of the scores that occurred. It is deliberately not called a median — on an even-sized group it is the value just above the middle, not the average of the two. An absent request: nothing in the codebook is close, so the best match is weak — typically {0} against {1} for a request the codebook can answer. Those two barely overlap, which is the high area. Answerable but wrong: something IS close, it just is not the right entry — {2} when the top match is right against {3} when it is wrong, and those two lie on top of each other. The highest-scoring wrong answer is {4}, above the middling right one. The score measures how similar the best entry it found is to the request, not whether that entry is the one you meant — so a confidently wrong answer is indistinguishable from a confidently right one."
+   "text": "Why one score discriminates so differently on the two tasks. Each figure here is a mid-distribution score: at least half the requests in its group scored at or below it, and the figure is one of the observed scores. I do not call it a median, because on an even-sized group it is the value just above the middle, not the mean of the two middle values. An absent request: nothing in the codebook is close, so the best match is weak — typically {0}, against {1} for a request the codebook can answer. The two distributions barely overlap, which is why that area is high. Answerable but wrong: a close entry exists, but it is not the reference entry. A correct top match scores {2} and an incorrect one {3}, so the two distributions lie on top of each other. The highest-scoring incorrect match reaches {4}, above the typical correct one. The score measures how similar the best entry is to the request, not whether it is the entry you meant, so it cannot separate a confident wrong answer from a confident right one."
   },
   {
    "id": "slot.propose-pair",
@@ -1666,28 +1666,28 @@
    "kind": "static",
    "where": "site/index.html (markup outside <script>)",
    "slots": [],
-   "text": "Type what you want to measure. Watch each stage retrieve, refuse, or block — with the dictionary lookups it made."
+   "text": "Describe what you want to measure, and follow each stage as it retrieves, refuses, or blocks, with the dictionary lookups behind it."
   },
   {
    "id": "shell.question-construct-two-keys",
    "kind": "static",
    "where": "site/index.html (placeholder attribute)",
    "slots": [],
-   "text": "a question, or a construct, or two keys"
+   "text": "a question, a construct, or two variable keys"
   },
   {
    "id": "shell.deployed-retriever-alone-cosine",
    "kind": "static",
    "where": "site/index.html (title attribute)",
    "slots": [],
-   "text": "the deployed retriever alone: cosine over the target vectors, no language-model call, no cost, and the way to load a committed example"
+   "text": "The deployed retriever alone: cosine similarity against the target vectors, with no language-model call and no cost. Also loads a committed example."
   },
   {
    "id": "shell.pipeline-retrieve-candidates-then",
    "kind": "static",
    "where": "site/index.html (title attribute)",
    "slots": [],
-   "text": "the pipeline: retrieve candidates, then the language model reasons about which serve as exposure and which as outcome. Needs the live server"
+   "text": "The full pipeline: retrieve candidate variables, then a language model assigns the exposure and the outcome. Requires the live server."
   }
  ]
 }
