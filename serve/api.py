@@ -878,48 +878,95 @@ def _spread_by_exposure(cands: list[Any], limit: int) -> list[Any]:
     return out
 
 
+def _named_frame(body: dict[str, Any]) -> Any:
+    """The named frame a request's sides describe, or a refusal.
+
+    The route has always accepted `exposure_module`, `exposure_prefix`,
+    `outcome_module` and `outcome_prefix`. A side the request leaves out is
+    the default frame's, as before. What changed is that the four values must
+    then BE a frame in `generate/funnel.py::FRAMES`: an enumeration whose sides
+    match no named frame has no name and no `Frame.digest`, so every count it
+    reports would come from nowhere a reader can check -- the unnamed
+    comprehension-per-driver state `Frame` was introduced to end (T7).
+
+    Refused rather than served unnamed. No caller sends custom sides today (the
+    page posts `{}`), so refusing removes nothing in use, and a name is not
+    invented here: which frames exist, and which one is the default, is the
+    operator's study-design decision (TASKS.md C41, NOT IN SCOPE).
+
+    Args:
+        body: The request.
+
+    Returns:
+        The `generate.funnel.Frame` whose four sides the request names.
+
+    Raises:
+        ValueError: When the sides match no named frame.
+    """
+    from generate.funnel import DEFAULT_FRAME, FRAMES
+
+    base = FRAMES[DEFAULT_FRAME]
+    asked = (str(body.get("exposure_module") or base.exposure_module),
+             str(body.get("exposure_prefix") or base.exposure_prefix),
+             str(body.get("outcome_module") or base.outcome_module),
+             str(body.get("outcome_prefix") or base.outcome_prefix))
+    for frame in FRAMES.values():
+        if asked == (frame.exposure_module, frame.exposure_prefix,
+                     frame.outcome_module, frame.outcome_prefix):
+            return frame
+    raise ValueError(
+        f"no named frame enumerates module {asked[0]} {asked[1]!r} against "
+        f"module {asked[2]} {asked[3]!r}. This endpoint enumerates named frames "
+        f"only ({', '.join(sorted(FRAMES))}), because an unnamed one carries no "
+        f"name and no digest for its denominator to cite. A frame is added in "
+        f"generate/funnel.py::FRAMES, and which frames exist is the operator's "
+        f"decision.")
+
+
 def _enumerate(state: State, body: dict[str, Any]) -> dict[str, Any]:
-    """Run the funnel: enumerate pairs, prune, and report the gate.
+    """Run the funnel over a named frame: enumerate pairs, prune, report the gate.
 
     Free and deterministic -- `generate/funnel.py` makes no model call. The
-    exposure and outcome sets default to the ones
-    `generate/live_specifier.py::main` uses, so the enumeration here is the one
-    the pipeline itself performs rather than a variant invented for a web page.
+    sides come from `generate/funnel.py::Frame.sides` and the candidates from
+    `walk`, the same frame definition `generate/live_specifier.py::main`
+    walks, so the enumeration here is the pipeline's own rather than a variant
+    built for a web page. The payload names the frame and its digest, so a
+    count shown here says which frame and which build it was computed over.
 
     Args:
         state: Shared handles.
         body: Optionally `exposure_module`, `exposure_prefix`,
-            `outcome_module`, `outcome_prefix`, and `limit`.
+            `outcome_module`, `outcome_prefix` (see `_named_frame`), and
+            `limit`.
 
     Returns:
-        The candidates, the funnel's own counts, and the estimability gate.
-    """
-    from generate.funnel import load_constructs
-    from generate.funnel import run as funnel_run
+        The frame, the candidates, the funnel's own counts, and the
+        estimability gate.
 
+    Raises:
+        ValueError: When the sides name no frame, or the frame is empty in
+            this build.
+    """
+    from generate.funnel import load_constructs, walk
+
+    frame = _named_frame(body)
     C, version = load_constructs()
-    ex_mod = str(body.get("exposure_module") or "3")
-    ex_pre = str(body.get("exposure_prefix") or "Q16.")
-    out_mod = str(body.get("outcome_module") or "2")
-    out_pre = str(body.get("outcome_prefix") or "Q5.")
     limit = max(1, min(_int_arg(body, "limit", 25), 200))
 
-    exposures = sorted([c for c in C.values()
-                        if c.module == ex_mod and c.base_id.startswith(ex_pre)],
-                       key=lambda c: c.base_id)
-    outcomes = sorted([c for c in C.values()
-                       if c.module == out_mod and c.base_id.startswith(out_pre)],
-                      key=lambda c: c.base_id)
+    exposures, outcomes = frame.sides(C)
+    ex_mod, ex_pre = frame.exposure_module, frame.exposure_prefix
+    out_mod, out_pre = frame.outcome_module, frame.outcome_prefix
     if not exposures or not outcomes:
         raise ValueError(
-            f"nothing to enumerate: {len(exposures)} exposure(s) matching "
-            f"module {ex_mod} {ex_pre!r} and {len(outcomes)} outcome(s) matching "
-            f"module {out_mod} {out_pre!r}")
+            f"nothing to enumerate: frame {frame.name} has {len(exposures)} "
+            f"exposure(s) matching module {ex_mod} {ex_pre!r} and "
+            f"{len(outcomes)} outcome(s) matching module {out_mod} {out_pre!r}")
 
-    cands, counts = funnel_run(exposures, outcomes)
+    cands, counts = walk(frame, C)
     shown = _spread_by_exposure(cands, limit)
     return {
         "dictionary_version": version,
+        "frame": {"name": frame.name, "digest": frame.digest(C, version)},
         "sets": {"exposures": len(exposures), "outcomes": len(outcomes),
                  "exposure_module": ex_mod, "exposure_prefix": ex_pre,
                  "outcome_module": out_mod, "outcome_prefix": out_pre},

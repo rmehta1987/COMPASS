@@ -11,6 +11,7 @@ below).
 
 from __future__ import annotations
 
+import ast
 import sys
 from pathlib import Path
 
@@ -139,10 +140,35 @@ def test_worked_examples_detectability_numbers_are_on_the_environments_curve() -
 # --------------------------------------------------------------------------- #
 
 
+def _builds_a_frame_by_hand(node: ast.AST, prefixes: set[str]) -> bool:
+    """Whether a node is a `startswith` call that picks a frame side.
+
+    Two shapes. A frame's own prefix as a constant, on any receiver; or a
+    construct's `base_id` as the receiver, with any argument.
+    `serve/api.py::_enumerate` escaped the first shape alone for as long as it
+    passed its prefixes as variables (TASKS.md C41). The second does not flag
+    every variable argument, because two live calls take one for another
+    purpose: `benchmark/prevalence_rows.py` and
+    `benchmark/unearned_assertions.py`. An alias (`bid = c.base_id`) escapes it
+    still.
+
+    Args:
+        node: Any AST node.
+        prefixes: Every prefix a named frame uses.
+
+    Returns:
+        True for either shape.
+    """
+    if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "startswith" and node.args):
+        return False
+    arg, receiver = node.args[0], node.func.value
+    return ((isinstance(arg, ast.Constant) and arg.value in prefixes)
+            or (isinstance(receiver, ast.Attribute) and receiver.attr == "base_id"))
+
+
 def test_no_driver_builds_the_frame_by_hand() -> None:
     """The frame was a list comprehension copied into every driver; now one."""
-    import ast
-
     from generate.funnel import FRAMES
 
     prefixes = {p for f in FRAMES.values()
@@ -155,11 +181,30 @@ def test_no_driver_builds_the_frame_by_hand() -> None:
     for path in drivers:
         tree = ast.parse(path.read_text())
         by_hand = [n.lineno for n in ast.walk(tree)
-                   if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
-                   and n.func.attr == "startswith" and n.args
-                   and isinstance(n.args[0], ast.Constant)
-                   and n.args[0].value in prefixes]
+                   if isinstance(n, ast.Call) and _builds_a_frame_by_hand(n, prefixes)]
         assert not by_hand, f"{path.name} builds a frame by hand at lines {by_hand}"
+
+
+def test_the_frame_scan_sees_a_variable_prefix_and_passes_other_prefixes() -> None:
+    """Both shapes the scan must tell apart, on source it did and did not flag.
+
+    The variable-prefix copy is `serve/api.py::_enumerate` as it stood before
+    C41(a); the other two are the live variable-argument calls the scan must
+    leave alone.
+    """
+    from generate.funnel import FRAMES
+
+    prefixes = {p for f in FRAMES.values()
+                for p in (f.exposure_prefix, f.outcome_prefix)}
+
+    def flagged(src: str) -> bool:
+        return any(_builds_a_frame_by_hand(n, prefixes) for n in ast.walk(ast.parse(src)))
+
+    assert flagged("[c for c in C if c.module == m and c.base_id.startswith(pre)]")
+    assert flagged("[c for c in C if c.base_id.startswith('Q16.')]")
+    assert flagged("x.startswith('Q5.')")
+    assert not flagged("region.startswith(_MODULE_PREFIXES)")
+    assert not flagged("path.startswith(SCAN_EXEMPT_PREFIXES)")
 
 
 def test_the_frame_digest_names_exactly_what_it_enumerates() -> None:

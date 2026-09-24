@@ -17,33 +17,27 @@ import ast
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from generate.funnel import load_constructs, run  # noqa: E402
-from serve.api import _enumerate, _spread_by_exposure  # noqa: E402
-
-#: The frame `_enumerate` defaults to, and the one the page always asks for.
-FRAME = ("3", "Q16.", "2", "Q5.")
+from generate.funnel import DEFAULT_FRAME, FRAMES, load_constructs, walk  # noqa: E402
+from serve.api import State, _enumerate, _spread_by_exposure  # noqa: E402
 
 
 def _default_frame_candidates() -> list:
     """Every candidate of the endpoint's default frame, in enumeration order.
 
+    Read from `generate/funnel.py::FRAMES`, not rebuilt here: this file used to
+    carry its own copy of the frame's four sides, the per-caller copy T7 named
+    the frame to end.
+
     Returns:
-        The funnel's candidate list for module 3 `Q16.` against module 2 `Q5.`.
+        The funnel's candidate list for `FRAMES[DEFAULT_FRAME]`.
     """
     constructs, _ = load_constructs()
-    ex_mod, ex_pre, out_mod, out_pre = FRAME
-    exposures = sorted(
-        (c for c in constructs.values()
-         if c.module == ex_mod and c.base_id.startswith(ex_pre)),
-        key=lambda c: c.base_id)
-    outcomes = sorted(
-        (c for c in constructs.values()
-         if c.module == out_mod and c.base_id.startswith(out_pre)),
-        key=lambda c: c.base_id)
-    cands, _counts = run(exposures, outcomes)
+    cands, _counts = walk(FRAMES[DEFAULT_FRAME], constructs)
     return cands
 
 
@@ -125,3 +119,86 @@ def test_enumerate_takes_its_slice_through_the_spread() -> None:
         f"_enumerate calls {sorted(called)}; it must take its shown slice "
         f"through the spread, not off the head of the list")
     assert callable(_enumerate)
+
+
+# --------------------------------------------------------------------------- #
+# C41(a): the endpoint enumerates a named frame, and says which
+# --------------------------------------------------------------------------- #
+
+
+def _state(tmp_path: Path) -> State:
+    """A default-bind state whose directories are all under `tmp_path`.
+
+    Args:
+        tmp_path: pytest's per-test directory.
+
+    Returns:
+        The state `_enumerate` reads.
+    """
+    return State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+
+
+def test_the_default_request_enumerates_the_default_frame_and_names_it(
+        tmp_path: Path) -> None:
+    """The page posts `{}`; the payload says which frame and which build.
+
+    Before C41(a) the payload carried the four sides and no frame, so a count
+    on the Generate tab could not say it was `FRAMES[DEFAULT_FRAME]`'s.
+    """
+    C, version = load_constructs()
+    frame = FRAMES[DEFAULT_FRAME]
+    out = _enumerate(_state(tmp_path), {})
+    assert out["frame"] == {"name": DEFAULT_FRAME,
+                            "digest": frame.digest(C, version)}
+    _, counts = walk(frame, C)
+    assert out["counts"] == counts, "the endpoint's counts are not the frame's walk"
+
+
+def test_sides_that_match_no_named_frame_are_refused_not_named(
+        tmp_path: Path) -> None:
+    """A custom frame is refused; the endpoint never names one itself.
+
+    Anti-vacuity first: the default frame's own sides, stated explicitly,
+    resolve to it, so the refusal below is about the sides and not about a
+    request that states any side at all.
+    """
+    frame = FRAMES[DEFAULT_FRAME]
+    stated = {"exposure_module": frame.exposure_module,
+              "exposure_prefix": frame.exposure_prefix,
+              "outcome_module": frame.outcome_module,
+              "outcome_prefix": frame.outcome_prefix}
+    assert _enumerate(_state(tmp_path), stated)["frame"]["name"] == DEFAULT_FRAME
+
+    named = {(f.exposure_module, f.exposure_prefix, f.outcome_module,
+              f.outcome_prefix) for f in FRAMES.values()}
+    custom = {**stated, "outcome_module": frame.exposure_module,
+              "outcome_prefix": frame.exposure_prefix + "999."}
+    assert tuple(custom[k] for k in stated) not in named, "pick another custom side"
+    with pytest.raises(ValueError, match="no named frame"):
+        _enumerate(_state(tmp_path), custom)
+
+
+def test_enumerate_resolves_its_sides_through_the_frame() -> None:
+    """Pinned as `Call` nodes, so a hand-built comprehension reddens this.
+
+    `_enumerate` built both sides with its own `startswith` comprehension and
+    called `funnel.run` on them, touching neither `FRAMES`, `Frame` nor `walk`
+    (TASKS.md C41). The route and the helper that picks its frame are read
+    together, because the frame is chosen in one and walked in the other.
+    """
+    tree = ast.parse(Path(ROOT / "serve" / "api.py").read_text(encoding="utf-8"))
+    fns = {n.name: n for n in ast.walk(tree)
+           if isinstance(n, ast.FunctionDef) and n.name in {"_enumerate", "_named_frame"}}
+    assert set(fns) == {"_enumerate", "_named_frame"}, sorted(fns)
+    calls = [n for fn in fns.values() for n in ast.walk(fn) if isinstance(n, ast.Call)]
+    names = {n.func.id for n in calls if isinstance(n.func, ast.Name)}
+    attrs = {n.func.attr for n in calls if isinstance(n.func, ast.Attribute)}
+    assert {"walk", "_named_frame"} <= names, (
+        f"_enumerate calls {sorted(names)}; its candidates must come from "
+        f"`walk` over the frame `_named_frame` picked")
+    assert {"sides", "digest"} <= attrs, (
+        f"_enumerate calls {sorted(attrs)}; the sides and the digest must be the "
+        f"frame's own")
+    assert "startswith" not in attrs, "a side is being built by hand again"
+    assert not {"run", "funnel_run"} & names, (
+        "`funnel.run` on hand-picked sides is the unnamed frame C41 closed")

@@ -119,6 +119,7 @@ const PAIR_REPLY = {
 const ENUMERATE = {
   note: "a synthesised enumerate reply, for this harness only",
   shown: PAIRS.length,
+  frame: { name: "FRAME_NAME", digest: "FRAME_DIGEST" },
   sets: { exposures: PAIRS.length, outcomes: PAIRS.length,
           exposure_module: "MOD_A", exposure_prefix: "PFX_A",
           outcome_module: "MOD_B", outcome_prefix: "PFX_B" },
@@ -176,6 +177,10 @@ global.fetch = async (rel, opts) => {
   const g = node("#panel").innerHTML;
   for (const bad of ["undefined", "NaN", "[object Object]"]) {
     if (g.includes(bad)) fail(`the enumerated panel contains "${bad}"`);
+  }
+  // The counts must say which frame they are from (TASKS.md C41(a)).
+  for (const v of [ENUMERATE.frame.name, ENUMERATE.frame.digest]) {
+    if (!g.includes(v)) fail(`the enumerated panel does not name the frame: ${v} missing`);
   }
   const runs = [...g.matchAll(/data-genex="([^"]+)"/g)].length;
   if (runs !== LIVE_PAIRS.length) fail(`run buttons: ${runs}, expected ${LIVE_PAIRS.length}`);

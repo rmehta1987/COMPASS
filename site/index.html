@@ -790,6 +790,10 @@ function generatePanel(){
     +row("question groups",`${gen.sets.exposures} exposure(s) &times; ${gen.sets.outcomes} outcome(s)`
         +` &middot; module ${esc(gen.sets.exposure_module)} ${esc(gen.sets.exposure_prefix)}`
         +` &rarr; module ${esc(gen.sets.outcome_module)} ${esc(gen.sets.outcome_prefix)}`,true)
+    /* The frame's name and digest say which frame and which build these counts
+       come from. An older endpoint sends no `frame`, so the row is left out
+       rather than printed empty. */
+    +(gen.frame?row("frame",`${esc(gen.frame.name)} &middot; digest ${esc(gen.frame.digest)}`,true):"")
     +row("enumerated (S1)",String(c.enumerated),true)
     +row("pruned (S2)",String(c.pruned_S2),true)
     +row("live pairs",String(c.live),true)
