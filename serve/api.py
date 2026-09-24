@@ -1841,13 +1841,23 @@ def _compare_failure(proc: Any) -> str:
     Returns:
         A sentence for the page.
     """
-    last = next((ln for ln in reversed((proc.stderr or "").splitlines())
-                 if ln.strip()), "")
-    name = re.match(r"([A-Za-z_][\w.]*(?:Error|Exception|Exit))\b", last.strip())
+    lines = [ln.strip() for ln in (proc.stderr or "").splitlines() if ln.strip()]
+    last = lines[-1] if lines else ""
+    name = re.match(r"([A-Za-z_][\w.]*(?:Error|Exception|Exit))\b", last)
     what = f" ({name.group(1)})" if name else ""
-    return (f"the scoring clone could not run the comparison (exit "
-            f"{proc.returncode}){what}. It may be on an older commit than this "
-            f"one: update it so benchmark/rediscovery.py accepts --json.")
+    # argparse's own shape: a `usage:` line and an `error:` line, exit 2. That
+    # is the stale clone, whose rediscovery does not know --json yet. Anything
+    # else is the clone failing at its own work -- a missing build, an
+    # unwritable run/ -- and telling that operator to update would send them
+    # the wrong way.
+    stale = any(ln.startswith("usage:") for ln in lines) and last.startswith("error:")
+    if stale:
+        return (f"the scoring clone could not run the comparison (exit "
+                f"{proc.returncode}): it is on an older commit than this one. "
+                f"Update it so benchmark/rediscovery.py accepts --json.")
+    return (f"the scoring clone failed while comparing (exit {proc.returncode})"
+            f"{what}. Run `python -m benchmark.rediscovery` there to see why; "
+            f"a missing build/dictionary.json is the usual cause.")
 
 
 def _compare(state: State, body: dict[str, Any]) -> dict[str, Any]:
@@ -1939,7 +1949,13 @@ def _compare(state: State, body: dict[str, Any]) -> dict[str, Any]:
     for f in raw.get("fields") or []:
         if not isinstance(f, dict) or f.get("state") not in COMPARE_STATES:
             continue
-        fields.append({k: str(f.get(k) or "") for k in COMPARE_FIELD_KEYS})
+        kept = {k: str(f.get(k) or "") for k in COMPARE_FIELD_KEYS}
+        # `why` is safe only while rediscovery writes fixed sentences, and the
+        # scoring clone may be on another commit. Checked HERE, because
+        # `_send` does not scrub at all under --show-instrument.
+        if KEY_RE.search(kept["why"]):
+            kept["why"] = ""
+        fields.append(kept)
     out = {k: raw.get(k) for k in COMPARE_TOP_KEYS}
     out["fields"] = fields
     return {

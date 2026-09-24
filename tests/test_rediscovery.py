@@ -495,6 +495,30 @@ def test_every_comparison_is_ledgered_where_the_key_lives(monkeypatch, capsys,
     assert line["states"]["exposure_keys"] == RD.MATCH
 
 
+def test_a_broken_row_for_another_paper_is_not_blamed_on_this_one(
+        monkeypatch, capsys):
+    """The page says a complaint concerns the chosen paper's row, so it must.
+
+    Seeded: counting `validate()` over the whole table turns this red.
+    """
+    other = COHORT_PAPERS[1].pmid
+    rows = (_row(_variable("m3:Q16.2")), _row(_variable("m3:Q16.1"), pmid=other))
+    rc, out = _boundary_json(monkeypatch, rows, capsys)
+    assert json.loads(out)["complaint_count"] == 0, (
+        "another paper's broken row was reported against this one")
+    assert rc == 0
+
+
+def test_boundary_mode_does_not_walk_the_bibliography(monkeypatch, capsys):
+    """Every page comparison must not pay for, or fail on, `status_counts`."""
+    def boom() -> dict[str, int]:
+        raise RuntimeError("status_counts ran in boundary mode")
+
+    monkeypatch.setattr(SC, "status_counts", boom)
+    rc, out = _boundary_json(monkeypatch, (_row(_variable("m3:Q16.2")),), capsys)
+    assert rc == 0 and json.loads(out)["schema"] == RD.BOUNDARY_SCHEMA
+
+
 def test_an_unknown_pmid_is_a_named_failure_in_boundary_mode(monkeypatch, capsys):
     """serve/ must be able to tell a wrong pmid from a broken scoring clone."""
     import io

@@ -866,29 +866,53 @@ const CMP_FIELD={exposure_keys:"exposure",outcome_keys:"outcome",
   adjusted_covariate_keys:"adjusted covariates",model_form:"analysis model",
   analytic_n:"analytic sample size",expected_direction:"expected direction"};
 
+/* One sentence per field and state, written here and never taken from the
+   scoring clone's `why`, which is a developer's note ("a covariate anchor is
+   not in C36's shape") and not something a reader can act on. `why` is read
+   only to tell "no row yet" from other gaps. Each sentence says what the
+   reader can do next, because "needs a reader" with nothing to read is not an
+   instruction. */
 function cmpSentence(f,res){
+  const keyed=f.field==="exposure_keys"||f.field==="outcome_keys";
   if(f.state==="MATCH") return "uses the variable the paper recorded";
-  if(f.state==="DIFFERS") return "uses a different variable from the paper's;"
-    +" first check whether the questionnaire holds the paper's measure at all";
-  if(f.state==="REVIEW") return "needs a reader: the paper and the record describe"
-    +" this in different vocabularies, so no rule compares them";
-  if(!res.design_key_readable) return "not compared: the paper's recorded design"
-    +" is not readable on this server";
-  if(/no row for this paper/.test(f.why)) return "nothing on record for this paper"
-    +" yet; nothing was compared and nothing is wrong";
-  return `not compared: ${f.why}`;
+  if(f.state==="DIFFERS") return "uses a different variable from the paper's."
+    +" Search only can show whether the questionnaire holds the paper's measure at all";
+  if(f.state==="REVIEW"){
+    if(f.field==="model_form") return "not compared by rule: read the record's analysis"
+      +" model beside the paper's design line in the Metrics tab's bibliography";
+    if(f.field==="analytic_n") return "not compared by rule: the paper prints its own"
+      +" sample size, listed in the Metrics tab's bibliography";
+    return "not compared by rule; a reader must judge it";
+  }
+  if(keyed&&!res.design_key_readable) return "not compared: the paper's recorded"
+    +" design is not readable on this server";
+  if(keyed&&/no row for this paper/.test(f.why)) return "nothing on record for this"
+    +" paper yet; nothing was compared and nothing is wrong";
+  if(f.field==="adjusted_covariate_keys") return "not compared: the answer key does"
+    +" not record the paper's covariates yet";
+  if(f.field==="analytic_n") return "not compared: the pipeline gives no sample size"
+    +" until the study team's completion counts arrive";
+  if(f.field==="expected_direction") return "not compared: the bibliography records"
+    +" no expected direction";
+  return "not compared";
 }
 
 function compareBlock(){
   const papers=(DATA.metrics&&DATA.metrics.papers)||[];
   const busy=cmp&&cmp.running, chosen=cmp&&cmp.pmid;
-  let h=`<p class="sec lead">compare with the paper</p>`
-    +`<div class="none">Pick the paper this question came from. The page places this`
-    +` record beside what the project has recorded about that paper's design, one`
-    +` field at a time. It checks one question you posed; it is not a score.</div>`
+  let h=`<p class="sec lead">compare with the paper</p>`;
+  if(!papers.length) return h+`<div class="none">No bibliography is loaded on this`
+    +` page, so there is no paper to compare against.</div>`;
+  /* The design line, not the venue: a first-time reader knows the study, not
+     its PMID. The line is already public in the Metrics tab's bibliography. */
+  h+=`<div class="none">Pick the paper your question was taken from. The server checks`
+    +` this record against what the project has recorded about that paper's design,`
+    +` one field at a time; the paper's recorded values stay in the scoring clone and`
+    +` are not shown here. If you wrote the question yourself, there is no paper to`
+    +` compare it with. This checks one question you posed; it is not a score.</div>`
     +`<div class="pair"><select id="cmp-pmid" aria-label="paper">`
     +papers.map(p=>`<option value="${att(p.pmid)}"${String(p.pmid)===String(chosen)?" selected":""}>`
-      +`${esc(p.pmid)} · ${esc(p.year)} · ${esc(p.venue)}</option>`).join("")
+      +`${esc(p.year)} · ${esc(p.design)} · PMID ${esc(p.pmid)}</option>`).join("")
     +`</select></div>`
     +`<div class="after"><button class="g" id="cmp-go"${busy?" disabled":""}>`
     +`${busy?"comparing&hellip;":"Compare"}</button></div>`;
@@ -906,14 +930,15 @@ function compareBlock(){
     +` so a difference may be the two builds disagreeing.</div>`;
   h+=`<div class="none">A match means the variable used here is the one the paper`
     +` used. It says nothing about the covariates or the analysis model the`
-    +` Specifier chose. ${esc(cmp.result.not_a_score)} This session has made`
-    +` ${cmp.result.comparisons_this_session} comparison(s).</div>`;
+    +` Specifier chose. ${esc(cmp.result.not_a_score)} This server has made`
+    +` ${cmp.result.comparisons_this_session} comparison(s) since it started.</div>`;
   return h;
 }
 
 async function runCompare(){
   if(!window.COMPASS_COMPARE||!spec||!spec.ticket||(cmp&&cmp.running)) return;
   const ticket=spec.ticket, pmid=el("#cmp-pmid").value;
+  if(!pmid) return;
   cmp={running:true,pmid}; draw();
   try{
     const r=await fetch("/api/compare",{method:"POST",
@@ -969,9 +994,12 @@ function specifierPanel(){
       +`<details><summary>the record as JSON &middot; provenance</summary>`
       +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre></details>`
       +recordCarries();
-    if(window.COMPASS_COMPARE) h+=j.selected?compareBlock()
+    /* In its own element, so `panelPNG` can leave it out: a MATCH discloses
+       the paper's key, and an image travels as far as a JSON file does. */
+    if(window.COMPASS_COMPARE) h+=`<div id="cmp-section">`+(j.selected?compareBlock()
       :`<p class="sec lead">compare with the paper</p><div class="none">The Specifier`
-       +` refused this pair, so there is nothing to place beside the paper.</div>`;
+       +` refused this pair, so there is nothing to place beside the paper.</div>`)
+      +`</div>`;
   }else{
     h+=`<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.reason||"the run produced neither a protocol nor a refusal")}</div>`;
     /* A rejected design is still a design. The sample kept it, so show it: a
@@ -1709,6 +1737,8 @@ function panelPNG(){
   body.setAttribute("xmlns",xhtml);
   const style=document.createElementNS(xhtml,"style"); style.textContent=css; body.appendChild(style);
   const clone=panel.cloneNode(true); clone.setAttribute("style",`width:${w}px;background:#fff`);
+  /* Never in the image: see the `cmp-section` note in `specifierPanel`. */
+  const cs=clone.querySelector&&clone.querySelector("#cmp-section"); if(cs) cs.remove();
   body.appendChild(clone); fo.appendChild(body); svg.appendChild(fo);
   const xml=new XMLSerializer().serializeToString(svg);
   const img=new Image();

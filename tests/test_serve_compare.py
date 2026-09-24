@@ -39,12 +39,13 @@ PMID = "12345678"
 #: A stub `benchmark.rediscovery`: records what it was sent, then replays the
 #: reply scripted in `stub.json` beside it.
 STUB = '''
-import json, sys
+import json, sys, time
 from pathlib import Path
 here = Path(__file__).resolve().parent.parent
 (here / "seen_record.json").write_text(sys.stdin.read())
 (here / "seen_argv.json").write_text(json.dumps(sys.argv[1:]))
 reply = json.loads((here / "stub.json").read_text())
+time.sleep(reply.get("sleep", 0))
 sys.stdout.write(reply.get("stdout", ""))
 sys.stderr.write(reply.get("stderr", ""))
 sys.exit(reply.get("exit", 0))
@@ -79,7 +80,7 @@ def _clone(tmp_path: Path, reply: dict) -> Path:
 
 def _state(tmp_path: Path, clone: Path | None, *, enable: bool = True,
            selected: object = "default", status: str = "done",
-           kind: str = api.JOB_SPECIFY) -> State:
+           kind: str = api.JOB_SPECIFY, show_instrument: bool = False) -> State:
     """A State holding one Specifier job, with comparison on or off.
 
     Args:
@@ -90,6 +91,7 @@ def _state(tmp_path: Path, clone: Path | None, *, enable: bool = True,
             None for a refusal.
         status: The job's status.
         kind: The job's kind.
+        show_instrument: Whether `_send` skips its scrubber.
 
     Returns:
         The state.
@@ -99,7 +101,7 @@ def _state(tmp_path: Path, clone: Path | None, *, enable: bool = True,
     (site / "index.html").write_text("<html><head></head><body>ok</body></html>")
     state = State(tmp_path / "deploy", site, tmp_path / "run",
                   enable_compare=enable, scoring_clone=clone,
-                  scoring_python=sys.executable)
+                  scoring_python=sys.executable, show_instrument=show_instrument)
     record = ({"protocol_id": "P-JOB", "question": "q"}
               if selected == "default" else selected)
     job: dict = {"status": status, "kind": kind, "started": 0.0}
@@ -231,7 +233,95 @@ def test_the_scoring_clones_error_text_never_crosses(tmp_path: Path) -> None:
     assert code == 500
     assert "WITHHELD-QUESTION-WORDING" not in json.dumps(body), (
         "the scoring clone's stderr crossed the boundary")
-    assert "could not run" in body["error"]
+    assert "failed while comparing" in body["error"]
+
+
+def test_a_clone_that_fails_at_its_own_work_is_not_told_to_update(
+        tmp_path: Path) -> None:
+    """A missing build is not a stale checkout; the advice must not say it is."""
+    clone = _clone(tmp_path, {"stderr": "Traceback (most recent call last):\n"
+                                        "RuntimeError: build/dictionary.json is missing",
+                              "exit": 1})
+    with _served(_state(tmp_path, clone)) as (post, _get):
+        code, body = post("/api/compare", {"ticket": TICKET, "pmid": PMID})
+    assert code == 500
+    assert "older commit" not in body["error"], (
+        "every scoring-clone failure was diagnosed as a stale checkout")
+    assert "RuntimeError" in body["error"]
+
+
+def test_a_key_inside_a_reason_is_dropped_even_with_redaction_off(
+        tmp_path: Path) -> None:
+    """A key inside `why` is dropped by the route itself.
+
+    `_send` skips scrubbing entirely under --show-instrument, and the scoring
+    clone may be on another commit. Seeded: removing the KEY_RE check in
+    `_compare` turns this red.
+    """
+    leaky = {**GOOD, "fields": [{"field": "exposure_keys", "state": "DIFFERS",
+                                 "why": "recorded m3:Q16.1"}]}
+    clone = _clone(tmp_path, {"stdout": json.dumps(leaky)})
+    with _served(_state(tmp_path, clone, show_instrument=True)) as (post, _get):
+        code, body = post("/api/compare", {"ticket": TICKET, "pmid": PMID})
+    assert code == 200
+    assert "m3:Q16.1" not in json.dumps(body), (
+        "a key inside a reason crossed the clone boundary")
+
+
+def test_a_hung_scoring_clone_is_cut_off(tmp_path: Path,
+                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    """A clone that hangs must not pin a request thread.
+
+    Seeded: dropping `timeout=` from the subprocess call turns this red (the
+    request then waits the stub out and answers 200).
+    """
+    monkeypatch.setattr(api, "COMPARE_TIMEOUT_S", 1)
+    clone = _clone(tmp_path, {"stdout": json.dumps(GOOD), "sleep": 8})
+    with _served(_state(tmp_path, clone)) as (post, _get):
+        code, body = post("/api/compare", {"ticket": TICKET, "pmid": PMID})
+    assert code == 500 and "did not answer" in body["error"]
+
+
+def test_one_comparison_runs_at_a_time(tmp_path: Path) -> None:
+    """A second comparison is refused while one is running.
+
+    Each comparison is a process in another clone, and the rate limit alone
+    would allow sixty at once. Seeded: removing the lock turns this red.
+    """
+    clone = _clone(tmp_path, {"stdout": json.dumps(GOOD)})
+    state = _state(tmp_path, clone)
+    assert state.compare_lock.acquire(blocking=False)
+    try:
+        with _served(state) as (post, _get):
+            code, body = post("/api/compare", {"ticket": TICKET, "pmid": PMID})
+    finally:
+        state.compare_lock.release()
+    assert code == 409 and "another comparison" in body["error"]
+    assert not (clone / "seen_record.json").exists(), "a second comparison ran"
+
+
+def test_the_compare_path_calls_nothing_that_writes() -> None:
+    """Checked on the code, not only on one directory's contents.
+
+    `test_nothing_is_written_in_the_editing_clone` watches `run_dir`; a write
+    anywhere else would pass it. This asserts on the AST of every function the
+    route runs: none calls a writer. Seeded: a `_save_job` call turns it red.
+    """
+    writers = {"_save_job", "_finish_job", "write_text", "write_bytes", "open",
+               "mkdir", "dump", "touch", "dumps_to"}
+    tree = ast.parse((ROOT / "serve" / "api.py").read_text(encoding="utf-8"))
+    fns = {n.name: n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+    route = {"_compare", "_compare_record", "_compare_failure"}
+    assert route <= set(fns), f"route functions renamed: {route - set(fns)}"
+    found = []
+    for name in sorted(route):
+        for c in ast.walk(fns[name]):
+            if isinstance(c, ast.Call):
+                f = c.func
+                called = f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", "")
+                if called in writers:
+                    found.append(f"{name} calls {called}")
+    assert not found, f"comparison persisted in the editing clone: {found}"
 
 
 def test_a_usage_error_is_not_shown_as_a_withheld_key(tmp_path: Path) -> None:

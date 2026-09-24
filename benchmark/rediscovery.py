@@ -542,12 +542,16 @@ def _main(argv: Sequence[str] | None = None) -> int:
                     help="append one line per comparison to this file")
     args = ap.parse_args(argv)
 
-    status = scaffold_status()
-    complaints = status["complaints"]
-    assert isinstance(complaints, list)
-
     if args.json and args.pmid is None:
         ap.error("--json needs --pmid and --record")
+    # Boundary mode skips `scaffold_status`, which runs `status_counts` and
+    # walks every paper through the resolver: work the website does not show,
+    # run on every comparison, and a failure there would read on the page as a
+    # broken scoring clone. Its complaints are the chosen paper's row alone,
+    # below, because the page tells the reader they concern that paper.
+    status = {} if args.json else scaffold_status()
+    complaints = status.get("complaints", [])
+    assert isinstance(complaints, list)
     if args.pmid is None:
         print(json.dumps(status, indent=1))
     else:
@@ -572,6 +576,9 @@ def _main(argv: Sequence[str] | None = None) -> int:
         if args.json:
             # Complaints are counted, never printed: `design_anchor`'s
             # complaint text names the key it rejects.
+            if rec.design_key_readable:
+                row = SC.design_key_row(args.pmid)
+                complaints = validate((row,)) if row else []
             out = boundary(rec, rows, p.dictionary_version, _this_build())
             out["complaint_count"] = len(complaints)
             print(json.dumps(out))
