@@ -16,6 +16,21 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ## 2026-09-24
 
+- **A keyed contamination section can no longer read `ok` without its key.** Every skip
+  test planted its skip on `check_provenance`, which imports nothing. Wrapping the
+  platform scan's `leak_facts` import in `try/except ModuleNotFoundError: return []`
+  kept the tests green and made the gate print `ok    survey platform named in surface`
+  for a scan that ran on nothing. Now `tests/test_contamination_skip.py` withholds every
+  key through `sys.modules`, so this holds in the scoring clone too. It then drives the
+  three sections that read one, directly and through `main`'s own table, and requires
+  SKIP, never `ok`. An AST scan pins `_KEY_READERS` to every function under the gate
+  that imports a key, in both directions. The same audit found a second route to the
+  same false `ok`: `benchmark/input_leakage.py::scan_frame` read the prevalence key per
+  prompt, so an empty frame never touched it. It now reads the key once before its loop.
+  Seeded red, each over the whole file: the platform wrap, the same wrap on
+  `_prevalence_tokens`, the read moved back into the loop, and an undeclared key reader.
+  The `--live` scorer is not covered yet; that is open in `TASKS.md`.
+
 `TASKS.md` reconciled against the code. Seven items had landed and were still listed as
 open; they move here, each with the commit that closed it. Nothing below is new work.
 

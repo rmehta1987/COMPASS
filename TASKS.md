@@ -801,23 +801,14 @@ experts until much later, which is why the dashboard exists.
   `tests/test_env_tools.py::test_no_tool_accepts_a_parameter_it_ignores`.
 - `benchmark/contamination_check.py::check_seal_config` checks what the seal denies, never
   that `agent/sealed.py::SealedWorktree.base_argv` carries no `--mcp-config`.
-- **No test drives a contamination section that can actually SKIP.**
-  `tests/test_contamination_skip.py` plants its skips on `check_provenance`, which imports
-  nothing and can never raise `ModuleNotFoundError`. Three sections really skip in this
-  clone, not two: `check_no_platform_name_in_surface`,
-  `check_no_prevalence_figure_in_surface`, and `check_input_does_not_contain_the_answer`
-  (through `benchmark/input_leakage.py`). The status logic is well covered; the real skip
-  PATH is not. CORRECTED 2026-09-24 on a seeded mutation, run over
-  `tests/test_contamination_skip.py`, `test_contamination_surface.py` and
-  `test_withheld.py` whole: moving the `leak_facts` import to module scope does NOT pass
-  green — 3 collection errors. The mutation that does is LAUNDERING: wrapping
-  `check_no_platform_name_in_surface`'s import in `try/except ModuleNotFoundError: return
-  []` left all three files at their baseline (88 passed, 25 skipped), and
-  `benchmark.contamination_check` printed `ok    survey platform named in surface` — a
-  section that scanned nothing reported clean, and the exit stayed 2 only because the
-  other two sections still skipped. Pre-existing, inherited from the 2026-09-10 tests.
-  ACCEPT: a test under which a genuinely-skipping section, its key absent, reports SKIP
-  and never `ok`, seeded red by exactly that `try/except` wrap.
+- **The live seal-probe scorer's real skip path is untested.** The three keyed gate
+  sections are now driven with their keys withheld (`CHANGELOG.md` 2026-09-24,
+  `tests/test_contamination_skip.py::_KEY_READERS`). The `--live` path is not:
+  `agent/sealed.py`'s scorer imports `benchmark.leak_facts` in-function, and
+  `tests/test_contamination_skip.py::_live_run_without_the_scorer` replaces
+  `SealedWorktree.verify` with a stub that raises, so a `try/except` laundering that
+  import would go unseen. ACCEPT: the real scorer runs with the key withheld and the
+  probes print SKIP, seeded red by that wrap; add its reader to `_KEY_READERS`' scan.
 - **`tests/test_contamination_skip.py::test_require_complete_does_not_turn_a_clean_run_red`
   cannot go red** under the current shape of `main()`: the exit code reads
   `require_complete` only inside `if skipped:`. (Its one other read builds the printed

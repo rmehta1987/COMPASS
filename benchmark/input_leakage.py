@@ -308,13 +308,16 @@ def _standalone(haystack: str, needle: str) -> bool:
 
 
 def scan_prompt(pair_id: str, prompt: str,
-                papers: tuple[CohortPaper, ...] = COHORT_PAPERS) -> list[InputLeak]:
+                papers: tuple[CohortPaper, ...] = COHORT_PAPERS,
+                prevalence_tokens: set[str] | None = None) -> list[InputLeak]:
     """Every piece of answer-key content this one prompt already contains.
 
     Args:
         pair_id: The pair the prompt was rendered for, for the report.
         prompt: The rendered `user_prompt` text.
         papers: The bibliography to check against.
+        prevalence_tokens: `_prevalence_tokens()`, already read. None reads it
+            here.
 
     Returns:
         One `InputLeak` per (paper, field, token) hit; empty for a clean prompt.
@@ -344,7 +347,9 @@ def scan_prompt(pair_id: str, prompt: str,
             if ph in text and ph not in template:
                 out.append(InputLeak(pair_id, paper.pmid, "design_phrase", ph))
 
-    for tok in sorted(_prevalence_tokens()):
+    if prevalence_tokens is None:
+        prevalence_tokens = _prevalence_tokens()
+    for tok in sorted(prevalence_tokens):
         if _standalone(text, tok.lower()):
             out.append(InputLeak(pair_id, "", "published_prevalence", tok))
     return out
@@ -374,10 +379,19 @@ def scan_frame() -> list[InputLeak]:
 
     Returns:
         Every hit across the frame; empty when no prompt contains an answer.
+
+    Raises:
+        ModuleNotFoundError: When the prevalence key is withheld, whatever the
+            frame holds.
     """
+    # Read the key BEFORE the loop. Inside it, an empty frame never touched the
+    # key, so a clone without it printed `ok` for a section that scanned nothing
+    # for the one figure it exists to find, instead of SKIP.
+    tokens = _prevalence_tokens()
     return [leak
             for cand in enumerated_pairs()
-            for leak in scan_prompt(cand.pair_id, user_prompt(cand))]
+            for leak in scan_prompt(cand.pair_id, user_prompt(cand),
+                                    prevalence_tokens=tokens)]
 
 
 def environment_supplied(pair: Candidate) -> dict[str, list[str]]:

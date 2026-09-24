@@ -335,3 +335,130 @@ def test_the_run_says_which_gate_it_applied(
         "the two gates produce identical output, so the exit status is the "
         "only place the difference exists and a transcript cannot show it.")
     assert "permissive" in permissive and "strict" in strict
+
+
+# THE REAL SKIP PATH. Every test above plants its skip on `check_provenance`,
+# which imports nothing, so none of them ever ran a section that reads a key.
+# MEASURED 2026-09-24: wrapping `check_no_platform_name_in_surface`'s import in
+# `try/except ModuleNotFoundError: return []` left this file,
+# `test_contamination_surface.py` and `test_withheld.py` green, and the gate
+# printed `ok    survey platform named in surface` -- a section that scanned
+# nothing reported clean. These run the real sections with the keys withheld.
+
+#: Every function under the gate that imports a withheld key, and the section
+#: `main` prints for it. Checked both ways against the source by
+#: `test_every_key_reader_under_the_gate_is_listed`, so a new reader cannot
+#: escape the tests below by not being named here.
+_KEY_READERS = {
+    ("contamination_check", "check_no_platform_name_in_surface"):
+        "survey platform named in surface",
+    ("contamination_check", "check_no_prevalence_figure_in_surface"):
+        "published prevalence figures in surface",
+    # Reached through `scan_frame`, which reads it before its loop.
+    ("input_leakage", "_prevalence_tokens"):
+        "input does not contain the answer",
+}
+
+#: The function `main` calls for each keyed section, and whether it takes the
+#: surface.
+_KEYED_SECTIONS = {
+    "survey platform named in surface":
+        ("check_no_platform_name_in_surface", True),
+    "published prevalence figures in surface":
+        ("check_no_prevalence_figure_in_surface", True),
+    "input does not contain the answer":
+        ("check_input_does_not_contain_the_answer", False),
+}
+
+_EMPTY_SURFACE = {"planted": "a surface with nothing in it to find"}
+
+
+def _withhold_every_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make each withheld module unimportable, as it is in every clone but one.
+
+    A `None` in `sys.modules` makes the import raise `ModuleNotFoundError` with
+    `name` set, so this holds in the scoring clone too, where the files exist.
+    The package attribute goes as well, or `from benchmark import X` would find
+    an already-imported module there.
+
+    Args:
+        monkeypatch: The fixture.
+    """
+    import benchmark
+    for module in cc.WITHHELD_MODULES:
+        monkeypatch.setitem(sys.modules, module, None)
+        monkeypatch.delattr(benchmark, module.rpartition(".")[2], raising=False)
+
+
+@pytest.mark.parametrize("name", sorted(_KEYED_SECTIONS))
+def test_a_keyed_section_raises_when_its_key_is_withheld(
+        monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+    """Without its key a section has nothing to scan for, so it may not return."""
+    function, takes_surface = _KEYED_SECTIONS[name]
+    section = getattr(cc, function)
+    _withhold_every_key(monkeypatch)
+    with pytest.raises(ModuleNotFoundError) as exc:
+        section(_EMPTY_SURFACE) if takes_surface else section()
+    assert exc.value.name in cc.WITHHELD_MODULES, (
+        f"{name!r} raised for {exc.value.name!r}, which is not a withheld key, so "
+        f"main() would take the run down instead of skipping")
+
+
+def test_the_input_section_skips_on_an_empty_frame_too(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """The key is read before the loop, so an empty frame cannot hide its absence.
+
+    Seeded: with the read inside `scan_prompt` only, zero pairs never touched
+    the key and the section returned `[]` -- `ok` with nothing scanned.
+    """
+    from benchmark import input_leakage as IL
+    monkeypatch.setattr(IL, "enumerated_pairs", lambda: [])
+    _withhold_every_key(monkeypatch)
+    with pytest.raises(ModuleNotFoundError):
+        IL.check_input_does_not_contain_the_answer()
+
+
+def test_main_prints_skip_and_never_ok_for_a_section_whose_key_is_withheld(
+        monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """Through `main`'s own section table, so the wiring is under test too."""
+    keyed = {function for function, _ in _KEYED_SECTIONS.values()}
+    monkeypatch.setattr(cc, "model_visible_surface", lambda: dict(_EMPTY_SURFACE))
+    for function in set(_SECTIONS) - keyed:
+        monkeypatch.setattr(cc, function, lambda *a, **k: [])
+    monkeypatch.setattr(sys, "argv", ["contamination_check"])
+    _withhold_every_key(monkeypatch)
+    rc = cc.main()
+    out = capsys.readouterr().out
+
+    status: dict[str, str] = {}
+    for line in out.splitlines():
+        parts = line.split(None, 1)
+        if len(parts) == 2 and parts[0] in ("ok", "FAIL", "SKIP"):
+            status[parts[1]] = parts[0]
+    for name in _KEYED_SECTIONS:
+        assert status.get(name) == "SKIP", (
+            f"{name!r} printed {status.get(name)!r} with its key withheld. A "
+            f"section that could not read its key scanned for nothing, and `ok` "
+            f"reports that as clean.")
+    assert rc == 2, "every other section was clean, so this run is incomplete"
+
+
+def test_every_key_reader_under_the_gate_is_listed() -> None:
+    """Both ways: a reader added or removed reddens this until it is declared."""
+    import ast
+
+    found: set[tuple[str, str]] = set()
+    for module in ("contamination_check", "input_leakage"):
+        tree = ast.parse((ROOT / "benchmark" / f"{module}.py").read_text())
+        for fn in ast.walk(tree):
+            if isinstance(fn, ast.FunctionDef) and any(
+                    isinstance(n, ast.ImportFrom)
+                    and n.module in cc.WITHHELD_MODULES
+                    for n in ast.walk(fn)):
+                found.add((module, fn.name))
+    assert found == set(_KEY_READERS), (
+        f"functions importing a withheld key: {sorted(found)}; declared: "
+        f"{sorted(_KEY_READERS)}. A reader not declared has no test that it "
+        f"skips rather than passes.")
+    assert set(_KEY_READERS.values()) == set(_KEYED_SECTIONS), (
+        "every key reader must map to a section the SKIP tests drive")
