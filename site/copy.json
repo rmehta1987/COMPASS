@@ -161,7 +161,7 @@
     "esc(th.selection_note)",
     "esc(lat.note)"
    ],
-   "text": "threshold min_cos coverage precision recall F1 candidate values latency shipped · arm I · F1-maximising over the same {0} positives it is reported on {1} {2} {3} {4} {5} {6} {7} ms · {8} · {9} threads This row is arm I, {10} , not arm S, which the curves above are drawn from. Coverage: {11}. Precision, the positive predictive value: {12}. Recall, the sensitivity: {13}. This recall differs from the {14} above: {15} counts every query, and this one counts only queries that cleared min_cos. {16}. {17}"
+   "text": "threshold min_cos coverage precision recall F1 candidate values latency shipped · arm I · F1-maximising over the same {0} positives it is reported on {1} {2} {3} {4} {5} {6} {7} ms · {8} · {9} threads This row is arm I, {10} , not arm S, which the curves above are drawn from. Coverage: {11}. Precision, the positive predictive value: {12}. Recall, the sensitivity: {13}. This recall differs from the {14} above in its numerator only: both are over all positives, but {15} counts every query whose top match is right, and this recall counts only those that also cleared min_cos, so abstaining costs recall. {16}. {17}"
   },
   {
    "id": "cell.written-by-same-generator",

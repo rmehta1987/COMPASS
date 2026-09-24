@@ -1549,7 +1549,7 @@ function measureHTML(){
    +`<div class="tbl"><table><thead><tr><th>threshold</th><th>min_cos</th><th>coverage</th><th>precision</th><th>recall</th><th>F1</th><th>candidate values</th><th>latency</th></tr></thead><tbody>
    <tr><td>shipped &middot; arm I &middot; F1-maximising over the same ${n} positives it is reported on</td><td>${th.min_cos.toFixed(6)}</td><td>${th.coverage.toFixed(4)}</td><td>${th.precision.toFixed(4)}</td><td>${th.recall.toFixed(4)}</td><td>${th.f1.toFixed(4)}</td><td>${th.candidate_taus}</td><td>${lat.query_ms_isolated_single} ms · ${esc(lat.machine)} · ${lat.threads} threads</td></tr>
   </tbody></table></div>
-  <div class="none">This row is arm I, <em>${esc(I.label)}</em>, not arm S, which the curves above are drawn from. Coverage: ${esc(th.definitions.coverage)}. Precision, the positive predictive value: ${esc(th.definitions.precision)}. Recall, the sensitivity: ${esc(th.definitions.recall)}. This recall differs from the ${R1} above: ${R1} counts every query, and this one counts only queries that cleared min_cos. ${esc(th.selection_note)}.</div>
+  <div class="none">This row is arm I, <em>${esc(I.label)}</em>, not arm S, which the curves above are drawn from. Coverage: ${esc(th.definitions.coverage)}. Precision, the positive predictive value: ${esc(th.definitions.precision)}. Recall, the sensitivity: ${esc(th.definitions.recall)}. This recall differs from the ${R1} above in its numerator only: both are over all positives, but ${R1} counts every query whose top match is right, and this recall counts only those that also cleared min_cos, so abstaining costs recall. ${esc(th.selection_note)}.</div>
   <p class="prov">${esc(lat.note)}</p>`;
   h+=`<div class="none">${esc(sh.wrong_pick_detection.note)}.</div>`;
   return h;
