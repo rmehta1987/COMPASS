@@ -393,10 +393,11 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   (untracked, `run/` is gitignored) carries `generated` 2026-09-11, `min_specifiable` 1
   and rubric `694100e1ea900ddb` — the pre-registered values below — with counts probed
   257, flagged 63, unflagged 194, arm_pool 193, and `withholding_control.json` beside
-  it. Probed 257 is one more than the pre-registered frame's 256 live pairs; a
-  `lab_assay_*` record sits in the directory beside the `m3_Q16.*` ones, and which of
-  the two accounts for the extra probe is UNVERIFIED. Its `controls` field is empty, so
-  whether both controls ran is UNVERIFIED from that file. What is open: read the sweep against the pre-registration and record it —
+  it. Probed 257 = the frame's 256 live pairs + the negative control, which the
+  flagged/unflagged lists carry beside them. Both controls ran and are recorded in
+  `controls`: negative `lab:assay_17 -> clinical:measure_23` read
+  `not_specifiable_unaided` (`n_specifiable` 0), positive `m3:Q16.3 -> m2:Q5.10` read
+  `specifiable_unaided` (5). What is open: read the sweep against the pre-registration and record it —
   in `CHANGELOG.md` if it is history, `DESIGN.md` §7 if it bounds a claim. Not re-run.
   `rescore`/`--repartition` re-derives the partition from persisted records with no
   model call, so its threshold is revisable for free.
