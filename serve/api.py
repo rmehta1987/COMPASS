@@ -179,6 +179,33 @@ RATE_CLIENTS = 4096
 #: thousand of those exhaust a `ThreadingHTTPServer` with no request made.
 REQUEST_TIMEOUT_S = 30
 
+#: The shape `benchmark/rediscovery.py::boundary` prints. Restated rather than
+#: imported, because importing that module here would put the design-key reader
+#: in this process -- and this process runs in the clone where prompts are
+#: edited. `tests/test_serve_compare.py` pins the two strings equal.
+COMPARE_SCHEMA = "compass/rediscovery-boundary/1"
+
+#: The four states a compared field may be in, and the only ones forwarded.
+COMPARE_STATES = frozenset({"MATCH", "DIFFERS", "REVIEW", "UNAVAILABLE"})
+
+#: The only per-field keys forwarded from the scoring clone, and the only
+#: top-level ones. An ALLOWLIST, in the shape of `pseudonymise_hit`: a key the
+#: scoring clone adds later -- the paper's recorded value above all -- is
+#: dropped here until someone decides it may cross.
+COMPARE_FIELD_KEYS = ("field", "state", "why")
+COMPARE_TOP_KEYS = ("pmid", "design_key_readable", "same_build",
+                    "record_dictionary_version", "dictionary_version",
+                    "complaint_count")
+
+#: Seconds one comparison may run. The scoring clone imports the schema and
+#: loads its dictionary; a clone that hangs must not pin a request thread.
+COMPARE_TIMEOUT_S = 60
+
+#: Where the scoring clone keeps its record of page comparisons, relative to
+#: that clone. Written there, never here: the states it holds say what the
+#: answer key contains.
+COMPARE_LEDGER = Path("run") / "compare_ledger.jsonl"
+
 
 class State:
     """Process-wide handles, built lazily and shared across requests.
@@ -202,7 +229,10 @@ class State:
     def __init__(self, deploy_root: Path, site_dir: Path, run_dir: Path,
                  show_instrument: bool = False, auth: str | None = None,
                  enable_specify: bool = False,
-                 allowed_models: frozenset[str] | None = None) -> None:
+                 allowed_models: frozenset[str] | None = None,
+                 enable_compare: bool = False,
+                 scoring_clone: Path | None = None,
+                 scoring_python: str | None = None) -> None:
         """Prepare shared state and fail early on a missing instrument.
 
         Args:
@@ -225,6 +255,14 @@ class State:
                 (2026-09-15). A flag that spends a seat defaults to off.
             allowed_models: Models a REQUEST may name. Defaults to the pipeline
                 proxy alone; the operator widens it, never the caller.
+            enable_compare: Allow `POST /api/compare`. Off by default for the
+                reason `enable_specify` is: the route consults the answer key,
+                and a route that does that is not something to infer.
+            scoring_clone: The clone that holds `benchmark/design_key.py`. The
+                comparison runs THERE, as a subprocess, so the key is never
+                imported into this process or this clone.
+            scoring_python: The interpreter to run it with, defaulting to this
+                process's own.
         """
         self.deploy_root = deploy_root
         self.site_dir = site_dir
@@ -233,6 +271,15 @@ class State:
         self.auth = auth
         self.enable_specify = enable_specify
         self.allowed_models = frozenset(allowed_models or DEFAULT_MODELS)
+        self.enable_compare = enable_compare
+        self.scoring_clone = scoring_clone
+        self.scoring_python = scoring_python or sys.executable
+        # One comparison at a time: each is a process in another clone, and the
+        # rate limit alone would allow sixty of them at once.
+        self.compare_lock = threading.Lock()
+        # Counted so the page can say how often this session has looked. Held in
+        # memory only; the durable record is the scoring clone's ledger.
+        self.compare_count = 0
         # Per-client request times, for the rate limit. Keyed by source address,
         # which is all a shared endpoint has: this bounds volume, not identity.
         self._hits: dict[str, list[float]] = {}
@@ -1741,6 +1788,170 @@ def _specify_payload(res: Any, identity: Any, version: str, model: str,
     return payload
 
 
+def _compare_record(state: State, ticket: str) -> str:
+    """The finished protocol a ticket names, as JSON text.
+
+    Looked up by ticket and never read from the request body: a caller that
+    could send its own record could send one built to probe the key.
+
+    Args:
+        state: Shared handles.
+        ticket: A Specifier run's ticket.
+
+    Returns:
+        The selected `ProtocolSpecification`, serialised.
+
+    Raises:
+        ValueError: When there is no such run, it is still going, it is not a
+            Specifier run, or it ended in a refusal. Each says what to do.
+    """
+    with state._jobs_lock:
+        job = state.jobs.get(ticket)
+    if job is None:
+        job = _load_job(state, ticket)
+    if job is None:
+        raise ValueError("no finished Specifier run with that ticket on this "
+                         "endpoint; run the pair on Ask first")
+    if job.get("status") == "running":
+        raise ValueError("the Specifier is still running; compare once the "
+                         "record has landed")
+    if str(job.get("kind") or JOB_SPECIFY) != JOB_SPECIFY:
+        raise ValueError("that ticket is a proposal, not a Specifier record")
+    if job.get("status") != "done":
+        raise ValueError("that run failed, so there is no record to compare")
+    selected = (job.get("run") or {}).get("selected")
+    if not selected:
+        # A refusal, or a design the gate rejected. The rejected one is NOT
+        # compared: the gate's verdict stands, and comparing it would treat an
+        # unauthorised design as the pipeline's answer.
+        raise ValueError("The Specifier refused this pair, so there is nothing "
+                         "to place beside the paper.")
+    return json.dumps(selected)
+
+
+def _compare_failure(proc: Any) -> str:
+    """Say why the scoring clone produced no comparison, without quoting it.
+
+    Its stderr can carry key content -- a validation error echoes field values
+    -- so only the exception's class name crosses, never its message.
+
+    Args:
+        proc: The finished `subprocess.CompletedProcess`.
+
+    Returns:
+        A sentence for the page.
+    """
+    last = next((ln for ln in reversed((proc.stderr or "").splitlines())
+                 if ln.strip()), "")
+    name = re.match(r"([A-Za-z_][\w.]*(?:Error|Exception|Exit))\b", last.strip())
+    what = f" ({name.group(1)})" if name else ""
+    return (f"the scoring clone could not run the comparison (exit "
+            f"{proc.returncode}){what}. It may be on an older commit than this "
+            f"one: update it so benchmark/rediscovery.py accepts --json.")
+
+
+def _compare(state: State, body: dict[str, Any]) -> dict[str, Any]:
+    """Place one finished record beside one paper's recorded design.
+
+    WHERE THE KEY IS READ. Not here. `benchmark/rediscovery.py` runs as a
+    subprocess inside `state.scoring_clone`, the only clone holding
+    `benchmark/design_key.py`, and what comes back is filtered to an allowlist
+    of field names, states and fixed reasons. The recorded values never enter
+    this process, and nothing this route receives is written to disk here: no
+    job file, no log line beyond the request line `log_message` always writes.
+
+    WHAT IT DOES NOT CLOSE. A MATCH says the paper's key equals the one the
+    record used, and on an Ask record the person asking chose that key -- so a
+    MATCH discloses the key to whoever is using the page. The operator accepted
+    that on 2026-09-24. The ledger in the scoring clone is what keeps the
+    resulting feedback loop visible to the tagged baseline.
+
+    Args:
+        state: Shared handles.
+        body: The request, carrying `ticket` and `pmid`.
+
+    Returns:
+        `{compare: {...}, comparisons_this_session, not_a_score}`.
+
+    Raises:
+        ValueError: On a bad request, a missing record or a refusal.
+        Busy: When another comparison is running.
+        RuntimeError: When the scoring clone is missing or cannot run.
+    """
+    import subprocess
+
+    ticket = str(body.get("ticket") or "").strip()
+    pmid = str(body.get("pmid") or "").strip()
+    if not ticket or not pmid:
+        raise ValueError("ticket and pmid are both required")
+    if not re.fullmatch(r"\d{1,9}", pmid):
+        raise ValueError("pmid must be a PubMed identifier, digits only")
+    record = _compare_record(state, ticket)
+
+    clone = state.scoring_clone
+    if clone is None or not clone.is_dir():
+        raise RuntimeError("the scoring clone is not at the configured path; "
+                           "restart with --scoring-clone pointing at it")
+    if not (clone / "benchmark" / "rediscovery.py").is_file():
+        raise RuntimeError(f"the scoring clone ({clone.name}) has no "
+                           "benchmark/rediscovery.py; update it to this commit")
+
+    if not state.compare_lock.acquire(blocking=False):
+        raise Busy("another comparison is running; try again in a moment")
+    try:
+        # PYTHONPATH is dropped so the child imports the scoring clone's own
+        # modules and not this clone's, which is where a stale checkout would
+        # otherwise hide.
+        env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+        try:
+            proc = subprocess.run(
+                [state.scoring_python, "-m", "benchmark.rediscovery",
+                 "--pmid", pmid, "--record", "-", "--json",
+                 "--ledger", str(clone / COMPARE_LEDGER)],
+                input=record, capture_output=True, text=True, cwd=clone,
+                env=env, timeout=COMPARE_TIMEOUT_S, check=False)
+        except FileNotFoundError as exc:
+            raise RuntimeError("the scoring clone's interpreter was not found; "
+                               "restart with --scoring-python") from exc
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(f"the scoring clone did not answer within "
+                               f"{COMPARE_TIMEOUT_S} s") from exc
+        state.compare_count += 1
+        count = state.compare_count
+    finally:
+        state.compare_lock.release()
+
+    lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
+    try:
+        raw = json.loads(lines[-1]) if lines else None
+    except ValueError:
+        raw = None
+    # The schema line is the sentinel. Exit 2 means "key withheld" to
+    # rediscovery and "usage error" to argparse, so the status alone would
+    # show a stale clone as a withheld key.
+    if not isinstance(raw, dict) or raw.get("schema") != COMPARE_SCHEMA:
+        raise RuntimeError(_compare_failure(proc))
+    if raw.get("error") == "unknown_pmid":
+        raise ValueError(f"PMID {pmid} is not in the bibliography the scoring "
+                         "clone carries")
+
+    fields = []
+    for f in raw.get("fields") or []:
+        if not isinstance(f, dict) or f.get("state") not in COMPARE_STATES:
+            continue
+        fields.append({k: str(f.get(k) or "") for k in COMPARE_FIELD_KEYS})
+    out = {k: raw.get(k) for k in COMPARE_TOP_KEYS}
+    out["fields"] = fields
+    return {
+        "compare": out,
+        "comparisons_this_session": count,
+        "not_a_score": ("A diagnostic of one externally posed record, never a "
+                        "benchmark result. The pair was posed, so this cannot "
+                        "show whether the pipeline would have found the study; "
+                        "the tagged baseline is the only score."),
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     """Static page at `/`, two JSON routes under `/api/`.
 
@@ -1884,6 +2095,7 @@ class Handler(BaseHTTPRequestHandler):
                 "deploy_root": s.deploy_root.name,
                 "dictionary": s.scrubber.source.name,
                 "retriever_loaded": s._retriever is not None,
+                "compare_enabled": s.enable_compare,
             })
             return
         rel = route.lstrip("/") or "index.html"
@@ -1909,9 +2121,13 @@ class Handler(BaseHTTPRequestHandler):
             # text, and returns 404. `site/tools/offline.py` certifies "zero
             # external requests" and cannot see that, so the page must not be
             # able to make it at all.
-            body = body.replace(
-                b"</head>",
-                b"<script>window.COMPASS_ENDPOINT=true;</script></head>", 1)
+            # The comparison control is shown only where the route is on, for
+            # the same reason: a button that can only answer 403 is dead.
+            marker = (b"<script>window.COMPASS_ENDPOINT=true;"
+                      + (b"window.COMPASS_COMPARE=true;"
+                         if self.state.enable_compare else b"")
+                      + b"</script></head>")
+            body = body.replace(b"</head>", marker, 1)
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
@@ -1942,12 +2158,19 @@ class Handler(BaseHTTPRequestHandler):
         if route == "/api/specify" and not self.state.enable_specify:
             self._send(403, self._specify_disabled())
             return
+        if route == "/api/compare" and not self.state.enable_compare:
+            self._send(403, {"error": "/api/compare is disabled on this endpoint "
+                                      "(start with --enable-compare and "
+                                      "--scoring-clone). It consults the answer "
+                                      "key, so it is off unless asked for."})
+            return
         routes = {"/api/retrieve": _retrieve, "/api/specify": _specify,
                   "/api/specify/status": _specify_status,
                   "/api/resolve": _resolve,
                   "/api/pair": _pair,
                   "/api/enumerate": _enumerate,
-                  "/api/metrics": _metrics}
+                  "/api/metrics": _metrics,
+                  "/api/compare": _compare}
         fn = routes.get(route)
         if fn is None:
             self._send(404, {"error": f"no route {route}"})
@@ -2151,6 +2374,29 @@ def _refuse_unsafe_site_dir(site_dir: Path, run_dir: Path) -> str | None:
     return None
 
 
+def _refuse_scoring_clone(scoring: Path | None) -> str | None:
+    """Refuse a `--scoring-clone` that would defeat the point of having one.
+
+    Args:
+        scoring: The resolved scoring clone, or None when none was given.
+
+    Returns:
+        Why it is refused, or None when it may be used.
+    """
+    if scoring is None:
+        return "--enable-compare needs --scoring-clone: the comparison runs there"
+    if scoring == ROOT.resolve() or ROOT.resolve().is_relative_to(scoring) \
+            or scoring.is_relative_to(ROOT.resolve()):
+        # The whole design is that the key lives in a DIFFERENT clone from the
+        # one where prompts are edited. Pointing at this one, or at a directory
+        # inside or around it, would put the key where the rule forbids it.
+        return (f"refusing --scoring-clone {scoring}: it is this clone or "
+                f"overlaps it, and the answer key must live in a separate one")
+    if not scoring.is_dir():
+        return f"--scoring-clone not found: {scoring}"
+    return None
+
+
 def build_server(host: str, port: int, state: State) -> ThreadingHTTPServer:
     """Wire the handler to shared state and bind the socket.
 
@@ -2218,6 +2464,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                          "For an operator testing retrieval against a dictionary "
                          "already on their own disk -- a pseudonym cannot tell "
                          "you whether the RIGHT variable was found.")
+    ap.add_argument("--enable-compare", action="store_true",
+                    help="allow POST /api/compare, which places a finished Ask "
+                         "record beside a paper's recorded design. OFF by "
+                         "default: it consults the answer key. Needs "
+                         "--scoring-clone.")
+    ap.add_argument("--scoring-clone", type=Path, default=None,
+                    help="the clone holding benchmark/design_key.py. The "
+                         "comparison runs there as a subprocess; the key is "
+                         "never imported into this clone.")
+    ap.add_argument("--scoring-python", default=None,
+                    help="interpreter for the scoring clone (default: this one)")
     ap.add_argument("--i-am-not-serving-the-public", action="store_true",
                     help="required to bind a non-loopback address; every "
                          "request spends the seat COMPASS_CLAUDE_CONFIG_DIR "
@@ -2291,10 +2548,18 @@ def main(argv: list[str]) -> int:
     # caller could spend the operator's Claude seat and hold the lock for
     # minutes. A route that expensive is not something to infer.
     enable_specify = bool(a.enable_specify)
+    scoring = a.scoring_clone.resolve() if a.scoring_clone else None
+    if a.enable_compare:
+        refusal = _refuse_scoring_clone(scoring)
+        if refusal:
+            print(refusal, file=sys.stderr)
+            return 2
     state = State(a.deploy_root.resolve(), a.site_dir.resolve(), a.run_dir.resolve(),
                   show_instrument=a.show_instrument, auth=auth,
                   enable_specify=enable_specify,
-                  allowed_models=frozenset(a.allow_model or DEFAULT_MODELS))
+                  allowed_models=frozenset(a.allow_model or DEFAULT_MODELS),
+                  enable_compare=bool(a.enable_compare), scoring_clone=scoring,
+                  scoring_python=a.scoring_python)
     srv = build_server(a.host, a.port, state)
     print(f"COMPASS test endpoint   http://{a.host}:{a.port}/")
     print(f"  site        {state.site_dir}")
@@ -2303,6 +2568,9 @@ def main(argv: list[str]) -> int:
           f"({len(state.scrubber.corpus)} five-word runs indexed)")
     print("  routes      GET /api/health · GET /console · POST /api/retrieve"
           " · POST /api/specify")
+    if state.enable_compare and state.scoring_clone is not None:
+        print(f"  compare     ON, run in {state.scoring_clone.name} with "
+              f"{state.scoring_python}; ledger kept there, nothing kept here")
     print("  NOT a measurement surface: posed records, screened_from=0.")
     if state.show_instrument:
         print("  ** --show-instrument: responses carry question wording, options "

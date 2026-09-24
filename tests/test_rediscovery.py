@@ -402,3 +402,113 @@ def test_a_pasted_row_passes_the_accept_criterion_that_confirms_a_paper():
 
 def test_the_scaffold_status_is_json_serialisable():
     json.dumps(RD.scaffold_status())
+
+
+# --- the boundary: what may leave the scoring clone --------------------------- #
+
+def _boundary_json(monkeypatch, rows, capsys, extra=()) -> tuple[int, str]:
+    """Run the CLI in boundary mode on p014, the record read from stdin.
+
+    Args:
+        monkeypatch: pytest's patcher.
+        rows: The design-key table to serve, or None to leave it withheld.
+        capsys: pytest's capture.
+        extra: Further arguments.
+
+    Returns:
+        (exit status, stdout text).
+    """
+    import io
+
+    if rows is not None:
+        _serve(monkeypatch, rows)
+    monkeypatch.setattr(sys, "stdin", io.StringIO(p014().model_dump_json()))
+    rc = RD._main(["--pmid", PMID, "--record", "-", "--json", *extra])
+    return rc, capsys.readouterr().out
+
+
+def test_no_recorded_key_crosses_the_boundary_even_when_the_row_is_filled(
+        monkeypatch, capsys):
+    """The paper's keys must never leave the scoring clone in the payload.
+
+    Both states are served: m3:Q16.2 is p014's own exposure (MATCH) and
+    m3:Q16.3 is not (DIFFERS). Neither string may appear anywhere in what
+    serve/ reads, because the website prints it and the editing clone is where
+    prompts are written. Seeded: adding "recorded" to BOUNDARY_FIELDS turns
+    this red.
+    """
+    from serve.redact import KEY_RE
+
+    for key in ("m3:Q16.2", "m3:Q16.3"):
+        _rc, out = _boundary_json(monkeypatch, (_row(_variable(key)),), capsys)
+        payload = json.loads(out)
+        assert payload["schema"] == RD.BOUNDARY_SCHEMA
+        assert all(set(f) == set(RD.BOUNDARY_FIELDS) for f in payload["fields"])
+        leaked = KEY_RE.findall(out)
+        assert not leaked, f"a recorded key crossed the clone boundary: {leaked}"
+        states = {f["field"]: f["state"] for f in payload["fields"]}
+        assert states["exposure_keys"] in (RD.MATCH, RD.DIFFERS)
+
+
+def test_boundary_mode_prints_json_only_and_exits_incomplete_without_the_key(
+        monkeypatch, capsys):
+    """Where the key is withheld, the payload says so and exit stays 2.
+
+    serve/ reads `design_key_readable` from the JSON rather than trusting the
+    exit status, because argparse also exits 2 on a usage error.
+    """
+    if RD.design_key_present():
+        pytest.skip("the design key is readable here; this pins the other clone")
+    rc, out = _boundary_json(monkeypatch, None, capsys)
+    payload = json.loads(out)
+    assert rc == 2
+    assert payload["design_key_readable"] is False
+    states = {f["field"]: f["state"] for f in payload["fields"]}
+    assert states["exposure_keys"] == states["outcome_keys"] == RD.UNAVAILABLE
+
+
+def test_boundary_mode_counts_complaints_and_never_prints_their_text(
+        monkeypatch, capsys):
+    """A complaint names the key it rejects, so only its count may cross."""
+    rc, out = _boundary_json(monkeypatch, (_row(_variable("m3:Q16.1")),), capsys)
+    payload = json.loads(out)
+    assert rc == 1, "a failure must still outrank everything in boundary mode"
+    assert payload["complaint_count"] >= 1
+    assert "m3:Q16.1" not in out and "COMPLAINT" not in out, (
+        "complaint text crossed the clone boundary")
+
+
+def test_every_comparison_is_ledgered_where_the_key_lives(monkeypatch, capsys,
+                                                          tmp_path):
+    """Comparing is cheap on the website; the ledger makes re-posing visible.
+
+    The tagged baseline can then say which papers were looked at from the page
+    before it ran. Seeded: dropping the `append_ledger` call turns this red.
+    """
+    ledger = tmp_path / "compare_ledger.jsonl"
+    _boundary_json(monkeypatch, (_row(_variable("m3:Q16.2")),), capsys,
+                   ("--ledger", str(ledger)))
+    lines = ledger.read_text().splitlines()
+    assert len(lines) == 1, "comparison unrecorded where the score is produced"
+    line = json.loads(lines[0])
+    assert line["pmid"] == PMID and len(line["record_sha256"]) == 64
+    assert line["states"]["exposure_keys"] == RD.MATCH
+
+
+def test_an_unknown_pmid_is_a_named_failure_in_boundary_mode(monkeypatch, capsys):
+    """serve/ must be able to tell a wrong pmid from a broken scoring clone."""
+    import io
+
+    monkeypatch.setattr(sys, "stdin", io.StringIO(p014().model_dump_json()))
+    rc = RD._main(["--pmid", "99999999", "--record", "-", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1 and payload["error"] == "unknown_pmid"
+    assert payload["schema"] == RD.BOUNDARY_SCHEMA
+
+
+def test_a_comparison_across_two_builds_says_so():
+    """DIFFERS across two dictionary builds may be the builds disagreeing."""
+    rec = RD.recorded_design(PMID)
+    rows = RD.compare(rec, p014())
+    assert RD.boundary(rec, rows, "aaaaaaaaaaaa", "bbbbbbbbbbbb")["same_build"] is False
+    assert RD.boundary(rec, rows, "aaaaaaaaaaaa", "aaaaaaaaaaaa")["same_build"] is True

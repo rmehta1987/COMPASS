@@ -212,6 +212,14 @@ def main() -> int:
                    "function steer(nav,stage){ sel=stage; }")
         results.append(("render_race", "a finished run drags the reader off the stage they picked",
                         run_node("render_race", root) != 0))
+        # 9 the comparison against a paper. A MATCH discloses the paper's key,
+        # so the one thing the page must never do with it is put it in the file
+        # the download button writes.
+        root = copy_site(tmp / "n5")
+        plant_page(root, "  if(gen) doc.enumeration=gen;\n",
+                   "  if(gen) doc.enumeration=gen;\n  if(cmp) doc.compare=cmp;\n")
+        results.append(("render_compare", "the JSON download carries the comparison",
+                        run_node("render_compare", root) != 0))
     # 6 an untracked artifact. THIS USED TO DOCTOR THE REAL TREE: it wrote a
     # planted artifact into `site/artifacts/`, overwrote the real `index.json`,
     # and restored both in a `finally`. Whether a file is tracked is a fact

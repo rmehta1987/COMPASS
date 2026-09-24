@@ -613,6 +613,11 @@ function resolverPanel(){
    suggested its anchors. */
 const anchors={exposure:null,outcome:null};
 let spec=null, specBusy=false;
+/* The comparison against a paper, for the record in `spec`. Deliberately NOT
+   read by `panelRecord`: a MATCH discloses the paper's key, and the JSON
+   download is a file that travels. `tests/test_serve_compare.py` keeps the
+   server from writing it down; this keeps the page from doing so. */
+let cmp=null;
 
 async function runSpecifier(nav){
   if(!window.COMPASS_ENDPOINT||specBusy) return;
@@ -620,7 +625,7 @@ async function runSpecifier(nav){
   /* Clicked directly this is the reader's own intent, so it takes a fresh
      ticket; chained from the resolver it inherits that request's. */
   if(nav===undefined) nav=(navGen={});
-  specBusy=true; spec={running:true}; steer(nav,"ask"); draw();
+  specBusy=true; spec={running:true}; cmp=null; steer(nav,"ask"); draw();
   try{
     const r=await fetch("/api/specify",{method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -645,7 +650,9 @@ async function runSpecifier(nav){
       const u=await q.json().catch(()=>null);
       if(!u||typeof u!=="object"){ spec={error:`the server answered ${q.status}`}; return; }
       if(u.status==="running"){ spec={running:true,ticket:j.ticket,elapsed_s:u.elapsed_s}; draw(); continue; }
-      spec=u; return;
+      /* The ticket is kept: it is how a comparison names this record to the
+         server, which looks the record up itself rather than taking it back. */
+      spec=Object.assign({ticket:j.ticket},u); return;
     }
   }catch(err){
     spec={error:"the server did not answer"};
@@ -844,6 +851,84 @@ function recordCarries(){
     +`<code>NotSpecifiable</code> refusal; the Specifier builds nothing else.</div>`;
 }
 
+/* COMPARE WITH THE PAPER. Under the record, not on Score: Score shows a past
+   run, and a live control there reads as re-scoring, which that tab says is
+   forbidden. Each field is one sentence with no colour and no count, because a
+   row of MATCH chips reads as a grade and this is not one.
+
+   Why the sentences say so little about the Specifier: the only fields
+   compared by rule are the exposure and outcome variables, and on Ask those
+   were chosen by the person asking. Covariates and the analysis model are
+   never compared by rule (`benchmark/rediscovery.py::compare`), so the section
+   says what a match does and does not show rather than letting it read as a
+   verdict on the design. */
+const CMP_FIELD={exposure_keys:"exposure",outcome_keys:"outcome",
+  adjusted_covariate_keys:"adjusted covariates",model_form:"analysis model",
+  analytic_n:"analytic sample size",expected_direction:"expected direction"};
+
+function cmpSentence(f,res){
+  if(f.state==="MATCH") return "uses the variable the paper recorded";
+  if(f.state==="DIFFERS") return "uses a different variable from the paper's;"
+    +" first check whether the questionnaire holds the paper's measure at all";
+  if(f.state==="REVIEW") return "needs a reader: the paper and the record describe"
+    +" this in different vocabularies, so no rule compares them";
+  if(!res.design_key_readable) return "not compared: the paper's recorded design"
+    +" is not readable on this server";
+  if(/no row for this paper/.test(f.why)) return "nothing on record for this paper"
+    +" yet; nothing was compared and nothing is wrong";
+  return `not compared: ${f.why}`;
+}
+
+function compareBlock(){
+  const papers=(DATA.metrics&&DATA.metrics.papers)||[];
+  const busy=cmp&&cmp.running, chosen=cmp&&cmp.pmid;
+  let h=`<p class="sec lead">compare with the paper</p>`
+    +`<div class="none">Pick the paper this question came from. The page places this`
+    +` record beside what the project has recorded about that paper's design, one`
+    +` field at a time. It checks one question you posed; it is not a score.</div>`
+    +`<div class="pair"><select id="cmp-pmid" aria-label="paper">`
+    +papers.map(p=>`<option value="${att(p.pmid)}"${String(p.pmid)===String(chosen)?" selected":""}>`
+      +`${esc(p.pmid)} · ${esc(p.year)} · ${esc(p.venue)}</option>`).join("")
+    +`</select></div>`
+    +`<div class="after"><button class="g" id="cmp-go"${busy?" disabled":""}>`
+    +`${busy?"comparing&hellip;":"Compare"}</button></div>`;
+  if(!cmp||busy) return h;
+  if(cmp.error) return h+`<div class="ph"><b>NO COMPARISON</b> &mdash; ${esc(cmp.error)}</div>`;
+  const res=cmp.result.compare;
+  h+=`<dl>`+res.fields.map(f=>row(esc(CMP_FIELD[f.field]||f.field.replace(/_/g," ")),
+      esc(cmpSentence(f,res)),true)).join("")+`</dl>`;
+  if(res.complaint_count) h+=`<div class="none" style="color:var(--signal)">The`
+    +` scoring clone reports a problem with this paper's key row, so the comparison`
+    +` means nothing until whoever keeps the key fixes that row.</div>`;
+  if(res.same_build===false) h+=`<div class="none" style="color:var(--signal)">This`
+    +` record was specified against dictionary build ${esc(res.record_dictionary_version)}`
+    +` and the paper's side resolves against build ${esc(res.dictionary_version||"none")},`
+    +` so a difference may be the two builds disagreeing.</div>`;
+  h+=`<div class="none">A match means the variable used here is the one the paper`
+    +` used. It says nothing about the covariates or the analysis model the`
+    +` Specifier chose. ${esc(cmp.result.not_a_score)} This session has made`
+    +` ${cmp.result.comparisons_this_session} comparison(s).</div>`;
+  return h;
+}
+
+async function runCompare(){
+  if(!window.COMPASS_COMPARE||!spec||!spec.ticket||(cmp&&cmp.running)) return;
+  const ticket=spec.ticket, pmid=el("#cmp-pmid").value;
+  cmp={running:true,pmid}; draw();
+  try{
+    const r=await fetch("/api/compare",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ticket,pmid})});
+    const j=await r.json().catch(()=>null);
+    /* A newer run replaced the record while this was in flight: its answer
+       is about a record no longer on screen, so it is dropped. */
+    if(!spec||spec.ticket!==ticket) return;
+    cmp=(j&&j.compare)?{pmid,result:j}
+      :{pmid,error:(j&&j.error)||`the server answered ${r.status}`};
+  }catch(err){ cmp={pmid,error:"the server did not answer"}; }
+  finally{ draw(); }
+}
+
 function specifierPanel(){
   const j=spec;
   if(j.running) return `<p class="sec">running</p><div class="ph"><b>IN PROGRESS</b>`
@@ -884,6 +969,9 @@ function specifierPanel(){
       +`<details><summary>the record as JSON &middot; provenance</summary>`
       +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre></details>`
       +recordCarries();
+    if(window.COMPASS_COMPARE) h+=j.selected?compareBlock()
+      :`<p class="sec lead">compare with the paper</p><div class="none">The Specifier`
+       +` refused this pair, so there is nothing to place beside the paper.</div>`;
   }else{
     h+=`<p class="sec">output</p><div class="ph"><b>NO RECORD</b> &mdash; ${esc(j.reason||"the run produced neither a protocol nor a refusal")}</div>`;
     /* A rejected design is still a design. The sample kept it, so show it: a
@@ -1894,6 +1982,7 @@ function draw(){
   document.querySelectorAll("[data-anchor]").forEach(b=>b.onclick=()=>{
     anchors[b.dataset.anchor]=b.dataset.key; draw();});
   const go=el("#go-spec"); if(go) go.onclick=runSpecifier;
+  const cg=el("#cmp-go"); if(cg) cg.onclick=runCompare;
   const sa=el("#spec-ask");
   if(sa) sa.onclick=()=>{
     /* Mirrored into the main bar so there is ONE request on the page: the bar

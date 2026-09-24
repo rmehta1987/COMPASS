@@ -88,3 +88,24 @@ def test_the_excluded_directories_are_named_and_include_the_cache() -> None:
     assert "__pycache__" in SKIP_DIRS
     assert ".git" in SKIP_DIRS
     assert SKIP_SUFFIXES, "the binary-suffix filter must not be empty"
+
+
+def test_the_compare_section_keeps_the_key_out_of_the_page() -> None:
+    """Run `site/tools/render_compare.js`, which only a served page reaches.
+
+    The comparison section appears only behind `--enable-compare`, so no
+    static check renders it. The harness pins that the record is named by
+    ticket, that each field reads as a sentence, and that the JSON download
+    does not carry the comparison, since a MATCH discloses the paper's key.
+    """
+    import shutil
+    import subprocess
+
+    import pytest
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node is not installed; the harness is JavaScript")
+    r = subprocess.run([node, str(TOOLS / "render_compare.js"), str(ROOT / "site")],
+                       capture_output=True, text=True, timeout=120, check=False)
+    assert r.returncode == 0, r.stderr or r.stdout

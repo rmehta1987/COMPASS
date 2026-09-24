@@ -382,6 +382,105 @@ def render(recorded: RecordedDesign,
     return "\n".join(out)
 
 
+# --------------------------------------------------------------------------- #
+# the boundary: what may leave the scoring clone
+# --------------------------------------------------------------------------- #
+
+#: The version of `boundary`'s shape. `serve/api.py` refuses any other, so a
+#: scoring clone left on an older checkout reads as stale rather than as a
+#: comparison.
+BOUNDARY_SCHEMA = "compass/rediscovery-boundary/1"
+
+#: The only attributes of a `FieldComparison` that cross into the editing clone.
+#: `recorded` is left out because it IS the design key's content, and a key
+#: that reaches the clone where prompts are edited is the channel C36 closed.
+#: `specified` is left out because it is the caller's own record, which the
+#: caller already holds. `why` is safe only because every `why` in `compare`
+#: is a fixed sentence; `tests/test_rediscovery.py` pins that no key reaches it.
+BOUNDARY_FIELDS = ("field", "state", "why")
+
+
+def boundary(recorded: RecordedDesign, rows: Sequence[FieldComparison],
+             record_dictionary_version: str,
+             dictionary_version: str | None) -> dict[str, object]:
+    """The side-by-side with the paper's side taken out.
+
+    What the website shows. A MATCH still says the recorded key equals the one
+    the record used, and when the record's anchors were chosen by the person
+    asking, that is the key; the operator accepted that on 2026-09-24. What
+    this refuses to do is carry the recorded values themselves, so no field of
+    the payload can be quoted as the paper's design.
+
+    Args:
+        recorded: The paper's recorded design.
+        rows: The comparisons, from `compare`.
+        record_dictionary_version: The build the record was specified against.
+        dictionary_version: The build this clone resolves against, or None
+            when it has none.
+
+    Returns:
+        A JSON-ready payload, carrying no recorded value.
+    """
+    return {
+        "schema": BOUNDARY_SCHEMA,
+        "pmid": recorded.pmid,
+        "design_key_readable": recorded.design_key_readable,
+        "fields": [{k: getattr(r, k) for k in BOUNDARY_FIELDS} for r in rows],
+        "record_dictionary_version": record_dictionary_version,
+        "dictionary_version": dictionary_version,
+        # Two builds can resolve one key differently, so a DIFFERS across them
+        # may be the builds disagreeing rather than the designs.
+        "same_build": dictionary_version == record_dictionary_version,
+    }
+
+
+def _this_build() -> str | None:
+    """The dictionary build this clone resolves against.
+
+    Returns:
+        Its version hash, or None when the clone has no built dictionary.
+    """
+    try:
+        from env.tools import dictionary_version
+        return dictionary_version()
+    except (OSError, KeyError, ValueError):
+        return None
+
+
+def append_ledger(path: Path, pmid: str, record_text: str,
+                  p: ProtocolSpecification,
+                  rows: Sequence[FieldComparison]) -> None:
+    """Record that one comparison was made, where the key lives.
+
+    The website makes comparing cheap, and a comparison someone re-poses a
+    question after is tuning against the answer key. This line is what lets
+    the tagged baseline say which papers were looked at from the page before
+    it ran. It is written in the scoring clone, so the states it holds never
+    enter the editing clone.
+
+    Args:
+        path: The ledger file, created if absent.
+        pmid: The paper compared against.
+        record_text: The record exactly as received, hashed for identity.
+        p: The validated record.
+        rows: The comparisons.
+    """
+    import hashlib
+    from datetime import UTC, datetime
+
+    line = {
+        "at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "pmid": pmid,
+        "record_sha256": hashlib.sha256(record_text.encode()).hexdigest(),
+        "protocol_id": p.protocol_id,
+        "record_dictionary_version": p.dictionary_version,
+        "states": {r.field: r.state for r in rows},
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(line, sort_keys=True) + "\n")
+
+
 def scaffold_status() -> dict[str, object]:
     """How far the worked rediscovery has got, with nothing inferred.
 
@@ -433,22 +532,53 @@ def _main(argv: Sequence[str] | None = None) -> int:
     """
     ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     ap.add_argument("--pmid", help="a paper in benchmark/cohort_papers.py")
-    ap.add_argument("--record", type=Path,
-                    help="a ProtocolSpecification JSON to compare against")
+    ap.add_argument("--record",
+                    help="a ProtocolSpecification JSON to compare against, "
+                         "or - to read it from stdin")
+    ap.add_argument("--json", action="store_true",
+                    help="print only the boundary payload: states and reasons, "
+                         "never the paper's recorded values (what serve/ reads)")
+    ap.add_argument("--ledger", type=Path,
+                    help="append one line per comparison to this file")
     args = ap.parse_args(argv)
 
     status = scaffold_status()
     complaints = status["complaints"]
     assert isinstance(complaints, list)
 
+    if args.json and args.pmid is None:
+        ap.error("--json needs --pmid and --record")
     if args.pmid is None:
         print(json.dumps(status, indent=1))
     else:
-        rec = recorded_design(args.pmid)
+        try:
+            rec = recorded_design(args.pmid)
+        except KeyError:
+            if not args.json:
+                raise
+            # A named failure rather than a traceback, so serve/ can tell "not
+            # a paper this bibliography carries" from "the clone is broken".
+            print(json.dumps({"schema": BOUNDARY_SCHEMA, "pmid": args.pmid,
+                              "error": "unknown_pmid"}))
+            return EXIT_FAILED
         if args.record is None:
             ap.error("--pmid needs --record: a side-by-side needs both sides")
-        p = ProtocolSpecification.model_validate_json(args.record.read_text())
-        print(render(rec, compare(rec, p)))
+        text = (sys.stdin.read() if args.record == "-"
+                else Path(args.record).read_text())
+        p = ProtocolSpecification.model_validate_json(text)
+        rows = compare(rec, p)
+        if args.ledger is not None:
+            append_ledger(args.ledger, args.pmid, text, p, rows)
+        if args.json:
+            # Complaints are counted, never printed: `design_anchor`'s
+            # complaint text names the key it rejects.
+            out = boundary(rec, rows, p.dictionary_version, _this_build())
+            out["complaint_count"] = len(complaints)
+            print(json.dumps(out))
+            if complaints:
+                return EXIT_FAILED
+            return EXIT_OK if rec.design_key_readable else EXIT_INCOMPLETE
+        print(render(rec, rows))
 
     for line in complaints:
         print(f"  COMPLAINT  {line}")
