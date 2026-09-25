@@ -29,7 +29,7 @@
  ],
  "counts": {
   "static": 12,
-  "block": 78,
+  "block": 79,
   "label": 111,
   "server": 31
  },
@@ -1255,10 +1255,20 @@
    "kind": "block",
    "where": "site/index.html::detectPlain",
    "slots": [
+    "pct(asm.bound_power)",
+    "pct(asm.bound_alpha)"
+   ],
+   "text": "“Reliably” means it would be found {0} of the time, with a {1} chance of a false alarm."
+  },
+  {
+   "id": "detectPlain.caller-pair",
+   "kind": "block",
+   "where": "site/index.html::detectPlain",
+   "slots": [
     "pct(asm.power)",
     "pct(asm.two_sided_alpha)"
    ],
-   "text": "“Reliably” means it would be found {0} of the time, with a {1} chance of a false alarm."
+   "text": "The figure in brackets was worked out at {0} and {1} instead, as the model asked."
   },
   {
    "id": "detectPlain.what-if",

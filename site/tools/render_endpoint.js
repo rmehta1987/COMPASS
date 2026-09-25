@@ -157,7 +157,10 @@ const SPEC_RECORD = {
       worst_case_curve: [{ n: 100, sde_percentage_points: 28.02 },
                          { n: 300, sde_percentage_points: 16.17 }],
       asserted_baseline_prevalence: 0.15, value: 11.55, unit: "percentage points",
-      at_n: 300, assumptions: "two_sided_alpha=0.05; power=0.8" } },
+      // The caller's pair DIFFERS from the bound's on purpose: the worst-case
+      // figure is computed at the bound's, so a card reading the caller's keys
+      // for it goes red here instead of matching by coincidence.
+      at_n: 300, assumptions: "two_sided_alpha=0.1; power=0.9; bound_alpha=0.05; bound_power=0.8" } },
   access: { decision: "pass" },
   blocked_on: ["module_co_completion_counts",
                "design_effect_for_community_area_clustering"],
@@ -393,7 +396,9 @@ global.fetch = async (rel, opts) => {
                             "WORDING_COVARIATE", "No difference in the outcome",
                             "is a what-if, not the study's size",
                             "resemble each other", "Not ready yet",
-                            "in the model's words", "FALSIFIER_TEXT", "at least 16.17"]) {
+                            "in the model's words", "FALSIFIER_TEXT", "at least 16.17",
+                            "found 80% of the time, with a 5% chance",
+                            "worked out at 90% and 10% instead"]) {
           if (!card.includes(want)) fail(`the design card does not say ${JSON.stringify(want)}`);
         }
         // Scoped to the card: the field-by-field record below still prints

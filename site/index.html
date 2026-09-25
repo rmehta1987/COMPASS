@@ -770,8 +770,17 @@ function detectPlain(r){
     +(typeof s.value==="number"&&typeof prev==="number"
       ?` (${esc(String(s.value))} if ${pct(prev)} of people have it, as the model assumed)`:"")
     +`. A smaller difference could be missed.`;
-  if(asm.power&&asm.two_sided_alpha) t+=` &ldquo;Reliably&rdquo; means it would be found`
-    +` ${pct(asm.power)} of the time, with a ${pct(asm.two_sided_alpha)} chance of a false alarm.`;
+  /* THE BOUND'S PAIR, NOT THE CALLER'S. `worst_case_curve` is computed at the
+     environment's `bound_alpha`/`bound_power` whatever the model passed
+     (`env/tools.py::estimate_detectability`); the caller's pair shapes only
+     the figure in brackets, so it is named there, and only when it differs. */
+  if(asm.bound_power&&asm.bound_alpha) t+=` &ldquo;Reliably&rdquo; means it would be found`
+    +` ${pct(asm.bound_power)} of the time, with a ${pct(asm.bound_alpha)} chance of a false alarm.`;
+  if(asm.power&&asm.two_sided_alpha&&typeof s.value==="number"
+     &&(Number(asm.power)!==Number(asm.bound_power)
+        ||Number(asm.two_sided_alpha)!==Number(asm.bound_alpha)))
+    t+=` The figure in brackets was worked out at ${pct(asm.power)} and`
+      +` ${pct(asm.two_sided_alpha)} instead, as the model asked.`;
   t+=e.analytic_n===null||e.analytic_n===undefined
     ?` <span class="flag">How many people answered both is not known yet</span>, so`
      +` ${esc(String(at))} is a what-if, not the study's size.`
