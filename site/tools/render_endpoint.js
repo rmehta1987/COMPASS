@@ -281,7 +281,14 @@ global.fetch = async (rel, opts) => {
     }
     // THE EXAMPLE IS THERE ON ARRIVAL, not behind a button: the operator
     // opened Ask, saw no design, and reported the example as broken.
-    if (!sp.includes('class="design"') || !sp.includes("A worked example")) {
+    // THE STAGE IS "EXPERIMENT DESIGN" TO A READER (operator, 2026-09-25), and
+    // Ask's one-line summary names its retrieval step and nothing after it.
+    if (!sp.includes("Variable Retrieval") || !sp.includes("Experiment Design")) {
+      fail("Ask's summary does not name Variable Retrieval and Experiment Design");
+    }
+    if (sp.includes("the record appears here")) fail("Ask's summary still says the record appears here");
+    if (/\bSpecifier\b/.test(sp)) fail("the Ask panel says \"Specifier\" to the reader");
+    if (!sp.includes('class="design"') || !sp.includes("A worked pre-built example")) {
       fail("Ask opens without the worked example's design where the server names one");
     }
     // ASKING MUST FILL THE KEY FIELDS. That is the whole point of the panel: a
@@ -302,7 +309,7 @@ global.fetch = async (rel, opts) => {
       }
       // ...and it gives way to the reader's own question, or it would sit
       // above their proposal as if it were that proposal's design.
-      if (node("#panel").innerHTML.includes("A worked example")) {
+      if (node("#panel").innerHTML.includes("A worked pre-built example")) {
         fail("the worked example stays on the page after the reader asks their own question");
       }
       // Asserted on the RENDERED HTML, not on a node's `.value`: this DOM stub
@@ -460,7 +467,7 @@ global.fetch = async (rel, opts) => {
         if (!polled || polled.body.ticket !== EXAMPLE_TICKET) {
           fail("the example was not read through the status route by its ticket");
         }
-        if (!exPanel.includes("A worked example")) fail("the example does not say it is one");
+        if (!exPanel.includes("A worked pre-built example")) fail("the example does not say it is one");
         if (!exPanel.includes('class="design"') || !exPanel.includes("QUESTION_TEXT")) {
           fail("the example shows no design card");
         }

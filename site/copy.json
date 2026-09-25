@@ -300,7 +300,7 @@
    "kind": "block",
    "where": "site/index.html::funnelPanel",
    "slots": [],
-   "text": "The study team holds the two exports, which are survey-metadata counts. Until they arrive, every pair carries the marker above, and by default no pair reaches the Specifier."
+   "text": "The study team holds the two exports, which are survey-metadata counts. Until they arrive, every pair carries the marker above, and by default no pair reaches Experiment Design."
   },
   {
    "id": "gen.artifacts-did-load-data",
@@ -388,14 +388,14 @@
    "kind": "block",
    "where": "site/index.html::livePanel",
    "slots": [],
-   "text": "Pick both anchors to run the Specifier: search one construct and use it as the exposure, then search the other and use it as the outcome."
+   "text": "Pick both anchors to run Experiment Design: search one construct and use it as the exposure, then search the other and use it as the outcome."
   },
   {
    "id": "livePanel.run-specifier-pair",
    "kind": "block",
    "where": "site/index.html::livePanel",
    "slots": [],
-   "text": "Run the Specifier on this pair"
+   "text": "Run Experiment Design on this pair"
   },
   {
    "id": "metricsPanel.ceiling-highest-score-available",
@@ -506,7 +506,7 @@
    "slots": [
     "esc(posed.source_label)"
    ],
-   "text": "tool calls None. This run retrieved nothing. output NO RETRIEVAL WAS RUN — you posed this pair directly from {0}, so the deployed retriever scored no vectors. There is no cosine, threshold decision or abstention to show, and this panel does not borrow them from another run. what went to the Specifier instead"
+   "text": "tool calls None. This run retrieved nothing. output NO RETRIEVAL WAS RUN — you posed this pair directly from {0}, so the deployed retriever scored no vectors. There is no cosine, threshold decision or abstention to show, and this panel does not borrow them from another run. what went to Experiment Design instead"
   },
   {
    "id": "provenanceLine.panels-marked-record-page",
@@ -1704,14 +1704,14 @@
    "kind": "server",
    "where": "serve/api.py::_run [wire key 'not_a_selection']",
    "slots": [],
-   "text": "Proposals only. Nothing is committed: confirm each anchor before running the Specifier. A pair proposed by a model is still externally posed -- screened_from stays 0 and it never enters a benchmark denominator."
+   "text": "Proposals only. Nothing is committed: confirm each anchor before running Experiment Design. A pair proposed by a model is still externally posed -- screened_from stays 0 and it never enters a benchmark denominator."
   },
   {
    "id": "specify.specifier-run-already-progress",
    "kind": "server",
    "where": "serve/api.py::_specify [raise Busy]",
    "slots": [],
-   "text": "a Specifier run is already in progress on this endpoint. Runs are serialised because each one allocates a sealed worktree and an MCP server. Try again in a few minutes."
+   "text": "an Experiment Design run is already in progress on this endpoint. Runs are serialised because each one allocates a sealed worktree and an MCP server. Try again in a few minutes."
   },
   {
    "id": "specify.exposure-outcome-both-required",
@@ -2033,7 +2033,7 @@
    "kind": "block",
    "where": "site/index.html::askPanel",
    "slots": [],
-   "text": "A worked example: a run kept on this server, not one you started. Ask your own question above to make a new one."
+   "text": "A worked pre-built example, ask your own question above to make a new experiment design."
   },
   {
    "id": "specifierPanel.loading-example",

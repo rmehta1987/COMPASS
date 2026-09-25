@@ -70,6 +70,10 @@ function check(label) {
   // verbatim from the scored record and contains it, and the quotation stays.
   const jargon = p.match(/\b(?:endpoint|transduction|MCP|prose resolver)\b/i);
   if (jargon) { console.error(`render: ${label}: panel says "${jargon[0]}" to the reader`); failed++; }
+  // The stage a reader sees is "Experiment Design" (operator, 2026-09-25);
+  // "Specifier" is the code's name for it, and stays in code. Case-sensitive,
+  // so an id or class written in lower case is not mistaken for prose.
+  if (/\bSpecifier\b/.test(p)) { console.error(`render: ${label}: panel says "Specifier" to the reader`); failed++; }
 }
 // The footer must say, under every committed panel, that the figures are
 // committed. It was scoped to live panels and went empty everywhere else.

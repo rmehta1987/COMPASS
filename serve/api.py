@@ -1340,7 +1340,7 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                 "anchors_proposed_by": "model",
                 "not_a_selection":
                     "Proposals only. Nothing is committed: confirm each anchor "
-                    "before running the Specifier. A pair proposed by a model "
+                    "before running Experiment Design. A pair proposed by a model "
                     "is still externally posed -- screened_from stays 0 and it "
                     "never enters a benchmark denominator.",
             }}
@@ -1618,7 +1618,7 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
     # no idea why -- on a shared endpoint that reads as a broken page. Saying
     # "busy" immediately is the difference between a queue and a hang.
     if not state.model_lock.acquire(blocking=False):
-        raise Busy("a Specifier run is already in progress on this endpoint. "
+        raise Busy("an Experiment Design run is already in progress on this endpoint. "
                    "Runs are serialised because each one allocates a sealed "
                    "worktree and an MCP server. Try again in a few minutes.")
 
@@ -2054,13 +2054,13 @@ def _compare_record(state: State, ticket: str) -> str:
     if job is None:
         job = _load_job(state, ticket)
     if job is None:
-        raise ValueError("no finished Specifier run with that ticket on this "
+        raise ValueError("no finished Experiment Design run with that ticket on this "
                          "endpoint; run the pair on Ask first")
     if job.get("status") == "running":
-        raise ValueError("the Specifier is still running; compare once the "
+        raise ValueError("Experiment Design is still running; compare once the "
                          "record has landed")
     if str(job.get("kind") or JOB_SPECIFY) != JOB_SPECIFY:
-        raise ValueError("that ticket is a proposal, not a Specifier record")
+        raise ValueError("that ticket is a proposal, not an Experiment Design record")
     if job.get("status") != "done":
         raise ValueError("that run failed, so there is no record to compare")
     selected = (job.get("run") or {}).get("selected")
@@ -2068,7 +2068,7 @@ def _compare_record(state: State, ticket: str) -> str:
         # A refusal, or a design the gate rejected. The rejected one is NOT
         # compared: the gate's verdict stands, and comparing it would treat an
         # unauthorised design as the pipeline's answer.
-        raise ValueError("The Specifier refused this pair, so there is nothing "
+        raise ValueError("Experiment Design refused this pair, so there is nothing "
                          "to place beside the paper.")
     return json.dumps(selected)
 

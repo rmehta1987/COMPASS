@@ -628,8 +628,8 @@ function resolverPanel(){
   const defaulted=["exposure","outcome"].filter(r=>j.roles&&hasDefault(j.roles[r]));
   h+=`<p class="sec">chosen pair</p>`
     +(allPinned(j)?`<div class="none" style="color:var(--signal)">`
-      +`The request named both anchors, so nothing was inferred and the`
-      +` Specifier started automatically.</div>`:"")
+      +`The request named both anchors, so nothing was inferred and`
+      +` Experiment Design started automatically.</div>`:"")
     +(declined.length?`<div class="none" style="color:var(--signal)">`
       +`The language model declined to choose the ${esc(declined.join(" and "))}, so no`
       +` choice is filled in. Pick one yourself, or ask again with a more specific request.</div>`
@@ -643,7 +643,7 @@ function resolverPanel(){
     +row("outcome",anchors.outcome?esc(anchors.outcome):"<em>none picked</em>",true)
     +`</dl>`
     +(anchors.exposure&&anchors.outcome
-      ?`<div class="after"><button class="g" id="go-spec">Run the Specifier on this pair</button></div>`
+      ?`<div class="after"><button class="g" id="go-spec">Run Experiment Design on this pair</button></div>`
       :"");
   h+=`<div class="none" style="color:var(--signal)">${esc(j.not_a_selection)}</div>`;
   return h;
@@ -994,7 +994,7 @@ function generatePanel(){
   h+=`<div class="none">This is the gate as committed. `
     +`The run scored on the <b>Metrics</b> tab `
     +`came from a different frame with this gate `
-    +`switched off, which is currently the only way a pair reaches the Specifier: all `
+    +`switched off, which is currently the only way a pair reaches Experiment Design: all `
     +`${DATA.metrics.observed.scored} of its records carry the mark above.</div>`;
   if(!window.COMPASS_ENDPOINT) return h+`<div class="none">Served statically, so you`
     +` cannot run the funnel from here. The figures above are the committed run.</div>`;
@@ -1069,7 +1069,7 @@ function recordCarries(){
     +`<div class="t gate fail"><span class="call">causal structure as a typed DAG</span>`
     +`<span class="ret">no such field; a mediator is rejected by the role it was given in a list</span></div></div>`
     +`<div class="none">The object above is either a <code>ProtocolSpecification</code> or a `
-    +`<code>NotSpecifiable</code> refusal; the Specifier builds nothing else.</div>`;
+    +`<code>NotSpecifiable</code> refusal; Experiment Design builds nothing else.</div>`;
 }
 
 /* COMPARE WITH THE PAPER. Under the record, not beside the scored run on
@@ -1151,8 +1151,8 @@ function compareBlock(){
     +` and the paper's side resolves against build ${esc(res.dictionary_version||"none")},`
     +` so a difference may be the two builds disagreeing.</div>`;
   h+=`<div class="none">A match means the variable used here is the one the paper`
-    +` used. It says nothing about the covariates or the analysis model the`
-    +` Specifier chose. ${esc(cmp.result.not_a_score)} This server has made`
+    +` used. It says nothing about the covariates or the analysis model`
+    +` Experiment Design chose. ${esc(cmp.result.not_a_score)} This server has made`
     +` ${cmp.result.comparisons_this_session} comparison(s) since it started.</div>`;
   return h;
 }
@@ -1222,7 +1222,7 @@ function specifierPanel(){
     /* In its own element, so `panelPNG` can leave it out: a MATCH discloses
        the paper's key, and an image travels as far as a JSON file does. */
     if(window.COMPASS_COMPARE) h+=`<div id="cmp-section">`+(j.selected?compareBlock()
-      :`<p class="sec lead">compare with the paper</p><div class="none">The Specifier`
+      :`<p class="sec lead">compare with the paper</p><div class="none">Experiment Design`
        +` refused this pair, so there is nothing to place beside the paper.</div>`)
       +`</div>`;
   }else{
@@ -1391,8 +1391,8 @@ function livePanel(){
     +row("outcome",anchors.outcome?esc(anchors.outcome):"<em>none picked</em>",true)
     +`</dl>`
     +(anchors.exposure&&anchors.outcome
-      ?`<div class="after"><button class="g" id="go-spec">Run the Specifier on this pair</button></div>`
-      :`<div class="none">Pick both anchors to run the Specifier: search one construct and use it as the exposure, then search the other and use it as the outcome.</div>`);
+      ?`<div class="after"><button class="g" id="go-spec">Run Experiment Design on this pair</button></div>`
+      :`<div class="none">Pick both anchors to run Experiment Design: search one construct and use it as the exposure, then search the other and use it as the outcome.</div>`);
   if(j.note) h+=`<p class="sec">known limitation</p>`
     +`<div class="none" style="color:var(--signal)">${esc(j.note)}</div>`;
   return h;
@@ -1473,7 +1473,7 @@ function funnelPanel(){
     +row("sample-size source",esc(g.n_sources.join(", ")),true)
     +row("pairs emitted",`<span class="flag">${f.pairs_emitted}</span> without --allow-unestimable`,true)
     +`</dl>`;
-  h+=`<div class="none">The study team holds the two exports, which are survey-metadata counts. Until they arrive, every pair carries the marker above, and by default no pair reaches the Specifier.</div>`;
+  h+=`<div class="none">The study team holds the two exports, which are survey-metadata counts. Until they arrive, every pair carries the marker above, and by default no pair reaches Experiment Design.</div>`;
   return h;
 }
 
@@ -2031,7 +2031,7 @@ function posedRetrieverPanel(){
    +` directly from ${esc(posed.source_label)}, so the deployed retriever scored`
    +` no vectors. There is no cosine, threshold decision or abstention to show,`
    +` and this panel does not borrow them from another run.</div>`
-   +`<p class="sec">what went to the Specifier instead</p>`+posedPair()
+   +`<p class="sec">what went to Experiment Design instead</p>`+posedPair()
    +(posed.question?`<p class="sec">the question this pair stands for</p>`
      +`<div class="none">${esc(posed.question)}</div>`:``);
 }
@@ -2172,7 +2172,7 @@ function keyForm(){
       +`<div class="t"><span class="call">exposure &middot; ${esc(ew||"not proposed")}</span></div>`
       +`<div class="t"><span class="call">outcome &middot; ${esc(ow||"not proposed")}</span></div>`
       +`</div>`:"")
-    +`<div class="after"><button class="g" id="spec-go">Run the Specifier</button></div>`
+    +`<div class="after"><button class="g" id="spec-go">Run Experiment Design</button></div>`
     /* A ROLE THE MODEL DECLINED IS THE MOST USEFUL THING ON THIS PANEL, and it
        was being thrown away. `adoptProposals` carries over only `resolved` and
        `pinned`, so an `ambiguous`, `absent`, `derive` or `family` verdict
@@ -2221,9 +2221,7 @@ function askPanel(s){
      sits directly under the question, above the proposal and the run that
      produced it -- not at the foot of both. */
   if(spec&&spec.selected){
-    if(spec.example) h+=`<div class="none" style="color:var(--signal)">A worked example:`
-      +` a run kept on this server, not one you started. Ask your own question above`
-      +` to make a new one.</div>`;
+    if(spec.example) h+=`<div class="none" style="color:var(--signal)">A worked pre-built example, ask your own question above to make a new experiment design.</div>`;
     h+=designCard(spec.selected);
   }
   /* A proposal renders its own roles and its own Run button; the key form is
