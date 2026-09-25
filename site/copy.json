@@ -29,8 +29,8 @@
  ],
  "counts": {
   "static": 12,
-  "block": 63,
-  "label": 104,
+  "block": 78,
+  "label": 111,
   "server": 31
  },
  "strings": [
@@ -1065,7 +1065,7 @@
    "kind": "label",
    "where": "site/index.html::readableProtocol (row)",
    "slots": [],
-   "text": "analysis model"
+   "text": "analysis, in the model's words"
   },
   {
    "id": "readableProtocol.analytic-n",
@@ -1100,7 +1100,7 @@
    "kind": "label",
    "where": "site/index.html::readableProtocol (row)",
    "slots": [],
-   "text": "falsifier · the result that would refute it"
+   "text": "what would prove it wrong, in the model's words"
   },
   {
    "id": "readableProtocol.modules-required",
@@ -1128,7 +1128,187 @@
    "kind": "label",
    "where": "site/index.html::readableProtocol (row)",
    "slots": [],
-   "text": "falsifier threshold"
+   "text": "the number it names"
+  },
+  {
+   "id": "readableProtocol.unit",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "one row per"
+  },
+  {
+   "id": "readableProtocol.grouping",
+   "kind": "label",
+   "where": "site/index.html::readableProtocol (row)",
+   "slots": [],
+   "text": "grouping, in the model's words"
+  },
+  {
+   "id": "designCard.compares",
+   "kind": "label",
+   "where": "site/index.html::designCard (row)",
+   "slots": [],
+   "text": "compares"
+  },
+  {
+   "id": "designCard.expects",
+   "kind": "label",
+   "where": "site/index.html::designCard (row)",
+   "slots": [],
+   "text": "expects"
+  },
+  {
+   "id": "designCard.allows-for",
+   "kind": "label",
+   "where": "site/index.html::designCard (row)",
+   "slots": [],
+   "text": "allows for"
+  },
+  {
+   "id": "designCard.could-data-show",
+   "kind": "label",
+   "where": "site/index.html::designCard (row)",
+   "slots": [],
+   "text": "could the data show it?"
+  },
+  {
+   "id": "designCard.ready",
+   "kind": "label",
+   "where": "site/index.html::designCard (row)",
+   "slots": [],
+   "text": "ready to run?"
+  },
+  {
+   "id": "designCard.study-design",
+   "kind": "block",
+   "where": "site/index.html::designCard",
+   "slots": [],
+   "text": "the study design"
+  },
+  {
+   "id": "designCard.compares-text",
+   "kind": "block",
+   "where": "site/index.html::designCard",
+   "slots": [
+    "quoted(anchorWords(r.outcome))",
+    "quoted(anchorWords(r.exposure))"
+   ],
+   "text": "Answers to {0}, between people who gave different answers to {1}."
+  },
+  {
+   "id": "designCard.allows-for-text",
+   "kind": "block",
+   "where": "site/index.html::designCard",
+   "slots": [
+    "adj.length"
+   ],
+   "text": "{0} other things that could affect both:"
+  },
+  {
+   "id": "designCard.allows-nothing",
+   "kind": "block",
+   "where": "site/index.html::designCard",
+   "slots": [],
+   "text": "Nothing else. No other factor is taken into account."
+  },
+  {
+   "id": "designCard.prove-wrong",
+   "kind": "block",
+   "where": "site/index.html::designCard",
+   "slots": [],
+   "text": "what would prove it wrong, in the model's words"
+  },
+  {
+   "id": "designCard.number-it-names",
+   "kind": "block",
+   "where": "site/index.html::designCard",
+   "slots": [
+    "COMPARATOR_PLAIN[ft.comparator]",
+    "ft.value",
+    "ft.unit"
+   ],
+   "text": "The number it names: {0} {1} {2}."
+  },
+  {
+   "id": "designCard.curve-summary",
+   "kind": "block",
+   "where": "site/index.html::designCard",
+   "slots": [],
+   "text": "the smallest difference it could find, by how many people answered both"
+  },
+  {
+   "id": "detectPlain.could-find",
+   "kind": "block",
+   "where": "site/index.html::detectPlain",
+   "slots": [
+    "at",
+    "worst.sde_percentage_points",
+    "unit",
+    "s.value",
+    "pct(prev)"
+   ],
+   "text": "If {0} people answered both questions, the study could reliably find a difference of {1} {2} or more between two groups, however common the outcome is ({3} if {4} of people have it, as the model assumed). A smaller difference could be missed."
+  },
+  {
+   "id": "detectPlain.reliably",
+   "kind": "block",
+   "where": "site/index.html::detectPlain",
+   "slots": [
+    "pct(asm.power)",
+    "pct(asm.two_sided_alpha)"
+   ],
+   "text": "“Reliably” means it would be found {0} of the time, with a {1} chance of a false alarm."
+  },
+  {
+   "id": "detectPlain.what-if",
+   "kind": "block",
+   "where": "site/index.html::detectPlain",
+   "slots": [
+    "at"
+   ],
+   "text": "How many people answered both is not known yet, so {0} is a what-if, not the study's size."
+  },
+  {
+   "id": "detectPlain.own-count",
+   "kind": "block",
+   "where": "site/index.html::detectPlain",
+   "slots": [
+    "e.analytic_n"
+   ],
+   "text": "The study's own count is {0}."
+  },
+  {
+   "id": "detectPlain.clustering",
+   "kind": "block",
+   "where": "site/index.html::detectPlain",
+   "slots": [],
+   "text": "This figure treats every person as independent. People in the same community area resemble each other, so the true smallest difference is larger."
+  },
+  {
+   "id": "readyPlain.ready",
+   "kind": "block",
+   "where": "site/index.html::readyPlain",
+   "slots": [],
+   "text": "Ready for review."
+  },
+  {
+   "id": "readyPlain.draft",
+   "kind": "block",
+   "where": "site/index.html::readyPlain",
+   "slots": [
+    "r.status"
+   ],
+   "text": "A draft ({0})."
+  },
+  {
+   "id": "readyPlain.waiting",
+   "kind": "block",
+   "where": "site/index.html::readyPlain",
+   "slots": [
+    "BLOCKER_PLAIN joined"
+   ],
+   "text": "Not ready yet. It is waiting on {0}."
   },
   {
    "id": "readableRefusal.pair",

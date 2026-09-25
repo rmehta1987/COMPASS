@@ -120,6 +120,12 @@
   .anchors dd,.anchors dd.m{font-size:16px;line-height:1.45}
   dl>:nth-last-child(-n+2){border-bottom:0}
   .flag{color:var(--signal);font-weight:600}
+  .design{border:2px solid var(--ink);background:#fff;padding:18px 18px 4px;margin:0 0 30px}
+  .design .dq{font-size:20px;line-height:1.4;font-weight:600;margin:0 0 16px}
+  .design dl.plain{grid-template-columns:170px minmax(0,1fr)}
+  .design dl.plain dt{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink)}
+  .design dl.plain dd{font-size:15.5px;line-height:1.55}
+  .design .cov{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
   .good{color:var(--ok);font-weight:600}
   .pair{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
   .pair input{flex:1 1 210px;min-width:0;font:400 13px var(--mono);color:var(--ink);
@@ -712,6 +718,110 @@ function covBlock(title,list,note){
     +`</div>`;
 }
 
+/* THE DESIGN, IN PLAIN WORDS, FIRST. The record was a list of field names --
+   "analysis model", "falsifier" -- read after the proposal and the run's
+   machinery, so the thing the question was asked FOR was the last and least
+   readable part of the page. Every sentence here is built from a TYPED field
+   (direction, covariate list, the detectability curve, status, blockers) or
+   from instrument wording. The model's free text -- its formula, its
+   clustering note, its falsifier -- is never reworded: across the records in
+   run/ its falsifier means "at least X refutes it", "less than X refutes it"
+   and "the study can detect X" by turns, so any paraphrase would put words in
+   its mouth. It is quoted as the model's, under the plain version. */
+const DIRECTION_PLAIN={
+  increase:"The outcome becomes more common as the exposure increases.",
+  decrease:"The outcome becomes less common as the exposure increases.",
+  no_difference:"No difference in the outcome across the exposure.",
+  non_monotonic:"A relationship that rises over part of the range and falls over another."};
+const COMPARATOR_PLAIN={">=":"at least",">":"more than","<=":"at most","<":"less than"};
+const BLOCKER_PLAIN={
+  module_co_completion_counts:"how many people completed both parts of the survey these questions come from",
+  per_item_non_missing_counts:"how many people answered each question",
+  area_measure_inventory:"a list of the neighbourhood measures the study holds",
+  response_coding:"how each question's answers are coded",
+  study_team_confirmation:"the study team's confirmation",
+  outcome_prevalence_unconfirmed:"how common the outcome really is",
+  design_effect_for_community_area_clustering:"how much people in the same community area resemble each other"};
+const pct=x=>Number(x).toLocaleString("en-US",{style:"percent"});
+const quoted=x=>`&ldquo;${esc(x)}&rdquo;`;
+function anchorWords(a){
+  return a?(a.quoted_wording||a.key||a.derivation_id||a.group_key||a.kind||""):"";
+}
+function assumptionsOf(s){
+  /* `estimate_detectability` records its assumptions as `k=v; k=v`. Read
+     here rather than restated, so the page names no power or alpha of its own. */
+  const out={};
+  for(const part of String(s||"").split(";")){
+    const [k,v]=part.trim().split("=");
+    if(k&&v!==undefined) out[k]=v;
+  }
+  return out;
+}
+function detectPlain(r){
+  const e=r.estimability||{}, s=e.smallest_detectable_effect||{};
+  const at=s.at_n, unit=esc(s.unit||"");
+  const worst=(s.worst_case_curve||[]).find(p=>p.n===at);
+  if(!worst) return "<em>the record carries no detectability figure</em>";
+  const asm=assumptionsOf(s.assumptions);
+  const prev=s.asserted_baseline_prevalence;
+  let t=`If ${esc(String(at))} people answered both questions, the study could reliably`
+    +` find a difference of ${esc(String(worst.sde_percentage_points))} ${unit} or more`
+    +` between two groups, however common the outcome is`
+    +(typeof s.value==="number"&&typeof prev==="number"
+      ?` (${esc(String(s.value))} if ${pct(prev)} of people have it, as the model assumed)`:"")
+    +`. A smaller difference could be missed.`;
+  if(asm.power&&asm.two_sided_alpha) t+=` &ldquo;Reliably&rdquo; means it would be found`
+    +` ${pct(asm.power)} of the time, with a ${pct(asm.two_sided_alpha)} chance of a false alarm.`;
+  t+=e.analytic_n===null||e.analytic_n===undefined
+    ?` <span class="flag">How many people answered both is not known yet</span>, so`
+     +` ${esc(String(at))} is a what-if, not the study's size.`
+    :` The study's own count is ${esc(String(e.analytic_n))}.`;
+  if((r.blocked_on||[]).includes("design_effect_for_community_area_clustering"))
+    t+=` This figure treats every person as independent. People in the same community`
+      +` area resemble each other, so the true smallest difference is larger.`;
+  return t;
+}
+function readyPlain(r){
+  const b=r.blocked_on||[];
+  if(r.status==="ready_for_review"&&!b.length) return "Ready for review.";
+  if(!b.length) return `A draft (${esc(r.status||"")}).`;
+  return `<span class="flag">Not ready yet.</span> It is waiting on `
+    +b.map(x=>esc(BLOCKER_PLAIN[x]||x)).join("; ")+`.`;
+}
+function designCard(r){
+  const d=r.expected_direction||{}, adj=r.adjusted_covariates||[];
+  const ft=r.falsifier_threshold, s=(r.estimability||{}).smallest_detectable_effect||{};
+  let h=`<div class="design"><p class="sec lead">the study design</p>`
+    +`<p class="dq">${esc(r.question||"")}</p><dl class="plain">`
+    +row("compares",`Answers to ${quoted(anchorWords(r.outcome))}, between people who`
+      +` gave different answers to ${quoted(anchorWords(r.exposure))}.`)
+    +row("expects",esc(DIRECTION_PLAIN[d.direction]||d.direction||"")
+      +(d.magnitude?` By ${esc(String(d.magnitude))}`
+        +(d.magnitude_source?` (${esc(d.magnitude_source)})`:"")+`.`:""))
+    /* One line each, clipped by CSS and never by slicing: a wording is kept
+       byte for byte, and cutting at the first "?" would drop a grid item's
+       distinguishing tail. The full wording is in the element and its title. */
+    +row("allows for",adj.length
+      ?`${adj.length} other things that could affect both:`
+        +adj.map(c=>`<span class="cov" title="${att(anchorWords(c.variable))}">`
+          +`${quoted(anchorWords(c.variable))}</span>`).join("")
+      :"Nothing else. No other factor is taken into account.")
+    +row("could the data show it?",detectPlain(r))
+    +row("ready to run?",readyPlain(r))
+    +`</dl>`;
+  if(r.falsifier) h+=`<p class="sec">what would prove it wrong, in the model's words</p>`
+    +`<div class="none">${esc(r.falsifier)}`
+    +(ft?` <br><span class="flag">The number it names: ${esc(COMPARATOR_PLAIN[ft.comparator]||ft.comparator||"")}`
+      +` ${esc(String(ft.value))} ${esc(ft.unit||"")}.</span>`:"")
+    +`</div>`;
+  if((s.worst_case_curve||[]).length) h+=`<details><summary>the smallest difference it`
+    +` could find, by how many people answered both</summary><dl>`
+    +s.worst_case_curve.map(p=>row(`${esc(String(p.n))} people`,
+      `${esc(String(p.sde_percentage_points))} ${esc(s.unit||"")}`,true)).join("")
+    +`</dl></details>`;
+  return h+`</div>`;
+}
+
 function readableProtocol(r){
   const m=r.model_spec||{}, e=r.estimability||{}, a=r.access||{}, ft=r.falsifier_threshold;
   let h=`<dl>`
@@ -728,10 +838,14 @@ function readableProtocol(r){
       })(r.expected_direction),true)
     +row("exposure",anchorLine(r.exposure),true)
     +row("outcome",anchorLine(r.outcome),true)
-    +row("analysis model",`${esc(m.form||"")} &middot; per ${esc(m.unit_of_analysis||"")}`
-        +(m.clustering?` &middot; clustered on ${esc(m.clustering)}`:""),true)
-    +row("falsifier · the result that would refute it",esc(r.falsifier))
-    +(ft?row("falsifier threshold",`${esc(String(ft.comparator||""))} ${esc(String(ft.value))} `
+    /* `clustering` is the model's sentence, not a unit name: it reads
+       "Cluster-robust standard errors at…" as often as "None specified", so a
+       "clustered on" prefix turned it into "clustered on Cluster-robust…". */
+    +row("analysis, in the model's words",esc(m.form||""))
+    +row("one row per",esc(m.unit_of_analysis||""),true)
+    +(m.clustering?row("grouping, in the model's words",esc(m.clustering)):"")
+    +row("what would prove it wrong, in the model's words",esc(r.falsifier))
+    +(ft?row("the number it names",`${esc(String(ft.comparator||""))} ${esc(String(ft.value))} `
         +`${esc(ft.unit||"")}`,true):"")
     +`</dl>`;
   h+=covBlock("adjusted",r.adjusted_covariates,"none");
@@ -1021,8 +1135,9 @@ function specifierPanel(){
        put the run and the thing the run produced two clicks apart under a name
        that said nothing about what was in it. The Specifier is the stage that
        builds this, so this is where it is read. */
-    h+=`<p class="sec">what it produced &middot; `
-      +`${j.selected?"a protocol":"a refusal the environment upheld"}</p>`
+    /* The plain version is `designCard`, at the top of Ask; this is the same
+       record field by field, for whoever wants to check the card against it. */
+    h+=`<p class="sec">${j.selected?"the design, field by field":"what it produced &middot; a refusal the environment upheld"}</p>`
       +(j.selected?readableProtocol(rec):readableRefusal(rec))
       +`<details><summary>the record as JSON &middot; provenance</summary>`
       +`<pre class="rec">${esc(JSON.stringify(rec,null,2))}</pre></details>`
@@ -1983,6 +2098,10 @@ function askPanel(s){
      the form's controls present. Whatever else is being shown, a served page
      can always be asked. */
   if(window.COMPASS_ENDPOINT) h+=askForm();
+  /* THE DESIGN IS THE HIGHLIGHT. It is what the question was asked for, so it
+     sits directly under the question, above the proposal and the run that
+     produced it -- not at the foot of both. */
+  if(spec&&spec.selected) h+=designCard(spec.selected);
   /* A proposal renders its own roles and its own Run button; the key form is
      the entry for when there is no proposal. Never both. */
   if(ask) h+=resolverPanel();

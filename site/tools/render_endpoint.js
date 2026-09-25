@@ -133,6 +133,36 @@ const DEFAULTED_REPLY = Object.assign({}, PAIR_REPLY, { roles: {
                   proposed: false, default: true, cos: 0.5 }] },
   outcome: PAIR_REPLY.roles.outcome } });
 let statusReply = PAIR_REPLY;
+// A SPECIFIER RECORD, so the design card is driven, not assumed. Synthetic
+// wording, like everything here. `clustering` begins with the words the old
+// "clustered on" prefix doubled, and `blocked_on` carries the clustering gap,
+// because both were read off the real record the reader complained about.
+const SPEC_RECORD = {
+  question: "QUESTION_TEXT", status: "draft",
+  expected_direction: { direction: "no_difference", magnitude: null, magnitude_source: null },
+  exposure: { kind: "variable", key: "EXP_KEY", quoted_wording: "WORDING_EXPOSURE" },
+  outcome: { kind: "variable", key: "OUT_KEY", quoted_wording: "WORDING_OUTCOME" },
+  model_spec: { form: "FORM_TEXT", unit_of_analysis: "participant",
+                clustering: "Cluster-robust standard errors CLUSTER_TEXT" },
+  falsifier: "FALSIFIER_TEXT",
+  falsifier_threshold: { value: 16.17, unit: "percentage points", comparator: ">=" },
+  adjusted_covariates: [{ variable: { kind: "variable", key: "COV_KEY",
+                                      quoted_wording: "WORDING_COVARIATE" },
+                          role: "confounder", mechanism: "MECHANISM" }],
+  excluded_variables: [], undetermined_covariates: [],
+  estimability: { analytic_n: null, n_source: "unknown", modules_required: ["MOD_A"],
+    exposure_contrast: "CONTRAST",
+    smallest_detectable_effect: {
+      curve: [{ n: 300, sde_percentage_points: 11.55 }],
+      worst_case_curve: [{ n: 100, sde_percentage_points: 28.02 },
+                         { n: 300, sde_percentage_points: 16.17 }],
+      asserted_baseline_prevalence: 0.15, value: 11.55, unit: "percentage points",
+      at_n: 300, assumptions: "two_sided_alpha=0.05; power=0.8" } },
+  access: { decision: "pass" },
+  blocked_on: ["module_co_completion_counts",
+               "design_effect_for_community_area_clustering"],
+};
+let specifyReply = null;
 const ENUMERATE = {
   note: "a synthesised enumerate reply, for this harness only",
   shown: PAIRS.length,
@@ -159,6 +189,7 @@ global.fetch = async (rel, opts) => {
   }
   if (rel === "/api/enumerate") return { status: 200, json: async () => ENUMERATE };
   if (rel === "/api/specify") {
+    if (specifyReply) return { status: 200, json: async () => specifyReply };
     return { status: 403, json: async () => ({ error: "refused by this harness" }) };
   }
   // A TICKET, because that is what the route returns. The first version of this
@@ -339,6 +370,45 @@ global.fetch = async (rel, opts) => {
         if (lastPost.body.outcome !== PAIRS[0].outcome) {
           fail(`outcome posted as ${JSON.stringify(lastPost.body.outcome)}`);
         }
+      }
+      // THE DESIGN IS THE HIGHLIGHT, IN PLAIN WORDS. It must sit above the
+      // proposal and the run, say what is compared and what the data could
+      // show, name blockers in words, and keep the model's own text labelled
+      // as the model's -- never "clustered on Cluster-robust…" again.
+      specifyReply = { selected: SPEC_RECORD, yield: "YIELD",
+                       identity: { protocol_id: "PID", model_id: "harness",
+                                   is_pipeline_model: true,
+                                   selection_mode: "externally_posed", screened_from: 0 } };
+      go.onclick();
+      await new Promise(r => setTimeout(r, 50));
+      specifyReply = null;
+      const card = node("#panel").innerHTML;
+      const at = card.indexOf('class="design"');
+      if (at < 0) fail("a finished record renders no design card");
+      else {
+        const later = ["request read by", "the design, field by field"]
+          .filter(s => card.includes(s) && card.indexOf(s) < at);
+        if (later.length) fail(`the design card sits below ${JSON.stringify(later)}`);
+        for (const want of ["QUESTION_TEXT", "WORDING_OUTCOME", "WORDING_EXPOSURE",
+                            "WORDING_COVARIATE", "No difference in the outcome",
+                            "is a what-if, not the study's size",
+                            "resemble each other", "Not ready yet",
+                            "in the model's words", "FALSIFIER_TEXT", "at least 16.17"]) {
+          if (!card.includes(want)) fail(`the design card does not say ${JSON.stringify(want)}`);
+        }
+        // Scoped to the card: the field-by-field record below still prints
+        // the enum names, which is where a reader checks the card against them.
+        const cardOnly = card.slice(at, card.indexOf("the design, field by field"));
+        if (cardOnly.includes("module_co_completion_counts")) {
+          fail("a blocker reaches the card as its enum name");
+        }
+        if (!cardOnly.includes("completed both parts of the survey")) {
+          fail("the card does not say in words what the record is waiting on");
+        }
+      }
+      if (card.includes("clustered on")) fail("the clustering row still doubles its own words");
+      for (const bad of ["undefined", "NaN", "[object Object]"]) {
+        if (card.includes(bad)) fail(`the record panel contains "${bad}"`);
       }
     }
   }
