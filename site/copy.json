@@ -29,8 +29,8 @@
  ],
  "counts": {
   "static": 12,
-  "block": 101,
-  "label": 118,
+  "block": 109,
+  "label": 122,
   "server": 31
  },
  "strings": [
@@ -2112,6 +2112,92 @@
    "where": "site/index.html::testPlain",
    "slots": [],
    "text": "Where this sentence and the figures above disagree, the figures are the ones the system checked."
+  },
+  {
+   "id": "pipelinePanel.the-pipeline",
+   "kind": "block",
+   "where": "site/index.html::pipelinePanel",
+   "slots": [],
+   "text": "the pipeline"
+  },
+  {
+   "id": "pipelinePanel.what-each-step-does",
+   "kind": "block",
+   "where": "site/index.html::pipelinePanel",
+   "slots": [],
+   "text": "what each step does"
+  },
+  {
+   "id": "pipelinePanel.drawing",
+   "kind": "block",
+   "where": "site/index.html::pipelinePanel",
+   "slots": [],
+   "text": "Drawing the diagram…"
+  },
+  {
+   "id": "pipelinePanel.could-not-draw",
+   "kind": "block",
+   "where": "site/index.html::pipelinePanel",
+   "slots": [
+    "esc(pipelineFail)"
+   ],
+   "text": "The diagram could not be drawn ({0}), so its mermaid source is shown instead."
+  },
+  {
+   "id": "PIPELINE_STEPS.prompt.label",
+   "kind": "label",
+   "where": "site/index.html::PIPELINE_STEPS",
+   "slots": [],
+   "text": "Prompt"
+  },
+  {
+   "id": "PIPELINE_STEPS.prompt",
+   "kind": "block",
+   "where": "site/index.html::PIPELINE_STEPS",
+   "slots": [],
+   "text": "You state an exposure–outcome question in your own words."
+  },
+  {
+   "id": "PIPELINE_STEPS.retrieval.label",
+   "kind": "label",
+   "where": "site/index.html::PIPELINE_STEPS",
+   "slots": [],
+   "text": "Retrieval"
+  },
+  {
+   "id": "PIPELINE_STEPS.retrieval",
+   "kind": "block",
+   "where": "site/index.html::PIPELINE_STEPS",
+   "slots": [],
+   "text": "Each side of the question is searched on its own. A language model first splits the question into its exposure and outcome phrases, using only the question's own words; a fine-tuned search model then compares each phrase with every item in the cohort's codebook and returns the closest candidates. The page flags a list whose best match falls below the search's confidence threshold."
+  },
+  {
+   "id": "PIPELINE_STEPS.llm-model.label",
+   "kind": "label",
+   "where": "site/index.html::PIPELINE_STEPS",
+   "slots": [],
+   "text": "LLM Model"
+  },
+  {
+   "id": "PIPELINE_STEPS.llm-model",
+   "kind": "block",
+   "where": "site/index.html::PIPELINE_STEPS",
+   "slots": [],
+   "text": "A language model reads the question with those candidates and picks which item is the exposure and which the outcome, by its number in the list, so it cannot invent a variable. When the question fits more than one item, it says so and proposes a default for you to confirm."
+  },
+  {
+   "id": "PIPELINE_STEPS.experiment-design.label",
+   "kind": "label",
+   "where": "site/index.html::PIPELINE_STEPS",
+   "slots": [],
+   "text": "Experiment Design"
+  },
+  {
+   "id": "PIPELINE_STEPS.experiment-design",
+   "kind": "block",
+   "where": "site/index.html::PIPELINE_STEPS",
+   "slots": [],
+   "text": "A reasoning model consults the codebook through lookup tools and writes the design: the covariates, the analysis, the test, and how large an effect the data could detect. The system then checks the record against its own log of those lookups, overwrites every field it computes itself, and rejects a record that contradicts the log."
   }
  ]
 }

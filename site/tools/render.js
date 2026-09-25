@@ -142,6 +142,27 @@ function checkFoot(label) {
   if (!entered) { console.error("render: Enter in the search box does nothing"); failed++; }
   // The unmatched query must not take the committed stages with it: this
   // ordering defect made Metrics and Generate unreachable until reload.
+  // THE PIPELINE TAB (operator, 2026-09-25) names the four steps in order.
+  // mermaid does not run in this stub, so the tab shows its mermaid source,
+  // which is the diagram's single definition either way; a browser draws it.
+  {
+    document.querySelectorAll("[data-s]");
+    const pb = byData.filter(x => x.dataset.s === "pipeline" && x.onclick).pop();
+    if (!pb) { console.error("render: the rail offers no Pipeline tab"); failed++; }
+    else {
+      pb.onclick();
+      const pp = node("#panel").innerHTML;
+      const src = "P[Prompt] --&gt; R[Retrieval] --&gt; L[LLM Model] --&gt; E[Experiment Design]";
+      if (!pp.includes("flowchart LR") || !pp.includes(src)) {
+        console.error("render: the Pipeline tab does not carry the four-step mermaid source"); failed++;
+      }
+      for (const step of ["Prompt", "Retrieval", "LLM Model", "Experiment Design"]) {
+        if (!new RegExp(`<dt>${step}</dt>`).test(pp)) {
+          console.error(`render: the Pipeline tab does not explain ${step}`); failed++;
+        }
+      }
+    }
+  }
   // Score is gone (folded into Metrics 2026-09-24), so the rail must not offer
   // it and Metrics must carry the answer-key stamp it held.
   if (/data-s="score"/.test(node("#rail").innerHTML)) {

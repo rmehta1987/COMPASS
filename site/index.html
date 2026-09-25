@@ -128,6 +128,8 @@
   .design dl.plain{grid-template-columns:170px minmax(0,1fr)}
   .design dl.plain dt{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink)}
   .design dl.plain dd{font-size:15.5px;line-height:1.55}
+  .pipe{border:1px solid var(--rule);background:#fff;padding:18px;margin:0 0 26px;text-align:center}
+  .pipe svg{max-width:100%;height:auto}
   .design .cov{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
   .good{color:var(--ok);font-weight:600}
   .pair{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
@@ -2246,7 +2248,67 @@ function askPanel(s){
   return h||placeholder(s);
 }
 
+/* THE PIPELINE, DRAWN BY MERMAID. The operator asked for the four steps as a
+   mermaid diagram and chose to bundle the library rather than draw it by hand:
+   `vendor/mermaid.tiny.js` (@mermaid-js/tiny, MIT, licence beside it). The page
+   may make no external request (`site/tools/offline.py`), so it is never fetched
+   from a CDN; it is inserted from the site's own directory the first time this
+   tab opens, so no other tab pays for it. Drawn once and reused on every redraw.
+   If it cannot load or render, the tab shows the mermaid source instead, which
+   is the diagram's single definition either way. */
+const PIPELINE_MERMAID=["flowchart LR",
+  "  P[Prompt] --> R[Retrieval] --> L[LLM Model] --> E[Experiment Design]"].join("\n");
+const PIPELINE_STEPS=[
+  ["Prompt","You state an exposure–outcome question in your own words."],
+  ["Retrieval","Each side of the question is searched on its own. A language model first"
+    +" splits the question into its exposure and outcome phrases, using only the"
+    +" question's own words; a fine-tuned search model then compares each phrase with"
+    +" every item in the cohort's codebook and returns the closest candidates. The page"
+    +" flags a list whose best match falls below the search's confidence threshold."],
+  ["LLM Model","A language model reads the question with those candidates and picks which"
+    +" item is the exposure and which the outcome, by its number in the list, so it"
+    +" cannot invent a variable. When the question fits more than one item, it says so"
+    +" and proposes a default for you to confirm."],
+  ["Experiment Design","A reasoning model consults the codebook through lookup tools and"
+    +" writes the design: the covariates, the analysis, the test, and how large an effect"
+    +" the data could detect. The system then checks the record against its own log of"
+    +" those lookups, overwrites every field it computes itself, and rejects a record"
+    +" that contradicts the log."]];
+let pipelineSVG=null, pipelineFail=null, mermaidRequested=false;
+function loadMermaid(){
+  if(mermaidRequested) return;
+  mermaidRequested=true;
+  if(window.mermaid){ renderPipeline(); return; }
+  const tag=document.createElement("script");
+  if(!document.head||!tag||!("src" in tag)){ pipelineFail="this page cannot load scripts"; return; }
+  tag.src="vendor/mermaid.tiny.js";
+  tag.onload=renderPipeline;
+  tag.onerror=()=>{ pipelineFail="the diagram library did not load"; if(sel==="pipeline") draw(); };
+  document.head.appendChild(tag);
+}
+async function renderPipeline(){
+  try{
+    window.mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"neutral"});
+    const out=await window.mermaid.render("pipeline-diagram",PIPELINE_MERMAID);
+    pipelineSVG=out.svg;
+  }catch(err){ pipelineFail=String((err&&err.message)||err); }
+  if(sel==="pipeline") draw();
+}
+function pipelinePanel(){
+  if(!pipelineSVG&&!pipelineFail) loadMermaid();
+  let h=`<p class="sec lead">the pipeline</p>`;
+  h+=pipelineSVG?`<div class="pipe">${pipelineSVG}</div>`
+    :`<pre class="rec">${esc(PIPELINE_MERMAID)}</pre>`
+     +`<div class="none">${pipelineFail?`The diagram could not be drawn (${esc(pipelineFail)}),`
+       +` so its mermaid source is shown instead.`:"Drawing the diagram&hellip;"}</div>`;
+  h+=`<p class="sec">what each step does</p><dl class="plain">`
+    +PIPELINE_STEPS.map(([k,v])=>row(esc(k),esc(v))).join("")+`</dl>`;
+  return h;
+}
+
 function stagePanel(s){
+  /* A diagram, not a run: nothing on it is live. */
+  if(sel==="pipeline"){ panelLive=false; return pipelinePanel(); }
   panelLive=true;
   /* Before the committed branches: a posed run has no retrieval of its own, and
      falling through would show the previous one as if it were this one. */
