@@ -211,20 +211,29 @@ documented, fully hashed file; that is a property of its auditability, not evide
 open work. A finding earns an item only if it can change a number the project
 publishes or blocks a downstream stage.
 
-- **R3 — `retrieval_text` as a new column.** Additive: `searchable_text` stays
-  byte-identical to `question_text`, so the 224-row fixture, the gold rule and the FTS
-  index are all untouched until R9 switches. VERIFIED read-only: the fixture stores only
-  `key`, `text`, `query` (`benchmark/retrieval_eval.py::QueryRow`) and the index reads one
-  named field (`env/tools.py::_load`). ACCEPT: `question_text` unchanged for all 2,804
-  rows; `searchable_text` unchanged; `retrieval_text` differs from `question_text` for
-  every grid sub-item.
-- **R9 — switch the index to `retrieval_text` and re-baseline.** BLOCKED on R3. Its whole
-  effect is a recall delta against an unchanged gold set, so it lands alone. 🛑 CARRY THIS
-  IN: 60 of the 224 fixture rows carry `#` in the identifier and 44 of those, across 11
-  gold keys, are roster repeats whose ONLY discriminator is a leaked piped reference of
-  the form `- 1_Q16.9#1 - 1 -`. If `retrieval_text` drops it, the index loses a
-  discriminator the gold rule still demands and recall falls for reasons unrelated to
-  retrieval. Either preserve a member discriminator or the delta is uninterpretable.
+- **R3 — `retrieval_text` as a new column.** CLOSED 2026-09-24 (`291cf10`, `e69e8a2`).
+  `"{subitem}: {stem}"` for a grid sub-item, built from `build.py::split_stem`'s halves;
+  every other row is `question_text`. Same tokens, same counts, and the piped member
+  reference kept word for word. ACCEPT AMENDED by the operator: it differs from
+  `question_text` for 876 of 877 grid sub-items, and `m2:Q19.86_1` is excepted by name
+  because its text has no `" - "`. `question_text` and `searchable_text` are unchanged
+  for all 2,804 rows. The build hash did NOT move (operator ruling):
+  `compose_retrieval_text` is a DECLARED GAP in `build.py::_NOT_HASHED`, pinned by
+  `tests/test_dictionary.py::test_the_retrieval_text_rule_is_outside_the_fingerprint_and_says_so`.
+  Hashing it moved the hash to `c00f52110ce1`, which the pins in `tests/test_browse.py`,
+  `tests/test_retrieval_eval.py` and `src/` refuse. `AGENTS.md` §Hard Constraints names
+  three declared gaps in `build.py` (`build`, `read_module`, the column set);
+  `compose_retrieval_text` is a fourth it does not name. Amending it is the operator's.
+- **R9 — switch the index to `retrieval_text` and re-baseline.** Unblocked by R3, but
+  🛑 GATED ON A NEW OPERATOR DECISION. Measured 2026-09-24 by rebuilding the FTS table
+  over `retrieval_text` and running the real `search_variables`: all 224 fixture queries
+  rank identically (same keys, scores, bm25 and `collapsed_n`), recall unchanged, a delta
+  of zero. Switching would change only the excerpt: at the tool's default `limit` of 10,
+  307 of 2,150 excerpts become rearranged text that is not a substring of
+  `question_text`, against 0 today. R9 must not ship on this definition without a new
+  operator decision. When it does, `serve/redact.py::WORDING_FIELDS` and the redaction
+  corpus need the column. The 44 roster rows across 11 gold keys keep their piped
+  discriminator.
 - **R5 — strip piped identifiers from `stem_text`.** LAST, with its own re-baseline. It is
   not a column addition: `stem_text` reaches `agent/specifier.py::user_prompt`, two tool
   returns (`env/tools.py::resolve_variable`, `get_item_group`), every browse construct

@@ -16,6 +16,16 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ## 2026-09-24
 
+- **R3: the dictionary gains `retrieval_text`, a search-only column** (`291cf10`,
+  `e69e8a2`). For grid sub-items it is the sub-item label joined to the stem by `": "`,
+  with the same tokens and the piped roster reference kept. Nothing reads it yet. `cite`
+  still binds `question_text`, and a test confirms only `build.py`, `checks.py` and
+  `tests/test_dictionary.py` name the column. The `" - "` separator was rejected on
+  measurement because it merged `m2:Q3.4_1..5` under `env/tools.py::_ROSTER_INDEX`. The
+  build hash is unchanged by operator ruling, so the dictionary changed under an
+  unchanged hash. That is the declared gap, now pinned by a test. R3's ACCEPT was
+  amended to 876 of 877 grid sub-items (`m2:Q19.86_1` excepted). Recall and
+  `surface_hash` are unchanged at merge.
 - **C18 — the pre-registered sweep read against its registration and recorded**
   (`6416ecd`). It ran in the loop clone, which the withholding control's
   `tool_log_path` names. Its window and HEAD are recorded nowhere (`provenance.date` is a
