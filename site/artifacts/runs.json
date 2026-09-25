@@ -41,7 +41,7 @@
  "examples": [
   {
    "id": "causal-question",
-   "label": "two constructs, one answer",
+   "label": "Cause and effect: the search finds only one",
    "origin": "operator-authored",
    "note": "The question names two constructs. The deployed retriever handles one construct at a time: it returned the outcome the question names, cleared the threshold, and never surfaced the exposure; every candidate above comes from the same domain. Nothing in its output says a construct was dropped. Resolving both roles, and deciding which is the exposure and which the outcome, is the language model's job; the retriever alone cannot do it.",
    "request": {
@@ -213,7 +213,7 @@
   },
   {
    "id": "resolved",
-   "label": "resolved",
+   "label": "A clear match",
    "origin": "operator-authored",
    "note": null,
    "request": {
@@ -387,7 +387,7 @@
   },
   {
    "id": "resolved-2",
-   "label": "resolved · demo query",
+   "label": "A clear match: the search's own test query",
    "origin": "deploy/retriever.py __main__ demo query",
    "note": null,
    "request": {
@@ -559,7 +559,7 @@
   },
   {
    "id": "absent",
-   "label": "absent",
+   "label": "Not in the survey: the search declines",
    "origin": "negative fixture n01 + negative_expansion_fields",
    "note": "The construct is not in the instrument. The absence check finds no air-pollution measure in any dictionary field, only self-reported proximity to a pollution source. The retriever's nearest target is far below the threshold, so it abstains, which is the correct verdict.",
    "request": {
@@ -729,7 +729,7 @@
   },
   {
    "id": "false-accept",
-   "label": "false accept",
+   "label": "Not in the survey, but the search answers anyway",
    "origin": "negative fixture n42 + negative_expansion_fields",
    "note": "The request is area-level, and the instrument has no area-level measure: no deprivation index, census tract or geocode (absence check). The retriever returns an individual household-income variable and clears the threshold by a hair instead of abstaining. This is a known failure: the threshold detects absent constructs, not wrong picks.",
    "request": {
