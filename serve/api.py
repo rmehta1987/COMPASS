@@ -60,6 +60,7 @@ import re
 import sys
 import threading
 import time
+from collections.abc import Sequence
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -1080,6 +1081,55 @@ def _split_pools(state: State, backend: Any, request: str, k: int,
                    "outcomes": list(split.outcomes), "per_phrase_k": each}
 
 
+def _default_pick(backend: Any, request: str, role: str,
+                  missing_dimension: str, cands: Sequence[Any]) -> dict[str, Any]:
+    """Ask for one item to start from, after the pool was called `ambiguous`.
+
+    `ambiguous` left the field empty, so a question with three reasonable
+    operationalisations could not be run without the reader choosing by hand.
+    MEASURED 2026-09-24 on "does have access to primary care decrease
+    depression": the exposure resolved, the outcome came back `ambiguous` over
+    two diagnosis items and a symptom item, and nothing was filled in.
+
+    The default is a SEPARATE answer from the verdict, which is left exactly as
+    it came back (`agent/prompt_contract.py::default_contract` says why). Two
+    rules are the harness's, not the prompt's: an index outside the pool, and a
+    roster-family member, are both refused here rather than trusted.
+
+    Args:
+        backend: The model backend the verdict came from.
+        request: The researcher's prose.
+        role: `exposure` or `outcome`.
+        missing_dimension: What the verdict said would settle it.
+        cands: The pool the verdict was given.
+
+    Returns:
+        `status` `chosen` with `index` and `reason`; `declined` when the model
+        answered `none`; `refused` when the harness would not take its index;
+        `failed` when the reply could not be read. Only `chosen` fills a field.
+    """
+    from agent import prompt_contract as PC
+
+    try:
+        pick = PC.DefaultPick.model_validate_json(_first_json(str(
+            backend.transduce(PC.default_contract(
+                request, role, missing_dimension, cands).render()).content)))
+    except ValueError as exc:
+        # A bad reply loses the default, never the verdict it follows.
+        return {"status": "failed", "index": None, "why": str(exc)[:300]}
+    if pick.verdict == "none":
+        return {"status": "declined", "index": None, "reason": pick.reason}
+    if pick.index is None or not 1 <= pick.index <= len(cands):
+        return {"status": "refused", "index": None, "reason": pick.reason,
+                "why": f"index {pick.index} is not one of the {len(cands)} offered"}
+    size = cands[pick.index - 1].facts.get("roster_family_size") or 1
+    if size > 1:
+        return {"status": "refused", "index": None, "reason": pick.reason,
+                "why": f"index {pick.index} is one member of a roster family of "
+                       f"{size}; a request naming no member is not answered by one"}
+    return {"status": "chosen", "index": pick.index, "reason": pick.reason}
+
+
 def _abstention_note(pool: dict[str, Any]) -> dict[str, Any]:
     """Whether the deployed retriever would have abstained on this pool.
 
@@ -1169,12 +1219,18 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
 
             backend = ClaudeCliBackend(model=model, mode="benchmark")
             t0 = time.time()
+            # EVERY CALL'S COST, not the last one's. `last_cost` is per call, so
+            # reporting it alone printed one call's price for a run of three
+            # (split, exposure, outcome) -- and a default pick adds more. None
+            # anywhere means the total is unknown, never a partial sum.
+            costs: list[float | None] = []
             out: dict[str, Any] = {}
             pools: dict[str, Any] = dict(roles)
             split_info: dict[str, Any] = {"status": "off"}
             if split_on:
                 pools, split_info = _split_pools(state, backend, request, k,
                                                  pools)
+                costs.append(backend.last_cost)
             for role in ("exposure", "outcome"):
                 if role in pinned:
                     key = pinned[role]
@@ -1198,7 +1254,16 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                     pool["cands"])
                 chosen = PC.VariableSelection.model_validate_json(
                     _first_json(str(backend.transduce(framed.render()).content)))
+                costs.append(backend.last_cost)
                 proposed = [i for i in chosen.indices if 1 <= i <= len(pool["cands"])]
+                default = None
+                if chosen.verdict == "ambiguous":
+                    default = _default_pick(backend, request, role,
+                                            chosen.missing_dimension,
+                                            pool["cands"])
+                    costs.append(backend.last_cost)
+                chosen_default = (default["index"] if default
+                                  and default["status"] == "chosen" else None)
                 out[role] = {
                     "verdict": chosen.verdict,
                     "absent_scope": _absence_scope(chosen.verdict,
@@ -1207,6 +1272,9 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                     "recipe": chosen.recipe or None,
                     "missing_dimension": chosen.missing_dimension or None,
                     "proposed_indices": proposed,
+                    # The verdict above is left exactly as it came back; the
+                    # default is a separate answer, None when none was asked.
+                    "default_pick": default,
                     "skipped_uncitable": pool["skipped"],
                     **_abstention_note(pool),
                     # THE ABSTENTION VERDICT, REPORTED ON THIS PATH TOO.
@@ -1232,6 +1300,7 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                          "key": c.key if state.show_instrument else None,
                          "wording": c.wording,
                          "proposed": c.index in proposed,
+                         "default": c.index == chosen_default,
                          "cos": pool["cos"][c.key],
                          **c.facts}
                         for c in pool["cands"]],
@@ -1250,7 +1319,9 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                 "dictionary_version": version,
                 "model_id": backend.name,
                 "elapsed_s": round(time.time() - t0, 2),
-                "cost_usd": backend.last_cost,
+                "cost_usd": (None if not costs or None in costs
+                             else round(sum(c for c in costs if c is not None), 6)),
+                "model_calls": len(costs),
                 "roles": out,
                 "split": split_info,
                 "anchors_proposed_by": "model",

@@ -116,6 +116,23 @@ const PAIR_REPLY = {
                               proposed: true, cos: 0.5 }] },
   },
 };
+// THE SAME AMBIGUITY, WITH A DEFAULT. `/api/pair` asks a second call for a
+// default whenever a role comes back `ambiguous`, and sends it as
+// `default_pick` beside the unchanged verdict. A `chosen` default must fill
+// the field and say it is a default; the verdict must still show. MEASURED on
+// "does have access to primary care decrease depression": without it the
+// outcome field stayed empty and the reader had to pick by hand.
+const DEFAULTED_REPLY = Object.assign({}, PAIR_REPLY, { roles: {
+  exposure: { verdict: "ambiguous", reason: "several operationalisations",
+              missing_dimension: "WHICH_OPERATIONALIZATION", proposed_indices: [],
+              default_pick: { status: "chosen", index: 2, reason: "DEFAULT_REASON" },
+              candidates: [
+                { index: 1, key: "EXP_OTHER", wording: "WORDING_OTHER",
+                  proposed: false, default: false, cos: 0.6 },
+                { index: 2, key: "EXP_DEFAULT", wording: "WORDING_DEFAULT",
+                  proposed: false, default: true, cos: 0.5 }] },
+  outcome: PAIR_REPLY.roles.outcome } });
+let statusReply = PAIR_REPLY;
 const ENUMERATE = {
   note: "a synthesised enumerate reply, for this harness only",
   shown: PAIRS.length,
@@ -154,7 +171,7 @@ global.fetch = async (rel, opts) => {
   }
   if (rel === "/api/specify/status") {
     return { status: 200,
-             json: async () => Object.assign({ status: "done" }, PAIR_REPLY) };
+             json: async () => Object.assign({ status: "done" }, statusReply) };
   }
   return { json: async () => JSON.parse(fs.readFileSync(path.join(site, rel), "utf8")) };
 };
@@ -274,6 +291,32 @@ global.fetch = async (rel, opts) => {
       // standing between that and a confident-looking list.
       if (!/abstention threshold/.test(filled)) {
         fail("a sub-threshold pool does not say the retriever would have refused");
+      }
+
+      statusReply = DEFAULTED_REPLY;
+      await ab.onclick();
+      await new Promise(r => setTimeout(r, 120));
+      statusReply = PAIR_REPLY;
+      const dflt = node("#panel").innerHTML;
+      if (!/<dt>exposure<\/dt><dd[^>]*>EXP_DEFAULT/.test(dflt)) {
+        fail("a chosen default did not fill the exposure field");
+      }
+      if (!dflt.includes("is a default, not a committed choice")) {
+        fail("a defaulted role reads as a committed choice");
+      }
+      if (!dflt.includes("DEFAULT_REASON") || !dflt.includes("<b>ambiguous</b>")) {
+        fail("a defaulted role hides its verdict or the default's reason");
+      }
+      if (dflt.includes("Filled from the language model's committed choices")) {
+        fail("the panel calls a default a committed choice");
+      }
+      // AND THE NEXT ANSWER REPLACES IT. `adoptProposals` only ever set a
+      // field, so the default above stayed filled in for a question whose
+      // model declined the role.
+      await ab.onclick();
+      await new Promise(r => setTimeout(r, 120));
+      if (!/<dt>exposure<\/dt><dd[^>]*><em>none picked<\/em>/.test(node("#panel").innerHTML)) {
+        fail("a previous question's default is still filled in");
       }
     }
 

@@ -627,6 +627,14 @@ def _catalogue_surface() -> dict[str, str]:
         # request so the surface is reproducible.
         "retrieval_prompt": PC.retrieval_contract(
             "<the researcher's request, supplied per call>", cands).render(),
+        # `serve/api.py::_default_pick` renders this after an `ambiguous`
+        # verdict, of the same pool, so it joins the scan on the same terms.
+        # The request, role and settling fact vary per call and are the
+        # caller's or the earlier verdict's; the standing guidance is ours.
+        "default_prompt": PC.default_contract(
+            "<the researcher's request, supplied per call>", "<role>",
+            "<what the earlier verdict said would settle it>", cands).render(),
+        "default_schema": json.dumps(PC.DefaultPick.model_json_schema()),
     }
 
 

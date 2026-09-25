@@ -475,18 +475,32 @@ function allPinned(j){
 }
 
 function adoptProposals(j){
-  /* Carry over only what the model COMMITTED to. `resolved` and `pinned` are
-     answers; `ambiguous`, `absent`, `derive` and `family` are it declining, and
-     filling those would pick one to be helpful -- the exact move the retrieval
-     guidance forbids. The reader still presses Run, which is the confirmation. */
+  /* Carry over what the model COMMITTED to, plus a default it was asked for
+     SEPARATELY. `resolved` and `pinned` are answers. `ambiguous` left the field
+     empty, so a question with several reasonable measures could not run until
+     the reader chose by hand -- MEASURED on "does have access to primary care
+     decrease depression". The retrieval call still may not pick one to be
+     helpful; the server asks a second call for a default and sends it as
+     `default_pick`, beside the unchanged verdict, and only a `chosen` one fills
+     the field. `absent`, `derive` and `family` still leave it empty. The reader
+     still presses Run, which is the confirmation. */
   if(!j||!j.roles) return;
   for(const role of ["exposure","outcome"]){
     const v=j.roles[role]; if(!v) continue;
+    /* A NEW ANSWER REPLACES THE OLD ONE, including with nothing. This only
+       ever set a field, so a default from the previous question stayed filled
+       in when the next question's model declined that role. */
+    anchors[role]=null;
     if(v.verdict==="pinned"&&v.pinned_key){ anchors[role]=v.pinned_key; continue; }
-    if(v.verdict!=="resolved") continue;
-    const pick=(v.candidates||[]).find(c=>c.proposed&&c.key);
+    const pick=v.verdict==="resolved"
+      ?(v.candidates||[]).find(c=>c.proposed&&c.key)
+      :hasDefault(v)?(v.candidates||[]).find(c=>c.default&&c.key):null;
     if(pick) anchors[role]=pick.key;
   }
+}
+
+function hasDefault(v){
+  return !!(v&&v.verdict==="ambiguous"&&v.default_pick&&v.default_pick.status==="chosen");
 }
 
 function roleBlock(role,v){
@@ -497,6 +511,16 @@ function roleBlock(role,v){
   if(v.reason) h+=`<div class="none">${esc(v.reason)}</div>`;
   if(v.missing_dimension) h+=`<div class="none" style="color:var(--signal)">`
     +`what would settle it: ${esc(v.missing_dimension)}</div>`;
+  /* The default is a second answer, so it is said as one: which call made it,
+     why, and that the verdict above it still stands. A default the model or
+     the server declined is shown too, since it explains the empty field. */
+  const d=v.default_pick;
+  if(hasDefault(v)) h+=`<div class="none" style="color:var(--signal)">`
+    +`The request fits more than one item, so a second call chose a default to`
+    +` start from, marked below. ${esc(d.reason||"")} Change it if it is not the`
+    +` measure you meant.</div>`;
+  else if(d) h+=`<div class="none">No default was filled in: `
+    +`${esc(d.why||d.reason||d.status)}</div>`;
   /* A `derive` verdict's RECIPE was dropped. `roleBlock` showed the verdict,
      the reason, the missing dimension and the candidates -- and not the one
      field that says what to compute, which on a `derive` is the whole answer.
@@ -514,8 +538,8 @@ function roleBlock(role,v){
     +` instead of offering these. Treat any pick from this list as unsupported`
     +` until you check the instrument yourself.</div>`;
   h+=`<div class="tools">`+v.candidates.map(c=>
-      `<div class="t${c.proposed?" gate pass":""}"><span class="call">`
-      +`${c.proposed?"&#10003; ":""}${c.index}. <b>${esc(c.key||"")}</b> ${esc(c.wording)}</span>`
+      `<div class="t${c.proposed||c.default?" gate pass":""}"><span class="call">`
+      +`${c.proposed?"&#10003; ":c.default?"default &middot; ":""}${c.index}. <b>${esc(c.key||"")}</b> ${esc(c.wording)}</span>`
       +`<span class="ret">cos ${f4(c.cos)}</span>`
       +(c.key?`<button class="g pick" data-anchor="${role}" data-key="${esc(c.key)}">use</button>`:"")
       +`</div>`).join("")+`</div>`;
@@ -587,7 +611,9 @@ function resolverPanel(){
     +poolNote(j);
   for(const role of ["exposure","outcome"]) if(j.roles&&j.roles[role]) h+=roleBlock(role,j.roles[role]);
   const declined=["exposure","outcome"].filter(r=>j.roles&&j.roles[r]
-    &&j.roles[r].verdict!=="resolved"&&j.roles[r].verdict!=="pinned");
+    &&j.roles[r].verdict!=="resolved"&&j.roles[r].verdict!=="pinned"
+    &&!hasDefault(j.roles[r]));
+  const defaulted=["exposure","outcome"].filter(r=>j.roles&&hasDefault(j.roles[r]));
   h+=`<p class="sec">chosen pair</p>`
     +(allPinned(j)?`<div class="none" style="color:var(--signal)">`
       +`The request named both anchors, so nothing was inferred and the`
@@ -595,8 +621,11 @@ function resolverPanel(){
     +(declined.length?`<div class="none" style="color:var(--signal)">`
       +`The language model declined to choose the ${esc(declined.join(" and "))}, so no`
       +` choice is filled in. Pick one yourself, or ask again with a more specific request.</div>`
-      :`<div class="none">Filled from the language model's committed choices. Change either`
+      :defaulted.length?"":`<div class="none">Filled from the language model's committed choices. Change either`
       +` before you run.</div>`)
+    +(defaulted.length?`<div class="none" style="color:var(--signal)">`
+      +`The ${esc(defaulted.join(" and "))} is a default, not a committed choice: the`
+      +` request fits more than one item. Check it before you run.</div>`:"")
     +`<dl class="anchors">`
     +row("exposure",anchors.exposure?esc(anchors.exposure):"<em>none picked</em>",true)
     +row("outcome",anchors.outcome?esc(anchors.outcome):"<em>none picked</em>",true)
@@ -1846,7 +1875,7 @@ function posedIntakePanel(){
 function proposedWording(role){
   const v=ask&&ask.roles&&ask.roles[role]; if(!v) return "";
   if(v.verdict==="pinned") return v.pinned_wording||"";
-  const pick=(v.candidates||[]).find(c=>c.proposed&&c.key);
+  const pick=(v.candidates||[]).find(c=>(c.proposed||(hasDefault(v)&&c.default))&&c.key);
   return pick?(pick.wording||""):"";
 }
 
@@ -1857,7 +1886,7 @@ function declinedRoles(){
   let h="";
   for(const role of ["exposure","outcome"]){
     const v=ask.roles[role];
-    if(!v||v.verdict==="resolved"||v.verdict==="pinned") continue;
+    if(!v||v.verdict==="resolved"||v.verdict==="pinned"||hasDefault(v)) continue;
     h+=`<div class="none" style="color:var(--signal)">The language model did not`
       +` commit to an <b>${esc(role)}</b>, so the field is empty.`
       +` Pick a candidate below, or ask again with a more specific request.</div>`

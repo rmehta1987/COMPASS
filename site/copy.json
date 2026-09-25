@@ -29,7 +29,7 @@
  ],
  "counts": {
   "static": 12,
-  "block": 60,
+  "block": 63,
   "label": 104,
   "server": 31
  },
@@ -180,6 +180,33 @@
     "esc(role)"
    ],
    "text": "The language model did not commit to an {0} , so the field is empty. Pick a candidate below, or ask again with a more specific request."
+  },
+  {
+   "id": "roleBlock.request-fits-more-than-one",
+   "kind": "block",
+   "where": "site/index.html::roleBlock",
+   "slots": [
+    "esc(d.reason||\"\")"
+   ],
+   "text": "The request fits more than one item, so a second call chose a default to start from, marked below. {0} Change it if it is not the measure you meant."
+  },
+  {
+   "id": "roleBlock.no-default-filled-in",
+   "kind": "block",
+   "where": "site/index.html::roleBlock",
+   "slots": [
+    "esc(d.why||d.reason||d.status)"
+   ],
+   "text": "No default was filled in: {0}"
+  },
+  {
+   "id": "resolverPanel.default-not-committed",
+   "kind": "block",
+   "where": "site/index.html::resolverPanel",
+   "slots": [
+    "esc(defaulted.join(\" and \"))"
+   ],
+   "text": "The {0} is a default, not a committed choice: the request fits more than one item. Check it before you run."
   },
   {
    "id": "dots.accepted-those-should-accept",

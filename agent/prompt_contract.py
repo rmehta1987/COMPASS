@@ -266,6 +266,14 @@ class VariableSelection(BaseModel):
 #: abstaining, and COMPASS's measured failure is the opposite one — five false
 #: positives in 21 rows, every unpinnable request answered with one confident
 #: item.
+#: The roster-family fact, stated once and read by both surfaces that offer a
+#: pool: a family member is no more a default than it is an answer.
+ROSTER_NOTE = (
+    "A candidate whose `roster_family_size` is N is one member of a family of "
+    "N: the same question put once per person. Those N are not N different "
+    "variables, and a request naming no particular member is not answered by "
+    "any one of them.")
+
 RETRIEVAL_GUIDANCE = (
     "Decide what kind of answer this request has among the survey codebook "
     "items listed below. You have each item's wording and named facts about "
@@ -273,10 +281,7 @@ RETRIEVAL_GUIDANCE = (
     "have response options, value labels, skip logic or any data. If "
     "separating two candidates would need a fact you were not given, that is "
     "`ambiguous`, not a close call. Do not pick one to be helpful.\n\n"
-    "A candidate whose `roster_family_size` is N is one member of a family of "
-    "N: the same question put once per person. Those N are not N different "
-    "variables, and a request naming no particular member is not answered by "
-    "any one of them.")
+    + ROSTER_NOTE)
 
 
 def retrieval_contract(request: str,
@@ -319,6 +324,79 @@ def catalogue_contract(candidates: Sequence[Candidate]) -> SelectionContract:
         task=RETRIEVAL_GUIDANCE,
         output_model=VariableSelection,
         refusal="absent",
+        candidates=tuple(candidates),
+    )
+
+
+# --------------------------------------------------------------------------- #
+# A default to start from, asked only after `ambiguous`
+# --------------------------------------------------------------------------- #
+
+# A SECOND CALL, NOT A SOFTER FIRST ONE. The retrieval surface's abstention
+# pressure is measured (`docs/adr/003-index-selection.md`: 5 false positives in
+# 21 rows), and its `ambiguous` verdict is reported as it came back. Telling
+# that call to pick a default anyway would move the verdict with the wording,
+# and the verdict would stop being a measurement. So the pick is asked for
+# afterwards, of the same pool, and travels BESIDE the verdict: the reader sees
+# both that the request was ambiguous and which item was filled in.
+#
+# `DefaultPick`'s docstring is prompt text (`default_contract` renders
+# `model_json_schema()`), so no study design, exposure, outcome, paper count,
+# cohort figure or prevalence may appear in it.
+
+
+class DefaultPick(BaseModel):
+    """The one item to start from when several could serve.
+
+    Attributes:
+        verdict: `default` when one listed item is a reasonable starting point;
+            `none` when no listed item measures what the request names.
+        index: The selected `index`, for `default`.
+        reason: One sentence: why this item is the one to start from.
+    """
+
+    verdict: Literal["default", "none"]
+    index: int | None = None
+    reason: str = ""
+
+
+DEFAULT_GUIDANCE = (
+    "An earlier reading of this request found that more than one of the "
+    "survey codebook items listed below could serve, and that the request's "
+    "wording does not say which. The researcher still needs one item to start "
+    "from. They will be told it is a default chosen under ambiguity, shown "
+    "what would settle it, and asked to confirm or change it before anything "
+    "runs.\n\n"
+    "Choose the one listed item that most directly measures what the request "
+    "names, in the request's own terms. Prefer an item asking about the thing "
+    "itself over one asking when it began, about a narrower form of it, or "
+    "about something that accompanies it. Return `none` only if no listed "
+    "item measures it at all.\n\n"
+    + ROSTER_NOTE + " Do not return one of them as the default.")
+
+
+def default_contract(request: str, role: str, missing_dimension: str,
+                     candidates: Sequence[Candidate]) -> SelectionContract:
+    """Ask for a default among a pool the retrieval surface called ambiguous.
+
+    Args:
+        request: What the researcher asked for, in their words.
+        role: The role being filled, as the pair route frames it.
+        missing_dimension: What the earlier reading said would settle it.
+        candidates: The same pool the ambiguous verdict was given.
+
+    Returns:
+        The contract.
+    """
+    settle = (f"\n\nWhat the earlier reading said would settle it: "
+              f"{missing_dimension}" if missing_dimension.strip() else "")
+    return SelectionContract(
+        name="default-under-ambiguity",
+        task=(f'A researcher asked for: "{request}"\n\n'
+              f"Which item serves as the {role.upper()} here?{settle}\n\n"
+              f"{DEFAULT_GUIDANCE}"),
+        output_model=DefaultPick,
+        refusal="none",
         candidates=tuple(candidates),
     )
 

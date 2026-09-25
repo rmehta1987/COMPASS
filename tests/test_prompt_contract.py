@@ -221,6 +221,56 @@ def test_the_retrieval_task_explains_the_family_fact_it_ships():
 
 
 # --------------------------------------------------------------------------- #
+# a default to start from, asked only after `ambiguous`
+# --------------------------------------------------------------------------- #
+
+
+def test_the_verdict_call_still_forbids_picking_one_to_be_helpful() -> None:
+    """The default is a SECOND call, so the first one's text did not move.
+
+    `ROSTER_NOTE` was factored out of `RETRIEVAL_GUIDANCE` to share it with the
+    default surface. The verdict is a measurement only while its instruction is
+    fixed (`AGENTS.md` §Verification Discipline), so the text is pinned whole.
+    """
+    assert PC.RETRIEVAL_GUIDANCE == (
+        "Decide what kind of answer this request has among the survey codebook "
+        "items listed below. You have each item's wording and named facts about "
+        "it; you do not have response options, value labels, skip logic or any "
+        "data. If separating two candidates would need a fact you were not "
+        "given, that is `ambiguous`, not a close call. Do not pick one to be "
+        "helpful.\n\n"
+        "A candidate whose `roster_family_size` is N is one member of a family of "
+        "N: the same question put once per person. Those N are not N different "
+        "variables, and a request naming no particular member is not answered by "
+        "any one of them.")
+    rendered = PC.retrieval_contract("x", PC.candidates_from_keys(KEYS)).render()
+    assert PC.DEFAULT_GUIDANCE not in rendered
+    assert "DefaultPick" not in rendered
+
+
+def test_the_default_contract_can_refuse_and_carries_what_it_was_given() -> None:
+    """Request, role and the settling fact reach the model; keys never do."""
+    c = PC.default_contract("does a raise b", "outcome", "which measure",
+                            PC.candidates_from_keys(KEYS))
+    assert c.refusal == "none"
+    assert c.refusal in PC._literal_values(PC.DefaultPick)
+    rendered = c.render()
+    assert '"does a raise b"' in rendered
+    assert "the OUTCOME here" in rendered
+    assert "would settle it: which measure" in rendered
+    assert PC.ROSTER_NOTE in rendered
+    for key in KEYS:
+        assert key not in rendered
+
+
+def test_a_default_contract_with_no_settling_fact_says_none() -> None:
+    """A blank `missing_dimension` prints no empty "would settle it:" line."""
+    rendered = PC.default_contract("x", "exposure", "  ",
+                                   PC.candidates_from_keys(KEYS)).render()
+    assert "the earlier reading said would settle it" not in rendered
+
+
+# --------------------------------------------------------------------------- #
 # C29-C: the splitter may leave words out, never add or change one
 # --------------------------------------------------------------------------- #
 
