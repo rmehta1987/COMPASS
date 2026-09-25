@@ -16,6 +16,15 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ## 2026-09-24
 
+- **C18 — the pre-registered sweep read against its registration and recorded**
+  (`6416ecd`). It ran 2026-09-11 12:38–16:56 in the loop clone at `10f22b0`, after
+  `4322e57` and `9214b28` fixed the tool-log path and the seal. Every value the files
+  record matches (`min_specifiable` 1 of 5, `claude-haiku-4-5`, rubric
+  `694100e1ea900ddb`, dictionary `3dc8415eccfe`, both controls, withholding `ok`). The
+  frame digest is not recorded; re-derived, it is `241d604e339a`, and the 256 records
+  are exactly its live pairs. 63 of 256 frame pairs were flagged, and 193 form the arm
+  pool. Re-scoring the persisted records reproduces the partition. 159 of the 193 are
+  five-of-five refusals, which bounds C6 (`DESIGN.md` §7).
 - **The retrieval prompt is scanned in the shape serve sends, facts and all** (`9312c3a`,
   `18a1295`). The marker scan rendered `retrieval_prompt` only over the facts-free
   catalogue, so the C32 index exemption was validated on a shape that never ships.

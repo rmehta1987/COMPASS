@@ -391,26 +391,9 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   CLOSED 2026-09-24 in `565f873`: `serve/api.py::_keep_repairs` passes the selected
   record's attempt to `generate/live_specifier.py::save_repairs`, which writes
   `jobs/<ticket>.repairs.json`, and the payload carries `repairs: {kept, untraced, file}`.
-- **C18 sweep RUN 2026-09-11; its result is recorded nowhere.** CORRECTED 2026-09-24:
-  this said "unrun (pilot only)". `run/unaided_sweep_2026-09-11/partition.json`
-  (untracked, `run/` is gitignored) carries `generated` 2026-09-11, `min_specifiable` 1
-  and rubric `694100e1ea900ddb` — the pre-registered values below — with counts probed
-  257, flagged 63, unflagged 194, arm_pool 193, and `withholding_control.json` beside
-  it. Probed 257 = the frame's 256 live pairs + the negative control, which the
-  flagged/unflagged lists carry beside them. Both controls ran and are recorded in
-  `controls`: negative `lab:assay_17 -> clinical:measure_23` read
-  `not_specifiable_unaided` (`n_specifiable` 0), positive `m3:Q16.3 -> m2:Q5.10` read
-  `specifiable_unaided` (5). What is open: read the sweep against the pre-registration and record it —
-  in `CHANGELOG.md` if it is history, `DESIGN.md` §7 if it bounds a claim. Not re-run.
-  `rescore`/`--repartition` re-derives the partition from persisted records with no
-  model call, so its threshold is revisable for free.
-  PRE-REGISTERED 2026-09-11, committed before any sweep call (loop): threshold
-  `min_specifiable` = **1 of k = 5** responses (the module default, the pilot's value);
-  model claude-haiku-4-5; rubric `694100e1ea900ddb`; frame `m3q16_x_m2q5` (digest
-  `241d604e339a`, all 256 live pairs) on dictionary `3dc8415eccfe`; both controls and the
-  withholding check. Command: `python -m benchmark.unaided_specifiability --controls
-  --verify-withholding --pilot 256 --out run/unaided_sweep_2026-09-11`. Another
-  threshold may be reported only as a `--repartition` beside this one, never instead.
+- **C18 — CLOSED 2026-09-24.** The sweep ran as pre-registered and is recorded
+  (`CHANGELOG.md` 2026-09-24; bound in `DESIGN.md` §7). Pre-registration kept as history
+  in `4c3ab5b`. Other thresholds are reported only beside threshold 1, via `--repartition`.
 - **C33 — `len(blocked_on)` ascending still charges disclosures other than gaps.**
   User-level. LEFT AS IS by the user, 2026-09-11, after three independent reviews
   (enterprise account, opus). All three said to drop the blocker count AND the `status`
@@ -556,6 +539,9 @@ experts until much later, which is why the dashboard exists.
   into `NEEDS_INSTRUMENT` and `NO_COHERENT_DESIGN` using
   `benchmark/calibration_set.py::_evaluate`, the calibration set's own environment
   ruling, and reproduces every calibration row's verdict. C6 itself stays parked with C12.
+  `with_instrument` labels 185 of the sweep's 193 unflagged pairs `needs_instrument`,
+  but most are refusals whose stated reason is not the instrument (`DESIGN.md` §7), so
+  arms drawn from them need that reason read, not only the environment's gates.
 - **C13 — prune published pairs from the generation frame.** PARKED WITH C12. Filter at
   `generate/funnel.py::s2_prune` on the key's construct-key pairs, never in a prompt.
   VERIFIED none is in the current frame, so it binds only once the frame widens. ACCEPT: a
