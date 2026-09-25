@@ -415,6 +415,9 @@ global.fetch = async (rel, opts) => {
                             "is a what-if, not the study's size",
                             "resemble each other", "Not ready yet",
                             "in the model's words", "FALSIFIER_TEXT", "at least 16.17",
+                            "sets its test at a difference of at least 16.17 percentage points",
+                            "exactly the smallest difference a study of 300 people",
+                            "the model's own statement of the test",
                             "found 80% of the time, with a 5% chance",
                             "worked out at 90% and 10% instead"]) {
           if (!card.includes(want)) fail(`the design card does not say ${JSON.stringify(want)}`);

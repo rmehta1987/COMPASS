@@ -824,6 +824,45 @@ function readyPlain(r){
   return `<span class="flag">Not ready yet.</span> It is waiting on `
     +b.map(x=>esc(BLOCKER_PLAIN[x]||x)).join("; ")+`.`;
 }
+/* THE FALSIFIER, SAID BY WHAT IS CHECKED. The model's own sentence was the
+   whole block, and it can be garbled -- on the primary-care record it calls
+   the worst-case detectable difference a "worst-case outcome prevalence".
+   What the system actually enforces is exact and explainable
+   (`agent/schema.py::_falsifier_is_detectable`): the threshold is a difference
+   in percentage points, and its size may not fall below the worst-case
+   smallest detectable difference at the sample size the record names. The
+   comparator is NOT interpreted by that check, so whether a difference that
+   large supports or refutes the expectation is left to the model's words,
+   which follow as the model's, under the checked figures. */
+function testPlain(r){
+  const ft=r.falsifier_threshold, s=(r.estimability||{}).smallest_detectable_effect||{};
+  const unit=esc((ft&&ft.unit)||s.unit||"");
+  let t="";
+  if(ft){
+    t+=`The design sets its test at a difference of`
+      +` ${esc(COMPARATOR_PLAIN[ft.comparator]||ft.comparator||"")} ${esc(String(Math.abs(ft.value)))}`
+      +` ${unit} in the share of people with the outcome, between two groups.`;
+    const worst=(s.worst_case_curve||[]).find(p=>p.n===s.at_n);
+    if(worst){
+      const v=Math.abs(ft.value), floor=Math.abs(worst.sde_percentage_points);
+      t+=v===floor
+        ?` That is exactly the smallest difference a study of ${esc(String(s.at_n))} people`
+          +` could reliably detect, so the test sits at the edge of what such a study could show.`
+        :` That is larger than the smallest difference a study of ${esc(String(s.at_n))} people`
+          +` could reliably detect (${esc(String(floor))} ${unit}), so a real difference of that size`
+          +` would reliably be found at that sample size.`;
+      t+=` The system checks this and refuses a test set below that smallest difference.`;
+    }
+    t+=` Whether a difference that large would support or refute the expectation is`
+      +` stated only in the model's own words.`;
+  }
+  let h=`<div class="none">${t||"The record sets no numeric test."}</div>`;
+  if(r.falsifier) h+=`<details><summary>the model's own statement of the test</summary>`
+    +`<div class="none">${esc(r.falsifier)}<br><em>Where this sentence and the figures above`
+    +` disagree, the figures are the ones the system checked.</em></div></details>`;
+  return h;
+}
+
 function designCard(r){
   const d=r.expected_direction||{}, adj=r.adjusted_covariates||[];
   const ft=r.falsifier_threshold, s=(r.estimability||{}).smallest_detectable_effect||{};
@@ -845,11 +884,7 @@ function designCard(r){
     +row("could the data show it?",detectPlain(r))
     +row("ready to run?",readyPlain(r))
     +`</dl>`;
-  if(r.falsifier) h+=`<p class="sec">what would prove it wrong, in the model's words</p>`
-    +`<div class="none">${esc(r.falsifier)}`
-    +(ft?` <br><span class="flag">The number it names: ${esc(COMPARATOR_PLAIN[ft.comparator]||ft.comparator||"")}`
-      +` ${esc(String(ft.value))} ${esc(ft.unit||"")}.</span>`:"")
-    +`</div>`;
+  if(r.falsifier||ft) h+=`<p class="sec">the test it sets</p>`+testPlain(r);
   if((s.worst_case_curve||[]).length) h+=`<details><summary>the smallest difference it`
     +` could find, by how many people answered both</summary><dl>`
     +s.worst_case_curve.map(p=>row(`${esc(String(p.n))} people`,

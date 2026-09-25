@@ -29,7 +29,7 @@
  ],
  "counts": {
   "static": 12,
-  "block": 94,
+  "block": 101,
   "label": 118,
   "server": 31
  },
@@ -1204,24 +1204,6 @@
    "text": "Nothing else. No other factor is taken into account."
   },
   {
-   "id": "designCard.prove-wrong",
-   "kind": "block",
-   "where": "site/index.html::designCard",
-   "slots": [],
-   "text": "what would prove it wrong, in the model's words"
-  },
-  {
-   "id": "designCard.number-it-names",
-   "kind": "block",
-   "where": "site/index.html::designCard",
-   "slots": [
-    "COMPARATOR_PLAIN[ft.comparator]",
-    "ft.value",
-    "ft.unit"
-   ],
-   "text": "The number it names: {0} {1} {2}."
-  },
-  {
    "id": "designCard.curve-summary",
    "kind": "block",
    "where": "site/index.html::designCard",
@@ -2059,6 +2041,79 @@
    "where": "site/index.html::specifierPanel",
    "slots": [],
    "text": "loading the example Reading a kept run from this server. No model is called."
+  },
+  {
+   "id": "designCard.test-it-sets",
+   "kind": "block",
+   "where": "site/index.html::testPlain",
+   "slots": [],
+   "text": "the test it sets"
+  },
+  {
+   "id": "testPlain.sets-test",
+   "kind": "block",
+   "where": "site/index.html::testPlain",
+   "slots": [
+    "COMPARATOR_PLAIN[ft.comparator]",
+    "Math.abs(ft.value)",
+    "unit"
+   ],
+   "text": "The design sets its test at a difference of {0} {1} {2} in the share of people with the outcome, between two groups."
+  },
+  {
+   "id": "testPlain.at-edge",
+   "kind": "block",
+   "where": "site/index.html::testPlain",
+   "slots": [
+    "s.at_n"
+   ],
+   "text": "That is exactly the smallest difference a study of {0} people could reliably detect, so the test sits at the edge of what such a study could show."
+  },
+  {
+   "id": "testPlain.above-floor",
+   "kind": "block",
+   "where": "site/index.html::testPlain",
+   "slots": [
+    "s.at_n",
+    "floor",
+    "unit"
+   ],
+   "text": "That is larger than the smallest difference a study of {0} people could reliably detect ({1} {2}), so a real difference of that size would reliably be found at that sample size."
+  },
+  {
+   "id": "testPlain.system-checks",
+   "kind": "block",
+   "where": "site/index.html::testPlain",
+   "slots": [],
+   "text": "The system checks this and refuses a test set below that smallest difference."
+  },
+  {
+   "id": "testPlain.direction-in-words",
+   "kind": "block",
+   "where": "site/index.html::testPlain",
+   "slots": [],
+   "text": "Whether a difference that large would support or refute the expectation is stated only in the model's own words."
+  },
+  {
+   "id": "testPlain.no-numeric-test",
+   "kind": "block",
+   "where": "site/index.html::testPlain",
+   "slots": [],
+   "text": "The record sets no numeric test."
+  },
+  {
+   "id": "testPlain.model-statement",
+   "kind": "block",
+   "where": "site/index.html::testPlain",
+   "slots": [],
+   "text": "the model's own statement of the test"
+  },
+  {
+   "id": "testPlain.figures-win",
+   "kind": "block",
+   "where": "site/index.html::testPlain",
+   "slots": [],
+   "text": "Where this sentence and the figures above disagree, the figures are the ones the system checked."
   }
  ]
 }
