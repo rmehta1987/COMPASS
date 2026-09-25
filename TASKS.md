@@ -539,9 +539,10 @@ experts until much later, which is why the dashboard exists.
   into `NEEDS_INSTRUMENT` and `NO_COHERENT_DESIGN` using
   `benchmark/calibration_set.py::_evaluate`, the calibration set's own environment
   ruling, and reproduces every calibration row's verdict. C6 itself stays parked with C12.
-  `with_instrument` labels 185 of the sweep's 193 unflagged pairs `needs_instrument`,
-  but most are refusals whose stated reason is not the instrument (`DESIGN.md` §7), so
-  arms drawn from them need that reason read, not only the environment's gates.
+  `with_instrument` labels 185 of the sweep's 193 unflagged pairs `needs_instrument`
+  from the environment's gates alone, and 159 of the 193 are five-of-five refusals
+  (`DESIGN.md` §7). Arms drawn from them need each refusal's stated reason read, not only
+  the gates. How those reasons split is UNVERIFIED: a keyword estimate, not committed.
 - **C13 — prune published pairs from the generation frame.** PARKED WITH C12. Filter at
   `generate/funnel.py::s2_prune` on the key's construct-key pairs, never in a prompt.
   VERIFIED none is in the current frame, so it binds only once the frame widens. ACCEPT: a
