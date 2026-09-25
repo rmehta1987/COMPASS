@@ -62,7 +62,10 @@ global.document = {
   documentElement: { outerHTML: "<html>" },
   getElementById: () => null,
 };
-global.window = { devicePixelRatio: 1, COMPASS_ENDPOINT: true };
+// A worked example is named by ticket; the status stub below answers it with
+// SPEC_RECORD, so loading it is driven through the route a live run uses.
+const EXAMPLE_TICKET = "000000-abcdef";
+global.window = { devicePixelRatio: 1, COMPASS_ENDPOINT: true, COMPASS_EXAMPLE: EXAMPLE_TICKET };
 global.alert = () => {};
 // Capture what a download would actually contain.
 let lastDownload = null;
@@ -204,6 +207,11 @@ global.fetch = async (rel, opts) => {
                                                poll_after_ms: 1 }) };
   }
   if (rel === "/api/specify/status") {
+    if (opts && JSON.parse(opts.body).ticket === EXAMPLE_TICKET) {
+      return { status: 200, json: async () => ({ status: "done", selected: SPEC_RECORD,
+        yield: "YIELD", identity: { protocol_id: "PID", model_id: "harness",
+          is_pipeline_model: true, selection_mode: "externally_posed", screened_from: 0 } }) };
+    }
     return { status: 200,
              json: async () => Object.assign({ status: "done" }, statusReply) };
   }
@@ -423,6 +431,28 @@ global.fetch = async (rel, opts) => {
         if (/blocked on [a-z_]+,/.test(status)) fail("the status section lists bare blocker keys");
       }
       if (card.includes("clustered on")) fail("the clustering row still doubles its own words");
+      // THE WORKED EXAMPLE loads a kept run by its ticket, through the status
+      // route, and calls no model. It must clear the previous proposal, say it
+      // is an example, and show the design card.
+      const ex = node("#spec-example");
+      if (!ex || !ex.onclick) fail("the Ask form offers no worked example where the server names one");
+      else {
+        posts.length = 0;
+        await ex.onclick();
+        await new Promise(r => setTimeout(r, 50));
+        const exPanel = node("#panel").innerHTML;
+        const spent = posts.filter(x => x.rel === "/api/specify" || x.rel === "/api/pair");
+        if (spent.length) fail(`loading the example called ${spent.map(x => x.rel)}`);
+        const polled = posts.find(x => x.rel === "/api/specify/status");
+        if (!polled || polled.body.ticket !== EXAMPLE_TICKET) {
+          fail("the example was not read through the status route by its ticket");
+        }
+        if (!exPanel.includes("A worked example")) fail("the example does not say it is one");
+        if (!exPanel.includes('class="design"') || !exPanel.includes("QUESTION_TEXT")) {
+          fail("the example shows no design card");
+        }
+        if (exPanel.includes("request read by")) fail("a stale proposal sits above the example");
+      }
       for (const bad of ["undefined", "NaN", "[object Object]"]) {
         if (card.includes(bad)) fail(`the record panel contains "${bad}"`);
       }

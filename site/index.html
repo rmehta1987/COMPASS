@@ -1140,6 +1140,8 @@ async function runCompare(){
 
 function specifierPanel(){
   const j=spec;
+  if(j.loading) return `<p class="sec">loading the example</p><div class="ph">Reading a`
+    +` kept run from this server. No model is called.</div>`;
   if(j.running) return `<p class="sec">running</p><div class="ph"><b>IN PROGRESS</b>`
     +`${typeof j.elapsed_s==="number"?` &mdash; ${j.elapsed_s}s elapsed`:""}`
     +` &mdash; a real run: the language model reasons, consults the dictionary as`
@@ -2070,8 +2072,42 @@ function askForm(){
     +` placeholder="does smoking cause hypertension">`
     +`</div>`
     +`<div class="after"><button class="g" id="spec-ask"${busy?" disabled":""}>`
-    +`${busy?"proposing&hellip;":"Propose a pair"}</button></div>`;
+    +`${busy?"proposing&hellip;":"Propose a pair"}</button>`
+    /* A WORKED EXAMPLE, only where the server names one. It is a kept run,
+       read through the same status route as a live one, so it is redacted as
+       a live run would be and calls no model. */
+    +(window.COMPASS_EXAMPLE?`<button class="g" id="spec-example"${specBusy?" disabled":""}>`
+      +`See a finished example</button>`:"")
+    +`</div>`
+    +(window.COMPASS_EXAMPLE?`<div class="none">Not sure what to ask? The example is a`
+      +` real run kept on this server: a question, the pair it used, and the design it`
+      +` produced. Loading it calls no model.</div>`:"");
   return h;
+}
+
+async function loadExample(){
+  const ticket=window.COMPASS_EXAMPLE;
+  if(!window.COMPASS_ENDPOINT||!ticket||specBusy) return;
+  /* The reader asked for this, so it takes a fresh ticket and clears what a
+     previous question left: a stale proposal above a kept record would read
+     as the proposal that produced it. */
+  const nav=(navGen={});
+  /* Busy while loading, like a run: a Run pressed meanwhile would otherwise be
+     overwritten when this answer lands. */
+  specBusy=true;
+  ask=null; posed=null; cmp=null; spec={running:true,loading:true,ticket}; draw();
+  try{
+    const q=await fetch("/api/specify/status",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify({ticket})});
+    const u=await q.json().catch(()=>null);
+    if(!u||typeof u!=="object"){ spec={error:`the server answered ${q.status}`}; return; }
+    if(u.status!=="done"){ spec={error:u.error||"the example is not a finished run"}; return; }
+    spec=Object.assign({ticket,example:true},u);
+    const r=u.selected||{};
+    anchors.exposure=(r.exposure&&r.exposure.key)||null;
+    anchors.outcome=(r.outcome&&r.outcome.key)||null;
+  }catch(err){ spec={error:"the server did not answer"}; }
+  finally{ specBusy=false; steer(nav,"ask"); draw(); }
 }
 
 /* The operator's entry: a pair stated as two keys, for whoever has the
@@ -2142,7 +2178,12 @@ function askPanel(s){
   /* THE DESIGN IS THE HIGHLIGHT. It is what the question was asked for, so it
      sits directly under the question, above the proposal and the run that
      produced it -- not at the foot of both. */
-  if(spec&&spec.selected) h+=designCard(spec.selected);
+  if(spec&&spec.selected){
+    if(spec.example) h+=`<div class="none" style="color:var(--signal)">A worked example:`
+      +` a run kept on this server, not one you started. Ask your own question above`
+      +` to make a new one.</div>`;
+    h+=designCard(spec.selected);
+  }
   /* A proposal renders its own roles and its own Run button; the key form is
      the entry for when there is no proposal. Never both. */
   if(ask) h+=resolverPanel();
@@ -2213,6 +2254,7 @@ function draw(){
     el("#q").value=el("#spec-q").value;
     askResolver(true);
   };
+  const se=el("#spec-example"); if(se) se.onclick=loadExample;
   const sg=el("#spec-go");
   if(sg) sg.onclick=()=>{
     /* Straight into the same `anchors` the resolver fills, so one code path

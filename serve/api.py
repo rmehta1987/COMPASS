@@ -233,7 +233,8 @@ class State:
                  allowed_models: frozenset[str] | None = None,
                  enable_compare: bool = False,
                  scoring_clone: Path | None = None,
-                 scoring_python: str | None = None) -> None:
+                 scoring_python: str | None = None,
+                 example_ticket: str | None = None) -> None:
         """Prepare shared state and fail early on a missing instrument.
 
         Args:
@@ -264,6 +265,11 @@ class State:
                 imported into this process or this clone.
             scoring_python: The interpreter to run it with, defaulting to this
                 process's own.
+            example_ticket: A finished Specifier run kept under `run_dir`,
+                offered on Ask as a worked example. Only the TICKET reaches the
+                page; the record is fetched through `/api/specify/status`, so it
+                is redacted exactly as a live run's would be. `main` refuses to
+                start if the ticket names no such run (`_example_refusal`).
         """
         self.deploy_root = deploy_root
         self.site_dir = site_dir
@@ -275,6 +281,13 @@ class State:
         self.enable_compare = enable_compare
         self.scoring_clone = scoring_clone
         self.scoring_python = scoring_python or sys.executable
+        # Held to the ticket shape HERE, not only in `main`: the value is written
+        # into a <script> tag on every page load, and a State built directly
+        # would otherwise carry any string there.
+        if example_ticket is not None and not re.fullmatch(
+                r"\d{6}-[0-9a-f]{6}", example_ticket):
+            raise ValueError(f"example_ticket {example_ticket!r} is not a ticket")
+        self.example_ticket = example_ticket
         # One comparison at a time: each is a process in another clone, and the
         # rate limit alone would allow sixty of them at once.
         self.compare_lock = threading.Lock()
@@ -1758,6 +1771,45 @@ def _load_job(state: State, ticket: str) -> dict[str, Any] | None:
         return None
 
 
+def _example_refusal(state: State) -> str | None:
+    """Why the configured worked example cannot be offered, or None if it can.
+
+    Checked at startup, not on click: a button that loads nothing reads as a
+    broken page, and the run directory is untracked, so a ticket valid on one
+    machine names nothing on another.
+
+    Args:
+        state: Shared handles, carrying `example_ticket`.
+
+    Returns:
+        The refusal, or None when no example is configured or it is usable.
+    """
+    ticket = state.example_ticket
+    if not ticket:
+        return None
+    if not state.enable_specify:
+        # `/api/specify/status` serves a Specifier record only where that route
+        # is on (`_ticket_kind`'s gate), so the example would load a 403. The
+        # gate is not loosened for it: it is a spending gate.
+        return (f"--example-ticket {ticket!r} needs --enable-specify: the "
+                f"example is read through /api/specify/status, which refuses a "
+                f"Specifier record while that route is off.")
+    job = _load_job(state, ticket)
+    if job is None:
+        return (f"--example-ticket {ticket!r}: no finished run is kept at "
+                f"{_job_path(state, ticket)}. Runs live under the untracked run "
+                f"directory, so a ticket from another machine names nothing here.")
+    kind = str(job.get("kind") or JOB_SPECIFY)   # as `_ticket_kind` reads it
+    if kind != JOB_SPECIFY or job.get("status") != "done":
+        return (f"--example-ticket {ticket!r} is a {kind} job with "
+                f"status {job.get('status')!r}; the example must be a finished "
+                f"Specifier run.")
+    if not (job.get("run") or {}).get("selected"):
+        return (f"--example-ticket {ticket!r} produced no protocol record, so "
+                f"there is no design to show.")
+    return None
+
+
 def _record_attempt(res: Any) -> Any:
     """The attempt whose record the run selected, protocol or refusal.
 
@@ -2331,9 +2383,14 @@ class Handler(BaseHTTPRequestHandler):
             # able to make it at all.
             # The comparison control is shown only where the route is on, for
             # the same reason: a button that can only answer 403 is dead.
+            # The example is named by TICKET only, which `_load_job` has
+            # already held to `\d{6}-[0-9a-f]{6}`, so it cannot close the
+            # string; the record itself comes through `/api/specify/status`.
             marker = (b"<script>window.COMPASS_ENDPOINT=true;"
                       + (b"window.COMPASS_COMPARE=true;"
                          if self.state.enable_compare else b"")
+                      + (f'window.COMPASS_EXAMPLE="{self.state.example_ticket}";'
+                         .encode() if self.state.example_ticket else b"")
                       + b"</script></head>")
             body = body.replace(b"</head>", marker, 1)
         self.send_response(200)
@@ -2672,6 +2729,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                          "For an operator testing retrieval against a dictionary "
                          "already on their own disk -- a pseudonym cannot tell "
                          "you whether the RIGHT variable was found.")
+    ap.add_argument("--example-ticket", default=None, metavar="TICKET",
+                    help="a finished Specifier run kept under the run directory, "
+                         "offered on Ask as a worked example. The server refuses "
+                         "to start if the ticket names no such run.")
     ap.add_argument("--enable-compare", action="store_true",
                     help="allow POST /api/compare, which places a finished Ask "
                          "record beside a paper's recorded design. OFF by "
@@ -2767,7 +2828,12 @@ def main(argv: list[str]) -> int:
                   enable_specify=enable_specify,
                   allowed_models=frozenset(a.allow_model or DEFAULT_MODELS),
                   enable_compare=bool(a.enable_compare), scoring_clone=scoring,
-                  scoring_python=a.scoring_python)
+                  scoring_python=a.scoring_python,
+                  example_ticket=a.example_ticket)
+    refusal = _example_refusal(state)
+    if refusal:
+        print(refusal, file=sys.stderr)
+        return 2
     srv = build_server(a.host, a.port, state)
     print(f"COMPASS test endpoint   http://{a.host}:{a.port}/")
     print(f"  site        {state.site_dir}")
@@ -2779,6 +2845,8 @@ def main(argv: list[str]) -> int:
     if state.enable_compare and state.scoring_clone is not None:
         print(f"  compare     ON, run in {state.scoring_clone.name} with "
               f"{state.scoring_python}; ledger kept there, nothing kept here")
+    if state.example_ticket:
+        print(f"  example     {state.example_ticket}, offered on Ask")
     print("  NOT a measurement surface: posed records, screened_from=0.")
     if state.show_instrument:
         print("  ** --show-instrument: responses carry question wording, options "

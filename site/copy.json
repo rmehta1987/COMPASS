@@ -29,8 +29,8 @@
  ],
  "counts": {
   "static": 12,
-  "block": 91,
-  "label": 117,
+  "block": 94,
+  "label": 118,
   "server": 31
  },
  "strings": [
@@ -2031,6 +2031,34 @@
    "where": "site/index.html::genEnvBlock",
    "slots": [],
    "text": "why the pipeline's own records are not scored"
+  },
+  {
+   "id": "askForm.see-finished-example",
+   "kind": "label",
+   "where": "site/index.html::askForm",
+   "slots": [],
+   "text": "See a finished example"
+  },
+  {
+   "id": "askForm.example-note",
+   "kind": "block",
+   "where": "site/index.html::askForm",
+   "slots": [],
+   "text": "Not sure what to ask? The example is a real run kept on this server: a question, the pair it used, and the design it produced. Loading it calls no model."
+  },
+  {
+   "id": "askPanel.worked-example",
+   "kind": "block",
+   "where": "site/index.html::askPanel",
+   "slots": [],
+   "text": "A worked example: a run kept on this server, not one you started. Ask your own question above to make a new one."
+  },
+  {
+   "id": "specifierPanel.loading-example",
+   "kind": "block",
+   "where": "site/index.html::specifierPanel",
+   "slots": [],
+   "text": "loading the example Reading a kept run from this server. No model is called."
   }
  ]
 }
