@@ -279,6 +279,11 @@ global.fetch = async (rel, opts) => {
     for (const bad of ["undefined", "NaN", "[object Object]"]) {
       if (sp.includes(bad)) fail(`the specifier start form contains "${bad}"`);
     }
+    // THE EXAMPLE IS THERE ON ARRIVAL, not behind a button: the operator
+    // opened Ask, saw no design, and reported the example as broken.
+    if (!sp.includes('class="design"') || !sp.includes("A worked example")) {
+      fail("Ask opens without the worked example's design where the server names one");
+    }
     // ASKING MUST FILL THE KEY FIELDS. That is the whole point of the panel: a
     // reader without the codebook cannot type a key, so the question is the
     // entry and the fields are filled from what comes back -- with the wording,
@@ -294,6 +299,11 @@ global.fetch = async (rel, opts) => {
       if (!asked) fail("proposing did not post to /api/pair");
       else if (asked.body.request !== "ASKED_TEXT") {
         fail(`proposing sent ${JSON.stringify(asked.body.request)}`);
+      }
+      // ...and it gives way to the reader's own question, or it would sit
+      // above their proposal as if it were that proposal's design.
+      if (node("#panel").innerHTML.includes("A worked example")) {
+        fail("the worked example stays on the page after the reader asks their own question");
       }
       // Asserted on the RENDERED HTML, not on a node's `.value`: this DOM stub
       // fabricates nodes on demand and never parses an assigned innerHTML, so a

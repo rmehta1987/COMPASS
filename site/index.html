@@ -426,6 +426,9 @@ async function askResolver(stay){
      fields from what comes back. Same request, same ticket, same poll, same
      `adoptProposals`: a second copy of this loop would drift from it. */
   live=null; posed=null; cur=null; typed=null; ask={running:true};
+  /* The worked example gives way to the reader's own question: left in place
+     it would sit above their proposal as if it were that proposal's design. */
+  if(spec&&spec.example){ spec=null; cmp=null; anchors.exposure=null; anchors.outcome=null; }
   if(!stay) sel="ask";
   draw();
   try{
@@ -2085,21 +2088,25 @@ function askForm(){
   return h;
 }
 
-async function loadExample(){
+async function loadExample(auto){
   const ticket=window.COMPASS_EXAMPLE;
   if(!window.COMPASS_ENDPOINT||!ticket||specBusy) return;
-  /* The reader asked for this, so it takes a fresh ticket and clears what a
-     previous question left: a stale proposal above a kept record would read
-     as the proposal that produced it. */
+  /* Clicked, it takes a fresh ticket and clears what a previous question
+     left: a stale proposal above a kept record would read as the proposal
+     that produced it. On page open (`auto`) there is nothing to clear. */
   const nav=(navGen={});
   /* Busy while loading, like a run: a Run pressed meanwhile would otherwise be
      overwritten when this answer lands. */
   specBusy=true;
-  ask=null; posed=null; cmp=null; spec={running:true,loading:true,ticket}; draw();
+  const mine={running:true,loading:true,ticket};
+  ask=null; posed=null; cmp=null; spec=mine; draw();
   try{
     const q=await fetch("/api/specify/status",{method:"POST",
       headers:{"Content-Type":"application/json"},body:JSON.stringify({ticket})});
     const u=await q.json().catch(()=>null);
+    /* THE READER WINS. If they proposed a pair or started a run while this
+       was in flight, the example is dropped rather than painted over them. */
+    if(spec!==mine||(auto&&ask)){ if(spec===mine) spec=null; return; }
     if(!u||typeof u!=="object"){ spec={error:`the server answered ${q.status}`}; return; }
     if(u.status!=="done"){ spec={error:u.error||"the example is not a finished run"}; return; }
     spec=Object.assign({ticket,example:true},u);
@@ -2328,7 +2335,13 @@ el("#dl-src").onclick=()=>{
   const a=document.createElement("a");a.href=URL.createObjectURL(b);
   a.download="compass-tool-page.html";a.click();URL.revokeObjectURL(a.href);};
 
-load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); draw(); foot();}).catch(e=>{
+load().then(()=>{const [first]=DATA.runs.examples; cur=first; el("#q").value=cur.request.text; examples(); rail(); draw(); foot();
+  /* THE EXAMPLE IS ON THE PAGE WHEN IT OPENS. Behind a button, a reader who
+     had not pressed it met an Ask stop with no design on it; the operator's
+     report was that the example "doesn't show the protocol". It loads once,
+     only where the server names one, and gives way to anything the reader
+     starts. */
+  if(window.COMPASS_ENDPOINT&&window.COMPASS_EXAMPLE) loadExample(true);}).catch(e=>{
   el("#panel").innerHTML=`<h2>Artifacts did not load</h2><div class="ph"><b>NO DATA</b> — ${esc(e.message)}. Serve this directory over HTTP; a file:// open cannot fetch the artifacts.</div>`;
 });
 </script>
