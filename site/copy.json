@@ -1853,7 +1853,7 @@
    "kind": "static",
    "where": "site/index.html (markup outside <script>)",
    "slots": [],
-   "text": "Describe what you want to measure, and follow each stage as it retrieves, refuses, or blocks, with the dictionary lookups behind it."
+   "text": "Pose an exposure–outcome question. COMPASS finds the survey items that measure each side, specifies a study design from the cohort's codebook, and states how large an effect it could detect at each sample size. It reads no participant data."
   },
   {
    "id": "shell.question-construct-two-keys",
