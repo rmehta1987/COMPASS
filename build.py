@@ -333,10 +333,14 @@ _COLUMNS_NOT_HASHED = (
 #: adding a function forces a deliberate choice instead of silently landing
 #: outside the fingerprint.
 #:
-#: TWO OF THESE ARE DECLARED GAPS, not clean exclusions. `build` and
+#: THREE OF THESE ARE DECLARED GAPS, not clean exclusions. `build` and
 #: `read_module` DO decide rows, and they are excluded because hashing them
 #: would move `version_hash` on every refactor of a ~130-line function — the
 #: same noise problem already accepted for docstrings, at much higher frequency.
+#: `compose_retrieval_text` decides every row's `retrieval_text` and is excluded
+#: for a different reason: the operator's ruling of 2026-09-24 (R3), because
+#: hashing it moves the build pins that `tests/test_browse.py`,
+#: `tests/test_retrieval_eval.py`, `src/` and `deploy/` hold at `3dc8415eccfe`.
 #: Declaring the gap is the honest move; closing it is not this file's job, and
 #: the reasons below are the whole record of it.
 _NOT_HASHED: dict[str, str] = {
