@@ -410,6 +410,17 @@ global.fetch = async (rel, opts) => {
         if (!cardOnly.includes("completed both parts of the survey")) {
           fail("the card does not say in words what the record is waiting on");
         }
+        // THE STATUS LINE SAYS WHAT EACH KEY MEANS. It printed "draft" and
+        // "blocked on module_co_completion_counts, …" and nothing else. Each
+        // blocker now carries its meaning and what it costs, beside the key.
+        const status = card.slice(card.indexOf('<p class="sec">status</p>'));
+        for (const want of ["Draft: not ready to run", "module_co_completion_counts",
+                            "nobody has yet counted how many people completed both",
+                            "design_effect_for_community_area_clustering",
+                            "so it is too optimistic"]) {
+          if (!status.includes(want)) fail(`the status section does not say ${JSON.stringify(want)}`);
+        }
+        if (/blocked on [a-z_]+,/.test(status)) fail("the status section lists bare blocker keys");
       }
       if (card.includes("clustered on")) fail("the clustering row still doubles its own words");
       for (const bad of ["undefined", "NaN", "[object Object]"]) {

@@ -59,15 +59,17 @@
   .does li{padding:5px 0 5px 16px;position:relative;color:var(--ink-2)}
   .does li:before{content:"";position:absolute;left:0;top:13px;width:6px;height:1px;background:var(--ink-3)}
 
-  .sec{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink-2);
+  /* Section titles were set at 10.5px grey mono, smaller than the text they
+     head, so a reader scanning the record could not find its parts. */
+  .sec{font-family:var(--mono);font-size:13px;letter-spacing:.05em;color:var(--ink);
     border-bottom:1px solid var(--ink);padding-bottom:6px;margin:0 0 12px}
   .sec+.sec{margin-top:26px}
-  .sec.major{font-size:14px;letter-spacing:.01em;color:var(--ink);text-transform:none;
+  .sec.major{font-size:17px;letter-spacing:.01em;color:var(--ink);text-transform:none;
     border-top:1px solid var(--rule);border-bottom:2px solid var(--ink);
     padding-top:26px;padding-bottom:8px;margin-top:40px;font-family:inherit;font-weight:600}
   .sec.major em{display:block;font-style:normal;font-weight:400;font-size:12px;
     color:var(--ink-2);margin-top:5px;font-family:var(--mono)}
-  .sec.lead{font-size:13.5px;letter-spacing:.02em;color:var(--ink);
+  .sec.lead{font-size:17px;letter-spacing:.02em;color:var(--ink);
     font-family:inherit;font-weight:600;padding-bottom:7px}
 
   .tools{border:1px solid var(--rule);margin:0 0 26px;font-family:var(--mono);font-size:12.5px}
@@ -115,7 +117,8 @@
   dd.m{font-family:var(--mono);font-size:13.5px;word-break:break-word}
   /* The exposure and the outcome are what the reader came for, and they were
      set at the same size as every other field on the panel. */
-  .sec.role{font-size:13px;letter-spacing:.04em;color:var(--ink)}
+  .sec.role{font-size:15px;letter-spacing:.04em;color:var(--ink)}
+  .design .sec.lead{font-size:19px}
   .anchors dt{font-size:13px}
   .anchors dd,.anchors dd.m{font-size:16px;line-height:1.45}
   dl>:nth-last-child(-n+2){border-bottom:0}
@@ -742,6 +745,27 @@ const BLOCKER_PLAIN={
   study_team_confirmation:"the study team's confirmation",
   outcome_prevalence_unconfirmed:"how common the outcome really is",
   design_effect_for_community_area_clustering:"how much people in the same community area resemble each other"};
+/* What each missing piece COSTS, from where the code says so:
+   `env/tools.py::estimate_n` (the two counts), `registry_coverage` (the
+   linked, clinical, lab and EHR registries are declared and empty),
+   `agent/schema.py` (no entry carries answer codes; the `BlockedOn` comments
+   for the frequency and the clustering gap). */
+const BLOCKER_WHY={
+  module_co_completion_counts:"The questions come from different parts of the survey, and nobody has yet counted how many people completed both. Until they do, the number of people the analysis could use is unknown, and the design cannot be marked ready.",
+  per_item_non_missing_counts:"Nobody has yet counted how many people answered each question, so the number the analysis could use is unknown.",
+  area_measure_inventory:"The study has not yet listed the neighbourhood-level measures it can link to answers, so none can be used.",
+  response_coding:"The codebooks give each question's wording but not how its answers are coded, so a comparison that depends on the codes cannot be written down.",
+  study_team_confirmation:"This depends on records the study team has not yet confirmed exist, such as clinical, lab or health-record data.",
+  outcome_prevalence_unconfirmed:"The detectable-difference figure assumes how common the outcome is. The model supplied that value, and no data here can check it.",
+  design_effect_for_community_area_clustering:"People in the same community area tend to resemble each other, and the detectable-difference figure ignores that, so it is too optimistic. Correcting it needs how many people live in each area and how alike they are, and neither is available."};
+const STATUS_PLAIN={draft:"Draft: not ready to run",ready_for_review:"Ready for review"};
+function blockerRows(b){
+  /* The key stays beside its meaning: it is what the JSON record and the
+     code call it, and a reader checking one against the other needs both. */
+  return b.map(x=>`<div class="t"><span class="call"><b>${esc(BLOCKER_PLAIN[x]||x)}</b>`
+    +`${BLOCKER_WHY[x]?`<br>${esc(BLOCKER_WHY[x])}`:""}</span>`
+    +`<span class="ret">${esc(x)}</span></div>`).join("");
+}
 const pct=x=>Number(x).toLocaleString("en-US",{style:"percent"});
 const quoted=x=>`&ldquo;${esc(x)}&rdquo;`;
 function anchorWords(a){
@@ -877,11 +901,13 @@ function readableProtocol(r){
     +(e.exposure_contrast?row("exposure contrast",esc(e.exposure_contrast)):"")
     +row("data access",esc(a.decision||""),true)
     +`</dl>`;
+  const b=r.blocked_on||[];
   h+=`<p class="sec">status</p><div class="tools">`
-    +`<div class="t gate ${(r.blocked_on||[]).length?"fail":"pass"}"><span class="call">`
-    +`<b>${esc(r.status||"")}</b></span><span class="ret">`
-    +((r.blocked_on||[]).length?`blocked on ${esc(r.blocked_on.join(", "))}`
-      :"no blockers")+`</span></div></div>`;
+    +`<div class="t gate ${b.length?"fail":"pass"}"><span class="call">`
+    +`<b>${esc(STATUS_PLAIN[r.status]||r.status||"")}</b>`
+    +(b.length?` &mdash; it is waiting on the ${b.length} things below`:" &mdash; nothing outstanding")
+    +`</span><span class="ret">${esc(r.status||"")}</span></div>`
+    +blockerRows(b)+`</div>`;
   return h;
 }
 
@@ -896,7 +922,8 @@ function readableRefusal(r){
     +`<div class="tools">`+r.evidence.map(v=>
       `<div class="t"><span class="call"><b>${esc(v.tool||"")}</b>(${esc(v.argument||"")})</span>`
       +`<span class="ret">&rarr; ${esc(v.outcome||"")}</span></div>`).join("")+`</div>`;
-  if((r.blocked_on||[]).length) h+=`<div class="none">blocked on ${esc(r.blocked_on.join(", "))}</div>`;
+  if((r.blocked_on||[]).length) h+=`<p class="sec">what it is waiting on</p>`
+    +`<div class="tools">${blockerRows(r.blocked_on)}</div>`;
   return h;
 }
 

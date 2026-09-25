@@ -29,8 +29,8 @@
  ],
  "counts": {
   "static": 12,
-  "block": 79,
-  "label": 111,
+  "block": 89,
+  "label": 120,
   "server": 31
  },
  "strings": [
@@ -1905,6 +1905,141 @@
    "where": "site/index.html (title attribute)",
    "slots": [],
    "text": "The full pipeline: retrieve candidate variables, then a language model assigns the exposure and the outcome. Requires the live server."
+  },
+  {
+   "id": "BLOCKER_WHY.module_co_completion_counts",
+   "kind": "block",
+   "where": "site/index.html::BLOCKER_WHY",
+   "slots": [],
+   "text": "The questions come from different parts of the survey, and nobody has yet counted how many people completed both. Until they do, the number of people the analysis could use is unknown, and the design cannot be marked ready."
+  },
+  {
+   "id": "BLOCKER_WHY.per_item_non_missing_counts",
+   "kind": "block",
+   "where": "site/index.html::BLOCKER_WHY",
+   "slots": [],
+   "text": "Nobody has yet counted how many people answered each question, so the number the analysis could use is unknown."
+  },
+  {
+   "id": "BLOCKER_WHY.area_measure_inventory",
+   "kind": "block",
+   "where": "site/index.html::BLOCKER_WHY",
+   "slots": [],
+   "text": "The study has not yet listed the neighbourhood-level measures it can link to answers, so none can be used."
+  },
+  {
+   "id": "BLOCKER_WHY.response_coding",
+   "kind": "block",
+   "where": "site/index.html::BLOCKER_WHY",
+   "slots": [],
+   "text": "The codebooks give each question's wording but not how its answers are coded, so a comparison that depends on the codes cannot be written down."
+  },
+  {
+   "id": "BLOCKER_WHY.study_team_confirmation",
+   "kind": "block",
+   "where": "site/index.html::BLOCKER_WHY",
+   "slots": [],
+   "text": "This depends on records the study team has not yet confirmed exist, such as clinical, lab or health-record data."
+  },
+  {
+   "id": "BLOCKER_WHY.outcome_prevalence_unconfirmed",
+   "kind": "block",
+   "where": "site/index.html::BLOCKER_WHY",
+   "slots": [],
+   "text": "The detectable-difference figure assumes how common the outcome is. The model supplied that value, and no data here can check it."
+  },
+  {
+   "id": "BLOCKER_WHY.design_effect_for_community_area_clustering",
+   "kind": "block",
+   "where": "site/index.html::BLOCKER_WHY",
+   "slots": [],
+   "text": "People in the same community area tend to resemble each other, and the detectable-difference figure ignores that, so it is too optimistic. Correcting it needs how many people live in each area and how alike they are, and neither is available."
+  },
+  {
+   "id": "BLOCKER_PLAIN.module_co_completion_counts",
+   "kind": "label",
+   "where": "site/index.html::BLOCKER_PLAIN",
+   "slots": [],
+   "text": "how many people completed both parts of the survey these questions come from"
+  },
+  {
+   "id": "BLOCKER_PLAIN.per_item_non_missing_counts",
+   "kind": "label",
+   "where": "site/index.html::BLOCKER_PLAIN",
+   "slots": [],
+   "text": "how many people answered each question"
+  },
+  {
+   "id": "BLOCKER_PLAIN.area_measure_inventory",
+   "kind": "label",
+   "where": "site/index.html::BLOCKER_PLAIN",
+   "slots": [],
+   "text": "a list of the neighbourhood measures the study holds"
+  },
+  {
+   "id": "BLOCKER_PLAIN.response_coding",
+   "kind": "label",
+   "where": "site/index.html::BLOCKER_PLAIN",
+   "slots": [],
+   "text": "how each question's answers are coded"
+  },
+  {
+   "id": "BLOCKER_PLAIN.study_team_confirmation",
+   "kind": "label",
+   "where": "site/index.html::BLOCKER_PLAIN",
+   "slots": [],
+   "text": "the study team's confirmation"
+  },
+  {
+   "id": "BLOCKER_PLAIN.outcome_prevalence_unconfirmed",
+   "kind": "label",
+   "where": "site/index.html::BLOCKER_PLAIN",
+   "slots": [],
+   "text": "how common the outcome really is"
+  },
+  {
+   "id": "BLOCKER_PLAIN.design_effect_for_community_area_clustering",
+   "kind": "label",
+   "where": "site/index.html::BLOCKER_PLAIN",
+   "slots": [],
+   "text": "how much people in the same community area resemble each other"
+  },
+  {
+   "id": "STATUS_PLAIN.draft",
+   "kind": "label",
+   "where": "site/index.html::STATUS_PLAIN",
+   "slots": [],
+   "text": "Draft: not ready to run"
+  },
+  {
+   "id": "STATUS_PLAIN.ready_for_review",
+   "kind": "label",
+   "where": "site/index.html::STATUS_PLAIN",
+   "slots": [],
+   "text": "Ready for review"
+  },
+  {
+   "id": "readableProtocol.waiting-on-below",
+   "kind": "block",
+   "where": "site/index.html::readableProtocol",
+   "slots": [
+    "b.length"
+   ],
+   "text": "it is waiting on the {0} things below"
+  },
+  {
+   "id": "readableProtocol.nothing-outstanding",
+   "kind": "block",
+   "where": "site/index.html::readableProtocol",
+   "slots": [],
+   "text": "nothing outstanding"
+  },
+  {
+   "id": "readableRefusal.waiting-on",
+   "kind": "block",
+   "where": "site/index.html::readableRefusal",
+   "slots": [],
+   "text": "what it is waiting on"
   }
  ]
 }
