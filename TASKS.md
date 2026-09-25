@@ -510,6 +510,8 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   Either fix the sentence, or pass the frame and index so that `_specify` uses
   `generate/funnel.py::live_at`; which one is the operator's call. Also, `_specify`'s
   `Returns:` docstring describes the finished run, not the ticket it returns.
+  And `serve/api.py::OWN_OUTPUT_MARKERS`'s comment names "the two writers in this module";
+  `_keep_repairs` (`565f873`) is a third. The tuple still covers its file.
 
 
 ## PARKED — the full-bibliography key and its chain
@@ -837,12 +839,29 @@ experts until much later, which is why the dashboard exists.
   file now turns every `tests/test_scorability.py` test into a collection error. It is also
   the coupling `benchmark/scorability.py`'s deferred imports exist to avoid. ACCEPT:
   `WITHHELD_MODULES` moves to a leaf module both can read, with the gate importing it.
-- **The scanned `retrieval_prompt` is not the shape production sends.** The scan renders
-  the whole catalogue with no per-key `facts`; `serve/api.py::_role_candidates` sends a
-  top-k pool with `module` and `roster_family_size` on every candidate. So the marker
-  scan's partition between exempt positions and scanned typed facts is validated on a
-  shape that never ships. Pre-existing scan-fidelity gap, now load-bearing for the C32
-  exemption. ACCEPT: the surface renders one production-shaped pool beside the catalogue.
+- **Serve sends a `roster_family_size` the dictionary does not claim, for three keys.**
+  `serve/api.py` fills it from the hit's `fold_size`, which counts folded members
+  whatever the fold. Measured 2026-09-24 over `deploy/targets.json`: 3 of 1,353 disagree
+  with `build/dictionary.json` (`m2:Q25.6#1_1`, `m2:Q27.5#1_1` fold 2, Month/Year matrix
+  blocks; `m1:Q3.10_6_TEXT` fold 3, text boxes for different options). `RETRIEVAL_GUIDANCE`
+  tells the model N members are one variable, so Month and Year are presented as one.
+  The bundle's own `roster_family_size` field agrees with the dictionary on all 1,353
+  (measured the same day), but `deploy/retriever.py::_hit` does not pass it on.
+  Owner: whoever holds `serve/api.py` and the deploy bundle; the operator assigns it.
+  ACCEPT: the fact reaching the model equals the dictionary's for every offerable key,
+  pinned by a test over all targets.
+- **`/api/pair`'s role framing is in no scanned surface.** The sentence "Which item serves
+  as the {ROLE} here?" is written inline in the route. ACCEPT: serve exposes the framing
+  as a function, and `benchmark/contamination_check.py` renders both roles through it.
+- **The gate and 13 surface tests now need the rsync-shipped `deploy/targets.json`.**
+  Since `9312c3a`, `benchmark/contamination_check.py::model_visible_surface` draws the
+  pool from it and raises `FileNotFoundError` without it (measured 2026-09-24: gate exit
+  1, `tests/test_contamination_surface.py` 13 failed, none skipped). This is by design:
+  SKIP is reserved for withheld modules (`tests/withheld.py::present`), and the gate
+  already read the gitignored root `targets.json` the same way. But `AGENTS.md` §Verify
+  current state names only `build/dictionary.json` and `benchmark/fixtures/` as what the
+  benchmark modules need; amending it is the operator's. UNCHECKED: whether the scoring
+  clone holds `deploy/targets.json`, which `--live` there now requires.
 - `surface_hash` is computed and never asserted; the operator has decided it should be
   deleted outright. ACCEPT: `benchmark/contamination_check.py::main` does not compute it.
 - The C24 commit messages state a false mechanism ("hash order picks the survivor"); the

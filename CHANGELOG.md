@@ -16,6 +16,15 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ## 2026-09-24
 
+- **The retrieval prompt is scanned in the shape serve sends, facts and all** (`9312c3a`,
+  `18a1295`). The marker scan rendered `retrieval_prompt` only over the facts-free
+  catalogue, so the C32 index exemption was validated on a shape that never ships.
+  `retrieval_prompt:pool` now renders beside it: keys from the retriever's target list,
+  facts from the dictionary. `tests/test_contamination_surface.py` reads serve's fact
+  shape by AST and checks each value against what serve would attach. The comparison
+  found three keys where serve's `roster_family_size` is not the dictionary's
+  (`TASKS.md`). An absent `deploy/targets.json` fails the gate and its tests loudly,
+  like the other gitignored files it reads; SKIP stays reserved for withheld modules.
 - **The endpoint enumerates named frames only, and names the frame it used** (`9c2cbdd`,
   C41(a)). `_enumerate` built its sides with its own comprehension, so an endpoint count
   carried no frame and no digest. The frame scan missed this because it flagged only
