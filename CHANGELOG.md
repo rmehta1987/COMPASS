@@ -17,10 +17,12 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 ## 2026-09-24
 
 - **C18 — the pre-registered sweep read against its registration and recorded**
-  (`6416ecd`). Recorded nowhere, re-derived from the loop clone's reflog and file mtimes:
-  it ran 2026-09-11 12:38–16:56 in that clone, started at `10f22b0` (HEAD reached
-  `a6251a3` during the run), after `4322e57` and `9214b28` fixed the tool-log path and
-  the seal. Every value the files record matches (`min_specifiable` 1 of 5,
+  (`6416ecd`). It ran in the loop clone, which the withholding control's
+  `tool_log_path` names. Its window and HEAD are recorded nowhere (`provenance.date` is a
+  day), and are re-derived from that clone's reflog and file mtimes: 2026-09-11
+  12:38–16:56, started at `10f22b0` (HEAD reached `a6251a3` during the run), after
+  `4322e57` and `9214b28` fixed the tool-log path and the seal. Every value the files
+  record matches (`min_specifiable` 1 of 5,
   `claude-haiku-4-5`, rubric `694100e1ea900ddb`, dictionary `3dc8415eccfe`, both controls,
   withholding `ok`). The frame digest is not recorded; re-derived, it is
   `241d604e339a`, and the 256 records are exactly its live pairs. 63 of 256 frame pairs
