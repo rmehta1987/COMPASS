@@ -556,6 +556,174 @@ experts until much later, which is why the dashboard exists.
   define or drop `judge_predicate`. Read `references/PRIOR_ART_CONTAMINATION.md` before
   reopening — the designs are settled there, with three claims body-reading withdrew. If
   C9 reopens, its conditions are in `DESIGN.md` §6.
+- 2026-09-24: C8, C9 and C10 are restated with citations as C42–C47 in §The AI Scientist
+  end goal below. They are still deferred; those entries add information and reopen
+  nothing.
+
+## The AI Scientist end goal — C42–C48, recorded 2026-09-24
+The operator named Sakana's AI Scientist, as applied to an SEIR model in
+https://speed1313.github.io/posts/ai_scientist/, as the end goal. Two parts were singled
+out: the Semantic Scholar novelty check (C42–C47) and the preset model (C48). A first
+mapping of the novelty check onto this repository was reviewed adversarially twice
+(Fable 5.1, personal account, 2026-09-24), and every finding kept below was re-opened in
+the code the same day. Two of that mapping's eleven claims were wrong and five
+overstated, so these entries replace it. C42–C47 restate deferred items: reopening them
+is the operator's decision, and none is dispatched.
+
+What the novelty check does, read from `SakanaAI/AI-Scientist` main on 2026-09-24
+(external prior work; the blog post does not describe it).
+`ai_scientist/generate_ideas.py::check_idea_novelty` runs up to `max_num_iterations=10`
+rounds. In each, the model writes a query and `search_for_papers` sends it to
+`api.semanticscholar.org/graph/v1/paper/search` (`result_limit=10`; title, authors, venue,
+year, abstract, `citationStyles`, `citationCount`). The model then either asks again or
+writes `Decision made: novel` / `not novel`, which a lower-cased substring test finds.
+`novel = False` is set before the loop, so ten rounds without a decision count as not
+novel. `launch_scientist.py` keeps only ideas where `idea["novel"]` is true, so the
+model's verdict decides which ideas survive. Each entry below exists because one of these
+properties is forbidden here.
+
+- **C42 — a novelty result is a label, never a gate or an order.** Restates C9's
+  "post-generation annotation". In Sakana the verdict prunes. Here the model never
+  chooses what happens next (`AGENTS.md` §Hard Constraints, `agent/specifier.py::_rank`),
+  and S4 tags but never prunes, for the three reasons in `generate/funnel.py::s4_tag`'s
+  docstring: popularity bias, over-reliance on literature, and deleting benchmark items
+  before they are scored. The plain rule misses one trap.
+  `agent/specifier.py::_twin_order` breaks ties between identical-design samples on
+  `_record_digest(p, provenance=False)`, which hashes the whole record except
+  `provenance`, `selection_rationale` included. So an annotation written before twin
+  selection changes which twin survives, even though `canonical_form` and `record_hash`
+  do not move. ACCEPT: the annotator runs only on a record `specify` has already
+  returned, and no term of `_rank`, `_twin_order` or `s2_prune` reads its output,
+  asserted with AST `Call`/`Attribute` nodes. Seed it twice: call the annotator inside
+  `specify` before twin selection, and read its field in `_rank`. Changing `_rank` or its
+  AST test is a user amendment. Lanes: A (`agent/specifier.py`) and C (the driver that
+  calls it).
+- **C43 — no instrument wording leaves the machine as a query.** New; binds C8 and C9.
+  The first mapping proposed building Semantic Scholar queries from a record's cited
+  question wording. That wording is the withheld instrument (`README.md` §What is
+  withheld: not cleared for public release, direct-identifier items included), so a query
+  made from it publishes it to a third party that may log or index it. No rule names this
+  case. It follows from why the wording is withheld, and it is the `env/` network ban's
+  leak in the outbound direction, which moving the call outside `env/` does not fix. There
+  is a second consequence: a query built from this instrument brings back this cohort's
+  own papers, which are the held-out bibliography (`references/PRIOR_ART_CONTAMINATION.md`
+  preamble; `benchmark/cohort_papers.py`). ACCEPT: the corpus builder reads none of
+  `build/dictionary.json`, `raw/` or a saved record, and imports neither `env.labels` nor
+  `env.tools`. Enforce it with an import-and-`open` scan in the style of
+  `tests/test_specifier.py::test_env_never_touches_the_network`, seeded by adding one
+  such read. Where the queries come from (a bulk dump, a hand-authored topic list or
+  something else) is the operator's decision, written down before any code. Lane:
+  unassigned until the builder has a home (C44).
+- **C44 — C8 restated: the frozen local corpus.** The shape is already settled, and the
+  first mapping missed it. `references/PRIOR_ART_CONTAMINATION.md` §How four systems
+  actually retrieve names MOOSE-Chem's screener as the template for `check_prior_work`,
+  "the one whose corpus is a frozen local artefact rather than a live search", and
+  ChemCrow's `Scholar2ResultLLM` for `search_literature`. `docs/adr/003-index-selection.md`
+  §Deferred surfaces adds two constraints: abstention gates are schema values, not text
+  heuristics, and the corpus is frozen "since a live source changes what the benchmark
+  measures between runs". §Retrieval leakage is a property of the plumbing gives the
+  reason: a frozen build artefact is the 0% leakage configuration. A per-record live query
+  loop is the AstroAgents shape (§Retrieval ordering), which the document recorded and did
+  not choose. Three questions to settle before any code: (i) the date filter. `DESIGN.md`
+  §6 says to doubt a date-cutoff tier gap, and §8 records that Qwen3 publishes no
+  knowledge cutoff, so "date-filtered" does not yet name a date. (ii) Excluding the
+  cohort's papers. That exclusion is selection in Python (`AGENTS.md` §Contamination
+  Practice), against a list `DESIGN.md` §6 calls a LOWER bound, so it is incomplete by
+  construction and must be reported that way. (iii) Where the artefact lives. A new
+  directory is unassigned (`AGENTS.md` §Parallel Lanes), and if a tool ever serves it
+  from `env/tools.py`, `benchmark/contamination_check.py::check_holdout_not_reachable`
+  goes red on the words `benchmark` and `references`. ACCEPT: the artefact records its
+  source, date filter and checksum, and `check_holdout_not_reachable` still passes with
+  the corpus served, seeded by naming the held-out path.
+- **C45 — C9 and C10 restated: annotate-after or a registry tool, not both.** The first
+  mapping said building `check_prior_work` would make the benchmark-mode withholding test
+  real, and also proposed an offline step outside `env/`. Those contradict each other.
+  `agent/registry.py::build_registry` subtracts `RETRIEVAL_TOOLS` from
+  `env/tools.py::TOOLS`, so only a member of that dict makes
+  `tests/test_specifier.py::test_benchmark_registry_contains_no_retrieval_tool` do any
+  work (`DESIGN.md` §7, "Benchmark-mode withholding is vacuous"). An offline annotator
+  leaves the test vacuous. A registry tool is callable by the model while it designs,
+  which `DESIGN.md` §8's first open question lists as undecided, while
+  `references/PRIOR_ART_CONTAMINATION.md` §Retrieval ordering and ADR 003 treat
+  annotate-after as settled. The documents disagree, and one must be corrected. A
+  MOOSE-Chem screener is itself a model, so under `env/` it needs a grant in
+  `tests/test_specifier.py::ENV_MODEL_GRANTS`, which is empty today and only the user
+  extends (the four conditions are in `AGENTS.md` §Hard Constraints). For C10, the
+  outcome must be a schema value, never a substring test like Sakana's `decision made:`
+  (ADR 003). ACCEPT: the operator chooses one path in writing and `DESIGN.md` §8 is
+  updated to match. If it is a registry tool, the withholding test goes red when
+  `build_registry` stops subtracting `RETRIEVAL_TOOLS` (the seed). If it is annotate-after, the §7 vacuity bullet stays
+  and says why. Lane B (`agent/registry.py`, `env/`); the grant is the user's.
+- **C46 — where a result is written: `prior_work` is model prose, and the field with the
+  recorded leak.** The first mapping said a novelty check would fill in the `prior_work`
+  tag that `generate/funnel.py::s4_tag` sets. Nothing reads that tag: outside tests, the
+  only read of `Candidate.tags` is `blocked_on`, in `generate/worked_example.py`. The
+  record's `agent/schema.py::SelectionRationale.prior_work` is a required string the
+  Specifier writes. `agent/tool_authority.py::apply_record_identity` stamps
+  `selection_mode` and `screened_from` but not it, and the two drivers hardcode a
+  different string (`generate/run_specifier.py`, `generate/worked_example.py`). This is
+  the field through which a served convention carried a cohort paper's figure into a
+  saved record (`benchmark/contamination_check.py` module docstring). It is scanned but
+  not gated (`tests/test_schema.py::test_a_coding_claim_outside_the_gated_fields_still_validates`),
+  and `tests/test_specifier.py::test_the_prompt_the_model_sees_carries_no_paper_content`
+  checks the prompt, not what a later stage writes into a saved record. The annotator
+  reads paper content, so it is itself a channel (`AGENTS.md` §Contamination Practice),
+  and its prompt and schema join `benchmark/contamination_check.py::model_visible_surface`.
+  ACCEPT, each seeded: the result lands in a typed field rather than being appended to
+  model prose; `canonical_form` does not change because of it (C42);
+  `agent/schema.py::ModelStage`, which today has only `resolver` and `splitter`, gains a
+  member for it, and `Provenance.models` records the model;
+  `benchmark/unearned_assertions.py::scan_record` covers the field. The schema docstring
+  is prompt text, so it carries no paper content (`AGENTS.md` §Hard Constraints). Lanes:
+  A (`agent/schema.py`, `agent/tool_authority.py`) and B
+  (`benchmark/contamination_check.py`), coupled in the way git cannot see.
+- **C47 — "generation mode only" has no producer.** C9's condition (`DESIGN.md` §6) is
+  generation mode, and nothing runs in it. `generate/live_specifier.py`,
+  `generate/run_specifier.py`, `serve/api.py` and `benchmark/split_coverage.py` all pass
+  `mode="benchmark"`, and `mcp/compass_server.py` defaults `COMPASS_MODE` to `benchmark`
+  (READ 2026-09-24, `rg 'mode="(benchmark|generation|curation)"'`). Every saved record is
+  a benchmark record, so an annotator restricted to generation mode would touch none.
+  Related: C13 (prune published pairs at `s2_prune` on the key's pairs) is the existing,
+  key-based answer to "is this pair already published", and it stays parked with C12. A
+  novelty label is C13 without a key and must not be reported as a substitute for it. A
+  count of novel generated pairs is not a benchmark number either (`DESIGN.md` §6: never
+  a single percent-recovered figure). ACCEPT: a generation-mode driver exists and its
+  records say which mode made them, and a benchmark scorer refuses a generation-mode
+  record, seeded with one. Lanes: C (`generate/`) and B (`serve/`, `mcp/`).
+- **C48 — a preset catalogue of the model families epidemiology uses.** The post's other
+  useful part, not deferred. What it actually defines is one executable preset: an SEIR
+  compartmental model (four differential equations; parameters β, σ, γ; fixed initial
+  compartment counts), with `experiment.py`, `plot.py`, `prompt.json` and one seed idea
+  (adding a vaccinated compartment). That is one model, not a menu (per the post, read
+  2026-09-24). COMPASS never executes an analysis (`AGENTS.md` §Hard Constraints), so the
+  counterpart here is declarative: a closed catalogue of named model families, each
+  stating what it needs from the instrument, such as the outcome type (binary, count,
+  ordinal, time-to-event, continuous), whether it needs a clustering unit, and whether it
+  needs repeated measures or event dates. A needs-check against the built dictionary
+  then extends estimability. For example, a Cox model needs event times and an SEIR model
+  needs an incidence time series; whether this instrument holds either is what the check
+  answers (UNVERIFIED here). Its result is an instrument fact, not a soundness judgement. What exists today, READ 2026-09-24:
+  `agent/schema.py::ModelSpec.form` is a free `str`, and the only closed list is
+  `benchmark/unaided_specifiability.py::MODEL_FORMS`, whose comment says model forms are
+  "a small closed vocabulary that exists independently of this study" and "NOT an answer
+  key". That list is lexical match tokens, not families with requirements, and it sits on
+  the held-out side, where `env/` may not reach it (`check_holdout_not_reachable`). The
+  hard line: `DESIGN.md` §5.2 lists "model form" among the design choices that "never
+  enter `curated/`, `env/`, an `agent/` docstring or a prompt", and §6 counts model form
+  beyond the default as a paper-free field, so offering the Specifier a menu would turn
+  that field environment-forced and zero its recall information. The operator must decide
+  in writing (a user amendment) whether a study-independent catalogue is allowed across
+  §5.2, or whether it stays in `benchmark/` and is used only to check and score records
+  after the fact. Either way: one vocabulary, never a second (`DESIGN.md` §6), so
+  `MODEL_FORMS` is derived from the catalogue or replaced by it; every entry carries a
+  theory-derived provenance tier (`benchmark/unearned_assertions.py::PROVENANCE_TIERS`)
+  and nothing from a cohort paper; and if the catalogue reaches the model, it is offered
+  by index and resolved in code (`agent/prompt_contract.py`), never as a string to copy
+  back. ACCEPT: the §5.2 decision is recorded; the catalogue is a typed module with its
+  own tests; `MODEL_FORMS` is derived from it, asserted by a test that goes red on a form
+  present in one and absent from the other; and the needs-check marks a time-to-event
+  family unestimable when no event-date item resolves, seeded by adding a fake one. Lanes:
+  B for anything under `env/` or `benchmark/`; A if `ModelSpec.form` becomes typed.
 
 ## Known-open defects, no task yet
 - **`benchmark/leak_facts.py` is fetchable from the public repository, and the
