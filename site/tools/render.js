@@ -134,14 +134,23 @@ function checkFoot(label) {
   node("#q").onkeydown({ key: "Enter", preventDefault() {} });
   if (!entered) { console.error("render: Enter in the search box does nothing"); failed++; }
   // The unmatched query must not take the committed stages with it: this
-  // ordering defect made Metrics, Score and Generate unreachable until reload.
-  for (const st of ["metrics", "score", "generate"]) {
+  // ordering defect made Metrics and Generate unreachable until reload.
+  // Score is gone (folded into Metrics 2026-09-24), so the rail must not offer
+  // it and Metrics must carry the answer-key stamp it held.
+  if (/data-s="score"/.test(node("#rail").innerHTML)) {
+    console.error("render: the rail still offers a Score stage"); failed++;
+  }
+  for (const st of ["metrics", "generate"]) {
     document.querySelectorAll("[data-s]");
     const b = byData.filter(x => x.dataset.s === st && x.onclick).pop();
     if (b) b.onclick();
     const p = node("#panel").innerHTML;
     if (/NO COMMITTED RUN/.test(p)) { console.error(`render: typed/no-run hides the ${st} stage`); failed++; }
     if (st === "metrics" && !/Cohort bibliography/.test(p)) { console.error("render: typed/no-run: bibliography table missing"); failed++; }
+    if (st === "metrics" && !(/could the pipeline have seen the answer key/.test(p)
+        && /answer key fetchable/.test(p))) {
+      console.error("render: Metrics does not carry the answer-key stamp Score held"); failed++;
+    }
   }
   // And the retriever still says so, with the query verbatim.
   document.querySelectorAll("[data-s]");

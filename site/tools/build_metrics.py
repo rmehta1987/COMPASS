@@ -165,8 +165,8 @@ def main() -> int:
               "different frame"),
             ("The generated pairs were a seeded subset of that frame; the artifacts "
               "this page ships do not record the seed or the limit"),
-            ("The Generate and Score tabs describe the generation clone at a "
-              "different tree. This run's own tree is recorded in metrics.json's "
+            ("The Generate tab and the answer-key checks on this tab describe the "
+              "generation clone at a different tree. This run's own tree is recorded in metrics.json's "
               "provenance (tree_sha), not printed on this page"),
         ],
         "artifacts": artifacts,

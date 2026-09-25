@@ -29,8 +29,8 @@
  ],
  "counts": {
   "static": 12,
-  "block": 89,
-  "label": 120,
+  "block": 91,
+  "label": 117,
   "server": 31
  },
  "strings": [
@@ -474,7 +474,7 @@
    "slots": [
     "esc(typed)"
    ],
-   "text": "output NO COMMITTED RUN — this page has no encoder, so it shows your request verbatim and never invents a score: {0} . The example buttons above load the runs committed with this page. The Generate, Score and Metrics stages do not depend on what you typed, and they still show their committed runs."
+   "text": "output NO COMMITTED RUN — this page has no encoder, so it shows your request verbatim and never invents a score: {0} . The example buttons above load the runs committed with this page. The Generate and Metrics stages do not depend on what you typed, and they still show their committed runs."
   },
   {
    "id": "pairIntakePanel.one-query-served-both",
@@ -559,15 +559,6 @@
     "t.fold_size"
    ],
    "text": "{0} roster row(s) merged into this target"
-  },
-  {
-   "id": "scorePanel.off-every-scored-record",
-   "kind": "block",
-   "where": "site/index.html::scorePanel",
-   "slots": [
-    "DATA.funnel.gate.estimability_marks.map(esc).join(\", \")"
-   ],
-   "text": "off · every scored record is marked {0}"
   },
   {
    "id": "shippedSummary.retrieval-use-m-parameters",
@@ -1454,72 +1445,51 @@
    "text": "top similarity (cosine)"
   },
   {
-   "id": "scorePanel.branch",
+   "id": "genEnvBlock.branch",
    "kind": "label",
-   "where": "site/index.html::scorePanel (row)",
+   "where": "site/index.html::genEnvBlock (row)",
    "slots": [],
    "text": "branch"
   },
   {
-   "id": "scorePanel.clean-scoring",
+   "id": "genEnvBlock.clean-scoring",
    "kind": "label",
-   "where": "site/index.html::scorePanel (row)",
+   "where": "site/index.html::genEnvBlock (row)",
    "slots": [],
    "text": "clean for scoring"
   },
   {
-   "id": "scorePanel.estimable-denominator",
+   "id": "genEnvBlock.estimable-denominator",
    "kind": "label",
-   "where": "site/index.html::scorePanel (row)",
+   "where": "site/index.html::genEnvBlock (row)",
    "slots": [],
    "text": "pairs the estimability screen marked estimable"
   },
   {
-   "id": "scorePanel.gate",
+   "id": "genEnvBlock.key-fetchable",
    "kind": "label",
-   "where": "site/index.html::scorePanel (row)",
-   "slots": [],
-   "text": "estimability gate"
-  },
-  {
-   "id": "scorePanel.key-fetchable",
-   "kind": "label",
-   "where": "site/index.html::scorePanel (row)",
+   "where": "site/index.html::genEnvBlock (row)",
    "slots": [],
    "text": "answer key fetchable"
   },
   {
-   "id": "scorePanel.key-present",
+   "id": "genEnvBlock.key-present",
    "kind": "label",
-   "where": "site/index.html::scorePanel (row)",
+   "where": "site/index.html::genEnvBlock (row)",
    "slots": [],
    "text": "answer key present"
   },
   {
-   "id": "scorePanel.matched",
+   "id": "genEnvBlock.status",
    "kind": "label",
-   "where": "site/index.html::scorePanel (row)",
-   "slots": [],
-   "text": "records matching a paper's exposure–outcome pair"
-  },
-  {
-   "id": "scorePanel.scored",
-   "kind": "label",
-   "where": "site/index.html::scorePanel (row)",
-   "slots": [],
-   "text": "records scored"
-  },
-  {
-   "id": "scorePanel.status",
-   "kind": "label",
-   "where": "site/index.html::scorePanel (row)",
+   "where": "site/index.html::genEnvBlock (row)",
    "slots": [],
    "text": "status"
   },
   {
-   "id": "scorePanel.tree-clean",
+   "id": "genEnvBlock.tree-clean",
    "kind": "label",
-   "where": "site/index.html::scorePanel (row)",
+   "where": "site/index.html::genEnvBlock (row)",
    "slots": [],
    "text": "no uncommitted changes"
   },
@@ -2040,6 +2010,27 @@
    "where": "site/index.html::readableRefusal",
    "slots": [],
    "text": "what it is waiting on"
+  },
+  {
+   "id": "genEnvBlock.could-pipeline-see-key",
+   "kind": "block",
+   "where": "site/index.html::genEnvBlock",
+   "slots": [],
+   "text": "could the pipeline have seen the answer key?"
+  },
+  {
+   "id": "genEnvBlock.score-only-valid",
+   "kind": "block",
+   "where": "site/index.html::genEnvBlock",
+   "slots": [],
+   "text": "A score is only valid if the records were generated where the answer key was unreachable, neither present nor fetchable, so the pipeline could not have seen it. These checks were taken on the clone that generates records."
+  },
+  {
+   "id": "genEnvBlock.why-not-scored",
+   "kind": "block",
+   "where": "site/index.html::genEnvBlock",
+   "slots": [],
+   "text": "why the pipeline's own records are not scored"
   }
  ]
 }

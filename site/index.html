@@ -1034,9 +1034,10 @@ function recordCarries(){
     +`<code>NotSpecifiable</code> refusal; the Specifier builds nothing else.</div>`;
 }
 
-/* COMPARE WITH THE PAPER. Under the record, not on Score: Score shows a past
-   run, and a live control there reads as re-scoring, which that tab says is
-   forbidden. Each field is one sentence with no colour and no count, because a
+/* COMPARE WITH THE PAPER. Under the record, not beside the scored run on
+   Metrics: that is a past run, and a live control there reads as re-scoring,
+   which the scoring rule forbids. (The Score tab this used to be kept off was
+   folded into Metrics; `stages.json` provenance says when.) Each field is one sentence with no colour and no count, because a
    row of MATCH chips reads as a grade and this is not one.
 
    Why the sentences say so little about the Specifier: the only fields
@@ -1358,7 +1359,7 @@ function livePanel(){
 }
 
 function noRun(){
-  return `<p class="sec">output</p><div class="ph"><b>NO COMMITTED RUN</b> — this page has no encoder, so it shows your request verbatim and never invents a score: <em>${esc(typed)}</em>. The example buttons above load the runs committed with this page. The Generate, Score and Metrics stages do not depend on what you typed, and they still show their committed runs.</div>`;
+  return `<p class="sec">output</p><div class="ph"><b>NO COMMITTED RUN</b> — this page has no encoder, so it shows your request verbatim and never invents a score: <em>${esc(typed)}</em>. The example buttons above load the runs committed with this page. The Generate and Metrics stages do not depend on what you typed, and they still show their committed runs.</div>`;
 }
 
 function toolLog(log){
@@ -1467,6 +1468,7 @@ function metricsPanel(){
     +`</dl><div class="none">${esc(m.reads.unit_of_analysis)}.</div>`
     +`<div class="none">${esc(m.reads.why_the_ceiling_is_low)}.</div>`
     +`<div class="none">${esc(m.reads.the_frame)}. ${esc(m.reads.why_no_match_was_available)}.</div>`;
+  h+=genEnvBlock();
 
   /* TWO SECTIONS, NOT ONE TABLE AFTER ANOTHER. Met back to back, the second
      table reads as a continuation of the first and the reader starts hunting for
@@ -1513,7 +1515,7 @@ function metricsPanel(){
      the pipeline's end-to-end check, and it read as evidence to every reviewer
      who met it. The RESULT does not live here and never did: the ceiling block
      above states the score against the highest score available, the headline
-     quotes it verbatim, and Score carries the run's stamp. So the section is
+     quotes it verbatim, and `genEnvBlock` carries the run's stamp. So the section is
      gone rather than trimmed again.
      What the page no longer says anywhere, stated plainly because it is a real
      subtraction: how many pairs the ledger generated, that some were lost to a
@@ -1531,17 +1533,24 @@ function metricsPanel(){
   return h;
 }
 
-function scorePanel(){
+/* WHERE THE RECORDS WERE GENERATED, read beside the score it licenses. This
+   was the Score tab, removed on the operator's instruction (`stages.json`
+   provenance records it): its
+   "one scored run" block repeated the ceiling above it on Metrics, and this
+   stamp was the only thing it held that no other tab did. It moved rather
+   than went, because a score is only readable next to the proof that the
+   answer key was out of reach when the records were made. */
+function genEnvBlock(){
   const sc=DATA.score, e=sc.generation_env;
   /* Plain labels, not the stamp's field names: a reader met `key_present` and
      `clean_for_scoring` with no gloss. The field names survive in the JSON
      download, which carries the artifact as committed. */
   const b=v=>v?`<span class="flag">yes</span>`:`<span class="good">no, as required</span>`;
   const yn=v=>v?"yes":"no";
-  const mp=DATA.metrics.provenance;
-  let h=`<p class="sec">the environment that generated the records</p>`
-    +`<div class="none">Scoring is only valid if the records were generated where the answer key`
-    +` was unreachable, neither present nor fetchable, so the pipeline could not have seen it.</div><dl>`
+  let h=`<p class="sec">could the pipeline have seen the answer key?</p>`
+    +`<div class="none">A score is only valid if the records were generated where the answer key`
+    +` was unreachable, neither present nor fetchable, so the pipeline could not have seen it.`
+    +` These checks were taken on the clone that generates records.</div><dl>`
     +row("answer key present",b(e.key_present),true)
     +row("answer key fetchable",b(e.key_fetchable),true)
     +row("branch",esc(e.branch),true)
@@ -1549,13 +1558,9 @@ function scorePanel(){
     +row("clean for scoring",e.clean_for_scoring?`<span class="good">yes</span>`:`<span class="flag">no</span>`,true)
     +row("pairs the estimability screen marked estimable",`<span class="flag">${sc.estimable_denominator}</span>`,true)
     +row("status",`<span class="flag">${esc(sc.status)}</span> · scored in this clone: ${yn(sc.scored_in_generation_clone)}`,true)
-    +`</dl>`;
-  h+=`<p class="sec">why nothing is scored here</p><ul class="does">${sc.why_the_gate_blocks.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`;
-  h+=`<p class="sec">the one scored run</p><dl>`
-    +row("estimability gate",`<span class="flag">off</span> · every scored record is marked ${DATA.funnel.gate.estimability_marks.map(esc).join(", ")}`,true)
-    +row("records scored",String(DATA.metrics.observed.scored),true)
-    +row("records matching a paper's exposure–outcome pair",`<span class="flag">${DATA.metrics.observed.matched}</span> · the most that could have matched: ${DATA.metrics.ceiling.max_matched}`,true)
     +`</dl><div class="none">${esc(sc.scored_run_note)}.</div>`;
+  h+=`<p class="sec">why the pipeline's own records are not scored</p><ul class="does">`
+    +`${sc.why_the_gate_blocks.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`;
   return h;
 }
 
@@ -2164,12 +2169,11 @@ function stagePanel(s){
   if(sel==="generate"&&gen) return generatePanel();
   panelLive=false;
   /* Only the two stages a query feeds. This test used to sit above every
-     committed branch, so one unrecognised query made Generate, Score and
-     Metrics unreachable until a reload. */
+     committed branch, so one unrecognised query made Generate and Metrics
+     unreachable until a reload. */
   if(typed!==null&&!cur&&sel==="intake") return noRun();
   if(sel==="intake"&&cur) return intakePanel();
   if(sel==="generate") return generatePanel();
-  if(sel==="score") return scorePanel();
   if(sel==="metrics") return metricsPanel();
   return placeholder(s);
 }

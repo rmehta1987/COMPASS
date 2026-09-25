@@ -567,8 +567,10 @@ global.fetch = async (rel, opts) => {
   // Retrieval's shipped summary closes the Metrics tab and must not leak.
   if (!p.includes("Retrieval is in use")) fail("the Metrics tab does not carry the shipped summary");
   document.querySelectorAll("[data-s]");
-  const stat = byData.filter(x => x.dataset.s === "score" && x.onclick).pop();
-  if (!stat) fail("no score tab handler");
+  // Any non-Metrics stage will do for the footer check; it was Score until
+  // Score was folded into Metrics.
+  const stat = byData.filter(x => x.dataset.s === "generate" && x.onclick).pop();
+  if (!stat) fail("no generate tab handler");
   else {
     stat.onclick();
     // The footer says where the figures come from under EVERY panel but Metrics,

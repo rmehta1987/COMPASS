@@ -103,7 +103,9 @@ const fire = (attr, val) => {
   const fail = m => { console.error(m); failed++; };
 
   const stages = [...node("#rail").innerHTML.matchAll(/data-s="([^"]+)"/g)].map(m => m[1]);
-  const away = stages.find(s => s === "score") || stages[stages.length - 1];
+  // Any committed stage the reader can wander to; Score was the first choice
+  // until it was folded into Metrics.
+  const away = stages.find(s => s === "metrics") || stages[stages.length - 1];
   const nameOf = {};
   for (const m of node("#rail").innerHTML.matchAll(/data-s="([^"]+)"[\s\S]*?<\/span>([^<]*)<span/g)) nameOf[m[1]] = m[2].trim();
 

@@ -45,7 +45,7 @@
   "The estimability gate was switched off for this run (--allow-unestimable). With the gate on, no language-model call is made. Every scored record carries the gate's own blocking mark, so the analysis set exists only because the main quality gate was disabled",
   "The frame of variable pairs was the narrow one: medication and reproductive-hormonal exposures crossed with chronic-condition outcomes, run through the same funnel the Generate tab shows for a different frame",
   "The generated pairs were a seeded subset of that frame; the artifacts this page ships do not record the seed or the limit",
-  "The Generate and Score tabs describe the generation clone at a different tree. This run's own tree is recorded in metrics.json's provenance (tree_sha), not printed on this page"
+  "The Generate tab and the answer-key checks on this tab describe the generation clone at a different tree. This run's own tree is recorded in metrics.json's provenance (tree_sha), not printed on this page"
  ],
  "artifacts": [
   {

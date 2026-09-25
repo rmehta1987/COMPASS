@@ -87,7 +87,7 @@ def main() -> int:
              "rate over"),
             ("The baseline score runs once, on a tagged commit, in a separate clone "
              "that holds the answer key. The run it scored was generated with the gate"
-             " switched off, and the Metrics tab reports it"),
+             " switched off, and this tab reports it above"),
         ],
         "scored_run_note": ("The checks above describe the generation clone when it "
                              "was captured. The scored run's own tree is in "

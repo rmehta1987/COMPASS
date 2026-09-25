@@ -18,7 +18,7 @@
  "scored_in_generation_clone": false,
  "why_the_gate_blocks": [
   "Without the two survey-metadata exports, the estimability gate passes zero pairs, so there is no set of estimable pairs to compute a match rate over",
-  "The baseline score runs once, on a tagged commit, in a separate clone that holds the answer key. The run it scored was generated with the gate switched off, and the Metrics tab reports it"
+  "The baseline score runs once, on a tagged commit, in a separate clone that holds the answer key. The run it scored was generated with the gate switched off, and this tab reports it above"
  ],
  "scored_run_note": "The checks above describe the generation clone when it was captured. The scored run's own tree is in metrics.json's provenance, not printed on this page",
  "estimable_denominator": 0
