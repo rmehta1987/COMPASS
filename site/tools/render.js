@@ -175,9 +175,20 @@ function checkFoot(label) {
     const p = node("#panel").innerHTML;
     if (/NO COMMITTED RUN/.test(p)) { console.error(`render: typed/no-run hides the ${st} stage`); failed++; }
     if (st === "metrics" && !/Cohort bibliography/.test(p)) { console.error("render: typed/no-run: bibliography table missing"); failed++; }
-    if (st === "metrics" && !(/could the pipeline have seen the answer key/.test(p)
-        && /answer key fetchable/.test(p))) {
-      console.error("render: Metrics does not carry the answer-key stamp Score held"); failed++;
+    // METRICS OPENS ON THE BIBLIOGRAPHY, then one plain result (operator,
+    // 2026-09-25). "Ceiling" was jargon and the answer-key block was removed,
+    // so either coming back is a regression.
+    if (st === "metrics") {
+      const bib = p.indexOf("Cohort bibliography"), res = p.indexOf("What the one scored run shows");
+      if (res < 0 || !/The most this run could have matched was/.test(p)) {
+        console.error("render: Metrics does not state the scored run's result in words"); failed++;
+      } else if (bib < 0 || bib > res) {
+        console.error("render: Metrics does not open on the cohort bibliography"); failed++;
+      }
+      if (/ceiling/i.test(p)) { console.error("render: Metrics says \"ceiling\" to the reader"); failed++; }
+      if (/could the pipeline have seen the answer key|READ THE CEILING FIRST/.test(p)) {
+        console.error("render: Metrics carries a block the operator removed"); failed++;
+      }
     }
   }
   // And the retriever still says so, with the query verbatim.

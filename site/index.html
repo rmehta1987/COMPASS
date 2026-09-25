@@ -1494,36 +1494,25 @@ function funnelPanel(){
 function metricsPanel(){
   const m=DATA.metrics, c=m.ceiling, o=m.observed;
 
-  let h=`<div class="key"><b>READ THE CEILING FIRST</b> &mdash; ${esc(m.headline)}</div>`
-    +`<p class="prov">${esc(m.headline_source)}</p>`;
-  h+=`<p class="sec">the question this run answers</p>`
-    +`<div class="none">${esc(m.question_answered)}</div>`;
-  h+=`<p class="sec">how the scored set was produced</p><ul class="does">`
-    +m.how_produced.map(x=>`<li>${esc(x)}</li>`).join("")+`</ul>`;
-
-  h+=`<p class="sec">ceiling &middot; the highest score that was available</p><dl>`
-    +row("papers in the table",String(c.papers_in_table),true)
-    +row("with an outcome key on record",String(c.with_outcome_key),true)
-    +row("with an exposure the retriever resolved",String(c.with_exposure_resolved),true)
-    +row("papers matchable, needing both",`<span class="flag">${c.matchable_papers}</span> of ${c.papers_in_table}`,true)
-    +row("records that could have matched",`<span class="flag">${c.max_matched}</span> of ${o.scored}`,true)
-    +`</dl><div class="none">${esc(m.reads.unit_of_analysis)}.</div>`
-    +`<div class="none">${esc(m.reads.why_the_ceiling_is_low)}.</div>`
-    +`<div class="none">${esc(m.reads.the_frame)}. ${esc(m.reads.why_no_match_was_available)}.</div>`;
-  h+=genEnvBlock();
-
-  /* TWO SECTIONS, NOT ONE TABLE AFTER ANOTHER. Met back to back, the second
-     table reads as a continuation of the first and the reader starts hunting for
-     the row that ties them -- which is the question that keeps arriving. Each
-     now says whose output it is, above a rule. */
-  /* Both halves are true and the reader needs both: the count is a floor on
-     what the literature holds, and it is the fixed denominator the ceiling
-     above was computed over. */
+  /* BIBLIOGRAPHY FIRST, THEN ONE PLAIN RESULT (operator's instruction; the
+     `stages.json` provenance log dates it). The tab
+     opened on a verbatim quotation headed "READ THE CEILING FIRST", then the
+     question the run answers, how the scored set was produced, a table under
+     "ceiling", and the answer-key checks -- scattered, and "ceiling" is jargon.
+     The papers come first because they are what the run is measured against.
+     The result is now a sentence built from the SAME metrics.json fields the
+     quotation summarised (ceiling.max_matched, observed.scored and .matched,
+     ceiling.matchable_papers and .papers_in_table), so the figures are the
+     artifact's and only the wording is the page's. Dropped from the page and
+     still in metrics.json: the verbatim headline, `question_answered`,
+     `how_produced` -- which is where "the estimability gate was switched off
+     for this run" lives -- and the `reads` notes. The answer-key checks
+     (score.json) are no longer rendered anywhere. */
   const late=m.papers.filter(r=>!r.inventoried_before_2026_08_27).length;
   const noVenue=m.papers.filter(r=>/not recorded/.test(r.venue)).length;
-  h+=`<p class="sec major">Cohort bibliography &middot; ${m.papers.length} indexed`
+  let h=`<p class="sec major">Cohort bibliography &middot; ${m.papers.length} indexed`
     +`<em>What the cohort literature published; none of it came from the pipeline. The count is a `
-    +`lower bound on that literature and the fixed denominator of the ceiling above.</em></p>`
+    +`lower bound on that literature, and these are the papers the result below is measured against.</em></p>`
     +`<div class="tbl"><table><thead><tr><th>PMID</th><th>year</th><th>venue, as recorded</th>`
     +`<th>design, as the bibliography records it</th><th>n, as the paper reports it</th>`
     +`<th>exposure terms the retriever abstained on</th>`
@@ -1534,10 +1523,11 @@ function metricsPanel(){
       +`<td>${esc(r.n)}</td><td>${r.exposure_terms_abstained===null?`<span class="ret">none listed</span>`:r.exposure_terms_abstained}</td></tr>`).join("")
     +`</tbody></table></div>`
     +`<div class="none">${late} of ${m.papers.length} rows are marked <span class="flag">late</span>: they entered `
-    +`the bibliography when it was rebuilt, shortly before this run. The ceiling above counts all `
+    +`the bibliography when it was rebuilt, shortly before this run. The result below counts all `
     +`${m.papers.length}, late rows included. ${noVenue} rows have no venue in the bibliography, and the table `
     +`says so. The design column is the bibliography's own wording of exposure and outcome, and the `
     +`n column uses each paper's own unit of analysis. ${esc(m.abstained_note)}.</div>`;
+
 
   const gap=m.not_built.find(x=>x.what.indexOf("per-paper")>-1);
   h+=`<p class="sec">what is still missing from the key</p>`
@@ -1552,13 +1542,27 @@ function metricsPanel(){
       +`<span class="ret">${esc(v)}</span></div>`).join("")+`</div>`
     +`<div class="none">${esc(m.verdicts_note)}.</div>`;
 
+  h+=`<p class="sec major">What the one scored run shows</p>`
+    +`<div class="key">The most this run could have matched was <b>${c.max_matched}</b> of its`
+    +` ${o.scored} records: with this answer key and this set of variable pairs, only`
+    +` ${c.matchable_papers} of the ${c.papers_in_table} papers could be matched at all. It matched`
+    +` <b>${o.matched}</b>, so its result is the most that was possible. What the run shows is`
+    +` that the pipeline runs end to end, refuses records without proof that the answer key was`
+    +` out of reach, and returns clean verdicts. It does not measure how good its hypotheses are.</div>`
+    +`<dl>`
+    +row("papers in the table",String(c.papers_in_table),true)
+    +row("with an outcome in the key",String(c.with_outcome_key),true)
+    +row("with an exposure the search resolved",String(c.with_exposure_resolved),true)
+    +row("papers that could be matched, needing both",`<span class="flag">${c.matchable_papers}</span> of ${c.papers_in_table}`,true)
+    +row("records that could have matched",`<span class="flag">${c.max_matched}</span> of ${o.scored}`,true)
+    +`</dl>`;
+
   /* THE PIPELINE'S OWN OUTPUT IS NOT REPORTED ON THIS PAGE. What stood here --
      a per-record table, then the counts and caveats left after it went -- was
      the pipeline's end-to-end check, and it read as evidence to every reviewer
-     who met it. The RESULT does not live here and never did: the ceiling block
-     above states the score against the highest score available, the headline
-     quotes it verbatim, and `genEnvBlock` carries the run's stamp. So the section is
-     gone rather than trimmed again.
+     who met it. The RESULT does not live here and never did: the sentence under
+     "What the one scored run shows" states it against the most that could have
+     matched. So the section is gone rather than trimmed again.
      What the page no longer says anywhere, stated plainly because it is a real
      subtraction: how many pairs the ledger generated, that some were lost to a
      backend error before scoring, that every scored record shares one outcome
@@ -1572,37 +1576,6 @@ function metricsPanel(){
     +`<div class="none">${shippedSummary()}</div>`;
 
   h+=measureHTML();
-  return h;
-}
-
-/* WHERE THE RECORDS WERE GENERATED, read beside the score it licenses. This
-   was the Score tab, removed on the operator's instruction (`stages.json`
-   provenance records it): its
-   "one scored run" block repeated the ceiling above it on Metrics, and this
-   stamp was the only thing it held that no other tab did. It moved rather
-   than went, because a score is only readable next to the proof that the
-   answer key was out of reach when the records were made. */
-function genEnvBlock(){
-  const sc=DATA.score, e=sc.generation_env;
-  /* Plain labels, not the stamp's field names: a reader met `key_present` and
-     `clean_for_scoring` with no gloss. The field names survive in the JSON
-     download, which carries the artifact as committed. */
-  const b=v=>v?`<span class="flag">yes</span>`:`<span class="good">no, as required</span>`;
-  const yn=v=>v?"yes":"no";
-  let h=`<p class="sec">could the pipeline have seen the answer key?</p>`
-    +`<div class="none">A score is only valid if the records were generated where the answer key`
-    +` was unreachable, neither present nor fetchable, so the pipeline could not have seen it.`
-    +` These checks were taken on the clone that generates records.</div><dl>`
-    +row("answer key present",b(e.key_present),true)
-    +row("answer key fetchable",b(e.key_fetchable),true)
-    +row("branch",esc(e.branch),true)
-    +row("no uncommitted changes",yn(e.tree_clean),true)
-    +row("clean for scoring",e.clean_for_scoring?`<span class="good">yes</span>`:`<span class="flag">no</span>`,true)
-    +row("pairs the estimability screen marked estimable",`<span class="flag">${sc.estimable_denominator}</span>`,true)
-    +row("status",`<span class="flag">${esc(sc.status)}</span> · scored in this clone: ${yn(sc.scored_in_generation_clone)}`,true)
-    +`</dl><div class="none">${esc(sc.scored_run_note)}.</div>`;
-  h+=`<p class="sec">why the pipeline's own records are not scored</p><ul class="does">`
-    +`${sc.why_the_gate_blocks.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`;
   return h;
 }
 
@@ -1937,7 +1910,7 @@ function provenanceLine(){
 
 function shippedSummary(){
   const m=DATA.measurements, sh=m.shipped, I=sh.arms.I, lat=sh.latency, o=DATA.metrics.observed;
-  return `<p>Retrieval is in use: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, and no language-model call. Hypothesis generation is gated. Without two survey-metadata exports, the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} exposure–outcome pairs, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>. The one scored run switched that gate off and emitted ${o.scored} records; ${o.matched} matched, against a ceiling of ${DATA.metrics.ceiling.max_matched}.</p>
+  return `<p>Retrieval is in use: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, and no language-model call. Hypothesis generation is gated. Without two survey-metadata exports, the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} exposure–outcome pairs, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>. The one scored run switched that gate off and emitted ${o.scored} records; ${o.matched} matched, out of a maximum possible ${DATA.metrics.ceiling.max_matched}.</p>
   <p>The retriever abstains on constructs the instrument does not measure: it rejected ${I.negatives_rejected} of ${I.n_negatives} held-out negatives on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(3)}). Its recall is an upper bound, because the same generator family that wrote the training pairs wrote the fixture's queries after seeing the reference wording. Detecting its own wrong pick is a separate question: that figure was measured, but its artifact was withdrawn from git and this page cannot reproduce it.</p>
   ${provenanceLine()?`<p>${provenanceLine()}</p>`:""}`;
 }

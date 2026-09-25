@@ -29,8 +29,8 @@
  ],
  "counts": {
   "static": 12,
-  "block": 109,
-  "label": 122,
+  "block": 105,
+  "label": 115,
   "server": 31
  },
  "strings": [
@@ -398,36 +398,13 @@
    "text": "Run Experiment Design on this pair"
   },
   {
-   "id": "metricsPanel.ceiling-highest-score-available",
-   "kind": "block",
-   "where": "site/index.html::metricsPanel",
-   "slots": [],
-   "text": "ceiling · the highest score that was available"
-  },
-  {
    "id": "metricsPanel.cohort-bibliography-indexed-what",
    "kind": "block",
    "where": "site/index.html::metricsPanel",
    "slots": [
     "m.papers.length"
    ],
-   "text": "Cohort bibliography · {0} indexed What the cohort literature published; none of it came from the pipeline. The count is a lower bound on that literature and the fixed denominator of the ceiling above. PMID year venue, as recorded design, as the bibliography records it n, as the paper reports it exposure terms the retriever abstained on"
-  },
-  {
-   "id": "metricsPanel.how-scored-set-produced",
-   "kind": "block",
-   "where": "site/index.html::metricsPanel",
-   "slots": [],
-   "text": "how the scored set was produced"
-  },
-  {
-   "id": "metricsPanel.question-run-answers",
-   "kind": "block",
-   "where": "site/index.html::metricsPanel",
-   "slots": [
-    "esc(m.question_answered)"
-   ],
-   "text": "the question this run answers {0}"
+   "text": "Cohort bibliography · {0} indexed What the cohort literature published; none of it came from the pipeline. The count is a lower bound on that literature, and the these are the papers the result below is measured against. PMID year venue, as recorded design, as the bibliography records it n, as the paper reports it exposure terms the retriever abstained on"
   },
   {
    "id": "metricsPanel.rows-marked-late-they",
@@ -440,7 +417,7 @@
     "noVenue",
     "esc(m.abstained_note)"
    ],
-   "text": "{0} of {1} rows are marked late : they entered the bibliography when it was rebuilt, shortly before this run. The ceiling above counts all {2}, late rows included. {3} rows have no venue in the bibliography, and the table says so. The design column is the bibliography's own wording of exposure and outcome, and the n column uses each paper's own unit of analysis. {4}."
+   "text": "{0} of {1} rows are marked late : they entered the bibliography when it was rebuilt, shortly before this run. The result below counts all {2}, late rows included. {3} rows have no venue in the bibliography, and the table says so. The design column is the bibliography's own wording of exposure and outcome, and the n column uses each paper's own unit of analysis. {4}."
   },
   {
    "id": "metricsPanel.verdicts-scoring-run",
@@ -576,7 +553,7 @@
     "I.auroc_absent_vs_present.toFixed(3)",
     "provenanceLine()"
    ],
-   "text": "Retrieval is in use: {0}M parameters, {1} ms per query on the serving machine, and no language-model call. Hypothesis generation is gated. Without two survey-metadata exports, the estimability gate passes {2} of {3} exposure–outcome pairs, so every design carries {4} . The one scored run switched that gate off and emitted {5} records; {6} matched, against a ceiling of {7}. The retriever abstains on constructs the instrument does not measure: it rejected {8} of {9} held-out negatives on this fixture (AUROC {10}). Its recall is an upper bound, because the same generator family that wrote the training pairs wrote the fixture's queries after seeing the reference wording. Detecting its own wrong pick is a separate question: that figure was measured, but its artifact was withdrawn from git and this page cannot reproduce it. {11}"
+   "text": "Retrieval is in use: {0}M parameters, {1} ms per query on the serving machine, and no language-model call. Hypothesis generation is gated. Without two survey-metadata exports, the estimability gate passes {2} of {3} exposure–outcome pairs, so every design carries {4} . The one scored run switched that gate off and emitted {5} records; {6} matched, out of a maximum possible {7}. The retriever abstains on constructs the instrument does not measure: it rejected {8} of {9} held-out negatives on this fixture (AUROC {10}). Its recall is an upper bound, because the same generator family that wrote the training pairs wrote the fixture's queries after seeing the reference wording. Detecting its own wrong pick is a separate question: that figure was measured, but its artifact was withdrawn from git and this page cannot reproduce it. {11}"
   },
   {
    "id": "specifierPanel.design-gate-rejected",
@@ -977,7 +954,7 @@
    "kind": "label",
    "where": "site/index.html::metricsPanel (row)",
    "slots": [],
-   "text": "papers matchable, needing both"
+   "text": "papers that could be matched, needing both"
   },
   {
    "id": "metricsPanel.papers-table",
@@ -998,14 +975,14 @@
    "kind": "label",
    "where": "site/index.html::metricsPanel (row)",
    "slots": [],
-   "text": "with an exposure the retriever resolved"
+   "text": "with an exposure the search resolved"
   },
   {
    "id": "metricsPanel.with-outcome-key-record",
    "kind": "label",
    "where": "site/index.html::metricsPanel (row)",
    "slots": [],
-   "text": "with an outcome key on record"
+   "text": "with an outcome in the key"
   },
   {
    "id": "pairIntakePanel.rendered-query",
@@ -1423,55 +1400,6 @@
    "where": "site/index.html::retrieverPanel (row)",
    "slots": [],
    "text": "top similarity (cosine)"
-  },
-  {
-   "id": "genEnvBlock.branch",
-   "kind": "label",
-   "where": "site/index.html::genEnvBlock (row)",
-   "slots": [],
-   "text": "branch"
-  },
-  {
-   "id": "genEnvBlock.clean-scoring",
-   "kind": "label",
-   "where": "site/index.html::genEnvBlock (row)",
-   "slots": [],
-   "text": "clean for scoring"
-  },
-  {
-   "id": "genEnvBlock.estimable-denominator",
-   "kind": "label",
-   "where": "site/index.html::genEnvBlock (row)",
-   "slots": [],
-   "text": "pairs the estimability screen marked estimable"
-  },
-  {
-   "id": "genEnvBlock.key-fetchable",
-   "kind": "label",
-   "where": "site/index.html::genEnvBlock (row)",
-   "slots": [],
-   "text": "answer key fetchable"
-  },
-  {
-   "id": "genEnvBlock.key-present",
-   "kind": "label",
-   "where": "site/index.html::genEnvBlock (row)",
-   "slots": [],
-   "text": "answer key present"
-  },
-  {
-   "id": "genEnvBlock.status",
-   "kind": "label",
-   "where": "site/index.html::genEnvBlock (row)",
-   "slots": [],
-   "text": "status"
-  },
-  {
-   "id": "genEnvBlock.tree-clean",
-   "kind": "label",
-   "where": "site/index.html::genEnvBlock (row)",
-   "slots": [],
-   "text": "no uncommitted changes"
   },
   {
    "id": "specifierPanel.key-case-corrected",
@@ -1992,27 +1920,6 @@
    "text": "what it is waiting on"
   },
   {
-   "id": "genEnvBlock.could-pipeline-see-key",
-   "kind": "block",
-   "where": "site/index.html::genEnvBlock",
-   "slots": [],
-   "text": "could the pipeline have seen the answer key?"
-  },
-  {
-   "id": "genEnvBlock.score-only-valid",
-   "kind": "block",
-   "where": "site/index.html::genEnvBlock",
-   "slots": [],
-   "text": "A score is only valid if the records were generated where the answer key was unreachable, neither present nor fetchable, so the pipeline could not have seen it. These checks were taken on the clone that generates records."
-  },
-  {
-   "id": "genEnvBlock.why-not-scored",
-   "kind": "block",
-   "where": "site/index.html::genEnvBlock",
-   "slots": [],
-   "text": "why the pipeline's own records are not scored"
-  },
-  {
    "id": "askForm.see-finished-example",
    "kind": "label",
    "where": "site/index.html::askForm",
@@ -2198,6 +2105,26 @@
    "where": "site/index.html::PIPELINE_STEPS",
    "slots": [],
    "text": "A reasoning model consults the codebook through lookup tools and writes the design: the covariates, the analysis, the test, and how large an effect the data could detect. The system then checks the record against its own log of those lookups, overwrites every field it computes itself, and rejects a record that contradicts the log."
+  },
+  {
+   "id": "metricsPanel.what-scored-run-shows",
+   "kind": "block",
+   "where": "site/index.html::metricsPanel",
+   "slots": [],
+   "text": "What the one scored run shows"
+  },
+  {
+   "id": "metricsPanel.most-could-have-matched",
+   "kind": "block",
+   "where": "site/index.html::metricsPanel",
+   "slots": [
+    "c.max_matched",
+    "o.scored",
+    "c.matchable_papers",
+    "c.papers_in_table",
+    "o.matched"
+   ],
+   "text": "The most this run could have matched was {0} of its {1} records: with this answer key and this set of variable pairs, only {2} of the {3} papers could be matched at all. It matched {4}, so its result is the most that was possible. What the run shows is that the pipeline runs end to end, refuses records without proof that the answer key was out of reach, and returns clean verdicts. It does not measure how good its hypotheses are."
   }
  ]
 }

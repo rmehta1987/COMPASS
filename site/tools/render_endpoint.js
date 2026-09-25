@@ -571,9 +571,15 @@ global.fetch = async (rel, opts) => {
   // just in prose: back to back, the second table reads as more of the first.
   const heads = [...p.matchAll(/<p class="sec major">([\s\S]*?)<\/p>/g)].map(m =>
     m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
-  const wanted = [/Cohort bibliography/, /What is shipped/];
+  // Three since the operator's restructure (2026-09-25): the bibliography,
+  // then the scored run's result, then what is shipped -- in that order.
+  const wanted = [/Cohort bibliography/, /What the one scored run shows/, /What is shipped/];
   for (const w of wanted) {
     if (!heads.some(t => w.test(t))) fail(`no major section matching ${w}`);
+  }
+  const order = wanted.map(w => heads.findIndex(t => w.test(t)));
+  if (order.some((x, i) => i && x < order[i - 1])) {
+    fail(`the Metrics sections are out of order: ${JSON.stringify(heads)}`);
   }
   if (heads.length !== wanted.length) {
     fail(`expected ${wanted.length} major sections, found ${heads.length}: ${JSON.stringify(heads)}`);

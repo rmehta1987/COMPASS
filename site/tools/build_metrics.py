@@ -277,7 +277,7 @@ def main() -> int:
                       " the deployed retriever. The rest of that key is missing: the "
                       "covariate set, the model form and the tier, which is task C12. "
                       "Until it exists, the comparison reaches only the papers whose "
-                      "outcome keys are on record, and that caps the ceiling")},
+                      "outcome keys are on record, and that caps the most that could have matched")},
             {"what": "scoring from this page",
              "why": ("Scoring needs benchmark/prevalence_key.py and runs once, on a "
                       "tagged commit, before any tuning, so the score is never used to"

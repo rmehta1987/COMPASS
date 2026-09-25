@@ -641,7 +641,7 @@
  "not_built": [
   {
    "what": "the full per-paper key",
-   "why": "Matching is already automatic: every emitted record is scored against the whole bibliography, using each paper's outcome keys from the held-out key and resolving its exposure terms through the deployed retriever. The rest of that key is missing: the covariate set, the model form and the tier, which is task C12. Until it exists, the comparison reaches only the papers whose outcome keys are on record, and that caps the ceiling"
+   "why": "Matching is already automatic: every emitted record is scored against the whole bibliography, using each paper's outcome keys from the held-out key and resolving its exposure terms through the deployed retriever. The rest of that key is missing: the covariate set, the model form and the tier, which is task C12. Until it exists, the comparison reaches only the papers whose outcome keys are on record, and that caps the most that could have matched"
   },
   {
    "what": "scoring from this page",
