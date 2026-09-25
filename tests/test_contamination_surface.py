@@ -1563,6 +1563,28 @@ def test_the_retrieval_prompt_is_scanned_in_the_shape_serve_sends():
     assert not CC.check_markers({"retrieval_prompt:pool": text})
 
 
+def test_the_default_prompt_is_scanned_in_the_shape_serve_sends():
+    """`_default_pick` sends its prompt over the retrieval pool, facts and all.
+
+    Scanned over the facts-free catalogue alone, the default surface would
+    repeat the gap `retrieval_prompt:pool` closed: the index exemption checked
+    on a shape that never ships.
+    """
+    pool = CC._retrieval_pool()
+    text = CC.model_visible_surface()["default_prompt:pool"]
+    assert text == PC.default_contract(
+        "<the researcher's request, supplied per call>", "<role>",
+        "<what the earlier verdict said would settle it>", pool).render(), (
+        "the scanned default prompt is not rendered over `_retrieval_pool`")
+    for f in _serve_fact_sources():
+        assert text.count(f'"{f}": ') == len(pool), (
+            f"`{f}` is not rendered once per candidate in the scanned default prompt")
+    assert CC._masked_index_chars({"pool": text}) == sum(
+        len(str(c.index)) for c in pool), (
+        "the exemption removed more than the positions from the default prompt")
+    assert not CC.check_markers({"default_prompt:pool": text})
+
+
 def test_the_pooled_facts_equal_what_the_retriever_hit_carries():
     """The scan's facts come from the dictionary; serve's from the retriever.
 

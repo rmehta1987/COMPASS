@@ -717,9 +717,14 @@ def _pool_surface() -> dict[str, str]:
     Returns:
         Mapping of surface name to the text the selecting model would read.
     """
+    pool = _retrieval_pool()
     return {"retrieval_prompt:pool": PC.retrieval_contract(
-        "<the researcher's request, supplied per call>",
-        _retrieval_pool()).render()}
+        "<the researcher's request, supplied per call>", pool).render(),
+            # `serve/api.py::_default_pick` sends its prompt over the SAME
+            # pool, facts and all, so it is scanned in that shape too.
+            "default_prompt:pool": PC.default_contract(
+                "<the researcher's request, supplied per call>", "<role>",
+                "<what the earlier verdict said would settle it>", pool).render()}
 
 
 def _hybrid_surface() -> dict[str, str]:
