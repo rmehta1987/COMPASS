@@ -108,6 +108,23 @@ def structural(d: dict) -> list[str]:
     _expect(f, "cancer-battery rows tagged as direct identifiers",
             sum(1 for e in battery if e["is_direct_identifier"]), 0)
 
+    # `retrieval_text` is a search column beside the wording, never a
+    # replacement for it: `searchable_text` stays `question_text`, and only a
+    # grid sub-item `split_stem` split is recomposed. `.get` for the reason
+    # given above -- a build without the column is a failure, not a raise.
+    _expect(f, "rows where searchable_text is not question_text",
+            sum(1 for e in entries
+                if e["searchable_text"] != e["question_text"]), 0)
+    _expect(f, "rows without retrieval_text",
+            sum(1 for e in entries if not e.get("retrieval_text")), 0)
+    _expect(f, "split grid sub-items whose retrieval_text is question_text",
+            sum(1 for e in entries
+                if e["is_grid_subitem"] and e["subitem_text"] is not None
+                and e.get("retrieval_text") == e["question_text"]), 0)
+    _expect(f, "rows off the grid whose retrieval_text is not question_text",
+            sum(1 for e in entries if not e["is_grid_subitem"]
+                and e.get("retrieval_text") != e["question_text"]), 0)
+
     # `roster_family_size` is null exactly where the row is not a roster repeat.
     # Structural, not a snapshot: a question asked once has no family size, and
     # the two conditions are the same condition stated twice.

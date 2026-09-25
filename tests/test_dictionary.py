@@ -621,7 +621,8 @@ def test_a_non_contiguous_roster_counts_members_not_the_highest_label():
         key=f"m9:{r}_Q1.1", module="9", qid=f"{r}_Q1.1", occurrence=1,
         occurrence_count=1, shape="N_QN.N", shape_meaning="roster repeat",
         question_text="x", text_repaired=False, stem_text=None,
-        subitem_text=None, searchable_text="x", base_id="Q1.1",
+        subitem_text=None, searchable_text="x", retrieval_text="x",
+        base_id="Q1.1",
         construct_key="m9:Q1.1", group_key=None, roster_row=r,
         matrix_block=None, matrix_col=None, subitem_index=None,
         is_text_companion=False, is_roster_repeat=True, is_grid_subitem=False,
@@ -632,3 +633,206 @@ def test_a_non_contiguous_roster_counts_members_not_the_highest_label():
     B._fill_roster_family_size(rows)
     assert [e.roster_family_size for e in rows] == [3, 3, 3]
     assert max(e.roster_row for e in rows) == 5
+
+
+# --------------------------------------------------------------------------- #
+# R3 — retrieval_text, a search column that is never wording
+# --------------------------------------------------------------------------- #
+
+#: The one grid sub-item `split_stem` cannot split: its text carries no " - ",
+#: so there is no sub-item label to lead with and `retrieval_text` is its
+#: `question_text`. R3's ACCEPT said "every grid sub-item"; the operator amended
+#: it on 2026-09-24 to 876 of 877, excepting this row by name. Named, not
+#: counted, so a second such row is a failure.
+_UNSPLIT_GRID_SUBITEMS = {"m2:Q19.86_1"}
+
+
+def _partition(entries: list[dict], text_of) -> set[frozenset[str]]:
+    """Group keys by a text function; the set of groups is the partition."""
+    by: dict[str, set[str]] = {}
+    for e in entries:
+        by.setdefault(text_of(e), set()).add(e["key"])
+    return {frozenset(v) for v in by.values()}
+
+
+def test_question_text_is_still_the_repaired_raw_row_for_all_2804():
+    """R3's ACCEPT, first clause: the new column moved no wording.
+
+    Re-derived from `raw/` through the same reader and repair the build uses,
+    rather than compared with itself, so a build edit that rewrote
+    `question_text` while adding the column goes red here.
+    """
+    d = json.loads((BUILD / "dictionary.json").read_text())
+    expected = [B.repair_mojibake(text)
+                for module, name in B.SOURCES.items()
+                for _, text in B.read_module(module, B.RAW / name)]
+    got = [e["question_text"] for e in d["entries"]]
+    assert len(got) == len(expected) == 2804
+    assert got == expected
+
+
+def test_searchable_text_is_still_question_text_byte_for_byte(entries):
+    """R3's ACCEPT, second clause: the index still reads what it read.
+
+    `env/tools.py::_load` indexes `searchable_text` and the retrieval gold rule
+    compares it, so R3 lands with no recall delta only while this holds.
+    """
+    assert len(entries) == 2804
+    assert [e["key"] for e in entries
+            if e["searchable_text"] != e["question_text"]] == []
+
+
+def test_retrieval_text_differs_for_every_grid_subitem_split_stem_splits(entries):
+    """R3's ACCEPT, third clause, and the one row it cannot hold for.
+
+    ACCEPT read "differs for every grid sub-item" and is amended (operator,
+    2026-09-24) to 876 of 877. `m2:Q19.86_1` has no " - " to split on, so it
+    has no label to reorder and stays equal; it is named in
+    `_UNSPLIT_GRID_SUBITEMS` rather than dropped from the count.
+    """
+    grid = [e for e in entries if e["is_grid_subitem"]]
+    assert len(grid) > 800
+    same = {e["key"] for e in grid if e["retrieval_text"] == e["question_text"]}
+    assert same == _UNSPLIT_GRID_SUBITEMS
+    for k in _UNSPLIT_GRID_SUBITEMS:
+        row = next(e for e in grid if e["key"] == k)
+        assert row["stem_text"] is None and row["subitem_text"] is None, k
+
+
+def test_retrieval_text_is_question_text_off_the_grid(entries):
+    """Only grid sub-items are recomposed; every other row is untouched."""
+    off = [e for e in entries if not e["is_grid_subitem"]]
+    assert len(off) > 1800
+    assert [e["key"] for e in off if e["retrieval_text"] != e["question_text"]] == []
+
+
+def test_retrieval_text_reorders_and_adds_or_drops_no_token(entries):
+    """A reorder, not a rewrite.
+
+    The same alphanumeric tokens with the same counts, so a bag-of-words ranker
+    scores it as it scores `question_text` and R9's delta cannot come from a
+    token this column invented or lost.
+    """
+    from collections import Counter
+
+    tok = re.compile(r"[A-Za-z0-9]+")
+    bad = [e["key"] for e in entries
+           if Counter(tok.findall(e["retrieval_text"]))
+           != Counter(tok.findall(e["question_text"]))]
+    assert bad == []
+
+
+def test_retrieval_text_separates_every_pair_question_text_separates(entries):
+    """R9's warning, carried in: no discriminator is lost, raw or collapsed.
+
+    Two rows share a `retrieval_text` exactly when they share a
+    `question_text`, and the same holds after the roster normalisation that
+    `env/tools.py::search_variables` collapses on and the gold rule compares
+    under. The second partition is the one a " - " separator broke: the five
+    `m2:Q3.4_*` sub-items are labelled 1 to 5, and `1 - Please list ...` lost
+    its label to `_ROSTER_INDEX` and merged all five.
+    """
+    from env.tools import _ROSTER_INDEX
+
+    def norm(t: str) -> str:
+        return _ROSTER_INDEX.sub("", t).strip()
+
+    assert (_partition(entries, lambda e: e["retrieval_text"])
+            == _partition(entries, lambda e: e["question_text"]))
+    assert (_partition(entries, lambda e: norm(e["retrieval_text"]))
+            == _partition(entries, lambda e: norm(e["question_text"])))
+
+    # Anti-vacuity, per partition: the probes the equality above must cover.
+    by_key = {e["key"]: e for e in entries}
+    q34 = [by_key[f"m2:Q3.4_{i}"] for i in range(1, 6)]
+    assert len({norm(e["retrieval_text"]) for e in q34}) == 5
+    sibs = [e for e in entries if e["module"] == "2" and e["base_id"] == "Q16.8"
+            and e["matrix_col"] == 3]
+    assert len(sibs) == 20
+    assert len({norm(e["retrieval_text"]) for e in sibs}) == 20
+
+
+def test_a_roster_matrix_row_keeps_its_piped_member_reference(entries):
+    """The member discriminator survives verbatim, for every row that has one.
+
+    A roster-repeat matrix row differs from its siblings only by a piped
+    reference such as `- 11_Q16.9#1 - 11 -`. `retrieval_text` keeps it.
+    """
+    piped = re.compile(r"(\d+)_Q\d+\.\d+#\d+ - (\d+)")
+    rows = [e for e in entries if e["is_roster_repeat"] and e["is_grid_subitem"]]
+    assert len(rows) > 500
+    for e in rows:
+        refs = piped.findall(e["question_text"])
+        assert refs, e["key"]
+        assert piped.findall(e["retrieval_text"]) == refs, e["key"]
+    assert (next(e for e in entries if e["key"] == "m2:11_Q16.8#1_3")
+            ["retrieval_text"].endswith("- 11_Q16.9#1 - 11"))
+
+
+def test_a_citation_binds_question_text_and_never_retrieval_text(entries):
+    """`env/labels.py::cite` is the only maker of wording, and reads the wording.
+
+    Checked twice: the `wording=` argument in `_index` is the `question_text`
+    subscript (an AST node, not a substring), and for a row whose two texts
+    differ the citation carries the first and not the second.
+    """
+    from env import labels
+
+    tree = ast.parse((ROOT / "env" / "labels.py").read_text())
+    fn = next(n for n in ast.walk(tree)
+              if isinstance(n, ast.FunctionDef) and n.name == "_index")
+    wording = [k.value for n in ast.walk(fn) if isinstance(n, ast.Call)
+               for k in n.keywords if k.arg == "wording"]
+    assert len(wording) == 1
+    w = wording[0]
+    assert isinstance(w, ast.Subscript) and isinstance(w.slice, ast.Constant)
+    assert w.slice.value == "question_text"
+
+    row = next(e for e in entries if e["key"] == "m2:11_Q16.8#1_3")
+    assert row["retrieval_text"] != row["question_text"]
+    assert labels.cite(row["key"]).wording == row["question_text"]
+
+
+def test_no_code_outside_the_build_reads_retrieval_text():
+    """Nothing reads the column until R9, and no path can read it as wording.
+
+    Every `.py` in the tree is scanned for the name; only the file that builds
+    it, the checks over it and this file may carry it. R9 is the change that
+    adds `env/tools.py` here, and it lands with its own re-baseline.
+    """
+    allowed = {"build.py", "checks.py", "tests/test_dictionary.py"}
+    found = set()
+    for path in ROOT.rglob("*.py"):
+        rel = path.relative_to(ROOT)
+        if {".venv", ".claude", "node_modules"} & set(rel.parts):
+            continue
+        if "retrieval_text" in path.read_text():
+            found.add(rel.as_posix())
+    # Anti-vacuity: the scan does see the files that must carry the name.
+    assert {"build.py", "tests/test_dictionary.py"} <= found
+    assert found <= allowed, f"read outside the build: {sorted(found - allowed)}"
+
+
+def test_the_retrieval_text_rule_is_outside_the_fingerprint_and_says_so(monkeypatch):
+    """A fourth declared gap, pinned so closing it is deliberate.
+
+    `compose_retrieval_text` decides a column's text and is NOT hashed, by the
+    operator's ruling of 2026-09-24: hashing it moved `version_hash` to
+    `c00f52110ce1`, which the pins in `tests/test_browse.py`,
+    `tests/test_retrieval_eval.py`, `src/` and `deploy/` all refuse. So an edit
+    to it changes the dictionary under an unchanged hash, and this test is the
+    record of that rather than a guarantee against it.
+    """
+    before = B._version_hash(_FILES, 2804)
+
+    def compose_retrieval_text(text: str, stem_text: str | None,
+                               subitem_text: str | None) -> str:
+        return text
+
+    monkeypatch.setattr(B, "compose_retrieval_text", compose_retrieval_text)
+    assert B._version_hash(_FILES, 2804) == before, (
+        "compose_retrieval_text now moves version_hash. That is the gap closed, "
+        "which is a user amendment: repin BUILD_HASH and the guards in "
+        "tests/test_browse.py and tests/test_retrieval_eval.py with their history")
+    assert "compose_retrieval_text" not in B._HASHED_SOURCES
+    assert B._NOT_HASHED["compose_retrieval_text"].startswith("DECLARED GAP")

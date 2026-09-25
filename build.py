@@ -174,6 +174,9 @@ class Entry:
     stem_text: str | None    # for grid sub-items, the shared stem
     subitem_text: str | None  # the part after the final " - "
     searchable_text: str
+    # A SEARCH column, never wording: `env/labels.py::cite` binds `question_text`
+    # and nothing reads this one until R9 switches the index to it.
+    retrieval_text: str
     base_id: str             # collapsed construct id within the module
     construct_key: str       # "m{module}:{base_id}"
     group_key: str | None    # "group:m{module}:{stem}" when this row is a grid sub-item
@@ -233,6 +236,47 @@ def split_stem(text: str) -> tuple[str | None, str | None]:
     if idx == -1:
         return None, None
     return text[:idx].strip(), text[idx + 3:].strip()
+
+
+def compose_retrieval_text(text: str, stem_text: str | None,
+                           subitem_text: str | None) -> str:
+    """The text a retriever indexes: a grid sub-item's own label, then its stem.
+
+    SEARCH ONLY. The wording a model is shown and a record quotes is
+    `question_text`, byte for byte, and this is never a substitute for it --
+    it is a recomposition from stem and sub-item, which is exactly what wording
+    may never be (`AGENTS.md` §Hard Constraints).
+
+    WHY SUB-ITEM FIRST. A grid prints one stem across up to 440 rows and the
+    part that tells them apart comes last, after a stem the export often
+    truncates. Leading with it changes no token: the text is the same two
+    halves `split_stem` returns, reordered, so a bag-of-words ranker scores it
+    as it scores `question_text` and only order-sensitive consumers -- a
+    snippet window, a truncating embedder -- see a difference.
+
+    WHY ": " AND NOT " - ". `env/tools.py::_ROSTER_INDEX` strips a leading
+    `<n> - ` to collapse roster repeats, and five sub-items are bare numerals
+    (`m2:Q3.4_1` to `_5`, labelled 1 to 5). Joined with " - " they read
+    `1 - Please list ...`, lose the label to that regex and merge into one line
+    -- measured on this build, 2026-09-24. A colon cannot form that prefix.
+
+    THE PIPED REFERENCE STAYS. A roster-repeat matrix row such as
+    `... - 11_Q16.9#1 - 11 - Breast cancer` differs from its nineteen siblings
+    only by that reference, and it sits inside the stem half, so it is carried
+    through verbatim. Stripping it is R5's change, with its own re-baseline.
+
+    Args:
+        text: The row's `question_text`.
+        stem_text: The stem half from `split_stem`, or None.
+        subitem_text: The sub-item half from `split_stem`, or None.
+
+    Returns:
+        `"{subitem}: {stem}"` where `split_stem` found both halves, else `text`
+        unchanged -- a row with no split has nothing to reorder.
+    """
+    if stem_text is None or subitem_text is None:
+        return text
+    return f"{subitem_text}: {stem_text}"
 
 
 # --------------------------------------------------------------------------- #
@@ -308,6 +352,14 @@ _NOT_HASHED: dict[str, str] = {
                          "circular and says nothing about any row.",
     "_version_hash": "assembles the payload; same reason as _rule_fingerprint.",
     "_write_csv": "writes a table to disk and decides nothing about a row.",
+    "compose_retrieval_text": "DECLARED GAP — decides every row's "
+                              "retrieval_text, so an edit here changes the "
+                              "dictionary under an unchanged version_hash. Not "
+                              "hashed by the operator's ruling of 2026-09-24 "
+                              "(R3): hashing it moved the hash to c00f52110ce1, "
+                              "which pins in tests/test_browse.py, "
+                              "tests/test_retrieval_eval.py, src/ and deploy/ "
+                              "all refuse.",
     "_fill_roster_family_size": "counts members of a group after every row is "
                                 "built; derives no row's identity or text.",
     "collision_rows": "reports on entries after they are built.",
@@ -518,6 +570,7 @@ def build() -> dict:
                 stem_text=stem_text,
                 subitem_text=subitem_text,
                 searchable_text=text,
+                retrieval_text=compose_retrieval_text(text, stem_text, subitem_text),
                 base_id=base_id,
                 construct_key=f"m{module}:{base_id}",
                 group_key=group_key,
