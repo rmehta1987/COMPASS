@@ -151,8 +151,14 @@ def main() -> int:
                    'if(typed!==null&&!cur) return noRun();')
         results.append(("parse", "unmatched query hides Metrics", run("parse", root) != 0))
         root = copy_site(tmp / "h4")
-        plant_page(root, 'el("#foot").innerHTML=sel==="metrics"?"":', 'el("#foot").innerHTML=true?"":')
-        results.append(("parse", "footer empty on a committed panel", run("parse", root) != 0))
+        # The rule inverted on the operator's instruction (2026-09-25): a
+        # committed panel's footer is now empty, so the planted violation is
+        # the removed provenance line put back.
+        plant_page(root, 'a second run may differ.`:"";',
+                   'a second run may differ.`:"Every figure above loads from '
+                   '<code>site/artifacts/</code> with its run id or commit.";')
+        results.append(("parse", "removed provenance line back on a committed panel",
+                        run("parse", root) != 0))
         root = copy_site(tmp / "h5")
         plant_page(root, 'el("#ask").disabled=!window.COMPASS_ENDPOINT;', 'el("#ask").disabled=false;')
         results.append(("parse", "pipeline button live with no server", run("parse", root) != 0))

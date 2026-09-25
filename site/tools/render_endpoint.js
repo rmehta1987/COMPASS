@@ -623,14 +623,16 @@ global.fetch = async (rel, opts) => {
   if (!stat) fail("no generate tab handler");
   else {
     stat.onclick();
-    // The footer says where the figures come from under EVERY panel but Metrics,
-    // which carries its own provenance line in the body. This assertion used to
-    // require the footer be empty here -- the behaviour before `foot` was fixed
-    // for having been scoped to live panels only, which `render.js::checkFoot`
-    // now pins the other way. It was stale, and nothing ran it to notice.
+    // The footer's committed-panel line was removed on the operator's
+    // instruction (2026-09-25); `render.js::checkFoot` refuses it. What may
+    // remain here is only the live caveat -- figures from this session's run,
+    // not committed -- so anything else in the footer is the old line back.
     const f2 = node("#foot").innerHTML.trim();
-    if (!/site\/artifacts/.test(f2)) {
-      fail(`footer does not say where a static panel's figures come from, got ${JSON.stringify(f2.slice(0, 70))}`);
+    if (/site\/artifacts|NO RECORD ON THIS PAGE/.test(f2)) {
+      fail(`footer carries the removed provenance line, got ${JSON.stringify(f2.slice(0, 70))}`);
+    }
+    if (f2 && !/not<\/b> committed/.test(f2)) {
+      fail(`footer says something other than the live caveat, got ${JSON.stringify(f2.slice(0, 70))}`);
     }
     if (node("#panel").innerHTML.includes("Retrieval is in use")) {
       fail("the shipped summary leaked onto a non-Metrics panel");

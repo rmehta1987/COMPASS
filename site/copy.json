@@ -509,13 +509,11 @@
    "text": "tool calls None. This run retrieved nothing. output NO RETRIEVAL WAS RUN — you posed this pair directly from {0}, so the deployed retriever scored no vectors. There is no cosine, threshold decision or abstention to show, and this panel does not borrow them from another run. what went to Experiment Design instead"
   },
   {
-   "id": "provenanceLine.panels-marked-record-page",
+   "id": "provenanceLine.live-panel-not-committed",
    "kind": "block",
    "where": "site/index.html::provenanceLine",
-   "slots": [
-    "panelLive\n      ? `This server produced the panel above during this session. Its figures come from that run and are <b>not</b> committed: nothing on this page pins them, and a second run may differ. Every other figure here loads from <code>site/artifacts/</code> with its run id or commit.`\n      : `Every figure above loads from <code>site/artifacts/</code> with its run id or commit; your query produced nothing on this panel.`"
-   ],
-   "text": "{0} Panels marked NO RECORD ON THIS PAGE have no committed record and show no numbers."
+   "slots": [],
+   "text": "This server produced the panel above during this session. Its figures come from that run and are not committed: nothing on this page pins them, and a second run may differ."
   },
   {
    "id": "retrieverPanel.all-negative-domains-absent",

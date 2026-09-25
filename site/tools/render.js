@@ -77,9 +77,12 @@ function check(label) {
 }
 // The footer must say, under every committed panel, that the figures are
 // committed. It was scoped to live panels and went empty everywhere else.
+// A committed panel's footer is EMPTY (operator, 2026-09-25): the line saying
+// where committed figures load from, and the NO RECORD sentence after it, were
+// removed. This used to require that line; it now refuses it.
 function checkFoot(label) {
   const f = node("#foot").innerHTML;
-  if (!/site\/artifacts/.test(f)) { console.error(`render: ${label}: footer does not say where the figures come from`); failed++; }
+  if (/site\/artifacts|NO RECORD ON THIS PAGE/.test(f)) { console.error(`render: ${label}: footer carries the removed provenance line`); failed++; }
 }
 (async () => {
   for (const s of scripts) new Function(s)();       // runs load().then(...)

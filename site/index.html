@@ -1924,26 +1924,32 @@ function measureHTML(){
    one thing that is NOT a summary: it says whether the figures directly above
    are committed or were produced moments ago, and that has to travel with the
    panel it describes. */
+/* LIVE PANELS ONLY. The committed-panel line ("Every figure above loads from
+   site/artifacts/ ... Panels marked NO RECORD ON THIS PAGE ...") was removed
+   on the operator's instruction: it was bookkeeping under every panel. What
+   stays is the one caveat a reader needs -- a live panel's figures are this
+   session's run, not committed, and a second run may differ. */
 function provenanceLine(){
-  return `${panelLive
-      ? `This server produced the panel above during this session. Its figures come from that run and are <b>not</b> committed: nothing on this page pins them, and a second run may differ. Every other figure here loads from <code>site/artifacts/</code> with its run id or commit.`
-      : `Every figure above loads from <code>site/artifacts/</code> with its run id or commit; your query produced nothing on this panel.`} Panels marked NO RECORD ON THIS PAGE have no committed record and show no numbers.`;
+  return panelLive?`This server produced the panel above during this session. Its figures come from that run and are <b>not</b> committed: nothing on this page pins them, and a second run may differ.`:"";
 }
 
 function shippedSummary(){
   const m=DATA.measurements, sh=m.shipped, I=sh.arms.I, lat=sh.latency, o=DATA.metrics.observed;
   return `<p>Retrieval is in use: ${sh.params_m}M parameters, ${lat.query_ms_isolated_single} ms per query on the serving machine, and no language-model call. Hypothesis generation is gated. Without two survey-metadata exports, the estimability gate passes ${DATA.funnel.gate.passed} of ${DATA.funnel.gate.live} exposure–outcome pairs, so every design carries <code>${esc(DATA.funnel.gate.estimability_marks.join(", "))}</code>. The one scored run switched that gate off and emitted ${o.scored} records; ${o.matched} matched, against a ceiling of ${DATA.metrics.ceiling.max_matched}.</p>
   <p>The retriever abstains on constructs the instrument does not measure: it rejected ${I.negatives_rejected} of ${I.n_negatives} held-out negatives on this fixture (AUROC ${I.auroc_absent_vs_present.toFixed(3)}). Its recall is an upper bound, because the same generator family that wrote the training pairs wrote the fixture's queries after seeing the reference wording. Detecting its own wrong pick is a separate question: that figure was measured, but its artifact was withdrawn from git and this page cannot reproduce it.</p>
-  <p>${provenanceLine()}</p>`;
+  ${provenanceLine()?`<p>${provenanceLine()}</p>`:""}`;
 }
 
-/* The footer carries ONLY the provenance line, but under EVERY panel: live or
-   committed, it says which. Scoping it to live panels left the committed ones
-   with an empty footer, so a reader who loaded the page with a query prefilled
-   saw a live-sounding masthead over a run committed days earlier and nothing
-   that said so. Metrics closes with the same line in its own summary. */
+/* The footer speaks only under a LIVE panel, to say its figures are this
+   session's run and not committed. Under a committed panel it is empty: the
+   operator removed the line that said where committed figures load from,
+   which had been carried under every panel. That brings back the ambiguity it
+   was added for -- a prefilled query over a committed example no longer says
+   the example is committed -- and the operator chose that. Metrics closes with
+   the same live caveat in its own summary, when there is one. */
 function foot(){
-  el("#foot").innerHTML=sel==="metrics"?"":`<p>${provenanceLine()}</p>`;
+  const line=provenanceLine();
+  el("#foot").innerHTML=sel==="metrics"||!line?"":`<p>${line}</p>`;
 }
 
 /* What the static page can and cannot do, said beside the controls that do it. */
