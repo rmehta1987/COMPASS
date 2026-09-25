@@ -388,6 +388,9 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   derivation value to log or repair. That commit states `serve/api.py`'s job record is
   not yet extended, so a record specified through the endpoint keeps no repair history.
   ACCEPT: an endpoint job persists its attempt's repairs, and the trace runs over it.
+  CLOSED 2026-09-24 in `565f873`: `serve/api.py::_keep_repairs` passes the selected
+  record's attempt to `generate/live_specifier.py::save_repairs`, which writes
+  `jobs/<ticket>.repairs.json`, and the payload carries `repairs: {kept, untraced, file}`.
 - **C18 sweep RUN 2026-09-11; its result is recorded nowhere.** CORRECTED 2026-09-24:
   this said "unrun (pilot only)". `run/unaided_sweep_2026-09-11/partition.json`
   (untracked, `run/` is gitignored) carries `generated` 2026-09-11, `min_specifiable` 1
@@ -486,8 +489,12 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   exposure — seeded by requesting the default frame and asserting more than one distinct
   exposure in `pairs`; (c) `pairs` carries `state` and a pruned pair renders with no
   launch button, seeded at `limit=300` on the default frame. (b) and (c) landed
-  2026-09-16 in `52284b2` (titled for the Metrics tab; it does not name C41); (a) is
-  open. As landed the seeds differ from the text: `limit=300` runs at 200 under the
+  2026-09-16 in `52284b2` (titled for the Metrics tab; it does not name C41). (a)
+  CLOSED 2026-09-24 in `9c2cbdd`: `_enumerate` takes its frame from `_named_frame`, its
+  sides from `Frame.sides` and its candidates from `walk`, and the payload carries
+  `frame: {name, digest}`. Sides matching no `FRAMES` entry are refused, never named.
+  `test_no_driver_builds_the_frame_by_hand` now also flags `<x>.base_id.startswith(...)`;
+  an alias of `base_id` still gets past it. As landed the seeds differ from the text: `limit=300` runs at 200 under the
   clamp; (b) is `tests/test_serve_enumerate.py`, which calls
   `serve/api.py::_spread_by_exposure` directly plus an AST `Call` check that
   `_enumerate` slices through it; (c) is an AST check that `pairs` carries `state`, plus
@@ -495,6 +502,14 @@ key mismatch that refused every battery-derived exposure both landed that day.*
   default frame over the route.
   NOT IN SCOPE here: which frame the project should enumerate is a study-design decision
   for the operator, and every reported denominator moves with it.
+- **C42 — the Generate tab's note says an enumerated launch carries `enumerated_screen`,
+  and it does not.** `serve/api.py::_enumerate`'s `note` and `site/copy.json` say a pair
+  run from the tab carries `enumerated_screen` and a real denominator. The tab posts only
+  `{exposure, outcome}` to `/api/specify` and `serve/api.py::_specify` stamps
+  `screened_from=0` / `externally_posed`, so every run from the tab is externally posed.
+  Either fix the sentence, or pass the frame and index so that `_specify` uses
+  `generate/funnel.py::live_at`; which one is the operator's call. Also, `_specify`'s
+  `Returns:` docstring describes the finished run, not the ticket it returns.
 
 
 ## PARKED — the full-bibliography key and its chain

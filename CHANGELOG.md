@@ -16,6 +16,13 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ## 2026-09-24
 
+- **The endpoint enumerates named frames only, and names the frame it used** (`9c2cbdd`,
+  C41(a)). `_enumerate` built its sides with its own comprehension, so an endpoint count
+  carried no frame and no digest. The frame scan missed this because it flagged only
+  constant prefixes. Custom sides that match no frame are now refused.
+- **An endpoint job keeps its repair history** (`565f873`, C19 residue). The job record
+  reuses the driver's `save_repairs`, so a derivation value the validator supplied
+  through a repair has a visible source, and the trace runs over it.
 - **A keyed contamination section can no longer read `ok` without its key.** Every skip
   test planted its skip on `check_provenance`, which imports nothing. Wrapping the
   platform scan's `leak_facts` import in `try/except ModuleNotFoundError: return []`
