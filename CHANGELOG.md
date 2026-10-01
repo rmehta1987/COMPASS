@@ -51,8 +51,9 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
   - `agent/cli_backend.py`: `_retarget_mcp_config` exists because lane worktrees failed
     with `ENOENT: posix_spawn '.../lane-a/.venv/bin/python'`, which read as the model
     refusing to work. `_tool_log_path` (and `Attempt.tool_log_path`) replaced one
-    `run/tool_log.jsonl` truncated per sample; VERIFIED 2026-08-26 the surviving log
-    disagreed with the record beside it (0.35 vs 0.30).
+    `run/tool_log.jsonl` truncated per sample; VERIFIED 2026-08-26 the surviving log held
+    38 calls at `baseline_prevalence` 0.35 while the record beside it, written two hours
+    earlier, stated 0.30.
   - `agent/registry.py`: the `BENCHMARK_TOOLS` denylist it replaced named three tools that
     never existed (`0fcd6eb`); the allowlist was checked equal 2026-09-30 to the old
     output. `n_values` was advertised until the one real record took the n=50 floor
