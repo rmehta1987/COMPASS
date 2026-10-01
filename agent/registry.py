@@ -460,6 +460,8 @@ def build_registry(mode: Mode) -> tuple[dict[str, Callable], list[dict]]:
     Raises:
         ValueError: On an unknown mode, or on a tool in `env/tools.py::TOOLS`
             that is in neither `BENCHMARK_TOOLS` nor `GENERATION_ONLY_TOOLS`.
+        KeyError: On a tool in `env/tools.py::TOOLS` with no `_TOOLS` entry,
+            which would otherwise reach the model unchecked and schema-less.
     """
     if mode not in ("generation", "benchmark", "curation"):
         raise ValueError(f"unknown mode {mode!r}")
@@ -476,10 +478,11 @@ def build_registry(mode: Mode) -> tuple[dict[str, Callable], list[dict]]:
     elif mode == "curation":
         names -= {"estimate_detectability", "estimate_n"}
 
-    callables = {n: (_checked(n, _TOOLS[n][1], T.TOOLS[n]) if n in _TOOLS
-                     else T.TOOLS[n])
-                 for n in sorted(names)}
+    # Indexed directly, never `if n in _TOOLS`: that fallback handed out an
+    # argument-unchecked tool with no schema, so a tool missing its `_TOOLS`
+    # entry reached the model silently. A KeyError names the missing entry.
+    callables = {n: _checked(n, _TOOLS[n][1], T.TOOLS[n]) for n in sorted(names)}
     schemas = [{"type": "function",
                 "function": {"name": n, **SCHEMAS[n]}}
-               for n in sorted(names) if n in SCHEMAS]
+               for n in sorted(names)]
     return callables, schemas

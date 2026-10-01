@@ -24,10 +24,12 @@ sys.path.insert(0, str(ROOT))
 from agent import specifier as SP
 from agent.backends import OpenAICompatBackend, Reply, ScriptedBackend, tool_call
 from agent.registry import (
+    _TOOLS,
     BENCHMARK_TOOLS,
     GENERATION_ONLY_TOOLS,
     SCHEMAS,
     Mode,
+    NoArgs,
     build_registry,
 )
 from env import tools as T
@@ -299,10 +301,26 @@ def test_a_generation_only_tool_is_withheld_from_benchmark(monkeypatch):
     withholding path would never execute under test.
     """
     monkeypatch.setitem(T.TOOLS, "search_literature", lambda: None)
+    monkeypatch.setitem(_TOOLS, "search_literature", ("probe", NoArgs))
+    monkeypatch.setitem(SCHEMAS, "search_literature", {"description": "probe"})
     monkeypatch.setattr("agent.registry.GENERATION_ONLY_TOOLS",
                         frozenset({"search_literature"}))
     assert "search_literature" in build_registry("generation")[0]
     assert "search_literature" not in build_registry("benchmark")[0]
+
+
+def test_a_tool_without_a_registry_entry_fails_closed(monkeypatch):
+    """A tool placed in a mode but missing from `_TOOLS` raises, never ships bare.
+
+    `build_registry` used to fall back to the raw `env.tools` callable with no
+    argument check and no schema, so the model could call a tool it was never
+    described and nothing named the missing entry.
+    """
+    monkeypatch.setitem(T.TOOLS, "search_literature", lambda: None)
+    monkeypatch.setattr("agent.registry.GENERATION_ONLY_TOOLS",
+                        frozenset({"search_literature"}))
+    with pytest.raises(KeyError, match="search_literature"):
+        build_registry("generation")
 
 
 def test_mode_has_no_default():
