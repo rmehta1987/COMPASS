@@ -28,7 +28,11 @@ sys.path.insert(0, str(ROOT))
 import argparse  # noqa: E402
 
 from agent.cli_backend import ClaudeCliBackend  # noqa: E402
-from agent.schema import _PREFIX, NotSpecifiable, ProtocolSpecification  # noqa: E402
+from agent.schema import (  # noqa: E402
+    KEY_PATTERN,
+    NotSpecifiable,
+    ProtocolSpecification,
+)
 from agent.specifier import _RESOLVED  # noqa: E402
 from agent.tool_authority import (  # noqa: E402
     RunIdentity,
@@ -87,11 +91,16 @@ def run_identity(pair: object, version: str, screened_from: int,
             "enumeration" if selection_mode == "enumerated_screen" else "person"))
 
 
-#: Anything shaped like a variable key, wherever it appears in a record. Built
-#: from agent/schema.py's `_PREFIX`, the registry alternation KEY_PATTERN is
-#: built from, because that is the shape a model invents when the schema
-#: requires an exposure it cannot find.
-KEY_RX = re.compile(rf"\b{_PREFIX}:[A-Za-z0-9_.]+")
+#: Anything shaped like a variable key, wherever it appears in a record: the
+#: schema's own KEY_PATTERN with its anchors dropped, because that is the shape a
+#: model invents when the schema requires an exposure it cannot find. A narrower
+#: copy of the class (`[A-Za-z0-9_.]+`) cut `m2:Q5.8~9`, `m1:Q3.10#9_9` and
+#: `m3:Q16.1-zz` down to real keys, so the invented ones were never counted. The
+#: trailing look-behind gives back a sentence's full stop: the class admits `.`,
+#: so `m2:Q5.8.` was read as a key that resolves nowhere, and no key in the
+#: built dictionary ends in one.
+assert KEY_PATTERN.startswith("^") and KEY_PATTERN.endswith("$"), KEY_PATTERN
+KEY_RX = re.compile(rf"\b{KEY_PATTERN[1:-1]}(?<!\.)")
 
 #: resolve_variable outcomes that mean the key names something real:
 #: agent/specifier.py's own set, so `ambiguous` stays a failure here too.

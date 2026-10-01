@@ -3834,18 +3834,60 @@ def test_the_live_driver_saves_a_record_with_only_its_own_samples_log(
     assert out.with_suffix(".tool_log.jsonl").read_text() == log.read_text()
 
 
-def test_the_live_driver_reuses_the_key_prefixes_and_the_resolved_set() -> None:
+def test_the_live_driver_reuses_the_key_pattern_and_the_resolved_set() -> None:
     """`KEY_RX` and `RESOLVED` restated what agent/ defines once.
 
-    Built from `agent/schema.py::_PREFIX`, `KEY_RX` must still compile to the
-    pattern it was written as, so the refusal audit counts the same keys.
+    `KEY_RX` was a hand-copied `[A-Za-z0-9_.]+` that had fallen behind
+    `KEY_PATTERN`; it is now that pattern unanchored, so the two cannot drift.
     """
     from agent import schema as S
     from generate import live_specifier as LS
 
     assert LS.RESOLVED is SP._RESOLVED
-    assert LS.KEY_RX.pattern == r"\b(?:m[123]|clinical|lab|linked|ehr):[A-Za-z0-9_.]+"
+    assert S.KEY_PATTERN[1:-1] in LS.KEY_RX.pattern
     assert LS.KEY_RX.pattern.startswith(rf"\b{S._PREFIX}:")
+
+
+def _invented(out: str) -> list[str]:
+    m = re.search(r"INVENTED KEYS\s+(\d+)\s+(\[.*\])", out)
+    assert m, out
+    keys = ast.literal_eval(m.group(2))
+    assert int(m.group(1)) == len(keys)
+    return keys
+
+
+def test_the_refusal_audit_counts_a_key_the_schema_accepts_whole(
+        unspecifiable, capsys: pytest.CaptureFixture[str]) -> None:
+    """Every key `KEY_PATTERN` accepts is extracted whole, never cut to a real one.
+
+    The audit's class had no `#`, `-` or `~N`, so `m2:Q5.8~9` was read as the
+    real `m2:Q5.8` and INVENTED KEYS read 0 for three fabricated keys. The class
+    admits `.`, so a real key ending a sentence (`m2:Q5.8.`) was read with the
+    full stop and counted invented; real keys carrying `#` were cut short.
+    """
+    from agent import schema as S
+    from generate import live_specifier as LS
+
+    p, version = unspecifiable
+    a = SP.specify_once(ScriptedBackend(_refuses(version)), p, seed=0)
+    assert a.refused
+    fake = ["m2:Q5.8~9", "m1:Q3.10#9_9", "m3:Q16.1-zz"]
+    real = ["m2:Q5.8", "m1:Q3.10", "m3:Q16.1"]
+    real_hash = next(k for k in (e["key"] for e in T._load()["entries"])
+                     if "#" in k)
+    for k in [*fake, *real, real_hash]:
+        assert re.fullmatch(S.KEY_PATTERN, k), k
+    for k in fake:
+        assert T.resolve_variable(key=k)["outcome"] not in LS.RESOLVED, k
+    for k in [*real, real_hash]:
+        assert T.resolve_variable(key=k)["outcome"] in LS.RESOLVED, k
+    prose = (f"Tried {fake[0]}, {fake[1]} and {fake[2]}. The instrument has "
+             f"{real[0]}. It has {real[1]}, {real[2]}; and {real_hash}.")
+    assert LS.KEY_RX.findall(prose) == [*fake, *real, real_hash]
+
+    r = a.refusal.model_copy(update={"statement": prose})
+    LS.refusal_audit(r, {p.exposure.construct_key, p.outcome.construct_key}, [])
+    assert sorted(_invented(capsys.readouterr().out)) == sorted(fake)
 
 
 def test_a_refusals_winner_is_found_by_identity_not_by_hash(unspecifiable) -> None:
