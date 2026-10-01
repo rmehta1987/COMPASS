@@ -283,7 +283,7 @@ def compose_retrieval_text(text: str, stem_text: str | None,
 # build
 # --------------------------------------------------------------------------- #
 
-def read_module(module: str, path: Path) -> list[tuple[str, str]]:
+def read_module(path: Path) -> list[tuple[str, str]]:
     with path.open(newline="", encoding="utf-8") as fh:
         rows = list(csv.reader(fh))
     for i, r in enumerate(rows):
@@ -547,7 +547,7 @@ def build() -> dict:
         if not path.exists():
             raise SystemExit(f"missing {path} — build cannot proceed. This is not a warning.")
         file_hashes[filename] = hashlib.sha256(path.read_bytes()).hexdigest()
-        raw_by_module[module] = read_module(module, path)
+        raw_by_module[module] = read_module(path)
 
     # occurrence ordinals, scoped to the module
     counts: dict[tuple[str, str], int] = Counter(

@@ -715,8 +715,8 @@ def test_question_text_is_still_the_repaired_raw_row_for_all_2804():
     """
     d = json.loads((BUILD / "dictionary.json").read_text())
     expected = [B.repair_mojibake(text)
-                for module, name in B.SOURCES.items()
-                for _, text in B.read_module(module, B.RAW / name)]
+                for name in B.SOURCES.values()
+                for _, text in B.read_module(B.RAW / name)]
     got = [e["question_text"] for e in d["entries"]]
     assert len(got) == len(expected) == 2804
     assert got == expected
