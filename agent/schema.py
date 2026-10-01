@@ -54,6 +54,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from env import labels
+
 _ROOT = Path(__file__).resolve().parent.parent
 
 # --------------------------------------------------------------------------- #
@@ -96,7 +98,9 @@ def _norm(t: str) -> str:
     """Collapse whitespace.
 
     The codebooks carry hard newlines inside quoted fields, so newline-versus-space
-    is a format difference, not a paraphrase.
+    is a format difference, not a paraphrase. Delegates to `env.labels._flat`,
+    the collapse the rendered candidate lines use, so a model quoting what it was
+    shown diffs equal under one rule rather than two copies of it.
 
     Args:
         t: Any text; None is treated as empty.
@@ -104,7 +108,7 @@ def _norm(t: str) -> str:
     Returns:
         The text with every whitespace run collapsed to one space.
     """
-    return " ".join((t or "").split())
+    return labels._flat(t or "")
 
 
 def _norm_construct(t: str) -> str:
@@ -129,13 +133,12 @@ def _dictionary_wording() -> dict[str, str]:
     """Load the instrument's wording for every key, once per process.
 
     Returns:
-        Mapping of variable key to its `question_text`. Empty when there is no
-        `build/dictionary.json`; the validators that read it then skip.
+        Mapping of variable key to its `question_text`, read off
+        `env.labels`' citation index rather than a second parse of
+        `build/dictionary.json`. Empty when there is no build; the validators
+        that read it then skip.
     """
-    p = _ROOT / "build" / "dictionary.json"
-    if not p.exists():
-        return {}
-    return {e["key"]: e["question_text"] for e in json.loads(p.read_text())["entries"]}
+    return {key: c.wording for key, c in labels._index().items()}
 
 
 @functools.cache

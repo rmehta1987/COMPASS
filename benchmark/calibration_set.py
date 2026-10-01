@@ -274,8 +274,8 @@ class _Resolved(NamedTuple):
 
 # --------------------------------------------------------------------------- #
 # dictionary access — a private, cached read, independent of env.tools'
-# internal caches (agent/schema.py's _dictionary_wording/_signed_derivations
-# take the same approach: this file must work whether or not env.tools has
+# internal caches (agent/schema.py's _signed_derivations takes the same
+# approach: this file must work whether or not env.tools has
 # been imported first, and must never reach into another module's `_`-prefixed
 # state).
 # --------------------------------------------------------------------------- #

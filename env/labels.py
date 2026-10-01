@@ -239,12 +239,12 @@ class CitedSet:
 def _flat(t: str) -> str:
     """Collapse whitespace for rendering. Never applied to a stored `wording`.
 
-    Character-identical to `agent/schema.py::_norm`, which is the normalisation
-    `_wording_is_verbatim` diffs under, so a model quoting what it was rendered
-    still validates. `tests/test_labels.py::test_flat_matches_schema_norm`
-    asserts the two agree on all 2,804 entries rather than trusting this
-    sentence -- a second implementation of a normalisation rule is exactly the
-    kind of quiet divergence this codebase keeps finding.
+    `agent/schema.py::_norm`, the normalisation `_wording_is_verbatim` diffs
+    under, delegates here, so a model quoting what it was rendered still
+    validates. `tests/test_labels.py::test_flat_matches_schema_norm` still
+    asserts the two agree on all 2,804 entries -- a second implementation of a
+    normalisation rule is exactly the kind of quiet divergence this codebase
+    keeps finding, and the test reddens if one comes back.
 
     Args:
         t: Any instrument text.
