@@ -47,7 +47,7 @@ that is not convenience.
 
 | clone | role | may an agent open it? |
 |---|---|---|
-| `COMPASS` | **The working clone.** The trunk carries the pipeline *and* `serve/`. Untracked artifacts are linked or copied from `compass-gen` (`build/` and `run/` must be real copies -- `tests/test_dictionary.py::test_build_is_deterministic` runs `build.py` with `cwd=ROOT` and through a symlink would write into the clone the link points at). | yes |
+| `COMPASS` | **The working clone.** The trunk carries the pipeline *and* `serve/`. Untracked artifacts are linked or copied from `compass-gen` (`build/` and `run/` must be real copies -- the verify step `python build.py` writes `ROOT/build/`, and through a symlink that write would land in the clone the link points at; the suite itself rebuilds into a temporary directory, `tests/test_dictionary.py::test_a_rebuild_leaves_build_as_it_found_it`). | yes |
 | `compass-score` | Holds the answer keys (`benchmark/prevalence_key.py`, `benchmark/leak_facts.py`). | 🛑 **no** -- an agent that reads a key then authors prompts, docstrings or conventions is itself the leak channel, and a fresh session does not close it |
 | `compass-site` | The published GitHub Pages tree, and nothing this repository needs. **It is no longer required to serve the site:** as of 2026-09-15 the page is in-tree at `site/`, `--site-dir` defaults to it, and `serve/` exists only here -- that clone has no `serve/` at all, so it could never run the endpoint. It still holds its own `SITE_*.md` notes and 80 commits of history that were NOT brought over, so do not merge it; take paths if you need them. | yes |
 

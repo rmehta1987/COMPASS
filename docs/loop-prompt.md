@@ -35,17 +35,13 @@ session does not close it. If `benchmark.contamination_check` will not run, that
 ## Clone setup: which artifacts may be symlinked, and which may NOT
 
 🛑 **`build/` and `run/` must be REAL COPIES in the loop clone, never symlinks.**
-`tests/test_dictionary.py::test_build_is_deterministic` runs `build.py` as a subprocess
-with `cwd=ROOT`, and `build.py` writes `dictionary.json`, `version.json` and four CSVs
-into `ROOT/"build"`. Through a symlink that write lands in the clone the link points at.
-Observed 2026-09-10: two suite runs in the loop clone rewrote
-`/home/mehta5/compass-gen/build/` — harmless that time because the rules were unmutated
-and the hash stayed `3dc8415eccfe`, but `CLAUDE.md` requires re-running the build between
-seeding a `build.py` mutation and testing it, and that sequence would have written a
-MUTATED dictionary into the generation clone. Git cannot see it: the artifact is
-untracked and outside the tree. `build.py::_version_hash`'s own docstring says it was
-extracted so a test could ask what a rule edit does to the hash *without* running a build
-"which would write `build/`" — and this test does exactly that.
+`python build.py` (the verify step, and the rebuild `CLAUDE.md` requires between seeding
+a `build.py` mutation and testing it) writes `dictionary.json`, `version.json` and four
+CSVs into `ROOT/"build"`. Through a symlink that write lands in the clone the link points
+at, so a MUTATED dictionary would reach the generation clone, where git cannot see it
+(observed 2026-09-10, when the suite still rebuilt into `build/`). The suite no longer
+writes `build/`: `tests/test_dictionary.py` rebuilds into a temporary directory, pinned
+by `test_a_rebuild_leaves_build_as_it_found_it`.
 
 Read-only paths may stay symlinks: `raw/`, `benchmark/fixtures/`, `deploy/targets.json`,
 and the root `targets.json` / `dictionary.json` / `retrieval_queries.json`.
