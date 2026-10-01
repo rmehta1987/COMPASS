@@ -793,9 +793,10 @@ experts until much later, which is why the dashboard exists.
   `response_options` is null on all 2,804 entries (`checks.py::NULL_BY_CONSTRUCTION`), so
   naming one would trip `_no_response_coding_is_asserted`. Surfaced 2026-09-14 by a real
   request; no task yet because the fix interacts with Phase 3's `study_design` field.
-- Three unbound or vacuous guarantees, all in `DESIGN.md` §7:
-  `estimability.exposure_contrast`, `agent/registry.py::RETRIEVAL_TOOLS`, and
-  `env/tools.py::search_variables`' OR-decomposition.
+- Two unbound guarantees, both in `DESIGN.md` §7: `estimability.exposure_contrast`
+  and `env/tools.py::search_variables`' OR-decomposition. (A third, benchmark-mode
+  withholding, was bound on 2026-09-30: `agent/registry.py::BENCHMARK_TOOLS` is an
+  allowlist and an unplaced tool raises.)
 - `agent/schema.py::RefusalReason.access_gate_refused` is unreachable:
   `env/tools.py::check_access` returns only `pass|refer`. Kept deliberately; C15 makes it
   unclaimable.

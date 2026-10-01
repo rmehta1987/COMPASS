@@ -211,9 +211,12 @@ Three routes by which a published analysis reaches the model. **Only one closes.
 - **`env/tools.py::search_variables` silently OR-decomposes a phrase**, so 'green space'
   can return a phone-number item; read the decomposition before any "zero hits, therefore
   absent".
-- **Benchmark-mode withholding is vacuous**: no member of
-  `agent/registry.py::RETRIEVAL_TOOLS` exists, so `generation − benchmark` is empty and
-  its test passes without testing. Building any of them makes it real.
+- **Benchmark mode withholds nothing today**: `agent/registry.py::GENERATION_ONLY_TOOLS`
+  is empty, so `generation − benchmark` is empty. Benchmark mode is the allowlist
+  `agent/registry.py::BENCHMARK_TOOLS`, a tool in neither set stops `build_registry`
+  in every mode, and
+  `tests/test_specifier.py::test_a_generation_only_tool_is_withheld_from_benchmark`
+  exercises the withholding path with a probe tool.
 - **C18's flag rate is not a contamination rate** and must never be reported as one: with
   no ground truth it filters on "produced a complete design", not "answered correctly".
 - Its `contrast` and `model_form` are closed lexical lists, so an unusual estimator misses
