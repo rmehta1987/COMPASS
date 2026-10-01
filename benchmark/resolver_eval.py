@@ -330,10 +330,6 @@ def load_fixture(path: Path = FIXTURE) -> ResolverFixture:
 # the roster family — read off dictionary fields, never parsed out of a key
 # --------------------------------------------------------------------------- #
 
-_FAMILIES: dict[tuple[str, str, str, str], tuple[str, ...]] | None = None
-_DUPLICATE_TEXT: dict[str, int] | None = None
-
-
 def _family_id(entry: dict) -> tuple[str, str, str, str]:
     r"""The identity of the roster family one entry belongs to.
 
@@ -363,19 +359,17 @@ def _family_id(entry: dict) -> tuple[str, str, str, str]:
             str(entry["matrix_col"]), str(entry["subitem_text"]))
 
 
+@functools.cache
 def _families() -> dict[tuple[str, str, str, str], tuple[str, ...]]:
     """Every roster family in the built dictionary, built once.
 
     Returns:
         Family identity mapped to its member keys, in dictionary order.
     """
-    global _FAMILIES
-    if _FAMILIES is None:
-        grouped: dict[tuple[str, str, str, str], list[str]] = {}
-        for e in tools._load()["entries"]:
-            grouped.setdefault(_family_id(e), []).append(str(e["key"]))
-        _FAMILIES = {k: tuple(v) for k, v in grouped.items()}
-    return _FAMILIES
+    grouped: dict[tuple[str, str, str, str], list[str]] = {}
+    for e in tools._load()["entries"]:
+        grouped.setdefault(_family_id(e), []).append(str(e["key"]))
+    return {k: tuple(v) for k, v in grouped.items()}
 
 
 def family_of(key: str) -> tuple[str, ...]:
@@ -418,6 +412,7 @@ def _entry(key: str) -> dict:
     return entry
 
 
+@functools.cache
 def _duplicate_text_modules() -> dict[str, int]:
     """How many modules print each wording, keyed by the collapsed wording.
 
@@ -430,14 +425,11 @@ def _duplicate_text_modules() -> dict[str, int]:
         Collapsed `question_text` mapped to the number of distinct modules
         printing it.
     """
-    global _DUPLICATE_TEXT
-    if _DUPLICATE_TEXT is None:
-        mods: dict[str, set[str]] = {}
-        for e in tools._load()["entries"]:
-            mods.setdefault(labels._flat(str(e["question_text"])),
-                            set()).add(str(e["module"]))
-        _DUPLICATE_TEXT = {k: len(v) for k, v in mods.items()}
-    return _DUPLICATE_TEXT
+    mods: dict[str, set[str]] = {}
+    for e in tools._load()["entries"]:
+        mods.setdefault(labels._flat(str(e["question_text"])),
+                        set()).add(str(e["module"]))
+    return {k: len(v) for k, v in mods.items()}
 
 
 # --------------------------------------------------------------------------- #

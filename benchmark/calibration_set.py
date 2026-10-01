@@ -150,6 +150,7 @@ published anything, which is the entire point of it.
 
 from __future__ import annotations
 
+import functools
 import json
 from pathlib import Path
 from typing import NamedTuple
@@ -279,31 +280,23 @@ class _Resolved(NamedTuple):
 # state).
 # --------------------------------------------------------------------------- #
 
-_BY_KEY: dict[str, dict] | None = None
-_BY_CONSTRUCT: dict[str, list[dict]] | None = None
-
-
+@functools.cache
 def _load_dictionary() -> tuple[dict[str, dict], dict[str, list[dict]]]:
     """Index `build/dictionary.json` by literal key and by construct key.
 
     Returns:
         `(by_key, by_construct)`, cached after the first call.
     """
-    global _BY_KEY, _BY_CONSTRUCT
-    if _BY_KEY is None or _BY_CONSTRUCT is None:
-        entries = json.loads((ROOT / "build" / "dictionary.json").read_text())["entries"]
-        by_key: dict[str, dict] = {}
-        by_construct: dict[str, list[dict]] = {}
-        for e in entries:
-            by_key[e["key"]] = e
-            by_construct.setdefault(e["construct_key"], []).append(e)
-        _BY_KEY, _BY_CONSTRUCT = by_key, by_construct
-    return _BY_KEY, _BY_CONSTRUCT
+    entries = json.loads((ROOT / "build" / "dictionary.json").read_text())["entries"]
+    by_key: dict[str, dict] = {}
+    by_construct: dict[str, list[dict]] = {}
+    for e in entries:
+        by_key[e["key"]] = e
+        by_construct.setdefault(e["construct_key"], []).append(e)
+    return by_key, by_construct
 
 
-_SIGNED_COMPONENT_SETS: dict[str, frozenset[str]] | None = None
-
-
+@functools.cache
 def _signed_component_sets() -> dict[str, frozenset[str]]:
     """Every signed derivation's `component_keys`, via the live tools.
 
@@ -316,19 +309,14 @@ def _signed_component_sets() -> dict[str, frozenset[str]]:
         Derivation id to the frozenset of its signed `component_keys`, cached
         after the first call.
     """
-    global _SIGNED_COMPONENT_SETS
-    if _SIGNED_COMPONENT_SETS is None:
-        ids = list(list_derivations()["derivations"])
-        _SIGNED_COMPONENT_SETS = {
-            did: frozenset(str(k) for k in get_derivation(did)["component_keys"])
-            for did in ids
-        }
-    return _SIGNED_COMPONENT_SETS
+    ids = list(list_derivations()["derivations"])
+    return {
+        did: frozenset(str(k) for k in get_derivation(did)["component_keys"])
+        for did in ids
+    }
 
 
-_EMPTY_REGISTRY_PREFIXES: tuple[str, ...] | None = None
-
-
+@functools.cache
 def _empty_registry_prefixes() -> tuple[str, ...]:
     """Registries `registry_coverage()` reports as `coverage: "none"`, live.
 
@@ -337,13 +325,10 @@ def _empty_registry_prefixes() -> tuple[str, ...]:
         `("clinical", "ehr", "lab", "linked")` — four, not the three the C5
         spec text names; see the module docstring.
     """
-    global _EMPTY_REGISTRY_PREFIXES
-    if _EMPTY_REGISTRY_PREFIXES is None:
-        regs = registry_coverage()["registries"]
-        _EMPTY_REGISTRY_PREFIXES = tuple(sorted(
-            str(name) for name, info in regs.items()
-            if info["coverage"] == "none"))
-    return _EMPTY_REGISTRY_PREFIXES
+    regs = registry_coverage()["registries"]
+    return tuple(sorted(
+        str(name) for name, info in regs.items()
+        if info["coverage"] == "none"))
 
 
 def _resolve_entry_or_construct(key: str) -> _Resolved:
@@ -653,9 +638,7 @@ def _verify_answerable(pair: CalibrationPair) -> None:
             f"{access['decision']!r}, load={access['reconstruction_load']}")
 
 
-_CACHE: tuple[CalibrationPair, ...] | None = None
-
-
+@functools.cache
 def build_calibration_set() -> tuple[CalibrationPair, ...]:
     """Build every row: the three unanswerable categories, then the control arm.
 
@@ -672,10 +655,6 @@ def build_calibration_set() -> tuple[CalibrationPair, ...]:
             category needs — better to fail loudly at build time than to
             silently ship a smaller, unbalanced set.
     """
-    global _CACHE
-    if _CACHE is not None:
-        return _CACHE
-
     version = dictionary_version()
     partners = _final_clean_pool()
     n_needed = ROWS_PER_UNANSWERABLE_CATEGORY * 1 + \
@@ -740,8 +719,7 @@ def build_calibration_set() -> tuple[CalibrationPair, ...]:
         _verify_answerable(pair)
         rows.append(pair)
 
-    _CACHE = tuple(rows)
-    return _CACHE
+    return tuple(rows)
 
 
 def category_counts(pairs: tuple[CalibrationPair, ...]) -> dict[str, int]:
