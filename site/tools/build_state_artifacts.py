@@ -9,13 +9,22 @@ line; the captures' construct keys, stems and search patterns stay private.
 from __future__ import annotations
 
 import json
-import re
+import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 RUN = REPO / "run" / "site"
 OUT = REPO / "site" / "artifacts"
-KEY_RE = re.compile(r"\bm\d+:Q\d+")
+
+# The refuse-to-write guard is `serve/redact.py::KEY_RE`, imported. The pattern
+# this file carried, `\bm\d+:Q\d+`, cannot match a numeric roster prefix
+# between the colon and the `Q`, so it missed 1,520 of the 2,804 item keys
+# (MEASURED 2026-10-01 against `key`); the guard was a partial scan that read
+# as complete. `redact.py` is stdlib-only.
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
+
+from serve.redact import KEY_RE  # noqa: E402
 
 
 def write(name: str, doc: dict) -> None:
