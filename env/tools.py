@@ -20,6 +20,7 @@ mode is doing the wrong thing, not omitting the right one.
 
 from __future__ import annotations
 
+import functools
 import json
 import math
 import re
@@ -110,9 +111,12 @@ def _logged(fn: Callable) -> Callable:
         fn: The tool function to wrap.
 
     Returns:
-        The wrapped function, with `__name__` and `__doc__` preserved because the
-        registry and the MCP server both read them.
+        The wrapped function. `functools.wraps` keeps `__name__` and `__doc__`,
+        which the registry and the MCP server read, and sets `__wrapped__`, so
+        `inspect.signature` reports the tool's own parameters rather than
+        `(*a, **kw)`.
     """
+    @functools.wraps(fn)
     def wrapper(*a: object, **kw: object) -> object:
         t0 = time.perf_counter()
         try:
@@ -122,8 +126,6 @@ def _logged(fn: Callable) -> Callable:
         finally:
             LOG.record(fn.__name__, {**kw}, locals().get("outcome", "error"),
                        (time.perf_counter() - t0) * 1000)
-    wrapper.__name__ = fn.__name__
-    wrapper.__doc__ = fn.__doc__
     return wrapper
 
 

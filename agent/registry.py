@@ -335,36 +335,6 @@ SCHEMAS: dict[str, dict] = {
 }
 
 
-def true_signature(fn: Callable) -> inspect.Signature:
-    """The signature of the tool underneath `env.tools._logged`.
-
-    `_logged` wraps every tool in `def wrapper(*a, **kw)` and copies only
-    `__name__` and `__doc__` — no `functools.wraps`, so no `__wrapped__` and
-    `inspect.signature` reports `(*a, **kw)`, which accepts anything and tells a
-    caller nothing. env/tools.py belongs to another lane, so the wrapper is
-    unwrapped from the outside instead: `inspect.unwrap` follows any real
-    `__wrapped__` chain, and the closure cell named `fn` is `_logged`'s own
-    handle on the function it wrapped.
-
-    Args:
-        fn: A registry callable, wrapped or not.
-
-    Returns:
-        The signature of the innermost function.
-    """
-    seen: set[int] = set()
-    while True:
-        fn = inspect.unwrap(fn)
-        code = getattr(fn, "__code__", None)
-        if code is None or "fn" not in code.co_freevars or fn.__closure__ is None:
-            return inspect.signature(fn)
-        inner = fn.__closure__[code.co_freevars.index("fn")].cell_contents
-        if not callable(inner) or id(inner) in seen:
-            return inspect.signature(fn)
-        seen.add(id(inner))
-        fn = inner
-
-
 def _argument_help(name: str, model: type[BaseModel]) -> str:
     """Name the parameters a tool takes, required ones first.
 
@@ -443,7 +413,7 @@ def _checked(name: str, model: type[BaseModel], fn: Callable) -> Callable:
     Returns:
         The same callable, with the argument-name check in front of it.
     """
-    accepted = set(model.model_fields) | set(true_signature(fn).parameters)
+    accepted = set(model.model_fields) | set(inspect.signature(fn).parameters)
 
     def call(*args: object, **kwargs: object) -> object:
         _check_arguments(name, model, accepted, args, kwargs)

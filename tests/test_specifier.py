@@ -13,6 +13,7 @@ import inspect
 import json
 import re
 import sys
+import typing
 from pathlib import Path
 
 import pytest
@@ -25,8 +26,8 @@ from agent.backends import OpenAICompatBackend, Reply, ScriptedBackend, tool_cal
 from agent.registry import (
     RETRIEVAL_TOOLS,
     SCHEMAS,
+    Mode,
     build_registry,
-    true_signature,
 )
 from env import tools as T
 from generate.funnel import load_constructs, run
@@ -147,24 +148,63 @@ def test_schemas_declare_required_arguments():
 # --------------------------------------------------------------------------- #
 
 def _real_parameters(tool: str) -> dict:
-    """The parameters of the tool itself, past `env.tools._logged`."""
-    return dict(true_signature(T.TOOLS[tool]).parameters)
+    """The parameters of the tool itself, as `inspect.signature` reports them."""
+    return dict(inspect.signature(T.TOOLS[tool]).parameters)
 
 
-def test_the_unwrap_actually_reaches_the_signature_logged_erased():
-    """Positive control for every test below that reads a real signature.
+def _defined_parameters() -> dict[str, list[str]]:
+    """Each env tool's parameter names, read from its `def` in env/tools.py.
 
-    `_logged` wraps each tool in `(*a, **kw)` and sets no `__wrapped__`, so a
-    schema check that used `inspect.signature` naively would compare against
-    `{a, kw}`, pass on any property name whatsoever, and report `clean` for a
-    binding it never made. If the unwrap ever silently stops working this fails
-    here, naming the defect, rather than turning the two tests below into
-    tautologies.
+    Parsed from the file so the expected side cannot pass through `_logged`: if
+    the decorator ever stops forwarding the signature, `inspect` reports
+    `(*a, **kw)` for the callable while this still reads the real `def`.
     """
-    params = _real_parameters("search_variables")
-    assert list(params) == ["phrase", "limit"], (
-        f"unwrap did not reach search_variables; got {list(params)}. A "
-        f"signature of ['a', 'kw'] means _logged was never unwrapped.")
+    tree = ast.parse((ROOT / "env" / "tools.py").read_text())
+    defs = {n.name: n.args for n in tree.body if isinstance(n, ast.FunctionDef)}
+    out = {}
+    for tool in T.TOOLS:
+        args = defs[tool]  # each TOOLS key is the name of its def
+        out[tool] = [a.arg for a in (*args.posonlyargs, *args.args,
+                                     *([args.vararg] if args.vararg else []),
+                                     *args.kwonlyargs,
+                                     *([args.kwarg] if args.kwarg else []))]
+    return out
+
+
+def test_every_env_tool_reports_the_signature_of_its_own_def():
+    """`_logged` forwards the signature, so every reader below sees the real one.
+
+    The positive control for every test in this section that reads a real
+    signature. A decorator that drops `functools.wraps` leaves each tool
+    reporting `(*a, **kw)`; the schema checks below would then compare against
+    `{a, kw}`, pass on any property name whatsoever, and `_checked` would accept
+    any keyword at all. This fails first and names the tool.
+    """
+    defined = _defined_parameters()
+    assert defined["search_variables"] == ["phrase", "limit"], defined
+    wrong = {tool: list(inspect.signature(fn).parameters)
+             for tool, fn in T.TOOLS.items()
+             if list(inspect.signature(fn).parameters) != defined[tool]}
+    assert wrong == {}, (
+        f"inspect.signature does not reach the def for {wrong}; a signature of "
+        f"['a', 'kw'] means env/tools.py::_logged no longer applies functools.wraps.")
+
+
+@pytest.mark.parametrize("mode", typing.get_args(Mode))
+def test_every_registry_callable_reports_the_signature_of_its_env_tool(mode):
+    """The `_checked` layer in front of each tool does not hide it either.
+
+    `agent/registry.py::_checked` computes accepted keywords as the advertised
+    fields UNION `inspect.signature` of the tool, so the signature it reads must
+    be the tool's own, in every mode the registry builds.
+    """
+    defined = _defined_parameters()
+    calls, _ = build_registry(mode)
+    wrong = {name: list(inspect.signature(fn).parameters)
+             for name, fn in calls.items()
+             if name in defined
+             and list(inspect.signature(fn).parameters) != defined[name]}
+    assert wrong == {}, f"{mode}: registry signature is not the def's: {wrong}"
 
 
 def test_every_advertised_parameter_carries_a_description():
@@ -189,10 +229,10 @@ def test_every_advertised_parameter_carries_a_description():
 def test_every_advertised_parameter_is_a_real_parameter_of_the_real_function():
     """The schema and the function cannot drift apart unnoticed.
 
-    Checked against the signature under `_logged`, not against the wrapper: the
-    wrapper takes `(*a, **kw)` and would accept an advertised parameter that no
-    longer exists, which is how a model spends a whole tool loop on an argument
-    the environment silently drops.
+    Checked against the tool's own signature, which `_logged` forwards (pinned
+    above): a wrapper reporting `(*a, **kw)` would accept an advertised parameter
+    that no longer exists, which is how a model spends a whole tool loop on an
+    argument the environment silently drops.
 
     Defaults are compared too. A schema saying `default: 10` while the function
     means something else is a promise the model plans around and the environment
