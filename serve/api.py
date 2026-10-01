@@ -1636,11 +1636,12 @@ def _launch(state: State, kind: str, busy_msg: str,
 
     Raises:
         Busy: When another model run holds the lock.
+        Exception: Whatever recording the job or starting its thread raises,
+            re-raised after the lock is released.
     """
     if not state.model_lock.acquire(blocking=False):
         raise Busy(busy_msg)
     ticket = f"{time.strftime('%H%M%S')}-{os.urandom(3).hex()}"
-    _start_job(state, ticket, kind)
 
     def _run() -> None:
         try:
@@ -1651,7 +1652,17 @@ def _launch(state: State, kind: str, busy_msg: str,
             state.model_lock.release()
         _finish_job(state, ticket, done, kind)
 
-    threading.Thread(target=_run, daemon=True).start()
+    # Until the thread is running, its `finally` cannot release the lock, so a
+    # raise here would leave every later model route answering Busy for good.
+    # The job record goes too: no caller holds its ticket.
+    try:
+        _start_job(state, ticket, kind)
+        threading.Thread(target=_run, daemon=True).start()
+    except BaseException:
+        with state._jobs_lock:
+            state.jobs.pop(ticket, None)
+        state.model_lock.release()
+        raise
     return ticket
 
 

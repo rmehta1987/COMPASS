@@ -901,6 +901,34 @@ def test_a_second_run_is_refused_not_queued(tmp_path: Path) -> None:
         st.model_lock.release()
 
 
+@pytest.mark.parametrize("breaks", ["thread", "job"])
+def test_a_launch_that_fails_to_start_releases_the_lock(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, breaks: str) -> None:
+    """Only the worker's `finally` released `model_lock`.
+
+    `_launch` took the lock, then recorded the job and started the thread with
+    nothing around them; if either raised, the worker never ran and every later
+    model route answered Busy until the server restarted.
+    """
+    import threading
+
+    from serve import api
+
+    def boom(*a: object, **k: object) -> None:
+        raise RuntimeError("can't start new thread")
+
+    if breaks == "thread":
+        monkeypatch.setattr(threading.Thread, "start", boom)
+    else:
+        monkeypatch.setattr(api, "_start_job", boom)
+    st = api.State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    with pytest.raises(RuntimeError, match="can't start new thread"):
+        api._launch(st, api.JOB_SPECIFY, "busy", lambda ticket: {})
+    assert st.model_lock.acquire(blocking=False), "the lock outlived the launch"
+    st.model_lock.release()
+    assert st.jobs == {}, "a job no caller holds a ticket for was left running"
+
+
 def test_a_caller_cannot_choose_what_the_seat_spends(tmp_path: Path) -> None:
     """`model` was taken verbatim from the body on a password-shared endpoint."""
     from serve.api import DEFAULT_MODELS, PIPELINE_MODEL, State, _specify
