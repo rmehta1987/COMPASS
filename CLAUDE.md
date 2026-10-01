@@ -39,9 +39,13 @@ Architecture: `DESIGN.md`. Backlog: `TASKS.md`. History: `CHANGELOG.md`.
 
 ## Critical anchors
 
-Preserve these three pointers if all else is lost; the rules are stated only in
-`AGENTS.md`.
+Preserve these three if all else is lost. They are the one deliberate exception to
+stating each rule once: they are copied here so they survive if `AGENTS.md` fails to
+load. Each sentence is quoted verbatim from `AGENTS.md`, which wins on any difference;
+`tests/test_rule_documents.py` goes red if one stops matching.
 
-1. §Hard Constraints: the `agent/schema.py` docstring rule.
-2. §Hard Constraints: the `env/` network ban and the participant-data rule.
-3. §Testing Patterns: the same-commit test rule.
+1. `agent/schema.py` docstrings are prompt text via `model_json_schema()`: no design,
+   exposure, outcome, paper count, cohort figure or prevalence there.
+2. `env/` may never make a network call — the leak channel the argument rests on.
+   No participant data and no analysis executed — estimability, never soundness.
+3. Write the test in the same commit as the guarantee.
