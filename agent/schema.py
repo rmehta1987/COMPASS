@@ -1531,8 +1531,9 @@ class ProtocolSpecification(BaseModel):
         Raises:
             ValueError: If the threshold's unit differs from the curve's, the
                 record has a curve but no caller-independent bound, `at_n` is
-                not on that bound, `value` is null, or the threshold is below
-                the floor.
+                not on that bound, `value` is null, the threshold is below
+                the floor, or the detectable effect carries no unit to compare
+                the threshold's against.
         """
         t, sde = self.falsifier_threshold, self.estimability.smallest_detectable_effect
         if t is None:
@@ -1585,6 +1586,12 @@ class ProtocolSpecification(BaseModel):
                     f"against an assumed frequency is checked against a number "
                     f"the record chose. Raise the threshold, or name a larger n "
                     f"on the curve and disclose that larger claim.")
+            # Last, so every refusal above keeps its message: with no unit on
+            # the effect, the mismatch check at the top of this branch never
+            # ran, and a ratio-scale threshold was just compared to a
+            # percentage-point bound as if the two were one quantity.
+            if not sde.unit:
+                raise _unit_missing(t, sde)
             return self
         if sde.value is None:
             # Found live: the model wrote the whole curve into the free-text
@@ -1598,10 +1605,15 @@ class ProtocolSpecification(BaseModel):
                 "stated n in `value` with its `at_n` — prose in `assumptions` is "
                 "not a substitute.")
         # The same refusal as on the curve path: an abstention here would
-        # reopen, on the scalar fallback, the hole the curve path closes.
-        if sde.unit and t.unit != sde.unit:
+        # reopen, on the scalar fallback, the hole the curve path closes. A
+        # missing unit is refused too, not skipped: SmallestDetectableEffect.unit
+        # defaults to None, and gating both checks below on it let a 0.001 odds
+        # ratio threshold through unexamined (code review, 2026-10-01).
+        if not sde.unit:
+            raise _unit_missing(t, sde)
+        if t.unit != sde.unit:
             raise _unit_mismatch(t, sde)
-        if sde.unit and abs(t.value) < abs(sde.value):
+        if abs(t.value) < abs(sde.value):
             raise ValueError(
                 f"falsifier threshold {t.value} {t.unit} is below the smallest "
                 f"detectable effect {sde.value} {sde.unit} at n={sde.at_n}")
@@ -1711,6 +1723,27 @@ def _unit_mismatch(t: FalsifierThreshold, sde: SmallestDetectableEffect) -> Valu
         f"falsifier_threshold entirely and put the criterion in the "
         f"`falsifier` prose, which is the correct output for a "
         f"model-comparison or ratio-scale falsifier.")
+
+
+def _unit_missing(t: FalsifierThreshold,
+                  sde: SmallestDetectableEffect) -> ValueError:
+    """The refusal for a threshold set beside a detectable effect with no unit.
+
+    Args:
+        t: The record's falsifier threshold.
+        sde: The record's smallest detectable effect.
+
+    Returns:
+        The error to raise; one message for the curve and the scalar path.
+    """
+    return ValueError(
+        f"falsifier_threshold is in {t.unit!r} but "
+        f"smallest_detectable_effect.unit is {sde.unit!r}, so the threshold's "
+        f"unit cannot be checked against the detectable effect's and the "
+        f"threshold would pass unexamined. The unit is written from "
+        f"estimate_detectability's own return value: call it, or drop "
+        f"falsifier_threshold entirely and put the criterion in the "
+        f"`falsifier` prose.")
 
 
 def _short_hash(payload: object) -> str:

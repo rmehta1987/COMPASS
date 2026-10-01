@@ -36,6 +36,7 @@ from agent.schema import (
     NSource,
     ProtocolSpecification,
     Provenance,
+    SdePoint,
     SelectionMode,
     SelectionRationale,
     SmallestDetectableEffect,
@@ -316,6 +317,46 @@ def test_falsifier_below_smallest_detectable_effect_is_refused():
     with pytest.raises(ValidationError, match="below the smallest detectable effect"):
         p014(falsifier_threshold=FalsifierThreshold(
             value=0.2, unit="MET-hours/week", comparator=Comparator.gte))
+
+
+@pytest.mark.parametrize("unit", [None, ""])
+@pytest.mark.parametrize("path", ["scalar", "curve"])
+def test_a_threshold_beside_an_effect_with_no_unit_is_refused(path, unit):
+    """A null or empty `smallest_detectable_effect.unit` is a refusal, not a skip.
+
+    `unit` defaults to None, and both the unit-mismatch refusal and, on the
+    scalar path, the floor comparison were gated on it being truthy: a 0.001
+    odds-ratio threshold beside a 0.8 effect with no unit validated, its
+    falsifier compared to nothing. On the curve path the floor ran but the
+    unit check did not, so a ratio-scale threshold above a percentage-point
+    bound passed as if the two were one quantity.
+    """
+    pts = [SdePoint(n=1500, sde_percentage_points=5.0)]
+    curves = {"curve": pts, "worst_case_curve": pts} if path == "curve" else {}
+    sde = SmallestDetectableEffect(value=0.8 if path == "scalar" else 5.0,
+                                   unit=unit, at_n=1500, assumptions="a", **curves)
+    est = p014().estimability.model_copy(update={"smallest_detectable_effect": sde})
+    t = FalsifierThreshold(value=0.001 if path == "scalar" else 6.0,
+                           unit="odds ratio", comparator=Comparator.gte)
+    with pytest.raises(ValidationError,
+                       match=r"smallest_detectable_effect\.unit is .* pass unexamined"):
+        p014(estimability=est, falsifier_threshold=t)
+
+
+def test_a_missing_unit_leaves_the_existing_refusals_their_messages():
+    """The new refusal runs after the floor, so a below-floor record says so."""
+    pts = [SdePoint(n=1500, sde_percentage_points=5.0)]
+    sde = SmallestDetectableEffect(curve=pts, worst_case_curve=pts, value=5.0,
+                                   unit=None, at_n=1500, assumptions="a")
+    est = p014().estimability.model_copy(update={"smallest_detectable_effect": sde})
+    with pytest.raises(ValidationError, match="below the smallest detectable effect"):
+        p014(estimability=est, falsifier_threshold=FalsifierThreshold(
+            value=0.001, unit="odds ratio", comparator=Comparator.gte))
+    with pytest.raises(ValidationError,
+                       match=r"smallest_detectable_effect\.value is null"):
+        p014(estimability=p014().estimability.model_copy(update={
+            "smallest_detectable_effect": SmallestDetectableEffect(
+                value=None, unit=None, at_n=1500, assumptions="a")}))
 
 
 def test_magnitude_requires_a_source():
