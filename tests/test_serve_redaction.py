@@ -509,6 +509,31 @@ def test_the_literal_sweep_alone_finds_every_key_in_every_case(
         f"sweep with the regex off, e.g. {missed[:5]}")
 
 
+def test_the_key_set_a_scrubber_reports_is_the_one_its_sweep_reads(
+        tmp_path: Path) -> None:
+    """`keys` and the literal sweep's groups were two attributes set side by side.
+
+    `hits` read only `_key_groups`, so a `keys` reassigned on an instance still
+    looked like the scrubber's key set while every scan ignored it. `keys` is
+    now a read-only view of the one index the sweep reads.
+    """
+    dic = tmp_path / "dictionary.json"
+    dic.write_text(json.dumps({"entries": [
+        {"key": "zz:one", "construct_key": "NOCOLON", "group_key": "group:zz",
+         "question_text": "alpha beta gamma delta epsilon zeta"},
+        {"key": "zz:ONE", "question_text": "eta theta"}]}), encoding="utf-8")
+    s = Scrubber(path=dic)
+    with pytest.raises(AttributeError):
+        s.keys = frozenset({"zz:other"})  # type: ignore[misc]
+    assert s.keys == {"zz:one", "zz:ONE", "NOCOLON", "group:zz"}
+    swept = {key for _, members in s._index.key_groups for key, _ in members}
+    assert swept == s.keys
+    # Every key the set holds is one a scan reports, and only those.
+    for k in s.keys:
+        assert f"key {k}" in s.hits(f"we used {k}: here"), k
+    assert not s.hits("we used zz:two: here")
+
+
 def test_a_dictionary_rewritten_in_place_is_rescanned_not_served_from_cache(
         tmp_path: Path) -> None:
     """The parsed index is cached by content, so a rebuild is never scanned stale.

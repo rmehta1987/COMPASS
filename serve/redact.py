@@ -429,14 +429,28 @@ class Scrubber:
         # about the key grammar and the previous one was wrong about 61% of it;
         # this set is exhaustive by construction and cannot drift when a new
         # shape is built. The regex stays as the backstop for a key-shaped
-        # string the dictionary does not contain.
-        self.keys = idx.keys
-        self._key_groups = idx.key_groups
+        # string the dictionary does not contain. Held once, in the index:
+        # `keys` reads it and `hits` sweeps `key_groups`, which `_parse_index`
+        # built from that same set, so neither can be swapped without the other.
+        self._index = idx
         # Same construction, same reason, for the other thing a regex cannot
         # reach: the run rule's own blind spot below five words. Built from the
         # instrument rather than declared, so it tracks the build instead of
         # recording what someone measured once.
         self.short = idx.short
+
+    @property
+    def keys(self) -> frozenset[str]:
+        """The instrument's own variable keys: the set `hits` sweeps, read-only.
+
+        It was a plain attribute beside a private `_key_groups`, and `hits` read
+        only the groups, so a reassigned `keys` looked authoritative and
+        changed nothing the scrubber did.
+
+        Returns:
+            Every `key`, `construct_key` and `group_key` in the dictionary.
+        """
+        return self._index.keys
 
     def hits(self, text: str) -> list[str]:
         """Instrument runs and bare keys present in `text`.
@@ -454,7 +468,7 @@ class Scrubber:
         # A group whose head is absent holds no key that could be present.
         if ":" in text:
             low = text.casefold()
-            found += [f"key {key}" for head, members in self._key_groups
+            found += [f"key {key}" for head, members in self._index.key_groups
                       if head in low
                       for key, folded in members if folded in low]
         found += [" ".join(g) for g in sorted(_grams(text) & self.corpus)]
