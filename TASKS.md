@@ -221,9 +221,10 @@ publishes or blocks a downstream stage.
   `compose_retrieval_text` is a DECLARED GAP in `build.py::_NOT_HASHED`, pinned by
   `tests/test_dictionary.py::test_the_retrieval_text_rule_is_outside_the_fingerprint_and_says_so`.
   Hashing it moved the hash to `c00f52110ce1`, which the pins in `tests/test_browse.py`,
-  `tests/test_retrieval_eval.py` and `src/` refuse. `AGENTS.md` §Hard Constraints names
-  three declared gaps in `build.py` (`build`, `read_module`, the column set);
-  `compose_retrieval_text` is a fourth it does not name. Amending it is the operator's.
+  `tests/test_retrieval_eval.py` and `src/` refuse. CORRECTED 2026-09-30: `AGENTS.md`
+  §Hard Constraints now names `build`, `read_module` and `compose_retrieval_text` as gaps
+  in `version_hash` only, all three covered by `build.py::content_hash`; the column-set
+  gap is closed (`CHANGELOG.md` §2026-09-30).
 - **R9 — switch the index to `retrieval_text` and re-baseline.** Unblocked by R3, but
   🛑 GATED ON A NEW OPERATOR DECISION. Measured 2026-09-24 by rebuilding the FTS table
   over `retrieval_text` and running the real `search_variables`: all 224 fixture queries
