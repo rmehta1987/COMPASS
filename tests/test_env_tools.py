@@ -64,9 +64,10 @@ def test_get_contrast_convention_has_no_branch_that_fails_to_return_one():
     single `return` of a dict that always carries `exposure_contrast` is what
     makes that true rather than probable.
     """
-    # Parsed from the FILE, not from `inspect.getsource` on the callable:
-    # every tool here is wrapped by `@_logged`, so the callable's source is the
-    # wrapper and an AST check over it would silently examine the decorator.
+    # Parsed from the FILE, not from `inspect.getsource` on the callable: the
+    # callable is the `@_logged` wrapper, and getsource reaches the tool's own
+    # def only through the `__wrapped__` that `functools.wraps` sets. Drop that
+    # and an AST check over getsource would silently examine the decorator.
     tree = ast.parse((ROOT / "env" / "tools.py").read_text())
     fn = next(n for n in ast.walk(tree)
               if isinstance(n, ast.FunctionDef)
