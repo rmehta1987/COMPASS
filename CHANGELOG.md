@@ -14,8 +14,40 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ---
 
+## 2026-10-01
+
+- **Each rule is stated once, in `AGENTS.md`, with its test cited** (`08f040a`; item 3 of
+  the bloat review, user-approved 2026-09-30). Hard Constraints that a named test enforces
+  now cite it, and their rationale moved to the test or to `DESIGN.md`. `DESIGN.md`
+  stopped restating the citation, authority, `_rank`, no-data and §5.2 rules. `CLAUDE.md`
+  dropped its re-derive-before-relaying line (`AGENTS.md` §Review holds it). Its three
+  critical anchors were cut to pointers and then restored as verbatim `AGENTS.md`
+  quotations, the one deliberate exception, pinned by `tests/test_rule_documents.py`
+  (`59708ba`). A cold critic's findings on this round were fixed on the same day:
+  the PromptTemplate rule cited a test that stays green when the rule breaks (`5a09969`),
+  and `docs/loop-prompt.md` item 0a still sent `/loop` to the deleted §Parallel Lanes
+  (`8e9e534`).
+
 ## 2026-09-30
 
+- **The lane and role rules are retired while one person builds** (`5ec1e01`; item 4 of
+  the bloat review, user-approved). Lane ownership was producing workaround code:
+  `registry.py::true_signature` existed because `env/tools.py` "belonged to another lane".
+  Removed from `AGENTS.md` §Parallel Lanes, now §Review: one `git worktree` per lane;
+  every file assigned to exactly one lane, including what it must not touch; the lane
+  file sets A, B and C; `serve/` and `site/` assigned to B together; and the Roles table
+  (orchestrator and Lanes A and B on `claude-opus-5`, Lane C on `claude-sonnet-5`).
+  §Review keeps the haiku seal-probe row and the `serve/redact.py`–`serve/api.py`
+  coupling. `CLAUDE.md` dropped "give every dispatched lane an explicit file list". The
+  `TASKS.md` note listing unassigned files was dropped together with its CORRECTED
+  2026-09-24 line, which recorded that `build.py` had been wrongly listed as unassigned.
+  If parallel lanes resume, restore from `5ec1e01^:AGENTS.md`, `5ec1e01^:CLAUDE.md` and
+  `5ec1e01^:TASKS.md`.
+- **The env/ model-grant conditions are stated once** (`e8c97ee`, `993e43f`,
+  `659bbc0`). They had been worded three ways that disagreed. They now live in
+  `tests/test_specifier.py::ENV_MODEL_GRANT_CONDITIONS`, which `AGENTS.md`, the gate
+  message and the env/ module docstrings cite or print. The test reddens when a
+  condition or a retired adjective is copied back beside the rule.
 - **The build's output is hashed; the column-set gap is closed, not declared.**
   `build.py::content_hash` hashes the emitted dictionary (every entry and column, plus
   its metadata; `version_hash` excluded) and the build prints it on its second line. It
