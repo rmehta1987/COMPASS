@@ -239,6 +239,32 @@ def test_mechanism_is_required_and_floored():
         adj("m1:Q3.11", CausalRole.confounder, "because", "A long enough justification here.")
 
 
+def test_the_mechanism_floor_exempts_unadjudicated_and_only_it():
+    """Unadjudicated is the declared escape for a mechanism nobody can state.
+
+    CausalAdjustment's docstring tells the model to record such a covariate as
+    unadjudicated, and the floor's own error says the same, yet the floor applied
+    to that role too: the entry both instructions ask for was refused, with an
+    error telling the model to do what it had just done. Every other role keeps
+    the floor and its exact message.
+    """
+    from agent.schema import MIN_MECHANISM
+
+    just = "A long enough justification for this entry."
+    ok = adj("m1:Q3.11", CausalRole.unadjudicated, "unknown", just)
+    assert ok.role is CausalRole.unadjudicated
+
+    msg = (f"mechanism below min_length ({MIN_MECHANISM}); a role asserted "
+           "without a mechanism must be recorded as unadjudicated instead")
+    others = [r for r in CausalRole if r is not CausalRole.unadjudicated]
+    assert len(others) == len(CausalRole) - 1 >= 1
+    for role in others:
+        kw = {"proxy_for": "something"} if role is CausalRole.proxy else {}
+        with pytest.raises(ValidationError) as ei:
+            adj("m1:Q3.11", role, "unknown", just, **kw)
+        assert msg in str(ei.value), role
+
+
 def test_justification_is_floored():
     with pytest.raises(ValidationError, match="justification below min_length"):
         adj("m1:Q3.11", CausalRole.confounder,

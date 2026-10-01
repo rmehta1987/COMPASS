@@ -370,7 +370,7 @@ _LIST_FOR_ROLE: dict[CausalRole, str] = {
 # Requiring the mechanism is the calibration guard that stops ancestor-level
 # permissiveness collapsing into "adjust for everything". Nothing coerces a role
 # without one: `_floors_and_role_coherence` REJECTS it, and its message says to
-# record the entry as unadjudicated instead.
+# record the entry as unadjudicated instead — the one role the floor exempts.
 class CausalAdjustment(BaseModel):
     """One covariate decision.
 
@@ -404,14 +404,22 @@ class CausalAdjustment(BaseModel):
             The validated decision.
 
         Raises:
-            ValueError: If `justification` or `mechanism` is below its floor, or
-                `proxy_for` is missing for a proxy or present for anything else.
+            ValueError: If `justification` is below its floor, `mechanism` is
+                below its floor for any role but unadjudicated, or `proxy_for`
+                is missing for a proxy or present for anything else.
         """
         if len(self.justification.strip()) < MIN_JUSTIFICATION:
             raise ValueError(
                 f"justification below min_length ({MIN_JUSTIFICATION}); "
                 "regenerate rather than pad")
-        if len(self.mechanism.strip()) < MIN_MECHANISM:
+        # UNADJUDICATED IS EXEMPT: it is the declared escape for a mechanism
+        # nobody can state. The class docstring tells the model to record such a
+        # covariate as unadjudicated, and the error below tells it the same, so
+        # flooring that role too rejected the very entry both instruct (probed
+        # 2026-10-01: role=unadjudicated, mechanism="unknown" was refused with
+        # "must be recorded as unadjudicated instead").
+        if (self.role is not CausalRole.unadjudicated
+                and len(self.mechanism.strip()) < MIN_MECHANISM):
             raise ValueError(
                 f"mechanism below min_length ({MIN_MECHANISM}); a role asserted "
                 "without a mechanism must be recorded as unadjudicated instead")
