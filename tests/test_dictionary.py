@@ -865,15 +865,16 @@ def test_no_code_outside_the_build_reads_retrieval_text():
 
 
 def test_the_retrieval_text_rule_is_outside_the_fingerprint_and_says_so(monkeypatch):
-    """A fourth declared gap, pinned so closing it is deliberate.
+    """A declared gap in `version_hash`, pinned so closing it is deliberate.
 
     `compose_retrieval_text` decides a column's text and is NOT hashed, by the
     operator's ruling of 2026-09-24: hashing it moved `version_hash` to
     `c00f52110ce1`, which the pins in `tests/test_browse.py`,
     `tests/test_retrieval_eval.py`, `src/` and `deploy/` all refuse. So an edit
     to it changes the dictionary under an unchanged `version_hash`; the
-    `retrieval_text` it writes is covered by `CONTENT_HASH` instead
-    (`test_every_column_is_in_the_content_hash`).
+    `retrieval_text` it writes is covered by `CONTENT_HASH` instead, and the
+    test that sees such an edit is
+    `test_a_fresh_build_emits_the_pinned_content_hash`, which rebuilds.
     """
     before = B._version_hash(_FILES, 2804)
 
