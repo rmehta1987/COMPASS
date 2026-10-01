@@ -145,7 +145,10 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
     hand search. C36 (2026-09-14) moved `EXPOSURE_KEYS` out of the prompt-editing clone,
     the design accessors into `prevalence_rows.py`, and `validate_exposure_keys` into
     `design_anchor.py::validate_design_key`. `scorability.py`: `NO_DESIGN_KEY_ROW` was
-    `exposure_key_column_missing` (2026-09-14), `KEY_DOES_NOT_RESOLVE` was
+    `exposure_key_column_missing` (2026-09-14; MEASURED that day, the one-column-per-side
+    read is why three unreachable papers presented as one paste from CONFIRMED,
+    `tests/test_scorability.py::test_a_recorded_item_level_read_refutes_on_either_side`),
+    `KEY_DOES_NOT_RESOLVE` was
     `outcome_key_unresolved` (2026-08-29), `NO_KEY_TO_RESOLVE` split out 2026-09-14
     (briefly `no_key_row_for_this_paper`); outcome refutation once read `ascertainment`,
     then `instrument_region`, now an anchor; a side once confirmed on any key; `_side`
