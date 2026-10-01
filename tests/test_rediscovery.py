@@ -536,3 +536,13 @@ def test_a_comparison_across_two_builds_says_so():
     rows = RD.compare(rec, p014())
     assert RD.boundary(rec, rows, "aaaaaaaaaaaa", "bbbbbbbbbbbb")["same_build"] is False
     assert RD.boundary(rec, rows, "aaaaaaaaaaaa", "aaaaaaaaaaaa")["same_build"] is True
+
+
+def test_a_clone_without_a_built_dictionary_has_no_build(monkeypatch, tmp_path):
+    """`_this_build` promises None, not the RuntimeError `env.tools._load` raises."""
+    from env import tools as T
+    monkeypatch.setattr(T, "_DICT", None)
+    monkeypatch.setattr(T, "BUILD", tmp_path / "absent")
+    with pytest.raises(RuntimeError):
+        T.dictionary_version()
+    assert RD._this_build() is None

@@ -437,7 +437,9 @@ def _this_build() -> str | None:
     try:
         from env.tools import dictionary_version
         return dictionary_version()
-    except (OSError, KeyError, ValueError):
+    # `_load` raises RuntimeError on a missing dictionary, never OSError: the
+    # tuple without it raised exactly where this promises None.
+    except (RuntimeError, OSError, KeyError, ValueError):
         return None
 
 
