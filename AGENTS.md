@@ -207,7 +207,7 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 ./.venv/bin/python -m pytest tests/ -q -ra
 ./.venv/bin/ruff check .
 ./.venv/bin/mypy
-./.venv/bin/python build.py | head -1
+./.venv/bin/python build.py | head -2
 ./.venv/bin/python -m benchmark.retrieval_eval
 ./.venv/bin/python -m benchmark.contamination_check
 ```

@@ -12,9 +12,10 @@ stale the way the retired `/compass-build` command did (`a02eda7`, private histo
 Everything it would have restated lives in a file that owns it.
 
 1. Run the six commands in `AGENTS.md` §Verify current state and paste the real output.
-   Do not summarise them. Two stop conditions only, both named there. In the public tree
-   four of the six cannot run (withheld inputs, undeclared dependencies; see the note in
-   `AGENTS.md` §Verify current state): run what runs, and say which did not.
+   Do not summarise them. The stop conditions are the ones named there, no others. In
+   the public tree four of the six cannot run (withheld inputs, undeclared dependencies;
+   see the note in `AGENTS.md` §Verify current state): run what runs, and say which did
+   not.
 2. Read `TASKS.md` in full and work in dependency order. Ask me before touching C12: its
    key form is settled and reopening it is my call, not a lane's.
 3. Dispatch lanes per `AGENTS.md` §Parallel Lanes — own worktree, explicit file list

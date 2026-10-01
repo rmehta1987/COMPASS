@@ -218,7 +218,9 @@ revert that lowers the test count or raises a ceiling is refused like any other 
 
 ## Stop the loop and wait for the operator when
 
-- A stop condition trips: the test count fell, or the build hash moved off `3dc8415eccfe`.
+- A stop condition trips: the test count fell, the build hash moved off `3dc8415eccfe`,
+  or the content hash on `build.py`'s second line moved off
+  `tests/test_dictionary.py::CONTENT_HASH`.
 - An item is user-level (Tier 0, C30, C28, C21's `_rank`, C12's key form).
 - A gate cannot run. Report which, and do not commit code that gate governs.
 - A revert would move a ratchet the wrong way.
