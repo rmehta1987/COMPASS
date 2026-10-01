@@ -34,6 +34,7 @@ from agent.tool_authority import (  # noqa: E402
     authoritative_call,
     protocol_id_for,
 )
+from benchmark.design_quality import read_log  # noqa: E402
 from env import tools as T  # noqa: E402
 
 
@@ -282,6 +283,44 @@ def save_repairs(out: Path, attempt: Attempt, log_records: list[dict]) -> Path:
     return saved
 
 
+def _save_beside(out: Path, record: ProtocolSpecification | NotSpecifiable,
+                 attempt: Attempt | None) -> list[dict] | None:
+    """Write a record, its own sample's tool log beside it, and its repairs.
+
+    The winning sample's log is copied next to the record under a name that
+    ties the two together. Without it the record is auditable only against
+    whatever happened to be in run/tool_log.jsonl last, which is how an earlier
+    session came to report 28 tool calls for a record that made none of them.
+    The protocol and the refusal branch of `main` each carried this sequence.
+
+    Args:
+        out: The record's path.
+        record: The selected protocol or the upheld refusal.
+        attempt: The sample that produced it (`winning_attempt`), or None.
+
+    Returns:
+        The copied log's entries, or None when this sample left no log. A
+        record with no log is not a record whose log is empty.
+    """
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(record.model_dump_json(indent=2))
+    print(f"\n  written       {out.relative_to(ROOT)}   (saved before printing)")
+    src = attempt.tool_log_path if attempt else None
+    log_recs = None
+    if src and Path(src).exists():
+        saved = out.with_suffix(".tool_log.jsonl")
+        shutil.copyfile(src, saved)
+        print(f"  tool log      {saved.relative_to(ROOT)}   (this record's own log)")
+        # Read only after THIS copy: a sibling left by an earlier run of the
+        # same record is not this sample's log.
+        log_recs = read_log(out)
+    if attempt is not None:
+        rp = save_repairs(out, attempt, log_recs or [])
+        print(f"  repairs       {rp.relative_to(ROOT)}   "
+              f"({len(attempt.repairs)} rejected before this record)")
+    return log_recs
+
+
 def stand_in(key: str) -> Construct:
     """Represent a construct key the instrument does not contain.
 
@@ -406,27 +445,10 @@ def main() -> None:
     if res.refusal is not None:
         r = res.refusal
         out = ROOT / "run" / f"{p_id}.refusal.{r.record_hash()}.json"
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(r.model_dump_json(indent=2))
-        print(f"\n  written       {out.relative_to(ROOT)}   (saved before printing)")
-        # The refusing sample's OWN log, copied beside the record, for the same
-        # reason the protocol path does it: a record auditable only against
-        # whichever log was last written is not auditable.
-        won = winning_attempt(res)
-        src = won.tool_log_path if won else None
-        recs: list[dict] = []
-        if src and Path(src).exists():
-            saved = out.with_suffix(".tool_log.jsonl")
-            shutil.copyfile(src, saved)
-            print(f"  tool log      {saved.relative_to(ROOT)}   (this record's own log)")
-            recs = [json.loads(x) for x in saved.read_text().splitlines() if x.strip()]
-        if won is not None:
-            rp = save_repairs(out, won, recs)
-            print(f"  repairs       {rp.relative_to(ROOT)}   "
-                  f"({len(won.repairs)} rejected before this record)")
+        recs = _save_beside(out, r, winning_attempt(res))
         stated = {pair.exposure.construct_key, pair.outcome.construct_key,
                   *pair.exposure.member_keys, *pair.outcome.member_keys}
-        refusal_audit(r, stated, recs)
+        refusal_audit(r, stated, recs or [])
         return
 
     p = res.selected
@@ -436,27 +458,9 @@ def main() -> None:
         return
 
     out = ROOT / "run" / f"{p.protocol_id}.{p.record_hash()}.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(p.model_dump_json(indent=2))
-    print(f"\n  written       {out.relative_to(ROOT)}   (saved before printing)")
-
-    # The winning sample's log, copied next to the record under a name that ties
-    # the two together. Without this the record is auditable only against
-    # whatever happened to be in run/tool_log.jsonl last, which is how an earlier
-    # session came to report 28 tool calls for a record that made none of them.
-    win = winning_attempt(res)
-    src = win.tool_log_path if win else None
-    log_recs: list[dict] = []
-    if src and Path(src).exists():
-        saved = out.with_suffix(".tool_log.jsonl")
-        shutil.copyfile(src, saved)
-        print(f"  tool log      {saved.relative_to(ROOT)}   (this record's own log)")
-        log_recs = [json.loads(x) for x in saved.read_text().splitlines() if x.strip()]
+    log_recs = _save_beside(out, p, winning_attempt(res))
+    if log_recs is not None:
         audit(p, log_recs)
-    if win is not None:
-        rp = save_repairs(out, win, log_recs)
-        print(f"  repairs       {rp.relative_to(ROOT)}   "
-              f"({len(win.repairs)} rejected before this record)")
     print(f"  {p.protocol_id}  {p.record_hash()}  status={p.status.value}")
     ex = ref(p.exposure)
     print(f"  question      {p.question[:70]}")

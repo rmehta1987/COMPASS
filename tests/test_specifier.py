@@ -3643,6 +3643,37 @@ def test_the_live_driver_finds_its_winner_through_winning_attempt() -> None:
     assert not by_hash, "main looks a winner up by record_hash again"
 
 
+def test_the_live_driver_saves_a_record_with_only_its_own_samples_log(
+        unspecifiable, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`_save_beside` returns the log it copied, and no log when it copied none.
+
+    A sibling `.tool_log.jsonl` left by an earlier run of the same record is
+    not this sample's log; reading it would audit the record against another
+    run's calls.
+    """
+    from generate import live_specifier as LS
+
+    monkeypatch.setattr(LS, "ROOT", tmp_path)
+    p, version = unspecifiable
+    a = SP.specify_once(ScriptedBackend(_refuses(version)), p, seed=0)
+    assert a.refused
+    out = tmp_path / "run" / "rec.refusal.json"
+    out.parent.mkdir()
+    out.with_suffix(".tool_log.jsonl").write_text('{"tool": "stale"}\n')
+
+    a.tool_log_path = None
+    assert LS._save_beside(out, a.refusal, a) is None
+    assert json.loads(out.read_text())["reason"] == a.refusal.reason.value
+    assert out.with_suffix(".repairs.json").is_file()
+
+    log = tmp_path / "own.jsonl"
+    log.write_text('{"tool": "registry_coverage"}\n\n{"tool": "resolve_variable"}\n')
+    a.tool_log_path = str(log)
+    assert LS._save_beside(out, a.refusal, a) == [
+        {"tool": "registry_coverage"}, {"tool": "resolve_variable"}]
+    assert out.with_suffix(".tool_log.jsonl").read_text() == log.read_text()
+
+
 def test_a_refusals_winner_is_found_by_identity_not_by_hash(unspecifiable) -> None:
     """Two refusals of one pair share a `record_hash`; only one was upheld.
 
