@@ -3674,6 +3674,20 @@ def test_the_live_driver_saves_a_record_with_only_its_own_samples_log(
     assert out.with_suffix(".tool_log.jsonl").read_text() == log.read_text()
 
 
+def test_the_live_driver_reuses_the_key_prefixes_and_the_resolved_set() -> None:
+    """`KEY_RX` and `RESOLVED` restated what agent/ defines once.
+
+    Built from `agent/schema.py::_PREFIX`, `KEY_RX` must still compile to the
+    pattern it was written as, so the refusal audit counts the same keys.
+    """
+    from agent import schema as S
+    from generate import live_specifier as LS
+
+    assert LS.RESOLVED is SP._RESOLVED
+    assert LS.KEY_RX.pattern == r"\b(?:m[123]|clinical|lab|linked|ehr):[A-Za-z0-9_.]+"
+    assert LS.KEY_RX.pattern.startswith(rf"\b{S._PREFIX}:")
+
+
 def test_a_refusals_winner_is_found_by_identity_not_by_hash(unspecifiable) -> None:
     """Two refusals of one pair share a `record_hash`; only one was upheld.
 

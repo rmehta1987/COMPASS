@@ -28,7 +28,8 @@ sys.path.insert(0, str(ROOT))
 import argparse  # noqa: E402
 
 from agent.cli_backend import ClaudeCliBackend  # noqa: E402
-from agent.schema import NotSpecifiable, ProtocolSpecification  # noqa: E402
+from agent.schema import _PREFIX, NotSpecifiable, ProtocolSpecification  # noqa: E402
+from agent.specifier import _RESOLVED  # noqa: E402
 from agent.tool_authority import (  # noqa: E402
     RunIdentity,
     authoritative_call,
@@ -86,14 +87,15 @@ def run_identity(pair: object, version: str, screened_from: int,
             "enumeration" if selection_mode == "enumerated_screen" else "person"))
 
 
-#: Anything shaped like a variable key, wherever it appears in a record. The
-#: same shape agent/schema.py's KEY_PATTERN accepts, which is the shape a model
-#: invents when the schema requires an exposure it cannot find.
-KEY_RX = re.compile(r"\b(?:m[123]|clinical|lab|linked|ehr):[A-Za-z0-9_.]+")
+#: Anything shaped like a variable key, wherever it appears in a record. Built
+#: from agent/schema.py's `_PREFIX`, the registry alternation KEY_PATTERN is
+#: built from, because that is the shape a model invents when the schema
+#: requires an exposure it cannot find.
+KEY_RX = re.compile(rf"\b{_PREFIX}:[A-Za-z0-9_.]+")
 
-#: resolve_variable outcomes that mean the key names something real. Same set as
-#: agent/specifier.py's, and for the same reason: `ambiguous` is a failure.
-RESOLVED = {"unique", "group", "construct"}
+#: resolve_variable outcomes that mean the key names something real:
+#: agent/specifier.py's own set, so `ambiguous` stays a failure here too.
+RESOLVED = _RESOLVED
 
 
 def audit(p: ProtocolSpecification, log_records: list[dict]) -> None:
