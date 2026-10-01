@@ -14,6 +14,7 @@ import json
 import re
 import sys
 import typing
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -2315,6 +2316,112 @@ def test_the_prompt_hash_changes_when_the_prompt_does(pair):
     finally:
         SP.SYSTEM = original
     assert SP.prompt_hash(p) == before
+
+
+def _perturb_doc(model: str) -> Callable[[pytest.MonkeyPatch], None]:
+    """Append to one schema model's docstring, which `model_json_schema()` reads."""
+    def go(mp: pytest.MonkeyPatch) -> None:
+        from agent import schema as S
+        cls = getattr(S, model)
+        mp.setattr(cls, "__doc__", cls.__doc__ + " One more sentence.")
+    return go
+
+
+def _perturb_attr(module: str, name: str) -> Callable[[pytest.MonkeyPatch], None]:
+    """Append to one module-level prompt string."""
+    def go(mp: pytest.MonkeyPatch) -> None:
+        import importlib
+        mod = importlib.import_module(module)
+        mp.setattr(mod, name, getattr(mod, name) + "\n")
+    return go
+
+
+_SENT_TEXTS = [
+    ("ProtocolSpecification docstring", _perturb_doc("ProtocolSpecification")),
+    ("nested CausalAdjustment docstring", _perturb_doc("CausalAdjustment")),
+    ("NotSpecifiable docstring", _perturb_doc("NotSpecifiable")),
+    ("REPAIR", _perturb_attr("agent.specifier", "REPAIR")),
+    ("in-process emission system", _perturb_attr("agent.specifier", "EMIT_SYSTEM")),
+    ("CLI emission system", _perturb_attr("agent.cli_backend", "TRANSDUCE_SYSTEM")),
+]
+
+
+@pytest.mark.parametrize("what, perturb", _SENT_TEXTS,
+                         ids=[w for w, _ in _SENT_TEXTS])
+def test_the_prompt_hash_covers_every_text_emit_sends(pair, monkeypatch, what,
+                                                     perturb):
+    """The schema `_emit` pastes into the prompt is prompt text, and so is REPAIR.
+
+    prompt_hash hashed SYSTEM, the pair rendering and the two transduction
+    templates, but not the `model_json_schema()` dump `_emit` appends under
+    `--- REQUIRED JSON SCHEMA ---`. That dump carries every model docstring and
+    field description, so a rewrite of them shrank the protocol schema from
+    25,325 to 20,532 chars while records made before and after carried one
+    prompt_hash. REPAIR and both emission system messages were missing too.
+    """
+    from agent.schema import NotSpecifiable, ProtocolSpecification
+    p, _, _ = pair
+    before = SP.prompt_hash(p)
+    schemas = (json.dumps(ProtocolSpecification.model_json_schema()),
+               json.dumps(NotSpecifiable.model_json_schema()))
+    perturb(monkeypatch)
+    if "docstring" in what:
+        # Positive control: the perturbation reached the schema text at all.
+        assert (json.dumps(ProtocolSpecification.model_json_schema()),
+                json.dumps(NotSpecifiable.model_json_schema())) != schemas
+    assert SP.prompt_hash(p) != before, f"{what} is sent but not hashed"
+
+
+def test_emit_sends_the_schema_and_system_text_prompt_hash_hashes():
+    """`_emit` and `prompt_hash` share `_schema_block` and `EMIT_SYSTEM`.
+
+    A hash over a rendering `_emit` no longer sends is a hash of nothing sent,
+    so both branches are driven and their text compared to the hashed pieces.
+    """
+    from agent.schema import ProtocolSpecification
+    schema = ProtocolSpecification.model_json_schema()
+    sent: list = []
+
+    class CliLike:
+        drives_own_tool_loop = True
+
+        def transduce(self, prompt: str) -> Reply:
+            sent.append(prompt)
+            return Reply(content="{}")
+
+    class InProcess:
+        drives_own_tool_loop = False
+
+        def chat(self, msg: list[dict], **_: object) -> Reply:
+            sent.append(msg)
+            return Reply(content="{}")
+
+    SP._emit(CliLike(), schema, "BODY", None, lambda d: d)
+    assert sent[-1] == "BODY" + SP._schema_block(schema)
+    SP._emit(InProcess(), schema, "BODY", None, lambda d: d)
+    assert sent[-1][0] == {"role": "system", "content": SP.EMIT_SYSTEM}
+
+
+def test_the_cli_transduction_sends_the_hashed_system_prompt(tmp_path: Path):
+    """`ClaudeCliBackend.transduce` sends `TRANSDUCE_SYSTEM`, the text hashed."""
+    import shutil
+
+    from agent import cli_backend
+
+    seen: list[list[str]] = []
+
+    class NoSubprocess(cli_backend.ClaudeCliBackend):
+        def _run(self, argv: list[str]) -> str:
+            seen.append(argv)
+            return "{}"
+
+    b = NoSubprocess(model="claude-haiku-4-5", tool_log_dir=tmp_path)
+    try:
+        b.transduce("prompt")
+    finally:
+        shutil.rmtree(b.sandbox, ignore_errors=True)
+    argv = seen[0]
+    assert argv[argv.index("--system-prompt") + 1] == cli_backend.TRANSDUCE_SYSTEM
 
 
 # --------------------------------------------------------------------------- #

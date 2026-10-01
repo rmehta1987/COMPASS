@@ -601,6 +601,26 @@ sample-size field in this schema, and adding one is rejected.
 """
 
 
+#: The emission call's system message on `_emit`'s in-process branch. The CLI
+#: branch's counterpart is `agent/cli_backend.py::TRANSDUCE_SYSTEM`.
+EMIT_SYSTEM = "You emit JSON matching a schema. Nothing else."
+
+
+def _schema_block(schema: dict) -> str:
+    """Render the schema text `_emit` appends to a CLI transduction prompt.
+
+    The one serialisation of an emission schema, shared by `_emit` (what is
+    sent) and `prompt_hash` (what is hashed), so the two cannot drift.
+
+    Args:
+        schema: A `model_json_schema()` output.
+
+    Returns:
+        The schema header and the schema as `json.dumps` renders it.
+    """
+    return "\n\n--- REQUIRED JSON SCHEMA ---\n" + json.dumps(schema)
+
+
 def prompt_hash(pair: object) -> str:
     """Hash the exact prompt text a run sends, for provenance.
 
@@ -608,18 +628,30 @@ def prompt_hash(pair: object) -> str:
         pair: The funnel candidate this run was handed.
 
     Returns:
-        The first 16 hex characters of the SHA-256 of the four prompt bodies.
+        The first 16 hex characters of the SHA-256 of every prompt text the run
+        can send: SYSTEM, the pair rendering, TRANSDUCE, TRANSDUCE_REFUSAL,
+        REPAIR, both emission system messages, and the ProtocolSpecification
+        and NotSpecifiable schemas as `_emit` serialises them.
 
     prompt_hash's job is to let an ablation tell "the component changed" from
     "someone edited a prompt and forgot". A literal "fixture" or "unset" does
-    that job no better than "". All FOUR bodies are hashed, not just SYSTEM,
-    because the transduction prompts and the pair rendering are prompt text the
-    model reads too. TRANSDUCE_REFUSAL is sent only on the refusal path, but a
+    that job no better than "". Every body is hashed, not just SYSTEM, because
+    the transduction prompts and the pair rendering are prompt text the model
+    reads too. TRANSDUCE_REFUSAL is sent only on the refusal path, but a
     hash that omitted it would report two runs
     as identically prompted while one of them could refuse and the other could
-    not, which is the one comparison this field exists to make.
+    not, which is the one comparison this field exists to make. The schemas are
+    hashed for the same reason: `model_json_schema()` copies every model
+    docstring and field description into the transduction prompt, and a hash
+    over the templates alone gave records made before and after a schema-prose
+    rewrite (25,325 -> 20,532 chars) the same prompt_hash.
     """
-    body = "\x00".join((SYSTEM, user_prompt(pair), TRANSDUCE, TRANSDUCE_REFUSAL))
+    from agent.cli_backend import TRANSDUCE_SYSTEM
+    body = "\x00".join((
+        SYSTEM, user_prompt(pair), TRANSDUCE, TRANSDUCE_REFUSAL, REPAIR,
+        EMIT_SYSTEM, TRANSDUCE_SYSTEM,
+        _schema_block(ProtocolSpecification.model_json_schema()),
+        _schema_block(NotSpecifiable.model_json_schema())))
     return hashlib.sha256(body.encode()).hexdigest()[:16]
 
 
@@ -1219,13 +1251,11 @@ def _emit(backend: AnyBackend, schema: dict, body: str, seed: int | None,
         `repairs` holds every rejected attempt with the error it was shown,
         whether or not a later attempt passed.
     """
-    msg = [{"role": "system",
-            "content": "You emit JSON matching a schema. Nothing else."},
+    msg = [{"role": "system", "content": EMIT_SYSTEM},
            {"role": "user", "content": body}]
 
     cli = _drives_own_loop(backend)
-    base = body + ("\n\n--- REQUIRED JSON SCHEMA ---\n"
-                   + json.dumps(schema) if cli else "")
+    base = body + (_schema_block(schema) if cli else "")
     prompt = base
     repairs: list[dict] = []
 

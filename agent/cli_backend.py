@@ -44,6 +44,13 @@ ROOT = Path(__file__).resolve().parent.parent
 # without this the research log is a fiction.
 DENY = DENY_TOOLS  # single definition, in agent/sealed.py
 
+#: Call 2's system prompt. A module constant, not an inline literal, because it
+#: is prompt text the model reads and `agent/specifier.py::prompt_hash` hashes
+#: it: a literal inside `transduce` could change with no hash noticing.
+TRANSDUCE_SYSTEM = ("You emit one JSON object matching the requested schema "
+                    "and nothing else. No prose, no markdown fence, no "
+                    "commentary.")
+
 
 class ClaudeCliBackend:
     """Drives its own tool loop, so the Specifier hands it the whole turn.
@@ -181,9 +188,7 @@ class ClaudeCliBackend:
         return Reply(content=self._run([
             "claude", "-p", prompt,
             "--model", self.model,
-            "--system-prompt",
-            "You emit one JSON object matching the requested schema and nothing "
-            "else. No prose, no markdown fence, no commentary.",
+            "--system-prompt", TRANSDUCE_SYSTEM,
             "--settings", str(self.settings),
             "--strict-mcp-config",
             "--disallowed-tools", ",".join(DENY),
