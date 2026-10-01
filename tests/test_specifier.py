@@ -131,13 +131,23 @@ def _assert_model_imports_granted(env_dir: Path) -> None:
 
 def test_the_grant_conditions_are_stated_once_and_cited_everywhere_else(
         tmp_path: Path) -> None:
-    """Every place that states the env/ model rule points at the one tuple.
+    """The grant conditions are printed by the gate and cited, not copied, elsewhere.
 
     The rule was worded three ways that disagreed: AGENTS.md named four conditions,
-    this gate's failure message named five different adjectives, and the
-    env/tools.py module docstring said env/ imports no model at all. A red here
-    means one of those sites has gone back to restating the rule — or the gate
-    message has stopped printing a condition the reviewer is meant to judge.
+    this gate's failure message and the comment above `ENV_MODEL_GRANTS` named five
+    different adjectives, and the env/tools.py module docstring said env/ imports
+    no model at all. What a red here proves, and nothing more:
+
+    - the gate's failure message omits a condition, or uses a retired adjective;
+    - AGENTS.md stops citing `ENV_MODEL_GRANT_CONDITIONS`;
+    - a condition string is copied verbatim into a rules document, an env/ module
+      docstring or the comment above `ENV_MODEL_GRANTS`;
+    - a retired adjective (`_RETIRED_GRANT_WORDS`) sits in a paragraph or bullet
+      of those sites that mentions a grant;
+    - an env/ module docstring uses the retired absolute wording, or states the
+      model rule without citing `ENV_MODEL_GRANTS`.
+
+    A restatement in new words that avoids every listed string stays green.
     """
     (tmp_path / "probe.py").write_text("import torch\n")
     with pytest.raises(AssertionError) as raised:
@@ -146,13 +156,35 @@ def test_the_grant_conditions_are_stated_once_and_cited_everywhere_else(
     assert ENV_MODEL_GRANT_CONDITIONS, "the grant has no conditions"
     missing = [c for c in ENV_MODEL_GRANT_CONDITIONS if c not in message]
     assert not missing, f"the gate's failure message omits {missing}"
+    stale = [w for w in _RETIRED_GRANT_WORDS if w in message.lower()]
+    assert not stale, f"the gate's failure message uses retired conditions {stale}"
 
     agents = (ROOT / "AGENTS.md").read_text()
     assert "tests/test_specifier.py::ENV_MODEL_GRANT_CONDITIONS" in agents, (
         "AGENTS.md must cite the grant conditions by path::symbol, not restate them")
 
+    sites = [(name, (ROOT / name).read_text())
+             for name in ("AGENTS.md", "CLAUDE.md", "DESIGN.md")]
+    sites += [(path, doc) for path, doc in _model_rule_docstrings()
+              if path.startswith("env/")]
+    sites.append(("the comment above ENV_MODEL_GRANTS", _grants_comment()))
+    for name, text in sites:
+        flat = " ".join(text.split())
+        copied = [c for c in ENV_MODEL_GRANT_CONDITIONS if c in flat]
+        assert not copied, (
+            f"{name} copies grant conditions {copied}; cite "
+            "tests/test_specifier.py::ENV_MODEL_GRANT_CONDITIONS instead")
+        for chunk in re.split(r"\n\s*\n|\n(?=\s*(?:- |#+ |\d+\. ))", text):
+            if "grant" not in chunk.lower():
+                continue
+            stale = [w for w in _RETIRED_GRANT_WORDS if w in chunk.lower()]
+            assert not stale, (
+                f"{name} names retired grant conditions {stale} beside the grant "
+                f"rule: {' '.join(chunk.split())[:160]!r}")
+
     stating = 0
-    for path, doc in _model_rule_docstrings():
+    for path, raw in _model_rule_docstrings():
+        doc = " ".join(raw.split())
         retired = _RETIRED_MODEL_RULE.findall(doc)
         assert not retired, (
             f"{path} states the retired absolute rule {retired}; env/ loads a model "
@@ -174,18 +206,43 @@ _RETIRED_MODEL_RULE = re.compile(
 _STATES_MODEL_RULE = re.compile(r"\b(?:imports?|loads?)\b[^.]{0,40}\bmodel\b", re.I)
 
 
+#: The adjectives the second, conflicting list used (offline, auditable,
+#: selection-neutral). "deterministic" was in both lists and is a live condition.
+_RETIRED_GRANT_WORDS = ("offline", "auditable", "selection-neutral")
+
+
+def _grants_comment() -> str:
+    """Return the `#:` comment block directly above `ENV_MODEL_GRANTS`.
+
+    Returns:
+        The block's lines joined by newlines, `#:` markers stripped.
+
+    Raises:
+        AssertionError: `ENV_MODEL_GRANTS` or its comment block is missing.
+    """
+    lines = Path(__file__).read_text().splitlines()
+    at = next(i for i, ln in enumerate(lines) if ln.startswith("ENV_MODEL_GRANTS:"))
+    block = []
+    for ln in reversed(lines[:at]):
+        if not ln.startswith("#:"):
+            break
+        block.append(ln[2:].strip())
+    assert block, "ENV_MODEL_GRANTS lost the comment that says who may extend it"
+    return "\n".join(reversed(block))
+
+
 def _model_rule_docstrings() -> list[tuple[str, str]]:
     """Return every module docstring that may state the env/ model rule.
 
     Returns:
-        `(repo-relative path, whitespace-collapsed docstring)` for each `env/*.py`
-        module and for this file, whose own docstring describes the gate.
+        `(repo-relative path, docstring)` for each `env/*.py` module and for
+        this file, whose own docstring describes the gate.
     """
     paths = [*sorted((ROOT / "env").rglob("*.py")), Path(__file__).resolve()]
     out = []
     for p in paths:
         doc = ast.get_docstring(ast.parse(p.read_text())) or ""
-        out.append((p.relative_to(ROOT).as_posix(), " ".join(doc.split())))
+        out.append((p.relative_to(ROOT).as_posix(), doc))
     return out
 
 
