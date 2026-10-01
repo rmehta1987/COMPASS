@@ -209,17 +209,60 @@ def test_version_hash_is_pinned(d):
     assert all(len(h) == 64 for h in v["source_files"].values())
 
 
-def test_build_is_deterministic():
+def _snapshot(directory: Path) -> dict[str, tuple[int, str]]:
+    """Every file under a directory, as `(mtime_ns, sha256)` by relative path."""
+    import hashlib
+    return {str(f.relative_to(directory)): (f.stat().st_mtime_ns,
+                                            hashlib.sha256(f.read_bytes()).hexdigest())
+            for f in sorted(directory.rglob("*")) if f.is_file()}
+
+
+@pytest.fixture(scope="module")
+def rebuilt(tmp_path_factory: pytest.TempPathFactory) -> dict:
+    """A fresh build, written to a temporary directory and never to `build/`.
+
+    Both rebuild tests ran `build.py` in a subprocess, which rewrote the
+    repository's `build/` non-atomically on every suite run: a seeded `build.py`
+    mutation persisted there after the revert, and a concurrent reader could
+    see a half-written file. `build` reads the module-level `BUILD` when it
+    runs, so pointing that at a temporary directory moves every write without
+    touching `build.py`. `build/` is snapshotted on both sides of the build so
+    `test_a_rebuild_leaves_build_as_it_found_it` can say whether it moved.
+
+    Returns:
+        `{"dictionary", "out", "before", "after"}`: what `build` returned, where
+        it wrote, and `build/` snapshotted before and after.
+    """
+    if not B.RAW.exists():
+        pytest.skip(f"{B.RAW} absent: the codebooks are withheld from this "
+                    "tree, so nothing can be rebuilt")
+    out = tmp_path_factory.mktemp("build")
+    before = _snapshot(BUILD)
+    original = B.BUILD
+    B.BUILD = out
+    try:
+        dictionary = B.build()
+    finally:
+        B.BUILD = original
+    return {"dictionary": dictionary, "out": out, "before": before,
+            "after": _snapshot(BUILD)}
+
+
+def test_a_rebuild_leaves_build_as_it_found_it(rebuilt):
+    """No byte or mtime under `build/` moves when the suite rebuilds."""
+    assert rebuilt["before"], f"{BUILD} is empty: the snapshot proves nothing"
+    assert rebuilt["after"] == rebuilt["before"], (
+        "a rebuild under test rewrote the repository's build/")
+    assert (rebuilt["out"] / "dictionary.json").is_file()
+
+
+def test_build_is_deterministic(rebuilt):
     """Same raw/ plus same rules must give the same hash, or nothing downstream
     can be pinned to a dictionary version.
     """
-    import subprocess
-    import sys
-    before = json.loads((BUILD / "version.json").read_text())["version_hash"]
-    subprocess.run([sys.executable, str(ROOT / "build.py")], check=True,
-                   capture_output=True, cwd=ROOT)
-    after = json.loads((BUILD / "version.json").read_text())["version_hash"]
-    assert before == after
+    stored = json.loads((BUILD / "version.json").read_text())["version_hash"]
+    fresh = json.loads((rebuilt["out"] / "version.json").read_text())
+    assert fresh["version_hash"] == rebuilt["dictionary"]["version_hash"] == stored
 
 
 # --------------------------------------------------------------------------- #
@@ -468,21 +511,35 @@ def test_the_shipped_dictionary_carries_the_content_hash_this_file_pins(d):
     assert B.content_hash(d) == CONTENT_HASH
 
 
-def test_a_fresh_build_emits_the_pinned_content_hash():
+def test_a_fresh_build_emits_the_pinned_content_hash(
+        rebuilt, capsys: pytest.CaptureFixture[str]) -> None:
     """Rebuild and compare, so a `build.py` edit that changes output goes red.
 
     Reading the stored `build/dictionary.json` alone would pass on a stale
     artefact after a rule edit. The build also prints the hash on its second
-    line, below a first line that stays byte-identical for its readers.
+    line, below a first line that stays byte-identical for its readers: the
+    `__main__` block's own two print statements are run over the fresh build,
+    so the lines are the script's and nothing is written.
     """
-    import subprocess
-    proc = subprocess.run([sys.executable, str(ROOT / "build.py")], check=True,
-                          capture_output=True, cwd=ROOT, text=True)
-    lines = proc.stdout.splitlines()
+    d = rebuilt["dictionary"]
+    assert B.content_hash(d) == CONTENT_HASH
+    written = json.loads((rebuilt["out"] / "dictionary.json").read_text())
+    assert B.content_hash(written) == CONTENT_HASH
+    # The script exits 1 when a check group fails; the subprocess this replaced
+    # asserted that through `check=True`.
+    assert not any(checks.run(d).values()), checks.report(checks.run(d))
+
+    tree = ast.parse((ROOT / "build.py").read_text())
+    main = next(n for n in tree.body if isinstance(n, ast.If)
+                and "__main__" in ast.unparse(n.test))
+    assert ast.unparse(main.body[0]) == "d = build()"
+    head = main.body[1:4]
+    assert [type(n).__name__ for n in head] == ["Assign", "Expr", "Expr"]
+    exec(compile(ast.Module(body=head, type_ignores=[]), "build.py", "exec"),
+         {"d": d, "content_hash": B.content_hash})
+    lines = capsys.readouterr().out.splitlines()
     assert lines[0].startswith(f"build {BUILD_HASH}  (")
     assert lines[1] == f"  content {CONTENT_HASH}"
-    rebuilt = json.loads((BUILD / "dictionary.json").read_text())
-    assert B.content_hash(rebuilt) == CONTENT_HASH
 
 
 def _fresh(d: dict) -> dict:
