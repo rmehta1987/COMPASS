@@ -509,6 +509,41 @@ def test_the_literal_sweep_alone_finds_every_key_in_every_case(
         f"sweep with the regex off, e.g. {missed[:5]}")
 
 
+def test_a_dictionary_rewritten_in_place_is_rescanned_not_served_from_cache(
+        tmp_path: Path) -> None:
+    """The parsed index is cached by content, so a rebuild is never scanned stale.
+
+    Same path, same size, same `st_mtime_ns`, different instrument: a cache
+    keyed on the file's stat would hand back the old index and scan for the
+    previous build's keys. Shared copies are frozen, so one `State` cannot
+    widen or narrow what another one scans for.
+    """
+    dic = tmp_path / "dictionary.json"
+
+    def write(key: str) -> None:
+        dic.write_text(json.dumps({"entries": [
+            {"key": key, "question_text": "alpha beta gamma delta epsilon zeta"}]}),
+            encoding="utf-8")
+
+    write("zz:one")
+    before = dic.stat()
+    first = Scrubber(path=dic)
+    write("zz:two")
+    os.utime(dic, ns=(before.st_atime_ns, before.st_mtime_ns))
+    after = dic.stat()
+    assert (after.st_size, after.st_mtime_ns) == (before.st_size, before.st_mtime_ns)
+
+    second = Scrubber(path=dic)
+    assert first.keys == {"zz:one"}
+    assert second.keys == {"zz:two"}, "a rewritten dictionary was scanned stale"
+    # Outside `KEY_RE`'s grammar, so only the literal set can decide these.
+    assert second.hits("we used zz:two here") and not second.hits("we used zz:one")
+    shared = Scrubber(path=dic)
+    assert shared.keys is second.keys, "the same bytes were parsed twice"
+    for attr in ("corpus", "keys", "short"):
+        assert isinstance(getattr(shared, attr), frozenset), attr
+
+
 def test_a_redaction_mark_never_reprints_what_it_removed() -> None:
     """`_send` ships `redactions` to the client, so a mark is a response too.
 

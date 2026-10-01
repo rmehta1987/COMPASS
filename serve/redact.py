@@ -69,7 +69,7 @@ import os
 import re
 import threading
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 #: Everything `deploy/retriever.py::_hit` may put on the wire. An allowlist,
 #: not a denylist: `_hit` gaining a field must not publish it by default.
@@ -309,6 +309,86 @@ def pseudonymise_hit(hit: dict[str, Any], pseud: Pseudonymiser,
     return out
 
 
+class _Index(NamedTuple):
+    """What `Scrubber` reads from one dictionary, frozen so a cached copy is shared.
+
+    Attributes:
+        corpus: Every five-word run in the three text fields.
+        keys: Every `key`, `construct_key` and `group_key`.
+        short: Case-folded whole strings too short for the run rule.
+        key_groups: `keys` as `_key_groups` arranges them for the sweep.
+    """
+
+    corpus: frozenset[tuple[str, ...]]
+    keys: frozenset[str]
+    short: frozenset[str]
+    key_groups: tuple[tuple[str, tuple[tuple[str, str], ...]], ...]
+
+
+def _parse_index(text: str) -> _Index:
+    """Index one dictionary's text.
+
+    Args:
+        text: The dictionary file's contents.
+
+    Returns:
+        The frozen index.
+    """
+    corpus: set[tuple[str, ...]] = set()
+    keys: set[str] = set()
+    short: set[str] = set()
+    for e in json.loads(text)["entries"]:
+        for f in ("searchable_text", "question_text", "stem_text"):
+            v = e.get(f)
+            if isinstance(v, str):
+                corpus |= _grams(v)
+                w = " ".join(v.split())
+                if SHORT_FLOOR <= len(w.split()) < RUN:
+                    short.add(w.casefold())
+        for f in ("key", "construct_key", "group_key"):
+            v = e.get(f)
+            if isinstance(v, str) and v:
+                keys.add(v)
+    frozen = frozenset(keys)
+    # Built once here rather than per string: `hits` used to sort and
+    # case-fold every key on every call that saw a colon.
+    return _Index(frozenset(corpus), frozen, frozenset(short), _key_groups(frozen))
+
+
+#: Parsed indexes by the SHA-256 of the dictionary text. Keyed on CONTENT, not
+#: on path and mtime: a rebuild written in place within one timestamp tick at
+#: the same size would keep a stat key, and a stale index scans for the
+#: previous instrument. Hashing measured ~7 ms against ~35 ms to parse.
+_INDEX_CACHE: dict[str, _Index] = {}
+#: A handful, not one: tests alternate the real build with small synthetic ones.
+_INDEX_CACHE_MAX = 8
+_INDEX_LOCK = threading.Lock()
+
+
+def _load_index(path: Path) -> _Index:
+    """Read `path` and return its index, parsing only text not seen before.
+
+    Args:
+        path: A readable dictionary file.
+
+    Returns:
+        The index for the bytes on disk now. Shared between callers, which is
+        why every field is immutable.
+    """
+    text = path.read_text(encoding="utf-8")
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    with _INDEX_LOCK:
+        hit = _INDEX_CACHE.get(digest)
+    if hit is not None:
+        return hit
+    idx = _parse_index(text)
+    with _INDEX_LOCK:
+        while len(_INDEX_CACHE) >= _INDEX_CACHE_MAX:
+            del _INDEX_CACHE[next(iter(_INDEX_CACHE))]
+        _INDEX_CACHE[digest] = idx
+    return idx
+
+
 class Scrubber:
     """Refuse to emit prose that shares a five-word run with the instrument.
 
@@ -343,36 +423,20 @@ class Scrubber:
                 "certifies nothing, so the endpoint refuses to serve rather "
                 "than serve unchecked.")
         self.source = p
-        corpus: set[tuple[str, ...]] = set()
-        keys: set[str] = set()
-        short: set[str] = set()
-        for e in json.loads(p.read_text(encoding="utf-8"))["entries"]:
-            for f in ("searchable_text", "question_text", "stem_text"):
-                v = e.get(f)
-                if isinstance(v, str):
-                    corpus |= _grams(v)
-                    w = " ".join(v.split())
-                    if SHORT_FLOOR <= len(w.split()) < RUN:
-                        short.add(w.casefold())
-            for f in ("key", "construct_key", "group_key"):
-                v = e.get(f)
-                if isinstance(v, str) and v:
-                    keys.add(v)
-        self.corpus = corpus
+        idx = _load_index(p)
+        self.corpus = idx.corpus
         # The instrument's OWN keys, matched literally. A regex encodes a belief
         # about the key grammar and the previous one was wrong about 61% of it;
         # this set is exhaustive by construction and cannot drift when a new
         # shape is built. The regex stays as the backstop for a key-shaped
         # string the dictionary does not contain.
-        self.keys = frozenset(keys)
-        # Built once here rather than per string: `hits` used to sort and
-        # case-fold every key on every call that saw a colon.
-        self._key_groups = _key_groups(self.keys)
+        self.keys = idx.keys
+        self._key_groups = idx.key_groups
         # Same construction, same reason, for the other thing a regex cannot
         # reach: the run rule's own blind spot below five words. Built from the
         # instrument rather than declared, so it tracks the build instead of
         # recording what someone measured once.
-        self.short = short
+        self.short = idx.short
 
     def hits(self, text: str) -> list[str]:
         """Instrument runs and bare keys present in `text`.
