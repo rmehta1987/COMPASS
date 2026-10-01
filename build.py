@@ -389,10 +389,12 @@ def content_hash(dictionary: dict) -> str:
     `version_hash` is a function of the inputs and the rules, so it is blind to
     anything outside `_rule_fingerprint` — a new `Entry` column reached
     `build/dictionary.json` with `version_hash` unmoved on 2026-09-15. This
-    hashes the output instead, so any change to what the build writes moves it,
-    whatever in this file caused the change. `version_hash` is left out because
-    it describes the rules, not the content: a docstring edit inside a hashed
-    function moves it and should not move this.
+    hashes the output instead, so any change to `build/dictionary.json` moves
+    it, whatever in this file caused the change. The report CSVs the build
+    writes beside it (`collisions.csv`, `grid_summary.csv`, `origin.csv`) are
+    out of scope: nothing outside this file reads them. `version_hash` is left
+    out because it describes the rules, not the content: a docstring edit
+    inside a hashed function moves it and should not move this.
 
     Args:
         dictionary: The mapping `build` returns, or `build/dictionary.json`
