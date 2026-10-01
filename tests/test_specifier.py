@@ -3890,6 +3890,27 @@ def test_the_refusal_audit_counts_a_key_the_schema_accepts_whole(
     assert sorted(_invented(capsys.readouterr().out)) == sorted(fake)
 
 
+def test_the_refusal_audit_leaves_the_shared_tool_log_as_it_found_it(
+        unspecifiable, capsys: pytest.CaptureFixture[str]) -> None:
+    """The audit's own lookups are measurement, not calls the Specifier made.
+
+    `refusal_audit` resolved every named key through the logged
+    `resolve_variable` outside `T.LOG.unrecorded()`, so each audit appended to
+    the shared log a live run's trail is read from.
+    """
+    from generate import live_specifier as LS
+
+    p, version = unspecifiable
+    a = SP.specify_once(ScriptedBackend(_refuses(version)), p, seed=0)
+    assert a.refused
+    r = a.refusal.model_copy(update={
+        "statement": "Neither m2:Q5.8~9 nor m2:Q5.8 is the area measure."})
+    before = list(T.LOG.calls)
+    LS.refusal_audit(r, set(), [])
+    assert "m2:Q5.8~9" in _invented(capsys.readouterr().out)  # it did look up
+    assert T.LOG.calls == before
+
+
 def test_a_refusals_winner_is_found_by_identity_not_by_hash(unspecifiable) -> None:
     """Two refusals of one pair share a `record_hash`; only one was upheld.
 

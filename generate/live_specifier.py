@@ -200,8 +200,11 @@ def refusal_audit(r: NotSpecifiable, stated: set[str],
     # it — which is the failure this whole path exists to remove, and the number
     # the acceptance test reads.
     named = sorted(set(KEY_RX.findall(r.model_dump_json())))
-    invented = [k for k in named if k not in stated
-                and T.resolve_variable(key=k).get("outcome") not in RESOLVED]
+    # Auditing is not running: these lookups would otherwise land in the shared
+    # log and read as calls the Specifier made.
+    with T.LOG.unrecorded():
+        invented = [k for k in named if k not in stated
+                    and T.resolve_variable(key=k).get("outcome") not in RESOLVED]
     print(f"    keys named        {named}")
     print(f"    of those, stated  {[k for k in named if k in stated]}")
     print(f"    INVENTED KEYS     {len(invented)}  {invented}")
