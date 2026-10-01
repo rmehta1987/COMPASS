@@ -1244,3 +1244,37 @@ def test_the_command_line_runs_after_every_definition() -> None:
     last = tree.body[-1]
     assert isinstance(last, ast.If) and "__main__" in ast.unparse(last.test), (
         "the __main__ guard is not the module's last statement")
+
+
+def test_the_scope_names_the_fixture_that_was_actually_scored():
+    """Every report named the committed fixture, whatever rows it scored.
+
+    `evaluate_pools`, `evaluate` and `evaluate_single` each printed
+    `benchmark/fixtures/resolver_queries.json` for a caller's own rows, so a
+    one-row pilot read as a run over the committed file: a misstated
+    denominator. They now label rows passed in as retrieval_eval does.
+    """
+    from benchmark import retrieval_eval
+
+    committed = "benchmark/fixtures/resolver_queries.json"
+    one = _fixture_of("GQ001")
+
+    def silent(_: str) -> str:
+        return "I cannot answer that."
+
+    runs = {
+        "evaluate_pools": lambda **kw: R.evaluate_pools("frozen", **kw),
+        "evaluate": lambda **kw: R.evaluate(silent, n_samples=R.MIN_SAMPLES,
+                                            **kw),
+        "evaluate_single": lambda **kw: R.evaluate_single(silent, "searched",
+                                                          **kw),
+    }
+    for name, run in runs.items():
+        report = run(fixture=one)
+        assert len(report.results) == 1, name
+        assert report.fixture_path == retrieval_eval.UNNAMED_FIXTURE, (
+            f"{name} labelled a caller's one row as {report.fixture_path}")
+        assert committed not in report.scope, name
+        assert run(fixture=one, fixture_path=R.FIXTURE).fixture_path == \
+            committed, name
+    assert R.evaluate_pools("frozen").fixture_path == committed

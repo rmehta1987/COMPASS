@@ -1269,7 +1269,8 @@ class PoolReport:
 
     Attributes:
         arm: The pool arm's name.
-        fixture_path: The fixture scored, relative to the repository root.
+        fixture_path: The fixture scored, relative to the repository root, or
+            `retrieval_eval.UNNAMED_FIXTURE` for rows passed in unnamed.
         dictionary_version: `version_hash` of the dictionary the keys resolve
             against.
         known_bias: The fixture's `KNOWN_BIAS`, verbatim.
@@ -1321,8 +1322,33 @@ class PoolReport:
         ])
 
 
+def _scored_fixture(fixture: ResolverFixture | None,
+                    fixture_path: Path | None) -> tuple[ResolverFixture, str]:
+    """The fixture a run scores, and the name its scope block prints.
+
+    Every report here was labelled with the committed `FIXTURE` even when the
+    caller passed its own rows, so a 3-row pilot's scope named the committed
+    file. It follows `benchmark/retrieval_eval.py::evaluate`: rows passed in
+    are `UNNAMED_FIXTURE` unless the caller names where they came from.
+
+    Args:
+        fixture: A pre-loaded fixture, or None to read `fixture_path`.
+        fixture_path: The file to read when `fixture` is None (default
+            `FIXTURE`), or the name of the file `fixture` came from.
+
+    Returns:
+        `(fixture, label)`.
+    """
+    if fixture is not None:
+        return fixture, (retrieval_eval._fixture_label(fixture_path)
+                         if fixture_path else retrieval_eval.UNNAMED_FIXTURE)
+    path = fixture_path if fixture_path is not None else FIXTURE
+    return load_fixture(path), retrieval_eval._fixture_label(path)
+
+
 def evaluate_pools(arm: str = "frozen", fixture: ResolverFixture | None = None,
-                   pool: PoolFn | None = None) -> PoolReport:
+                   pool: PoolFn | None = None,
+                   fixture_path: Path | None = None) -> PoolReport:
     """Measure what a pool arm reaches. No model is called.
 
     Read this before any resolver figure from the same arm. A resolver cannot
@@ -1334,6 +1360,8 @@ def evaluate_pools(arm: str = "frozen", fixture: ResolverFixture | None = None,
         arm: The pool arm's name, for the report and for `POOL_ARMS`.
         fixture: A pre-loaded fixture; the committed one when omitted.
         pool: The pool callable. `POOL_ARMS[arm]` when omitted.
+        fixture_path: Where `fixture` came from, or the file to read when it is
+            omitted; see `_scored_fixture`.
 
     Returns:
         The report.
@@ -1341,7 +1369,7 @@ def evaluate_pools(arm: str = "frozen", fixture: ResolverFixture | None = None,
     Raises:
         KeyError: If `arm` names no pool arm and no callable was supplied.
     """
-    fx = fixture if fixture is not None else load_fixture()
+    fx, label = _scored_fixture(fixture, fixture_path)
     fn = pool if pool is not None else POOL_ARMS[arm]
     results: list[PoolOutcome] = []
     # A 22-row sweep through the lexical arm would otherwise land 22 entries in
@@ -1358,7 +1386,7 @@ def evaluate_pools(arm: str = "frozen", fixture: ResolverFixture | None = None,
             results.append(PoolOutcome(
                 id=q.id, kind=q.kind, size=len(keys),
                 reachable=None if not q.gold else rank is not None, rank=rank))
-    return PoolReport(arm=arm, fixture_path=retrieval_eval._fixture_label(FIXTURE),
+    return PoolReport(arm=arm, fixture_path=label,
                       dictionary_version=tools.dictionary_version(),
                       known_bias=fx.known_bias, results=tuple(results))
 
@@ -1432,7 +1460,8 @@ class ResolverReport:
             arms are not the same measurement.
         model_name: What answered, as the caller named it.
         n_samples: Shortlists asked for per row.
-        fixture_path: The fixture scored, relative to the repository root.
+        fixture_path: The fixture scored, relative to the repository root, or
+            `retrieval_eval.UNNAMED_FIXTURE` for rows passed in unnamed.
         dictionary_version: `version_hash` of the dictionary behind the pools.
         known_bias: The fixture's `KNOWN_BIAS`, verbatim.
         answer_rule: The fixture's `answer_rule`, verbatim.
@@ -1619,7 +1648,8 @@ def evaluate(model: ModelFn, arm: str = "frozen", n_samples: int = 3,
              fixture: ResolverFixture | None = None,
              pool: PoolFn | None = None, model_name: str = "unnamed",
              sampling_note: str = DEFAULT_SAMPLING_NOTE,
-             prompt_arm: str = "with_family_rule") -> ResolverReport:
+             prompt_arm: str = "with_family_rule",
+             fixture_path: Path | None = None) -> ResolverReport:
     """Run the resolver over the fixture and score it.
 
     Args:
@@ -1631,6 +1661,8 @@ def evaluate(model: ModelFn, arm: str = "frozen", n_samples: int = 3,
         model_name: What to record as having answered.
         sampling_note: How the samples were drawn, and whether that repeats.
         prompt_arm: Which critic prompt to run — see `RESOLVER_PROMPT_ARMS`.
+        fixture_path: Where `fixture` came from, or the file to read when it is
+            omitted; see `_scored_fixture`.
 
     Returns:
         The report, one result per fixture row.
@@ -1651,7 +1683,7 @@ def evaluate(model: ModelFn, arm: str = "frozen", n_samples: int = 3,
             f"shortlist(s) cannot disagree. Run this at {MIN_SAMPLES} or more, "
             f"or report it as a single-sample probe and not as a resolver "
             f"figure.")
-    fx = fixture if fixture is not None else load_fixture()
+    fx, label = _scored_fixture(fixture, fixture_path)
     fn = pool if pool is not None else POOL_ARMS[arm]
     results: list[QueryResult] = []
     with tools.LOG.unrecorded():
@@ -1659,7 +1691,7 @@ def evaluate(model: ModelFn, arm: str = "frozen", n_samples: int = 3,
             results.append(_run_row(model, q, fn(q), n_samples, prompt_arm))
     return ResolverReport(
         arm=arm, prompt_arm=prompt_arm, model_name=model_name,
-        n_samples=n_samples, fixture_path=retrieval_eval._fixture_label(FIXTURE),
+        n_samples=n_samples, fixture_path=label,
         dictionary_version=tools.dictionary_version(),
         known_bias=fx.known_bias, answer_rule=fx.answer_rule,
         results=tuple(results), sampling_note=sampling_note)
@@ -1843,7 +1875,8 @@ def _single_result(query: ResolverQuery, pool: Sequence[str], calls: int,
 def evaluate_single(model: ModelFn, arm: str = "deployed",
                     fixture: ResolverFixture | None = None,
                     pool: PoolFn | None = None, model_name: str = "unnamed",
-                    sampling_note: str = SINGLE_SAMPLING_NOTE) -> ResolverReport:
+                    sampling_note: str = SINGLE_SAMPLING_NOTE,
+                    fixture_path: Path | None = None) -> ResolverReport:
     """Score the website's resolver as it ships: one call per row, n=1.
 
     `evaluate` refuses n=1 because a prose resolver may not start UNCONFIRMED
@@ -1861,13 +1894,15 @@ def evaluate_single(model: ModelFn, arm: str = "deployed",
         pool: The pool callable. `POOL_ARMS[arm]` when omitted.
         model_name: What to record as having answered.
         sampling_note: How the calls were drawn.
+        fixture_path: Where `fixture` came from, or the file to read when it is
+            omitted; see `_scored_fixture`.
 
     Returns:
         The report, one result per fixture row. A reply holding no valid object
         BLOCKS its row rather than ending the run: one malformed reply should
         not discard the other rows' paid calls.
     """
-    fx = fixture if fixture is not None else load_fixture()
+    fx, label = _scored_fixture(fixture, fixture_path)
     fn = pool if pool is not None else POOL_ARMS[arm]
     results: list[QueryResult] = []
     with tools.LOG.unrecorded():
@@ -1889,7 +1924,7 @@ def evaluate_single(model: ModelFn, arm: str = "deployed",
                 q, keys, 1, verdict, score_query(q, verdict, keys), ""))
     return ResolverReport(
         arm=arm, prompt_arm=SINGLE_CALL_ARM, model_name=model_name, n_samples=1,
-        fixture_path=retrieval_eval._fixture_label(FIXTURE),
+        fixture_path=label,
         dictionary_version=tools.dictionary_version(),
         known_bias=fx.known_bias, answer_rule=fx.answer_rule,
         results=tuple(results), sampling_note=sampling_note)
@@ -2120,6 +2155,9 @@ def _main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     fixture = load_fixture()
+    # The whole committed file is named as such; a --rows pilot is a subset of
+    # it and is labelled unnamed, as `_scored_fixture` labels any caller's rows.
+    named = None if args.rows else FIXTURE
     if args.rows:
         wanted = [r.strip() for r in args.rows.split(",") if r.strip()]
         by_id = {q.id: q for q in fixture.queries}
@@ -2128,11 +2166,12 @@ def _main(argv: Sequence[str] | None = None) -> int:
     model, note = live_model(args.model)
     if args.single:
         print(format_report(evaluate_single(
-            model, arm=args.arm, fixture=fixture, model_name=args.model)))
+            model, arm=args.arm, fixture=fixture, model_name=args.model,
+            fixture_path=named)))
         return 0
     print(format_report(evaluate(
         model, arm=args.arm, n_samples=args.samples, fixture=fixture,
-        model_name=args.model, sampling_note=note)))
+        model_name=args.model, sampling_note=note, fixture_path=named)))
     return 0
 
 
