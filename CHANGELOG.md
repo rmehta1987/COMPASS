@@ -25,6 +25,14 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
   unchanged, because `deploy/` and `src/` assert it. The `build`, `read_module` and
   `compose_retrieval_text` gaps in `_NOT_HASHED` remain gaps in `version_hash` only.
   Seeded: a new `Entry` column left `version_hash` unmoved and turned the suite red.
+  This reverses an operator decision. On 2026-09-15 (`f751977`) the operator declared
+  the column set a gap rather than hash it, because hashing it would make every column
+  change a user amendment. The measurement behind that ruling: a column added to `Entry`
+  left `version_hash` at `3dc8415eccfe` with the suite green, while editing
+  `RE_SUBITEM_SUFFIX` moved it to `cb7a8dc275d2`. The user approved closing the gap on
+  2026-09-30 ("do all 6", item 6 of the bloat review). It is closed by a separate output
+  hash, so `version_hash` stays put, but a column change now moves `CONTENT_HASH`, and
+  moving that is a user amendment, which is the cost the 2026-09-15 ruling avoided.
 
 ## 2026-09-24
 
