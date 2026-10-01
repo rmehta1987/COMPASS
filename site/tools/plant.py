@@ -25,6 +25,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -84,6 +85,107 @@ def instrument_run() -> str:
     raise SystemExit("no dictionary entry long enough to plant")
 
 
+#: One page plant: the check that must go red, its label, the text replaced on
+#: the page (first occurrence), what replaces it, and how the check is run.
+PagePlant = tuple[str, str, str, str, Callable[[str, Path], int]]
+
+_MAIN = '<main class="wrap">'
+_VERDICTS = '<p class="sec">verdicts on this scoring run</p>'
+
+
+def page_plants(instrument: str) -> list[PagePlant]:
+    """Every plant that edits the page, one row each, in report order.
+
+    Args:
+        instrument: Five instrument words, from `instrument_run`, for step 2a.
+
+    Returns:
+        The rows; `main` copies the site, plants one row and runs its check.
+    """
+    return [
+        # 1a a literal on the page
+        ("no_fabrication", "numeric literal on the page",
+         _MAIN, _MAIN + "<p>cos 0.8214</p>", run),
+        # 2a five instrument words
+        ("no_instrument", "five-word instrument run",
+         _MAIN, f"{_MAIN}<p>{instrument}</p>", run),
+        # 2b a variable key
+        ("no_instrument", "variable key",
+         _MAIN, _MAIN + "<p>" + "m1:" + "Q5.4" + "</p>", run),
+        # 3 dead anchor and missing fetch target
+        ("links", "dead anchor", _MAIN, _MAIN + '<a href="#nowhere">x</a>', run),
+        ("links", "missing fetch target",
+         "<script>", '<script>fetch("artifacts/missing.json");', run),
+        # 4 unbalanced tag and a syntax error
+        ("parse", "stray close tag", "</main>", "</section></main>", run),
+        ("parse", "script syntax error", "<script>", "<script>const = ;", run),
+        ("parse", "renamed artifact field renders undefined",
+         "r.top_cos", "r.top_cosine_renamed", run),
+        # 4b the five 2026-09-09 review fixes, each re-seeded: render.js must
+        # catch the defect coming back, not only the page as it stands.
+        ("parse", "unmatched query hides Metrics",
+         'if(typed!==null&&!cur&&sel==="intake") return noRun();',
+         "if(typed!==null&&!cur) return noRun();", run),
+        # The rule inverted on the operator's instruction (2026-09-25): a
+        # committed panel's footer is now empty, so the planted violation is
+        # the removed provenance line put back.
+        ("parse", "removed provenance line back on a committed panel",
+         'a second run may differ.`:"";',
+         'a second run may differ.`:"Every figure above loads from '
+         '<code>site/artifacts/</code> with its run id or commit.";', run),
+        ("parse", "pipeline button live with no server",
+         'el("#ask").disabled=!window.COMPASS_ENDPOINT;',
+         'el("#ask").disabled=false;', run),
+        ("parse", "Enter in the search box does nothing",
+         'if(e.key==="Enter")', 'if(e.key==="Escape")', run),
+        # Was planted in `placeholder()`. After `record` and `specifier` merged
+        # away, no stage renders a placeholder in the STATIC drive -- every
+        # remaining stop has an artifact or a committed example -- so the plant
+        # landed on a string `render.js` never rendered and the step silently
+        # stopped proving anything. Moved onto the retriever panel's own
+        # withholding note, which is rendered for all five examples.
+        ("parse", "jargon reaches the reader",
+         "withheld on this page", "withheld on this endpoint", run),
+        # 5 an external script, a font stylesheet, a fetch to a host
+        ("offline", "external script",
+         "<head>", '<head><script src="https://cdn.example.com/x.js"></script>', run),
+        ("offline", "font @import",
+         "<style>", "<style>@import url(https://fonts.googleapis.com/css);", run),
+        ("offline", "fetch to a host",
+         "<script>", '<script>fetch("https://example.com/a");', run),
+        # 7 the live branch. Each of these shipped at some point: the attribute
+        # break was live until a planted quote found it, and the pipeline's own
+        # output was published as a per-record table and then, after that went,
+        # as the counts and caveats left behind. Both read as evidence, so both
+        # are pinned out; the ceiling is pinned IN, because that is the result.
+        ("render_endpoint", "a key with a quote breaks out of its attribute",
+         'data-genex="${att(pr.exposure)}"', 'data-genex="${esc(pr.exposure)}"',
+         run_node),
+        ("render_endpoint", "the run's own counts are reported again",
+         _VERDICTS, '<p class="sec">observed</p><dl><dt>x</dt><dd>y</dd></dl>'
+         + _VERDICTS, run_node),
+        ("render_endpoint", "the per-record listing is published again",
+         _VERDICTS, "<table><thead><tr><th>record</th></tr></thead><tbody><tr>"
+         "<td>x</td></tr></tbody></table>" + _VERDICTS, run_node),
+        # Rename it OUT of the asserted phrase. An earlier plant appended a
+        # character, which left the phrase intact as a substring and passed.
+        ("render_endpoint", "the ceiling stops being stated",
+         'row("records that could have matched"',
+         'row("records that could have been matched"', run_node),
+        # 8 a stage change decided after an await must be forfeited if the
+        # reader has moved; `steer` is the whole guarantee, in one line.
+        ("render_race", "a finished run drags the reader off the stage they picked",
+         "function steer(nav,stage){ if(nav===navGen) sel=stage; }",
+         "function steer(nav,stage){ sel=stage; }", run_node),
+        # 9 the comparison against a paper. A MATCH discloses the paper's key,
+        # so the one thing the page must never do with it is put it in the file
+        # the download button writes.
+        ("render_compare", "the JSON download carries the comparison",
+         "  if(gen) doc.enumeration=gen;\n",
+         "  if(gen) doc.enumeration=gen;\n  if(cmp) doc.compare=cmp;\n", run_node),
+    ]
+
+
 def main() -> int:
     results: list[tuple[str, str, bool]] = []
     with tempfile.TemporaryDirectory(prefix="site-plant-") as t:
@@ -104,128 +206,26 @@ def main() -> int:
                     f"below could be this rather than the planted violation. Run "
                     f"`SITE_ROOT={clean} python site/tools/{step}.py` and fix the "
                     "harness, not the check.")
-        # 1a a literal on the page
-        root = copy_site(tmp / "a")
-        plant_page(root, "<main class=\"wrap\">", "<main class=\"wrap\"><p>cos 0.8214</p>")
-        results.append(("no_fabrication", "numeric literal on the page", run("no_fabrication", root) != 0))
-        # 1b an artifact without provenance
+        # 1b an artifact without provenance. This plant and 1c write files
+        # rather than edit the page, so they are not rows of the table below.
         root = copy_site(tmp / "b")
         (root / "artifacts").mkdir(exist_ok=True)
+        prov = {"source": "plant", "run_id": "x"}
         (root / "artifacts" / "index.json").write_text(json.dumps(
-            {"files": ["planted.json"], "provenance": {"source": "plant", "run_id": "x"}}))
+            {"files": ["planted.json"], "provenance": prov}))
         (root / "artifacts" / "planted.json").write_text(json.dumps({"cos": 0.5}))
-        results.append(("no_fabrication", "artifact without provenance", run("no_fabrication", root) != 0))
+        results.append(("no_fabrication", "artifact without provenance",
+                        run("no_fabrication", root) != 0))
         # 1c a figure retyped inside a string
         (root / "artifacts" / "planted.json").write_text(json.dumps(
-            {"note": "cos 0.7316 cleared", "provenance": {"source": "plant", "run_id": "x"}}))
-        results.append(("no_fabrication", "figure inside a string", run("no_fabrication", root) != 0))
-        # 2a five instrument words
-        root = copy_site(tmp / "c")
-        plant_page(root, "<main class=\"wrap\">", f"<main class=\"wrap\"><p>{instrument_run()}</p>")
-        results.append(("no_instrument", "five-word instrument run", run("no_instrument", root) != 0))
-        # 2b a variable key
-        root = copy_site(tmp / "d")
-        plant_page(root, "<main class=\"wrap\">", "<main class=\"wrap\"><p>" + "m1:" + "Q5.4" + "</p>")
-        results.append(("no_instrument", "variable key", run("no_instrument", root) != 0))
-        # 3 dead anchor and missing fetch target
-        root = copy_site(tmp / "e")
-        plant_page(root, "<main class=\"wrap\">", "<main class=\"wrap\"><a href=\"#nowhere\">x</a>")
-        results.append(("links", "dead anchor", run("links", root) != 0))
-        root = copy_site(tmp / "f")
-        plant_page(root, "<script>", "<script>fetch(\"artifacts/missing.json\");")
-        results.append(("links", "missing fetch target", run("links", root) != 0))
-        # 4 unbalanced tag and a syntax error
-        root = copy_site(tmp / "g")
-        plant_page(root, "</main>", "</section></main>")
-        results.append(("parse", "stray close tag", run("parse", root) != 0))
-        root = copy_site(tmp / "h")
-        plant_page(root, "<script>", "<script>const = ;")
-        results.append(("parse", "script syntax error", run("parse", root) != 0))
-        root = copy_site(tmp / "h2")
-        plant_page(root, "r.top_cos", "r.top_cosine_renamed")
-        results.append(("parse", "renamed artifact field renders undefined", run("parse", root) != 0))
-        # 4b the five 2026-09-09 review fixes, each re-seeded: render.js must
-        # catch the defect coming back, not only the page as it stands.
-        root = copy_site(tmp / "h3")
-        plant_page(root, 'if(typed!==null&&!cur&&sel==="intake") return noRun();',
-                   'if(typed!==null&&!cur) return noRun();')
-        results.append(("parse", "unmatched query hides Metrics", run("parse", root) != 0))
-        root = copy_site(tmp / "h4")
-        # The rule inverted on the operator's instruction (2026-09-25): a
-        # committed panel's footer is now empty, so the planted violation is
-        # the removed provenance line put back.
-        plant_page(root, 'a second run may differ.`:"";',
-                   'a second run may differ.`:"Every figure above loads from '
-                   '<code>site/artifacts/</code> with its run id or commit.";')
-        results.append(("parse", "removed provenance line back on a committed panel",
-                        run("parse", root) != 0))
-        root = copy_site(tmp / "h5")
-        plant_page(root, 'el("#ask").disabled=!window.COMPASS_ENDPOINT;', 'el("#ask").disabled=false;')
-        results.append(("parse", "pipeline button live with no server", run("parse", root) != 0))
-        root = copy_site(tmp / "h6")
-        plant_page(root, 'if(e.key==="Enter")', 'if(e.key==="Escape")')
-        results.append(("parse", "Enter in the search box does nothing", run("parse", root) != 0))
-        root = copy_site(tmp / "h7")
-        # Was planted in `placeholder()`. After `record` and `specifier` merged
-        # away, no stage renders a placeholder in the STATIC drive -- every
-        # remaining stop has an artifact or a committed example -- so the plant
-        # landed on a string `render.js` never rendered and the step silently
-        # stopped proving anything. Moved onto the retriever panel's own
-        # withholding note, which is rendered for all five examples.
-        plant_page(root, "withheld on this page", "withheld on this endpoint")
-        results.append(("parse", "jargon reaches the reader", run("parse", root) != 0))
-        # 5 an external script, a font stylesheet, a fetch to a host
-        root = copy_site(tmp / "i")
-        plant_page(root, "<head>", "<head><script src=\"https://cdn.example.com/x.js\"></script>")
-        results.append(("offline", "external script", run("offline", root) != 0))
-        root = copy_site(tmp / "j")
-        plant_page(root, "<style>", "<style>@import url(https://fonts.googleapis.com/css);")
-        results.append(("offline", "font @import", run("offline", root) != 0))
-        root = copy_site(tmp / "k")
-        plant_page(root, "<script>", "<script>fetch(\"https://example.com/a\");")
-        results.append(("offline", "fetch to a host", run("offline", root) != 0))
-        # 7 the live branch. Each of these shipped at some point: the attribute
-        # break was live until a planted quote found it, and the pipeline's own
-        # output was published as a per-record table and then, after that went,
-        # as the counts and caveats left behind. Both read as evidence, so both
-        # are pinned out; the ceiling is pinned IN, because that is the result.
-        root = copy_site(tmp / "n1")
-        plant_page(root, 'data-genex="${att(pr.exposure)}"', 'data-genex="${esc(pr.exposure)}"')
-        results.append(("render_endpoint", "a key with a quote breaks out of its attribute",
-                        run_node("render_endpoint", root) != 0))
-        root = copy_site(tmp / "n2")
-        plant_page(root, '<p class="sec">verdicts on this scoring run</p>',
-                   '<p class="sec">observed</p><dl><dt>x</dt><dd>y</dd></dl>'
-                   '<p class="sec">verdicts on this scoring run</p>')
-        results.append(("render_endpoint", "the run's own counts are reported again",
-                        run_node("render_endpoint", root) != 0))
-        root = copy_site(tmp / "n3")
-        plant_page(root, '<p class="sec">verdicts on this scoring run</p>',
-                   '<table><thead><tr><th>record</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>'
-                   '<p class="sec">verdicts on this scoring run</p>')
-        results.append(("render_endpoint", "the per-record listing is published again",
-                        run_node("render_endpoint", root) != 0))
-        root = copy_site(tmp / "n3b")
-        # Rename it OUT of the asserted phrase. An earlier plant appended a
-        # character, which left the phrase intact as a substring and passed.
-        plant_page(root, 'row("records that could have matched"', 'row("records that could have been matched"')
-        results.append(("render_endpoint", "the ceiling stops being stated",
-                        run_node("render_endpoint", root) != 0))
-        # 8 a stage change decided after an await must be forfeited if the
-        # reader has moved; `steer` is the whole guarantee, in one line.
-        root = copy_site(tmp / "n4")
-        plant_page(root, "function steer(nav,stage){ if(nav===navGen) sel=stage; }",
-                   "function steer(nav,stage){ sel=stage; }")
-        results.append(("render_race", "a finished run drags the reader off the stage they picked",
-                        run_node("render_race", root) != 0))
-        # 9 the comparison against a paper. A MATCH discloses the paper's key,
-        # so the one thing the page must never do with it is put it in the file
-        # the download button writes.
-        root = copy_site(tmp / "n5")
-        plant_page(root, "  if(gen) doc.enumeration=gen;\n",
-                   "  if(gen) doc.enumeration=gen;\n  if(cmp) doc.compare=cmp;\n")
-        results.append(("render_compare", "the JSON download carries the comparison",
-                        run_node("render_compare", root) != 0))
+            {"note": "cos 0.7316 cleared", "provenance": prov}))
+        results.append(("no_fabrication", "figure inside a string",
+                        run("no_fabrication", root) != 0))
+        for i, (check, label, anchor, payload, runner) in enumerate(
+                page_plants(instrument_run())):
+            root = copy_site(tmp / f"p{i}")
+            plant_page(root, anchor, payload)
+            results.append((check, label, runner(check, root) != 0))
     # 6 an untracked artifact. THIS USED TO DOCTOR THE REAL TREE: it wrote a
     # planted artifact into `site/artifacts/`, overwrote the real `index.json`,
     # and restored both in a `finally`. Whether a file is tracked is a fact
