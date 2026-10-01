@@ -54,11 +54,15 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
     `run/tool_log.jsonl` truncated per sample; VERIFIED 2026-08-26 the surviving log held
     38 calls at `baseline_prevalence` 0.35 while the record beside it, written two hours
     earlier, stated 0.30.
-  - `agent/registry.py`: the `BENCHMARK_TOOLS` denylist it replaced named three tools that
-    never existed (`0fcd6eb`); the allowlist was checked equal 2026-09-30 to the old
-    output. `n_values` was advertised until the one real record took the n=50 floor
+  - `agent/registry.py`: the `RETRIEVAL_TOOLS` denylist (`search_literature`,
+    `check_prior_work`, `judge_predicate`) named three tools that never existed, so the
+    benchmark withholding test could not fail; `BENCHMARK_TOOLS`, an allowlist, replaced
+    it (`0fcd6eb`), checked equal 2026-09-30 to the old output. `true_signature` walked
+    `_logged`'s closure cells because `_logged` lacked `functools.wraps`; `43339f3` added
+    it and deleted `true_signature`. `n_values` was advertised until the one real record took the n=50 floor
     (37.8 pp) and wrote a 40 pp falsifier; `alpha`/`power` left the schema 2026-08-27
-    after alpha=power=0.50 dropped the bound at n=1000 from 8.86 to 2.13 pp.
+    after a MEASURED fall in the bound at n=1000 from 8.86 pp (alpha 0.05, power 0.80) to
+    4.05 (0.20/0.50) and 2.13 (0.50/0.50).
   - `agent/specifier.py`: `MAX_TRANSDUCE_ATTEMPTS` 2 -> 4 on 2026-08-27; the REFUSAL
     outlet added 2026-08-28; `MAX_STEPS`' comment said "11 tools" until 2026-08-31.
     `_KEY_SET`: live 2026-08-26/27, a derivation id passed as a key and a stale
@@ -121,7 +125,8 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
     2026-08-26 (T3), and `demo_script` broke 2026-08-27 -> 28 ("ScriptedBackend
     exhausted after 19 calls") when the attempt bound rose; `live_specifier.py`'s
     empty identity fields saved a dotfile record (2026-08-26) and its pair was once
-    hand-named (T7); `worked_example.py` hand-wrote an `at_n` on no grid.
+    hand-named (T7); `worked_example.py` hand-wrote an `at_n` on no grid (a cold critic found
+    `value=2.1 at_n=1800`; 1800 is on no `DETECTABILITY_N_GRID`).
   - `benchmark/contamination_check.py`: until 2026-08-26 it sampled 5 of 11 tools and
     missed `estimate_detectability`'s published-n default; `search_variables` was
     unscanned until 2026-08-26, its single-term and `low_confidence` samples date from
