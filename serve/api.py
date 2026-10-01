@@ -94,6 +94,15 @@ class Busy(RuntimeError):
     """A serialised resource is in use. Answered as 409, not 500 or a hang."""
 
 
+class Unbindable(ValueError):
+    """No retrieved candidate could be bound to wording, so a pool is empty.
+
+    A subclass so the one route whose pool has no role, `/api/resolve`, can
+    say so in its own words, while every other caller still catches a plain
+    `ValueError`.
+    """
+
+
 class Unresolvable(ValueError):
     """A construct key that names nothing, reported so the advice survives redaction.
 
@@ -694,7 +703,7 @@ def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str,
         outcome.
 
     Raises:
-        ValueError: When no candidate can be bound to wording.
+        Unbindable: When no candidate can be bound to wording.
     """
     from agent import prompt_contract as PC
     from env import labels
@@ -724,7 +733,7 @@ def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str,
         cos_by_key[key] = h["cos"]
         facts[key] = {"module": h["module"], "roster_family_size": h["fold_size"]}
     if not keys:
-        raise ValueError(f"no candidate for the {role} could be bound to wording")
+        raise Unbindable(f"no candidate for the {role} could be bound to wording")
 
     cands = PC.candidates_from_keys(keys, facts)
     return {"cands": cands, "cos": cos_by_key, "skipped": skipped,
@@ -1389,7 +1398,8 @@ def _resolve(state: State, body: dict[str, Any]) -> dict[str, Any]:
         A ticket. The run is a model call, so it is a job like `/api/specify`.
 
     Raises:
-        ValueError: When `request` is missing or `k` is out of range.
+        ValueError: When `request` is missing, `k` is out of range, or no
+            candidate in the pool can be bound to wording.
         Busy: When another model run holds the lock.
     """
     request = str(body.get("request") or "").strip()
@@ -1405,8 +1415,13 @@ def _resolve(state: State, body: dict[str, Any]) -> dict[str, Any]:
     from agent import prompt_contract as PC
 
     # The single-construct pool is the role pool: `role` never reaches the
-    # encoder (`_role_candidates`), so `exposure` here only fills the field.
-    pool = _role_candidates(state, request, "exposure", k)
+    # encoder (`_role_candidates`), so `exposure` here only fills the field --
+    # and must not reach the caller either, on a route that names no role.
+    try:
+        pool = _role_candidates(state, request, "exposure", k)
+    except Unbindable:
+        raise ValueError("no candidate in the pool could be bound to wording; "
+                         "nothing can be offered for selection") from None
     cands, rendered = pool["cands"], pool["rendered"]
     surface = PC.retrieval_contract(request, cands)
 

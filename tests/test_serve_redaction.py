@@ -1395,6 +1395,49 @@ def test_resolve_takes_its_pool_from_role_candidates_not_a_copy(
         "_resolve retrieves for itself again instead of through _role_candidates")
 
 
+def test_an_unbindable_resolve_pool_is_not_called_the_exposure(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`/api/resolve` names no role, so its empty-pool refusal may not name one.
+
+    Taking its pool from `_role_candidates(..., "exposure", k)` made the route
+    answer "no candidate for the exposure could be bound to wording" to a
+    caller who never mentioned an exposure. The role routes keep theirs.
+    """
+    from serve import api
+
+    class _Req:
+        def __init__(self, construct: str, role: object) -> None:
+            self.construct = construct
+
+        def to_query(self) -> str:
+            return self.construct
+
+    class _Retriever:
+        min_cos = 0.5
+
+        def search(self, query: str, k: int) -> list[dict]:
+            return [{"key": "zz:uncitable", "cos": 0.9, "module": "zz",
+                     "fold_size": 1}]
+
+    fake = types.ModuleType("retriever")
+    fake.RetrievalRequest = _Req  # type: ignore[attr-defined]
+    fake.VariableRole = types.SimpleNamespace(  # type: ignore[attr-defined]
+        EXPOSURE="exposure", OUTCOME="outcome")
+    monkeypatch.setitem(sys.modules, "retriever", fake)
+    st = api.State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    monkeypatch.setattr(st, "retriever", _Retriever)
+
+    with pytest.raises(ValueError) as exc:
+        api._resolve(st, {"request": "smoking", "k": 5})
+    assert str(exc.value) == (
+        "no candidate in the pool could be bound to wording; nothing can be "
+        "offered for selection")
+    assert st.model_lock.acquire(blocking=False), "refused after taking the lock"
+    st.model_lock.release()
+    with pytest.raises(ValueError, match="no candidate for the outcome could"):
+        api._role_candidates(st, "smoking", "outcome", 5)
+
+
 def test_a_resolver_model_is_accepted_only_as_a_model_id() -> None:
     """C17: it lands in a record, so it is held to the shape of a model id."""
     from serve.api import _resolver_model
