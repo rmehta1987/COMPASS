@@ -50,7 +50,7 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 - Every response-coding gate pattern must require a numeral: absence-prose names none.
 - The model never chooses what happens next: `agent/specifier.py::_rank` is a pure
   function of the record, AST-tested against backend, score, judge and rating references.
-- Changing `_rank`, a Hard Constraint or its AST test is a user amendment, not a lane's.
+- Changing `_rank`, a Hard Constraint or its AST test is a user amendment.
 - No `BlockedOn` member for disclosure: `_rank` sorts on `len(blocked_on)` ASCENDING,
   ranking an honest record below a silent twin. Denylist and its size: `agent/schema.py`.
 - `sought_covariates` sits OUTSIDE `canonical_form`, so silent and disclosing records hash
@@ -152,39 +152,23 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 - An externally-posed record carries `screened_from=0` and `externally_posed` selection,
   never enters a benchmark denominator; log the lexical ranker's disagreement.
 
-## Parallel Lanes
-- Lanes run in their own `git worktree`. Assign every file to exactly one lane, including
-  what it must NOT touch; anything unlisted is unassigned — assign it before dispatch.
-- Cross-lane collisions are semantic; git catches none. Re-measure at merge, never trust
-  either branch's numbers. Three instances: `9ee7cb7`, `bed8f0b`, `6160b99`.
-- Two lanes lowering one ratchet: neither value is right; re-derive on merge (`73e55b4`).
-- Before accepting a lane's report, run the suite, `ruff`, `mypy` and the contamination
+## Review
+- Before accepting any agent's report, run the suite, `ruff`, `mypy` and the contamination
   check in its worktree yourself, and re-derive its load-bearing claims.
+- Merging parallel branches: collisions are semantic and git catches none. Re-measure on
+  the merged tree, never trust either branch's numbers (`9ee7cb7`, `bed8f0b`, `6160b99`);
+  two branches lowering one ratchet means neither value is right (`73e55b4`).
 - Run a cold critic; any model, the builder's own family included (operator amendment,
   2026-09-14 — the different-family requirement is withdrawn). Re-derive its claims: on
   2026-09-14 three of a 15-finding review's claims were wrong on checking, including two
   measured counts. A critic's "does not reproduce" is a claim, not a result.
 - Build orchestration is not runtime orchestration — no model drives `agent/specifier.py`.
 - Cost is not a constraint: never skip a live run to save money, and do not ask to spend.
-### Roles
-| role | model |
-|---|---|
-| Orchestrator, Lane A (specifier core), Lane B (environment) | `claude-opus-5` |
-| Lane C (funnel, drivers) | `claude-sonnet-5` |
-| In-pipeline Specifier and seal probes | `claude-haiku-4-5` |
-
-- Files: A = `agent/specifier.py schema.py tool_authority.py cli_backend.py backends.py
-  prompt_contract.py`;
-  B = `curated/ env/ benchmark/ mcp/ serve/ site/ agent/sealed.py agent/registry.py
-  build.py checks.py`;
-  C = `generate/
-  agent/RUNNING.md`. `tests/` follow their module; anything unlisted is unassigned.
-- `serve/` and `site/` were UNASSIGNED until 2026-09-15 and are assigned to B TOGETHER,
-  not split and not given to C as drivers. `serve/redact.py` is a containment boundary of
-  the same family as `benchmark/contamination_check.py`, and it is COUPLED to
-  `serve/api.py`: `WORDING_FIELDS` is derived from api.py's routes by an AST test, so a
-  route change in one lane reddens a test in the other — the cross-lane semantic
-  collision git cannot see. One lane, and B is the lane that already owns containment.
+- Seal probes run `claude-haiku-4-5`, the in-pipeline Specifier's model (§Hard Constraints).
+- `serve/redact.py` is a containment boundary coupled to `serve/api.py`: `WORDING_FIELDS`
+  is checked against api.py's routes by an AST test
+  (`tests/test_serve_redaction.py::test_every_field_a_route_emits_wording_under_is_gated`),
+  so a route change reddens a redaction test. Change the two together.
 
 ## Code Standards
 - `ruff` and `mypy` config: `pyproject.toml` (`google`, `E W F I UP B ANN D RUF`).

@@ -33,7 +33,7 @@ WHY THE METRIC IS PREMATURE AND THE GATE IS NOT. Three measurements, all
      returns 0.0 against 0.0 and cannot fail — and `AGENTS.md` §Testing
      Patterns: a check that cannot fail is not evidence. Making it real means
      importing paper full text into the repository, which is a decision about
-     the contamination boundary and not a lane's to take.
+     the contamination boundary and the user's to take.
 
   3. THE TARGET MODEL MAY PUBLISH NO CUTOFF AT ALL. `agent/RUNNING.md` records,
      INHERITED, that Qwen3 publishes none and that every benchmark paper

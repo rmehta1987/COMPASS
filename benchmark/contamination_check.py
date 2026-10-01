@@ -459,7 +459,7 @@ def _second_call_surface() -> dict[str, str]:
     list — the emission system message is here for exactly that reason and
     appears in no C3 inventory.
 
-    The cost is a dependency on a private function in another lane's module. That
+    The cost is a dependency on a private function in `agent/specifier.py`. That
     is deliberate: if `_emit` is renamed the import fails and this command stops
     with a name, whereas a stale list of templates goes quiet. `AGENTS.md`
     §Testing Patterns — prefer a check whose red state names a defect.

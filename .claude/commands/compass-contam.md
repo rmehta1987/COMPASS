@@ -17,11 +17,10 @@ Everything it would have restated lives in a file that owns it.
    see the note in `AGENTS.md` §Verify current state): run what runs, and say which did
    not.
 2. Read `TASKS.md` in full and work in dependency order. Ask me before touching C12: its
-   key form is settled and reopening it is my call, not a lane's.
-3. Dispatch lanes per `AGENTS.md` §Parallel Lanes — own worktree, explicit file list
-   including what not to touch, cold critic on a different family after each merge.
-4. Before accepting a lane's report, run the suite, `ruff`, `mypy` and the contamination
-   check in its worktree yourself, and re-derive its load-bearing claims.
+   key form is settled and reopening it is my call.
+3. Follow `AGENTS.md` §Review: run a cold critic after each merge, and before accepting
+   any agent's report run the suite, `ruff`, `mypy` and the contamination check in its
+   worktree yourself, and re-derive its load-bearing claims.
 
 Hand me back, per task: the acceptance criterion, MET or NOT MET without softening, the
 command you ran with its real unedited output including failures, and for a live run the

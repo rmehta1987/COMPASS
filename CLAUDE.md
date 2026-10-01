@@ -19,9 +19,8 @@ Architecture: `DESIGN.md`. Backlog: `TASKS.md`. History: `CHANGELOG.md`.
 ## Claude Code notes
 
 - Seed a subagent with the PRIMARY, never your summary — hand it verbatim via
-  `git show <rev>:<path>` where it moved. Lanes have caught orchestrator paraphrase.
-- Give every dispatched lane an explicit file list including what it must NOT touch, and
-  re-derive its load-bearing claims before relaying them (`AGENTS.md` §Parallel Lanes).
+  `git show <rev>:<path>` where it moved. Subagents have caught orchestrator paraphrase.
+- Re-derive a subagent's load-bearing claims before relaying them (`AGENTS.md` §Review).
 - `/code-review ultra` (branch or PR#) is user-triggered and billed; never run it.
 - `/compass-contam` (a command) works the backlog; `compass-prose` (a skill, invoked via
   the Skill tool) sets the rules for prose addressed to a person

@@ -241,7 +241,7 @@ publishes or blocks a downstream stage.
   label, and pins in three test files. It moves `surface_hash`. Added 2026-09-24: it also
   reaches `serve/api.py`, which sends `stem_text` as `exposure_stem` / `outcome_stem`,
   and so `serve/redact.py::WORDING_FIELDS` — a containment boundary coupled to that
-  route (`AGENTS.md` §Parallel Lanes).
+  route (`AGENTS.md` §Review).
 
 ## Open — the website's backbone
 *Added 2026-09-10. The operator's framing: the website is the product and this pipeline is
@@ -526,7 +526,7 @@ experts until much later, which is why the dashboard exists.
   rows (it was `benchmark/scorability.py::EXPOSURE_KEYS` until C36 landed on
   2026-09-14). 🛑 Its key FORM is settled by the user — explicit `unknown` plus a named
   blocker, now carried by the `area_measure` and `not_in_instrument` anchor kinds;
-  reopening is a user conversation, not a lane decision.
+  reopening is a user conversation.
 - C12 consequences to inherit: `status_counts` unmoved, C6 has no scorable pair, C21 gains
   a second blocker.
 - C12 slices: `benchmark/prevalence_key.py` (role-tagged rows, no exposure field) and
@@ -588,7 +588,7 @@ experts until much later, which is why the dashboard exists.
   key is itself the channel this repository exists to close — so the severity rests on
   the deletion commit's description and the file's role, not on its text. It is
   benchmark integrity, not participant data; no participant data exists in this system.
-  **The remedy is the user's, not a lane's**, and a rewrite is not a fix on its own: a
+  **The remedy is the user's**, and a rewrite is not a fix on its own: a
   force-push does not un-distribute what was already fetched, and GitHub may retain the
   blob server-side. The live options stay open — rewrite plus rotation, or treat the key
   as disclosed and re-cut it — and nothing here forecloses them.
@@ -669,7 +669,7 @@ experts until much later, which is why the dashboard exists.
   `scorability.py::_confirm_keys` seals it: CONFIRMED demands
   `resolve_variable(...) == "unique"`, unreachable for an area measure by construction.
   A fix has to say what evidence confirms an area-measure side, which is a design
-  question. Changing the form is a user conversation, not a lane decision.
+  question. Changing the form is a user conversation.
 - **C36 — a design-arrow key: one stored row per paper, both sides, typed anchors.
   ✅ IMPLEMENTED 2026-09-14.** What landed, and the only thing still open, first;
   the proposal follows unchanged because the ACCEPT criteria are what it was checked
@@ -705,7 +705,7 @@ experts until much later, which is why the dashboard exists.
   ---
   PROPOSED 2026-09-14; the structural fix for C35 and for the `EXPOSURE_KEYS` type
   above. 🛑 USER AMENDMENT — it changes what the benchmark measures and where an answer
-  key lives, so it is not a lane's. **AUTHORISED by the operator 2026-09-14, in full,
+  key lives. **AUTHORISED by the operator 2026-09-14, in full,
   with C35 answered C + third status.** The amendment is granted for the SHAPE and the
   wiring below; it does not authorise writing a row. Rows stay the operator's, in
   `compass-score`, and no agent writes one.
@@ -805,10 +805,6 @@ experts until much later, which is why the dashboard exists.
   `get_contrast_convention` has no failing branch. Kept deliberately, but NOT as above:
   C15 does not make it unclaimable — its `REFUSAL_OUTCOMES` entry is `None`, so any call
   counts as evidence, and only `PAIR_ADJUDICABLE` keeps it off the menu.
-- `run/`, `raw/`, `parked/`, `references/`, `agent/__init__.py` and
-  `tests/test_code_standards.py` are in no lane assignment (`AGENTS.md` §Parallel Lanes).
-  CORRECTED 2026-09-24: this listed `build.py` (with `tests/test_dictionary.py`) as
-  unassigned, but lane B names `build.py checks.py`, and `tests/` follow their module.
 - The lane report `benchmark/cohort_papers.py` cites as the home of design detail is in
   neither tree nor history, though C12's exposure column needed it.
 - `tests/test_specifier.py::test_excluded_variables_do_not_consume_access_budget` cannot

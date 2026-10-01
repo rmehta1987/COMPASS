@@ -295,8 +295,8 @@ REFUSAL_SENTINEL = "NOT SPECIFIABLE:"
 #: the pair — and MEASURED 2026-08-28, neither is reachable from this environment
 #: at all: get_contrast_convention has no branch that fails to return a contrast,
 #: and check_access returns only `pass` or `refer`, never a refusing decision. A
-#: reason no return value can produce cannot be earned. Reported rather than
-#: silently patched: env/tools.py belongs to another lane.
+#: reason no return value can produce cannot be earned. The fix, if any, is in
+#: env/tools.py, not in this menu; it is recorded in `TASKS.md`.
 PAIR_ADJUDICABLE = frozenset({
     RefusalReason.anchors_are_the_same_construct,
     RefusalReason.registry_empty,
@@ -760,8 +760,8 @@ def _reason(backend: AnyBackend, pair, callables, schemas, seed, temperature):
 
     Returns the analysis prose, the in-memory ToolLog the gate reads, the step
     count, and the RAW log records. The raw records are separate from ToolLog
-    because ToolCall in env/tools.py carries no `result` field — that file
-    belongs to another lane — and without the return values there is nothing for
+    because ToolCall in env/tools.py carries no `result` field, and without the
+    return values there is nothing for
     agent/tool_authority.py to be authoritative with.
     """
     raw: list[dict] = []
