@@ -24,7 +24,6 @@ import hashlib
 import importlib.util
 import json
 import platform
-import re
 import statistics
 import subprocess
 import sys
@@ -35,14 +34,6 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 DEPLOY = REPO / "deploy"
-# Ported from `serve/redact.py::KEY_RE`, as `site/tools/no_instrument.py` was.
-# This is the writer's last line before a public artifact is saved, and the
-# pattern it replaced saw 1,284 of the 2,804 item keys (MEASURED 2026-09-09):
-# it cannot match a numeric roster prefix between the colon and the `Q`, which
-# is the shape of 1,520 of them.
-KEY_RE = re.compile(
-    r"\bm\d+:(?:\d+_)?Q\d+(?:\.\d+)?(?:#\d+(?:_\d+)*)?(?:_\d+)*(?:_TEXT)?(?:~\d+)?",
-    re.IGNORECASE)
 
 
 def load(path: Path, name: str):  # noqa: ANN201
@@ -51,6 +42,16 @@ def load(path: Path, name: str):  # noqa: ANN201
     sys.modules[name] = mod
     spec.loader.exec_module(mod)
     return mod
+
+
+# `serve/redact.py::KEY_RE`, loaded rather than ported (a port is a copy that
+# can drift). This is the writer's last line before a public artifact is saved,
+# and the pattern a copy once replaced saw 1,284 of the 2,804 item keys
+# (MEASURED 2026-09-09): it cannot match a numeric roster prefix between the
+# colon and the `Q`, which is the shape of 1,520 of them. Loaded by path, as the
+# retriever is, so the repo root never goes on `sys.path` ahead of the torch
+# stack: the root holds an `mcp/` package that would shadow an installed `mcp`.
+KEY_RE = load(REPO / "serve" / "redact.py", "compass_serve_redact").KEY_RE
 
 
 def sha(p: Path) -> str:
