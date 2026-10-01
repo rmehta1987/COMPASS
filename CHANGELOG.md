@@ -14,6 +14,18 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
 
 ---
 
+## 2026-09-30
+
+- **The build's output is hashed; the column-set gap is closed, not declared.**
+  `build.py::content_hash` hashes the emitted dictionary (every entry and column, plus
+  its metadata; `version_hash` excluded) and the build prints it on its second line. It
+  is pinned in `tests/test_dictionary.py::CONTENT_HASH`, and a fresh-build test plus a
+  per-column test make a column added, removed, renamed or rewritten go red. This
+  replaces `_COLUMNS_NOT_HASHED` and its gap-pinning test. `version_hash` and its pin are
+  unchanged, because `deploy/` and `src/` assert it. The `build`, `read_module` and
+  `compose_retrieval_text` gaps in `_NOT_HASHED` remain gaps in `version_hash` only.
+  Seeded: a new `Entry` column left `version_hash` unmoved and turned the suite red.
+
 ## 2026-09-24
 
 - **R3: the dictionary gains `retrieval_text`, a search-only column** (`291cf10`,

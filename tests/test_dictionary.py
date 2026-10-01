@@ -235,6 +235,13 @@ def test_build_is_deterministic():
 #: Item 8 moved it not at all, which was that item's whole constraint.
 BUILD_HASH = "3dc8415eccfe"
 
+#: The hash of what the build EMITS (`build.py::content_hash`), pinned once. It
+#: moves on any change to an entry, a column or the dictionary's metadata,
+#: which `BUILD_HASH` does not: a column once reached the dictionary with
+#: `BUILD_HASH` unmoved. History:
+#:   72d3ffa7fbad   introduced 2026-09-30 at BUILD_HASH 3dc8415eccfe
+CONTENT_HASH = "72d3ffa7fbad"
+
 _FILES = {"module_1_codebook_full.csv": "a" * 64,
           "module_2_codebook_full.csv": "b" * 64,
           "module_3_codebook_full.csv": "c" * 64}
@@ -336,8 +343,8 @@ def test_the_hash_has_moved_only_deliberately():
     THIS TEST WAS NAMED `test_only_a_rule_or_a_column_change_has_ever_moved_the
     _hash` and its docstring said "any new column must bump", which is the
     claim `AGENTS.md` carried and which does not hold as a mechanism —
-    `_rule_fingerprint` never reads `Entry`, and
-    `test_the_column_set_is_outside_the_fingerprint_and_says_so` measures that.
+    `_rule_fingerprint` never reads `Entry`. A column change is caught by
+    `CONTENT_HASH` instead (`test_a_column_change_moves_the_content_hash`).
     The three recorded moves beside `BUILD_HASH` are attributed to columns;
     whatever in each of those changes actually moved the hash is NOT
     re-derived here, and the attribution should not be read as a mechanism.
@@ -456,64 +463,108 @@ def test_the_two_declared_gaps_say_they_are_gaps():
         assert B._NOT_HASHED[name].startswith("DECLARED GAP")
 
 
-def test_the_column_set_is_outside_the_fingerprint_and_says_so():
-    """The third declared gap, pinned so closing it is deliberate.
+def test_the_shipped_dictionary_carries_the_content_hash_this_file_pins(d):
+    """The stored dictionary is the one `CONTENT_HASH` describes."""
+    assert B.content_hash(d) == CONTENT_HASH
 
-    `AGENTS.md` said "any column, regex, shape-table or parsing-function change
-    moves `version_hash` on its own". The column clause was FALSE AS A
-    MECHANISM: `_rule_fingerprint` reads patterns, `SHAPES`,
-    `MOJIBAKE_MARKERS` and the source of `_HASHED_SOURCES`, and an `Entry`
-    field populated in `build` -- itself a declared gap -- is in none of them.
-    CONFIRMED 2026-09-15: a column added to `Entry` reached
-    `build/dictionary.json` with `version_hash` still `3dc8415eccfe` and the
-    suite green, while editing `RE_SUBITEM_SUFFIX` moved it to `cb7a8dc275d2`.
-    The operator decided to NARROW THE SENTENCE rather than hash the field set,
-    so two materially different dictionaries can share one build hash and this
-    test is the record of that.
 
-    Driven through `_version_hash` rather than through a build, for the reason
-    its own docstring gives: a build would write `build/` and move the artefact
-    under test.
+def test_a_fresh_build_emits_the_pinned_content_hash():
+    """Rebuild and compare, so a `build.py` edit that changes output goes red.
+
+    Reading the stored `build/dictionary.json` alone would pass on a stale
+    artefact after a rule edit. The build also prints the hash on its second
+    line, below a first line that stays byte-identical for its readers.
     """
-    import dataclasses
+    import subprocess
+    proc = subprocess.run([sys.executable, str(ROOT / "build.py")], check=True,
+                          capture_output=True, cwd=ROOT, text=True)
+    lines = proc.stdout.splitlines()
+    assert lines[0].startswith(f"build {BUILD_HASH}  (")
+    assert lines[1] == f"  content {CONTENT_HASH}"
+    rebuilt = json.loads((BUILD / "dictionary.json").read_text())
+    assert B.content_hash(rebuilt) == CONTENT_HASH
 
-    n = 2804
-    before = B._version_hash(_FILES, n)
 
-    # A column set with one more field than `Entry` has. Substituted at the
-    # module level, which is what `build` reads, so if the fingerprint ever
-    # started consulting it the hash below would move.
-    wider = dataclasses.make_dataclass(
-        "Entry", [*((f.name, f.type) for f in dataclasses.fields(B.Entry)),
-                  ("a_column_nobody_hashed", str)])
-    original = B.Entry
-    try:
-        B.Entry = wider                                  # type: ignore[misc]
-        assert B._version_hash(_FILES, n) == before, (
-            "the Entry column set now moves version_hash. That is the gap "
-            "closed, which is a user amendment: reword AGENTS.md Hard "
-            "Constraints back, repin BUILD_HASH with its history, and delete "
-            "build.py::_COLUMNS_NOT_HASHED")
-    finally:
-        B.Entry = original                               # type: ignore[misc]
+def _fresh(d: dict) -> dict:
+    return json.loads(json.dumps(d))
 
-    # No field name reaches the payload either, so the independence above is a
-    # property of the fingerprint and not of this substitution.
-    blob = json.dumps(B._rule_fingerprint(), sort_keys=True)
-    for field in dataclasses.fields(B.Entry):
-        assert f'"{field.name}"' not in blob, field.name
 
-    # Anti-vacuity: the payload is not empty, and the things that ARE hashed
-    # are in it -- otherwise the loop above passes on a fingerprint of nothing.
-    assert len(blob) > 500
-    for name in B._HASHED_PATTERNS:
-        assert name in blob, name
-    for name in B._HASHED_SOURCES:
-        assert name in blob, name
+def test_a_column_change_moves_the_content_hash(d):
+    """A column added, removed or renamed moves the content hash.
 
-    # And the gap is DECLARED, in the file that has it.
-    assert "version_hash" in B._COLUMNS_NOT_HASHED
-    assert len(B._COLUMNS_NOT_HASHED) > 60
+    This closes the gap `version_hash` leaves: `_rule_fingerprint` never reads
+    `Entry`, so on 2026-09-15 a new column reached `build/dictionary.json` with
+    `version_hash` still `3dc8415eccfe` and the suite green. The content hash
+    covers every column of every entry.
+    """
+    before = B.content_hash(d)
+    assert B.content_hash(_fresh(d)) == before
+
+    added = _fresh(d)
+    for e in added["entries"]:
+        e["a_column_nobody_hashed"] = ""
+    assert B.content_hash(added) != before
+
+    removed = _fresh(d)
+    for e in removed["entries"]:
+        del e["roster_family_size"]
+    assert B.content_hash(removed) != before
+
+    renamed = _fresh(d)
+    for e in renamed["entries"]:
+        e["family_size"] = e.pop("roster_family_size")
+    assert B.content_hash(renamed) != before
+
+
+def test_every_column_is_in_the_content_hash(d):
+    """Changing one value in one column of one entry moves the hash.
+
+    Per column, so a hash that skipped one column is red on that column by
+    name rather than passing on the others.
+    """
+    before = B.content_hash(d)
+    columns = list(d["entries"][0])
+    # Anti-vacuity: the loop below must walk the real column set.
+    assert len(columns) > 30 and "retrieval_text" in columns
+    changed = _fresh(d)
+    row = changed["entries"][0]
+    for column in columns:
+        value = row[column]
+        row[column] = ("x" if value is None else
+                       not value if isinstance(value, bool) else
+                       value + 1 if isinstance(value, int) else f"{value}x")
+        assert B.content_hash(changed) != before, column
+        row[column] = value
+    assert B.content_hash(changed) == before
+
+
+def test_one_entry_wording_change_moves_the_content_hash(d):
+    """A one-character change to one row's `question_text` moves it."""
+    before = B.content_hash(d)
+    changed = _fresh(d)
+    changed["entries"][0]["question_text"] += " "
+    assert B.content_hash(changed) != before
+
+
+def test_the_content_hash_is_canonical_and_ignores_version_hash(d):
+    """Key order and `version_hash` do not move the content hash.
+
+    Key order is not content, and `version_hash` describes the rules rather
+    than the output, so a docstring edit inside a hashed function moves
+    `BUILD_HASH` and must leave this pin alone.
+    """
+    before = B.content_hash(d)
+    reordered = {k: d[k] for k in reversed(list(d))}
+    reordered["entries"] = [dict(reversed(list(e.items()))) for e in d["entries"]]
+    assert B.content_hash(reordered) == before
+
+    rehashed = _fresh(d)
+    rehashed["version_hash"] = "000000000000"
+    assert B.content_hash(rehashed) == before
+
+    relabelled = _fresh(d)
+    relabelled["key_rule"] += " "
+    assert B.content_hash(relabelled) != before
 
 
 # --------------------------------------------------------------------------- #
@@ -820,8 +871,9 @@ def test_the_retrieval_text_rule_is_outside_the_fingerprint_and_says_so(monkeypa
     operator's ruling of 2026-09-24: hashing it moved `version_hash` to
     `c00f52110ce1`, which the pins in `tests/test_browse.py`,
     `tests/test_retrieval_eval.py`, `src/` and `deploy/` all refuse. So an edit
-    to it changes the dictionary under an unchanged hash, and this test is the
-    record of that rather than a guarantee against it.
+    to it changes the dictionary under an unchanged `version_hash`; the
+    `retrieval_text` it writes is covered by `CONTENT_HASH` instead
+    (`test_every_column_is_in_the_content_hash`).
     """
     before = B._version_hash(_FILES, 2804)
 

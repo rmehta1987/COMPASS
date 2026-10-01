@@ -71,19 +71,12 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 - `build.py` hashes files + the rule fingerprint + n, not entries: any regex, shape-table
   or parsing-function change moves `version_hash` on its own.
   `BUILD_RULES_VERSION` is a label now, not the provenance.
-- THE COLUMN SET IS A THIRD DECLARED GAP (user amendment, 2026-09-15 — the column clause
-  is withdrawn from the line above). `_rule_fingerprint` reads patterns, `SHAPES`,
-  `MOJIBAKE_MARKERS` and the source of `_HASHED_SOURCES`; an `Entry` field populated in
-  `build` is in none of them. CONFIRMED: a column reached `build/dictionary.json` with
-  `version_hash` still `3dc8415eccfe` and the suite green, while a hashed-regex edit
-  moved it to `cb7a8dc275d2`. So two materially different dictionaries can share one
-  build hash, and the "build hash moved" stop condition is blind to that class of change.
-  Declared, not closed; pinned by
-  `tests/test_dictionary.py::test_the_column_set_is_outside_the_fingerprint_and_says_so`
-  and `build.py::_COLUMNS_NOT_HASHED`, so closing it is a deliberate act.
+- `version_hash` does not see the column set or unhashed code, so the build's OUTPUT is
+  hashed too: `build.py::content_hash` covers every entry and column, is printed on the
+  build's second line, and is pinned once in `tests/test_dictionary.py::CONTENT_HASH`.
 - Every module-level function in `build.py` is hashed or in `_NOT_HASHED` with a reason;
-  `build` and `read_module` are DECLARED GAPS — they decide rows and are excluded so a
-  refactor does not move the hash.
+  `build`, `read_module` and `compose_retrieval_text` are gaps in `version_hash` only —
+  the rows they decide are in `content_hash`.
 - A key never reaches a model as a string it must copy back: `agent/prompt_contract.py`
   offers candidates by index and resolves the index itself. Three model tiers read one
   delimiter rule three ways before this existed.
@@ -226,11 +219,13 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
   undeclared and not installed, `build.py` needs the withheld `raw/`, and the two
   `benchmark` modules need `build/dictionary.json` and `benchmark/fixtures/`. The
   retrieval tree's equivalent is `python deploy/smoke_test.py` (README).
-- Two stop conditions, only these: the test count FELL, or the build hash moved off
-  `3dc8415eccfe`. A grown test count and a moved `surface_hash` are progress. Both are
-  evaluable on the training machine only.
+- Three stop conditions, only these: the test count FELL, the build hash moved off
+  `3dc8415eccfe`, or the content hash moved off its pin in
+  `tests/test_dictionary.py::CONTENT_HASH`. A grown test count and a moved
+  `surface_hash` are progress. All three are evaluable on the training machine only.
 - The build hash is now a function of the RULES, not of a version string
-  (`build.py::_rule_fingerprint`), so it moves whenever a regex, the shape table,
-  a parsing function's source or a column changes. Moving it deliberately is
-  allowed and is a user amendment; the pin lives once, in
-  `tests/test_dictionary.py::BUILD_HASH`, with its history beside it.
+  (`build.py::_rule_fingerprint`), so it moves whenever a regex, the shape table or
+  a hashed parsing function's source changes; a column change moves only the content
+  hash. Moving either deliberately is allowed and is a user amendment; each pin lives
+  once, in `tests/test_dictionary.py::BUILD_HASH` or `::CONTENT_HASH`, with its history
+  beside it.

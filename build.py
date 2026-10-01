@@ -310,55 +310,44 @@ _HASHED_PATTERNS = (
 _HASHED_SOURCES = ("collapse_to_base", "parse_shape", "split_stem",
                    "repair_mojibake", "_to_original_bytes")
 
-#: A THIRD DECLARED GAP, and the one that is not a function: `Entry`'s COLUMN
-#: SET is outside the fingerprint. `_rule_fingerprint` reads patterns, `SHAPES`,
-#: `MOJIBAKE_MARKERS` and the source of `_HASHED_SOURCES`; a new `Entry` field
-#: populated in `build` -- itself a declared gap -- is in none of them. CONFIRMED
-#: 2026-09-15: a column added to `Entry` reached `build/dictionary.json` with
-#: `version_hash` still `3dc8415eccfe` and the suite green, while editing
-#: `RE_SUBITEM_SUFFIX` moved it to `cb7a8dc275d2`. So TWO MATERIALLY DIFFERENT
-#: DICTIONARIES CAN SHARE ONE BUILD HASH, and the "build hash moved" stop
-#: condition in `AGENTS.md` §Verify current state is blind to that class of
-#: change. Declared rather than closed, by the operator's decision of
-#: 2026-09-15: hashing the field set would move the hash on every column, which
-#: is a user amendment each time. `tests/test_dictionary.py` pins the gap, so
-#: closing it later is a deliberate act and not a silent one.
-_COLUMNS_NOT_HASHED = (
-    "Entry's field set is not in _rule_fingerprint; a column can be added, "
-    "removed or renamed without moving version_hash.")
-
 #: Every other module-level function here, each with the reason it is NOT a
 #: hashed rule. `tests/test_dictionary.py` asserts this set plus
 #: `_HASHED_SOURCES` is exactly the module-level functions of this file, so
 #: adding a function forces a deliberate choice instead of silently landing
 #: outside the fingerprint.
 #:
-#: THREE OF THESE ARE DECLARED GAPS, not clean exclusions. `build` and
-#: `read_module` DO decide rows, and they are excluded because hashing them
-#: would move `version_hash` on every refactor of a ~130-line function — the
-#: same noise problem already accepted for docstrings, at much higher frequency.
-#: `compose_retrieval_text` decides every row's `retrieval_text` and is excluded
-#: for a different reason: the operator's ruling of 2026-09-24 (R3), because
-#: hashing it moves the build pins that `tests/test_browse.py`,
+#: THREE OF THESE ARE DECLARED GAPS IN `version_hash`, not clean exclusions.
+#: `build` and `read_module` DO decide rows, and they are excluded because
+#: hashing them would move `version_hash` on every refactor of a ~130-line
+#: function. `compose_retrieval_text` decides every row's `retrieval_text` and
+#: is excluded by the operator's ruling of 2026-09-24 (R3), because hashing it
+#: moves the build pins that `tests/test_browse.py`,
 #: `tests/test_retrieval_eval.py`, `src/` and `deploy/` hold at `3dc8415eccfe`.
-#: Declaring the gap is the honest move; closing it is not this file's job, and
-#: the reasons below are the whole record of it.
+#: All three are COVERED BY `content_hash`, which hashes the rows they decide:
+#: an edit to any of them that changes the output moves the content pin in
+#: `tests/test_dictionary.py::CONTENT_HASH`.
 _NOT_HASHED: dict[str, str] = {
-    "build": "DECLARED GAP — the Entry-assembly loop decides field assignment, "
-             "including the ~{occ} key separator, the _TEXT clauses, the group: "
-             "namespace and the construct_key format. Not hashed because the "
-             "hash would move on every refactor of a 130-line function.",
-    "read_module": "DECLARED GAP — sets every row's question_text from the raw "
-                   "CSV. Not hashed for the same reason as build; the raw files "
-                   "themselves are hashed, which covers their content but not "
-                   "the reading of it.",
+    "build": "DECLARED GAP in version_hash, covered by content_hash — the "
+             "Entry-assembly loop decides field assignment, including the "
+             "~{occ} key separator, the _TEXT clauses, the group: namespace and "
+             "the construct_key format. Its source is not hashed because the "
+             "hash would move on every refactor of a 130-line function; the "
+             "rows and columns it emits are.",
+    "read_module": "DECLARED GAP in version_hash, covered by content_hash — "
+                   "sets every row's question_text from the raw CSV. Its "
+                   "source is not hashed for the same reason as build; the "
+                   "question_text it produces is.",
     "_rule_fingerprint": "computes the fingerprint; hashing the hasher is "
                          "circular and says nothing about any row.",
     "_version_hash": "assembles the payload; same reason as _rule_fingerprint.",
+    "content_hash": "hashes the build's output; it decides nothing about a row, "
+                    "and an edit to it moves the content pin on its own.",
     "_write_csv": "writes a table to disk and decides nothing about a row.",
-    "compose_retrieval_text": "DECLARED GAP — decides every row's "
+    "compose_retrieval_text": "DECLARED GAP in version_hash, covered by "
+                              "content_hash — decides every row's "
                               "retrieval_text, so an edit here changes the "
-                              "dictionary under an unchanged version_hash. Not "
+                              "dictionary under an unchanged version_hash but "
+                              "moves content_hash. Its source is not "
                               "hashed by the operator's ruling of 2026-09-24 "
                               "(R3): hashing it moved the hash to c00f52110ce1, "
                               "which pins in tests/test_browse.py, "
@@ -392,6 +381,31 @@ def _version_hash(file_hashes: dict[str, str], n_entries: int) -> str:
         sort_keys=True,
     )
     return hashlib.sha256(payload.encode()).hexdigest()[:12]
+
+
+def content_hash(dictionary: dict) -> str:
+    """The identity of what the build emitted: every entry, every column.
+
+    `version_hash` is a function of the inputs and the rules, so it is blind to
+    anything outside `_rule_fingerprint` — a new `Entry` column reached
+    `build/dictionary.json` with `version_hash` unmoved on 2026-09-15. This
+    hashes the output instead, so any change to what the build writes moves it,
+    whatever in this file caused the change. `version_hash` is left out because
+    it describes the rules, not the content: a docstring edit inside a hashed
+    function moves it and should not move this.
+
+    Args:
+        dictionary: The mapping `build` returns, or `build/dictionary.json`
+            loaded back; both give the same hash because the canonical form is
+            JSON.
+
+    Returns:
+        The first 12 hex characters of the sha256 of the canonical JSON.
+    """
+    content = {k: v for k, v in dictionary.items() if k != "version_hash"}
+    canonical = json.dumps(content, sort_keys=True, ensure_ascii=False,
+                           separators=(",", ":"))
+    return hashlib.sha256(canonical.encode()).hexdigest()[:12]
 
 
 def _rule_fingerprint() -> dict:
@@ -666,6 +680,7 @@ if __name__ == "__main__":
     c = d["counts"]
     print(f"build {d['version_hash']}  ({c['total']} entries, "
           f"{c['distinct_constructs']} distinct constructs)")
+    print(f"  content {content_hash(d)}")
     for name, n in c["shapes"].items():
         print(f"  {n:5d}  {name}")
     print(f"  repaired {c['text_repaired']} mojibake rows, "
