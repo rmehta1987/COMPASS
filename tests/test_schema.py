@@ -1521,3 +1521,34 @@ def test_a_pair_a_model_proposed_names_its_resolver() -> None:
         Provenance(**base, models={"splitter": " "})
     # Anti-vacuity: a record made before the fields existed still validates.
     assert Provenance(**base).anchors_proposed_by is None
+
+
+def test_key_pattern_is_the_literal_the_schema_has_always_emitted() -> None:
+    """`KEY_PATTERN` is built from `_PREFIX` and reaches the prompt as `pattern`.
+
+    Composing it from a shared prefix means an edit to `_PREFIX` moves the
+    pattern the model is shown; this pins the bytes so that cannot happen quietly.
+    """
+    from agent.schema import KEY_PATTERN
+
+    assert KEY_PATTERN == (
+        r"^(?:m[123]|clinical|lab|linked|ehr):[A-Za-z0-9._#-]+(?:~\d+)?$")
+    props = ProtocolSpecification.model_json_schema()["$defs"]["VariableRef"]
+    assert props["properties"]["key"]["pattern"] == KEY_PATTERN
+
+
+def test_every_causal_role_belongs_in_exactly_one_covariate_list() -> None:
+    """`_LIST_FOR_ROLE` names where a misplaced role goes; it needs a partition.
+
+    A role in two sets would be pointed at whichever list the dict built last,
+    and a role in none would get no "belongs in" hint at all.
+    """
+    from agent.schema import _COVARIATE_LISTS, _LIST_FOR_ROLE, CausalRole
+
+    placed = [role for _, _, roles in _COVARIATE_LISTS for role in roles]
+    assert len(placed) == len(set(placed)), "a role sits in two covariate lists"
+    assert set(placed) == set(CausalRole), "a role sits in no covariate list"
+    fields = set(ProtocolSpecification.model_fields)
+    assert {field for field, _, _ in _COVARIATE_LISTS} <= fields
+    for field, _, roles in _COVARIATE_LISTS:
+        assert all(_LIST_FOR_ROLE[r] == field for r in roles)

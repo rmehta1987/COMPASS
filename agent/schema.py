@@ -23,23 +23,46 @@ model must emit fields in the order given, so any field whose value is a verdict
 is declared AFTER the fields that justify it. Put `role` before `mechanism` and
 the grammar forces the model to commit to a causal role before it has written the
 reasoning that would justify one. Do not reorder these classes casually.
+
+DOCSTRINGS OF MODELS AND ENUMS ARE PROMPT TEXT. `model_json_schema()` copies every
+`BaseModel` and `Enum` class docstring, and every `Field(description=...)`, into the
+schema that is pasted into the transduction prompt. So:
+
+* those docstrings carry no study design, exposure, outcome, paper count, cohort
+  figure or prevalence, and no maintainer rationale — that goes in comments;
+* a class that has no docstring must not gain one casually: it adds prompt text.
+  Those classes carry `# noqa: D101` for that reason, and the three model
+  docstrings that are not in Google layout carry `# noqa: D205`;
+* `ValueError` messages are read by the model in the repair loop, so they are
+  prompt text too.
+
+Validator, method and function docstrings are not copied anywhere and follow the
+Google style the rest of the codebase uses.
 """
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import re
+from collections.abc import Iterator
 from enum import Enum, StrEnum
+from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+_ROOT = Path(__file__).resolve().parent.parent
 
 # --------------------------------------------------------------------------- #
 # namespace
 # --------------------------------------------------------------------------- #
 
-REGISTRY_PREFIXES = ("m1", "m2", "m3", "clinical", "lab", "linked", "ehr")
+#: The registry prefixes, written once. Every key regex below is built from this,
+#: and `KEY_PATTERN` reaches the schema as a `pattern`, so the built strings must
+#: stay byte-identical (`tests/test_schema.py` pins `KEY_PATTERN`).
+_PREFIX = r"(?:m[123]|clinical|lab|linked|ehr)"
 
 #: A variable key. Five registries; the survey ones are populated from the three
 #: codebooks, the other four ship declared-but-empty so that a protocol naming
@@ -47,12 +70,38 @@ REGISTRY_PREFIXES = ("m1", "m2", "m3", "clinical", "lab", "linked", "ehr")
 #: being unrepresentable. `~N` disambiguates the one qid that repeats inside a
 #: module (m2:Q785). A grid stem lives in the `group:` namespace and can never
 #: appear here.
-_WORDING_CACHE: dict[str, str] | None = None
+KEY_PATTERN = rf"^{_PREFIX}:[A-Za-z0-9._#-]+(?:~\d+)?$"
+VariableKey = Annotated[str, Field(pattern=KEY_PATTERN)]
 
+MIN_JUSTIFICATION = 25
+MIN_MECHANISM = 20
+#: Floors for the sought-but-unresolved covariate record. Same idiom and same
+#: reason as the two above: a grammar-level minLength manufactures padding
+#: instead of measuring it, so the floor lives in a validator with a
+#: reject-and-regenerate path. `MIN_SEARCH_PHRASE` is deliberately tiny — real
+#: search phrases are short — and exists only to stop a list of `[""]` or `["x"]`
+#: satisfying `min_length=1` on the list itself.
+MIN_CONSTRUCT = 12
+MIN_SEARCH_PHRASE = 2
+MIN_REJECTION = 25
+MIN_BIAS_STATEMENT = 25
+
+
+# --------------------------------------------------------------------------- #
+# instrument access — text normalisation and the two lazily loaded sources
+# --------------------------------------------------------------------------- #
 
 def _norm(t: str) -> str:
-    """Collapse whitespace. The codebooks carry hard newlines inside quoted
-    fields, so newline-versus-space is a format difference, not a paraphrase.
+    """Collapse whitespace.
+
+    The codebooks carry hard newlines inside quoted fields, so newline-versus-space
+    is a format difference, not a paraphrase.
+
+    Args:
+        t: Any text; None is treated as empty.
+
+    Returns:
+        The text with every whitespace run collapsed to one space.
     """
     return " ".join((t or "").split())
 
@@ -74,65 +123,33 @@ def _norm_construct(t: str) -> str:
     return _norm(re.sub(r"[^\w\s]", " ", t or "")).casefold()
 
 
+@functools.cache
 def _dictionary_wording() -> dict[str, str]:
-    global _WORDING_CACHE
-    if _WORDING_CACHE is None:
-        import json as _json
-        from pathlib import Path as _Path
-        p = _Path(__file__).resolve().parent.parent / "build" / "dictionary.json"
-        _WORDING_CACHE = ({e["key"]: e["question_text"]
-                           for e in _json.loads(p.read_text())["entries"]}
-                          if p.exists() else {})
-    return _WORDING_CACHE
+    """Load the instrument's wording for every key, once per process.
+
+    Returns:
+        Mapping of variable key to its `question_text`. Empty when there is no
+        `build/dictionary.json`; the validators that read it then skip.
+    """
+    p = _ROOT / "build" / "dictionary.json"
+    if not p.exists():
+        return {}
+    return {e["key"]: e["question_text"] for e in json.loads(p.read_text())["entries"]}
 
 
-_DERIVATION_CACHE: dict[str, dict] | None = None
-
-
+@functools.cache
 def _signed_derivations() -> dict[str, dict]:
-    """Load every signed derivation file, once.
+    """Load every signed derivation file, once per process.
 
     Returns:
         Mapping of derivation_id to the signed object. Empty when
         `curated/derivations/` is absent, which is the same degradation
         `_dictionary_wording` takes when there is no build.
     """
-    global _DERIVATION_CACHE
-    if _DERIVATION_CACHE is None:
-        import json as _json
-        from pathlib import Path as _Path
-        d = _Path(__file__).resolve().parent.parent / "curated" / "derivations"
-        _DERIVATION_CACHE = {
-            f.stem: _json.loads(f.read_text()) for f in sorted(d.glob("*.json"))
-        } if d.is_dir() else {}
-    return _DERIVATION_CACHE
-
-
-KEY_PATTERN = r"^(?:m[123]|clinical|lab|linked|ehr):[A-Za-z0-9._#-]+(?:~\d+)?$"
-VariableKey = Annotated[str, Field(pattern=KEY_PATTERN)]
-
-MIN_JUSTIFICATION = 25
-MIN_MECHANISM = 20
-#: Floors for the sought-but-unresolved covariate record. Same idiom and same
-#: reason as the two above: a grammar-level minLength manufactures padding
-#: instead of measuring it, so the floor lives in a validator with a
-#: reject-and-regenerate path. `MIN_SEARCH_PHRASE` is deliberately tiny — real
-#: search phrases are short — and exists only to stop a list of `[""]` or `["x"]`
-#: satisfying `min_length=1` on the list itself.
-MIN_CONSTRUCT = 12
-MIN_SEARCH_PHRASE = 2
-MIN_REJECTION = 25
-MIN_BIAS_STATEMENT = 25
-
-
-class Registry(str, Enum):
-    survey_m1 = "m1"
-    survey_m2 = "m2"
-    survey_m3 = "m3"
-    clinical = "clinical"
-    lab = "lab"
-    linked = "linked"
-    ehr = "ehr"
+    d = _ROOT / "curated" / "derivations"
+    if not d.is_dir():
+        return {}
+    return {f.stem: json.loads(f.read_text()) for f in sorted(d.glob("*.json"))}
 
 
 # --------------------------------------------------------------------------- #
@@ -163,6 +180,7 @@ class VariableRef(BaseModel):
 
     @property
     def registry(self) -> str:
+        """The registry prefix of `key`, e.g. `m2` for `m2:Q5.8`."""
         return self.key.split(":", 1)[0]
 
 
@@ -203,9 +221,9 @@ class DerivationRef(BaseModel):
         # 5's sibling: a derivation that does not match its signature is a recipe
         # invented mid-protocol, which is the one thing this class forbids.
         #
-        # Three docstrings and two tool return values have said since they were
-        # written that "validate_protocol fails if the file is missing". There
-        # was no validate_protocol and no such check anywhere. It fails here now.
+        # The docstring above, and two tool return values, say "validate_protocol
+        # fails if the file is missing". No function of that name exists; this
+        # validator is the check they mean.
         signed = _signed_derivations()
         if not signed:
             # No curated/ in this tree; the same degradation _dictionary_wording
@@ -262,6 +280,24 @@ Ref = Annotated[VariableRef | DerivationRef | AreaMeasureRef,
                 Field(discriminator="kind")]
 
 
+def _ref_key(ref: VariableRef | DerivationRef | AreaMeasureRef) -> str:
+    """The one identifier a reference is deduplicated and compared on.
+
+    Args:
+        ref: Any member of `Ref`.
+
+    Returns:
+        The variable key, or `derivation:<id>` / `area:<measure_id>` for the two
+        keyless kinds. `canonical_form`, and so `record_hash` and every saved
+        record's filename, depend on these exact labels.
+    """
+    if isinstance(ref, VariableRef):
+        return ref.key
+    if isinstance(ref, DerivationRef):
+        return f"derivation:{ref.derivation_id}"
+    return f"area:{ref.measure_id}"
+
+
 # --------------------------------------------------------------------------- #
 # causal roles
 # --------------------------------------------------------------------------- #
@@ -303,6 +339,19 @@ EXCLUDED_ROLES = {CausalRole.mediator, CausalRole.descendant_of_exposure,
 UNDETERMINED_ROLES = {CausalRole.confounder_or_mediator, CausalRole.unadjudicated,
                       CausalRole.unreliable_coding}
 
+#: The three covariate lists of `ProtocolSpecification`, declared once:
+#: (field name, short label used in messages, the roles that list takes). The
+#: short labels are frozen — they appear in repair-loop messages — and so are
+#: `canonical_form`'s keys, which feed `record_hash`.
+_COVARIATE_LISTS: tuple[tuple[str, str, set[CausalRole]], ...] = (
+    ("adjusted_covariates", "adjusted", ADJUSTED_ROLES),
+    ("excluded_variables", "excluded", EXCLUDED_ROLES),
+    ("undetermined_covariates", "undetermined", UNDETERMINED_ROLES),
+)
+#: The list each role belongs in, read off `_COVARIATE_LISTS`.
+_LIST_FOR_ROLE: dict[CausalRole, str] = {
+    role: field for field, _, roles in _COVARIATE_LISTS for role in roles}
+
 
 class CausalAdjustment(BaseModel):
     """One covariate decision.
@@ -337,6 +386,15 @@ class CausalAdjustment(BaseModel):
 
     @model_validator(mode="after")
     def _floors_and_role_coherence(self) -> CausalAdjustment:
+        """Enforce the prose floors, and `proxy_for` exactly when role is proxy.
+
+        Returns:
+            The validated decision.
+
+        Raises:
+            ValueError: If `justification` or `mechanism` is below its floor, or
+                `proxy_for` is missing for a proxy or present for anything else.
+        """
         if len(self.justification.strip()) < MIN_JUSTIFICATION:
             raise ValueError(
                 f"justification below min_length ({MIN_JUSTIFICATION}); "
@@ -377,19 +435,42 @@ class CausalAdjustment(BaseModel):
 # `extra="forbid"`.
 #
 # DECLARATION ORDER, for the same reason `CausalAdjustment` puts `mechanism`
-# before `role`: under a constrained grammar the model emits fields in the order
-# given, so what was sought and what was tried are both on the page before the
-# consequence is stated. Kept as a comment and out of the docstring because
-# model_json_schema() copies docstrings into the transduction prompt, and this
-# paragraph is for the next maintainer, not for the model.
+# before `role`: what was sought and what was tried are both on the page before
+# the consequence is stated.
 #
-# NOT CHECKED AGAINST THE TOOL LOG, DELIBERATELY. `search_phrases` says what the
-# model searched with, and nothing here verifies it against the run's own log.
-# Coupling the two was assessed and rejected: a repaired record legitimately
-# carries values its log never returned, so the gate would reject honest records
-# to catch a dishonesty nobody has observed. The guarantee this model makes is
-# that the gap is EXPRESSIBLE and RECORDED, never that it was earned.
+# NOT CHECKED AGAINST THE TOOL LOG, DELIBERATELY. A repaired record legitimately
+# carries values its log never returned, so coupling `search_phrases` to the log
+# would reject honest records to catch a dishonesty nobody has observed. The
+# guarantee is that the gap is EXPRESSIBLE and RECORDED, never that it was earned.
 # --------------------------------------------------------------------------- #
+
+#: Any variable key in model-written prose, loosely matched — the pattern that
+#: keeps a resolved covariate out of `UnresolvedCovariate.construct_sought`.
+#:
+#: Deliberately looser than `_VARIABLE_KEY_TOKEN` (HARD RULE 3 below), and a second
+#: pattern rather than a loosening of that one, because the threat models differ.
+#: `_VARIABLE_KEY_TOKEN` strips keys out of TOOL-RETURNED text, where the exact
+#: canonical form is guaranteed and anything looser would eat prose the coding
+#: scan needs; `_states_a_coding` must NOT be given this pattern. Here the text is
+#: MODEL-AUTHORED and scanned to REJECT it, and the strict form is cheaply evaded —
+#: MEASURED 2026-08-31, all four accepted where the canonical form is rejected:
+#:
+#:     rejected  m1:Q2.15_3    (the canonical form, the control)
+#:     ACCEPTED  M1:Q2.15_3    uppercase module
+#:     ACCEPTED  m1: Q2.15_3   one space after the colon
+#:     ACCEPTED  Q2.15_3       no module prefix
+#:     ACCEPTED  m1:q2.15_3    lowercase q
+#:
+#: Transduction allows ONE repair and rewards the smallest edit that passes; a
+#: case-shift is smaller than moving the entry to a covariate list and giving it a
+#: role, so the strict pattern let a resolved covariate dodge role adjudication.
+#: The bare-key branch requires `Q<digits>.<digits>`, so plain-word constructs
+#: cannot trip it.
+_KEY_TOKEN_IN_FREE_PROSE = re.compile(
+    rf"{_PREFIX}\s*:\s*[A-Za-z0-9._#~-]+"
+    r"|(?<![A-Za-z0-9])Q\s*\d+(?:\.\d+)+(?:[_#~-][A-Za-z0-9.]+)*",
+    re.I)
+
 
 class UnresolvedCovariate(BaseModel):
     """A construct that was looked for and could not be bound to any key."""
@@ -413,22 +494,27 @@ class UnresolvedCovariate(BaseModel):
 
     @model_validator(mode="after")
     def _floors_and_no_key_where_there_is_no_key(self) -> UnresolvedCovariate:
+        """Enforce the prose floors, and that the construct names no key.
+
+        Returns:
+            The validated entry.
+
+        Raises:
+            ValueError: Listing every problem found, numbered, in one message.
+        """
         # EVERY PROBLEM IN ONE MESSAGE, not the first one found. Transduction
-        # allows exactly ONE repair, and this model has three new prose fields
-        # each with its own floor -- so an entry that undershoots two of them
+        # allows exactly ONE repair, so an entry that undershoots two floors
         # would spend the repair on the first, be told nothing about the second,
-        # and die on the regenerated record. That is likeliest on the model's
-        # FIRST use of the field, which is the case the whole change exists to
-        # get right. Aggregating costs nothing: none of these checks depends on
-        # another passing.
+        # and die on the regenerated record — likeliest on the model's FIRST use
+        # of the field. None of these checks depends on another passing.
         problems: list[str] = []
-        for text, floor, field in ((self.construct_sought, MIN_CONSTRUCT,
-                                    "construct_sought"),
-                                   (self.why_rejected, MIN_REJECTION,
-                                    "why_rejected"),
-                                   (self.exposes_the_estimate_to,
-                                    MIN_BIAS_STATEMENT,
-                                    "exposes_the_estimate_to")):
+        floors = (
+            (self.construct_sought, MIN_CONSTRUCT, "construct_sought"),
+            (self.why_rejected, MIN_REJECTION, "why_rejected"),
+            (self.exposes_the_estimate_to, MIN_BIAS_STATEMENT,
+             "exposes_the_estimate_to"),
+        )
+        for text, floor, field in floors:
             if len(text.strip()) < floor:
                 problems.append(
                     f"{field} below min_length ({floor}); regenerate rather "
@@ -451,8 +537,7 @@ class UnresolvedCovariate(BaseModel):
             problems.append(
                 f"construct_sought names the variable key {found.group(0)!r}, "
                 f"so it resolved. sought_covariates is only for constructs "
-                f"that bind "
-                f"to no key at all. Move this to adjusted_covariates, "
+                f"that bind to no key at all. Move this to adjusted_covariates, "
                 f"excluded_variables or undetermined_covariates and give it a "
                 f"role; name rejected keys in why_rejected instead.")
         if problems:
@@ -467,7 +552,7 @@ class UnresolvedCovariate(BaseModel):
 # design blocks
 # --------------------------------------------------------------------------- #
 
-class Direction(str, Enum):
+class Direction(str, Enum):  # noqa: D101
     increase = "increase"
     decrease = "decrease"
     no_difference = "no_difference"
@@ -477,7 +562,7 @@ class Direction(str, Enum):
 class ExpectedDirection(BaseModel):
     """Direction is theory-derived and fabrication-free; magnitude is not. They
     do not share a field, and a magnitude without a source is refused.
-    """
+    """  # noqa: D205
 
     model_config = ConfigDict(extra="forbid")
 
@@ -487,20 +572,28 @@ class ExpectedDirection(BaseModel):
 
     @model_validator(mode="after")
     def _magnitude_needs_source(self) -> ExpectedDirection:
+        """Refuse a magnitude that names no source.
+
+        Returns:
+            The validated block.
+
+        Raises:
+            ValueError: If `magnitude` is set and `magnitude_source` is not.
+        """
         if self.magnitude and not self.magnitude_source:
             raise ValueError("magnitude requires magnitude_source — an unsourced "
                              "effect size is the 'unsupported specificity' failure")
         return self
 
 
-class Comparator(str, Enum):
+class Comparator(str, Enum):  # noqa: D101
     gte = ">="
     gt = ">"
     lte = "<="
     lt = "<"
 
 
-class FalsifierThreshold(BaseModel):
+class FalsifierThreshold(BaseModel):  # noqa: D101
     model_config = ConfigDict(extra="forbid")
     value: float
     unit: str
@@ -628,6 +721,14 @@ class Estimability(BaseModel):
 
     @model_validator(mode="after")
     def _n_and_source_agree(self) -> Estimability:
+        """Require `analytic_n` to be null exactly when `n_source` is unknown.
+
+        Returns:
+            The validated block.
+
+        Raises:
+            ValueError: If the n and its source disagree, in either direction.
+        """
         if self.analytic_n is not None and self.n_source is NSource.unknown:
             raise ValueError("analytic_n present but n_source=unknown")
         if self.analytic_n is None and self.n_source is not NSource.unknown:
@@ -635,20 +736,20 @@ class Estimability(BaseModel):
         return self
 
 
-class UnitOfAnalysis(str, Enum):
+class UnitOfAnalysis(str, Enum):  # noqa: D101
     participant = "participant"
     visit = "visit"
     participant_year = "participant-year"
 
 
-class ModelSpec(BaseModel):
+class ModelSpec(BaseModel):  # noqa: D101
     model_config = ConfigDict(extra="forbid")
     form: str
     unit_of_analysis: UnitOfAnalysis
     clustering: str
 
 
-class GateDecision(str, Enum):
+class GateDecision(str, Enum):  # noqa: D101
     pass_ = "pass"
     refer = "refer"
     fail = "fail"
@@ -683,7 +784,7 @@ class Access(BaseModel):
                     "correct-looking behaviour, wrong reason, no error")
 
 
-class SelectionMode(str, Enum):
+class SelectionMode(str, Enum):  # noqa: D101
     enumerated_screen = "enumerated_screen"
     externally_posed = "externally_posed"
     hand_specified = "hand_specified"
@@ -695,7 +796,7 @@ class SelectionRationale(BaseModel):
     the denominator small. Selection from a screened space is part of any
     eventual inference, and disclosure is what makes agnostic screening sound
     rather than suspect.
-    """
+    """  # noqa: D205
 
     model_config = ConfigDict(extra="forbid")
 
@@ -706,7 +807,17 @@ class SelectionRationale(BaseModel):
 
     @model_validator(mode="after")
     def _denominator_required_when_enumerated(self) -> SelectionRationale:
-        if self.selection_mode is SelectionMode.enumerated_screen and self.screened_from is None:
+        """Require a screening denominator for an enumerated selection.
+
+        Returns:
+            The validated block.
+
+        Raises:
+            ValueError: If `selection_mode` is `enumerated_screen` and
+                `screened_from` is null.
+        """
+        if (self.selection_mode is SelectionMode.enumerated_screen
+                and self.screened_from is None):
             raise ValueError("screened_from is required when selection_mode="
                              "enumerated_screen")
         return self
@@ -735,7 +846,7 @@ class Provenance(BaseModel):
     is the same as not having them: an ablation cannot tell two runs apart on a
     field that is "" in both. The driver knows every one of them before the model
     is called, so they are written by the wrapper and floored here.
-    """
+    """  # noqa: D205
 
     model_config = ConfigDict(extra="forbid")
 
@@ -790,12 +901,12 @@ class Provenance(BaseModel):
         return self
 
 
-class Status(str, Enum):
+class Status(str, Enum):  # noqa: D101
     draft = "draft"
     ready_for_review = "ready_for_review"
 
 
-class BlockedOn(str, Enum):
+class BlockedOn(str, Enum):  # noqa: D101
     module_co_completion_counts = "module_co_completion_counts"
     per_item_non_missing_counts = "per_item_non_missing_counts"
     area_measure_inventory = "area_measure_inventory"
@@ -804,10 +915,10 @@ class BlockedOn(str, Enum):
     #: The reference-arm outcome frequency the detectability curve was computed
     #: under was supplied by whoever called the tool, and no tool in this
     #: environment returns one to check it against. Same class of quantity as the
-    #: analytic n, and admitted the same way. It is listed LAST on purpose: the
-    #: n-gap check below refuses to let this blocker stand in for the n blocker,
-    #: because a gap admitted about one quantity is not an admission about
-    #: another.
+    #: analytic n, and admitted the same way — but it is never an admission ABOUT
+    #: the n: `_a_threshold_on_an_unknown_n_discloses_it` refuses to let it stand
+    #: in for the n blocker. It is written onto every record that called
+    #: estimate_detectability; `derive_status` says why that is deliberate.
     outcome_prevalence_unconfirmed = "outcome_prevalence_unconfirmed"
     #: The detectability curve assumes independent observations while
     #: curated/conventions/clustering_community_area.md instructs the model to
@@ -874,40 +985,9 @@ class BlockedOn(str, Enum):
 # carry digits, so a sentence naming a key while disclosing the coding gap --
 # "the response coding for m3:Q16.1_1 is unpublished" -- would otherwise trip
 # the digit-proximity patterns and punish the disclosure the rule asks for.
-_VARIABLE_KEY_TOKEN = re.compile(
-    r"(?:m[123]|clinical|lab|linked|ehr):[A-Za-z0-9._#~-]+")
-
-#: The same idea against a DIFFERENT THREAT MODEL, and the reason it is a second
-#: pattern rather than a loosening of the one above.
-#:
-#: `_VARIABLE_KEY_TOKEN` STRIPS canonical keys out of text before the coding scan
-#: reads it. That text is tool-returned, so the exact lowercase-module form is
-#: guaranteed and anything looser would start eating prose the scan needs to see.
-#: `_states_a_coding` depends on that and must NOT be given this pattern.
-#:
-#: `UnresolvedCovariate.construct_sought` is the opposite situation: MODEL-AUTHORED
-#: FREE PROSE, scanned to REJECT it. There the strict form is evadable, and cheaply
-#: — MEASURED 2026-08-31, all four accepted where the canonical form is rejected:
-#:
-#:     rejected  m1:Q2.15_3    (the canonical form, the control)
-#:     ACCEPTED  M1:Q2.15_3    uppercase module
-#:     ACCEPTED  m1: Q2.15_3   one space after the colon
-#:     ACCEPTED  Q2.15_3       no module prefix
-#:     ACCEPTED  m1:q2.15_3    lowercase q
-#:
-#: That matters because transduction allows ONE repair and the repair loop rewards
-#: the SMALLEST edit that passes. A case-shift is smaller than moving the entry to
-#: a covariate list and giving it a role, so the cheapest way past this validator
-#: was to keep the resolved covariate here and dodge role adjudication — which is
-#: the one thing the validator exists to stop.
-#:
-#: The bare-key branch requires `Q<digits>.<digits>`: a construct written in plain
-#: words cannot trip it, and that shape is what every survey key in the three
-#: modules looks like once the module prefix is dropped.
-_KEY_TOKEN_IN_FREE_PROSE = re.compile(
-    r"(?:m[123]|clinical|lab|linked|ehr)\s*:\s*[A-Za-z0-9._#~-]+"
-    r"|(?<![A-Za-z0-9])Q\s*\d+(?:\.\d+)+(?:[_#~-][A-Za-z0-9.]+)*",
-    re.I)
+_VARIABLE_KEY_TOKEN = re.compile(rf"{_PREFIX}:[A-Za-z0-9._#~-]+")
+# Its looser sibling for model-written prose, `_KEY_TOKEN_IN_FREE_PROSE`, sits
+# above `UnresolvedCovariate` with the reason the two must stay separate.
 
 #: A digit bound to a label, an anchored range, a missing-code convention. Each
 #: is narrower than its `SCALE_PATTERNS` counterpart and `coding_claim` has no
@@ -962,8 +1042,9 @@ CODING_ASSERTION_PATTERNS: dict[str, str] = {
 #:   CausalAdjustment.       `CausalRole.unreliable_coding` exists so a model
 #:   mechanism/justification CAN say a variable's coding is unusable. Gating the
 #:                           prose for that role would punish the schema's own
-#:                           designated honest answer -- and these six lists are
-#:                           the largest prose surface in the record.
+#:                           designated honest answer -- and those two fields,
+#:                           across the three covariate lists, are the largest
+#:                           prose surface in the record.
 CODING_GATED_FIELDS: tuple[str, ...] = (
     "question",
     "expected_direction.magnitude",
@@ -1078,33 +1159,42 @@ class ProtocolSpecification(BaseModel):
 
     # ----------------------------------------------------------------------- #
 
+    def _covariate_lists(
+            self) -> Iterator[tuple[str, str, set[CausalRole],
+                                    list[CausalAdjustment]]]:
+        """Walk the three covariate lists in declaration order.
+
+        Yields:
+            `(field name, short label, roles the list takes, its entries)` for
+            each row of `_COVARIATE_LISTS`.
+        """
+        for field, label, roles in _COVARIATE_LISTS:
+            yield field, label, roles, getattr(self, field)
+
     @model_validator(mode="after")
     def _roles_match_their_lists(self) -> ProtocolSpecification:
-        """A mediator in the adjusted list fails validation loudly and is logged,
+        """Refuse a covariate whose role does not belong in its list.
+
+        A mediator in the adjusted list fails validation loudly and is logged,
         rather than being silently relabelled by the decoder into something that
         looks correct.
+
+        Returns:
+            The validated record.
+
+        Raises:
+            ValueError: Naming the roles the list takes and where this one goes.
         """
         # EVERY MESSAGE NAMES THE LEGAL ROLES AND WHERE THIS ONE BELONGS. The
-        # excluded and undetermined messages used to say only which role was
-        # wrong, and the role-to-list mapping appears in no prompt, so a live run
-        # on 2026-08-27 spent all four transductions being told
-        # "role=unadjudicated cannot appear in excluded_variables" with nothing
-        # to say where unadjudicated does go. A rejection the reader cannot act
-        # on costs the whole sample.
-        for lst, name, allowed in (
-                (self.adjusted_covariates, "adjusted_covariates", ADJUSTED_ROLES),
-                (self.excluded_variables, "excluded_variables", EXCLUDED_ROLES),
-                (self.undetermined_covariates, "undetermined_covariates",
-                 UNDETERMINED_ROLES)):
+        # role-to-list mapping appears in no prompt, and a live run on 2026-08-27
+        # spent all four transductions being told "role=unadjudicated cannot
+        # appear in excluded_variables" with nothing to say where it does go. A
+        # rejection the reader cannot act on costs the whole sample.
+        for name, _, allowed, lst in self._covariate_lists():
             for entry in lst:
                 if entry.role in allowed:
                     continue
-                belongs = next(
-                    (n for n, roles in (("adjusted_covariates", ADJUSTED_ROLES),
-                                        ("excluded_variables", EXCLUDED_ROLES),
-                                        ("undetermined_covariates",
-                                         UNDETERMINED_ROLES))
-                     if entry.role in roles), None)
+                belongs = _LIST_FOR_ROLE.get(entry.role)
                 raise ValueError(
                     f"role={entry.role.value} cannot appear in {name} "
                     f"(key={_ref_key(entry.variable)}). {name} takes only "
@@ -1118,23 +1208,29 @@ class ProtocolSpecification(BaseModel):
 
     @model_validator(mode="after")
     def _wording_is_verbatim(self) -> ProtocolSpecification:
-        """`quoted_wording` must be the dictionary's text for `key`.
+        """Require every key to exist and every `quoted_wording` to be verbatim.
 
-        Line 92 has described this field as "verbatim dictionary text" since the
-        schema was written, and nothing enforced it. In the only real record the
-        pipeline has produced, six of seven were paraphrased LABELS — m1:Q3.10
-        carried "Race" against an instrument that asks "What race do you consider
-        yourself to be? Check all that apply. - Selected Choice", and m1:Q3.11
-        carried "Education level". A protocol whose wording is the model's
-        summary cannot be checked against the instrument by a human reader, which
-        is the entire purpose of carrying the wording.
+        Whitespace is normalised (`_norm`): the codebooks contain hard newlines
+        inside quoted fields, and a newline-versus-space difference is not a
+        paraphrase. Skipped when there is no build in this tree.
 
-        Whitespace is normalised: the codebooks contain hard newlines inside
-        quoted fields and a newline-versus-space difference is not a paraphrase.
+        Returns:
+            The validated record.
+
+        Raises:
+            ValueError: If a key exists in no registry, or a quoted wording is
+                not the instrument's text for its key.
         """
+        # `VariableRef.quoted_wording`'s description has said "verbatim
+        # dictionary text" since the schema was written, and nothing enforced
+        # it. In the first real record six of seven were paraphrased LABELS —
+        # m1:Q3.10 carried "Race" against an instrument that asks "What race do
+        # you consider yourself to be? Check all that apply. - Selected Choice".
+        # Wording that is the model's summary cannot be checked against the
+        # instrument by a human reader, which is the purpose of carrying it.
         truth = _dictionary_wording()
         if not truth:
-            return self                      # dictionary absent; build.py raises
+            return self
         bad, missing = [], []
         for ref, where in self._all_variable_refs():
             expected = truth.get(ref.key)
@@ -1164,16 +1260,22 @@ class ProtocolSpecification(BaseModel):
                 + "; ".join(bad[:4]))
         return self
 
-    def _all_variable_refs(self):
+    def _all_variable_refs(self) -> Iterator[tuple[VariableRef, str]]:
+        """Walk every keyed variable reference in the record.
+
+        Derivation and area-measure references carry no wording and are skipped.
+
+        Yields:
+            `(reference, where)` with `where` one of `exposure`, `outcome`, or a
+            covariate list's short label.
+        """
         for ref, where in ((self.exposure, "exposure"), (self.outcome, "outcome")):
             if isinstance(ref, VariableRef):
                 yield ref, where
-        for lst, name in ((self.adjusted_covariates, "adjusted"),
-                          (self.excluded_variables, "excluded"),
-                          (self.undetermined_covariates, "undetermined")):
+        for _, label, _, lst in self._covariate_lists():
             for e in lst:
                 if isinstance(e.variable, VariableRef):
-                    yield e.variable, name
+                    yield e.variable, label
 
     def _coding_gated_text(self) -> list[tuple[str, str]]:
         """The design fields HARD RULE 3 is enforced on, with their values.
@@ -1242,17 +1344,25 @@ class ProtocolSpecification(BaseModel):
                 f"category' says the contrast without inventing the scale. If "
                 f"the design genuinely cannot be specified without knowing the "
                 f"coding, that is an admitted gap, not a licence to supply "
-                f"one — put "
-                f"{BlockedOn.response_coding.value!r} in blocked_on and say so.")
+                f"one — put {BlockedOn.response_coding.value!r} in blocked_on "
+                f"and say so.")
         return self
 
     @model_validator(mode="after")
     def _no_covariate_repeats_an_anchor(self) -> ProtocolSpecification:
-        """Gate 4, in-record half: the outcome may not also be a covariate."""
+        """Gate 4, in-record half: neither anchor may also be a covariate.
+
+        Returns:
+            The validated record.
+
+        Raises:
+            ValueError: If the exposure or outcome appears in a covariate list.
+        """
+        # The message builds "<label>_covariates", which for the excluded list
+        # names `excluded_covariates` — not a field; the field is
+        # `excluded_variables`. Left as is: message text is prompt text.
         anchors = {_ref_key(self.exposure), _ref_key(self.outcome)}
-        for lst, name in ((self.adjusted_covariates, "adjusted"),
-                          (self.excluded_variables, "excluded"),
-                          (self.undetermined_covariates, "undetermined")):
+        for _, name, _, lst in self._covariate_lists():
             for entry in lst:
                 if _ref_key(entry.variable) in anchors:
                     raise ValueError(
@@ -1262,10 +1372,16 @@ class ProtocolSpecification(BaseModel):
 
     @model_validator(mode="after")
     def _no_covariate_named_twice(self) -> ProtocolSpecification:
+        """A covariate goes in exactly one list, once.
+
+        Returns:
+            The validated record.
+
+        Raises:
+            ValueError: If one reference key appears twice across the lists.
+        """
         seen: dict[str, str] = {}
-        for lst, name in ((self.adjusted_covariates, "adjusted"),
-                          (self.excluded_variables, "excluded"),
-                          (self.undetermined_covariates, "undetermined")):
+        for _, name, _, lst in self._covariate_lists():
             for entry in lst:
                 k = _ref_key(entry.variable)
                 if k in seen:
@@ -1291,31 +1407,22 @@ class ProtocolSpecification(BaseModel):
 
         Raises:
             ValueError: If two `sought_covariates` entries name the same
-                construct after whitespace and case normalisation.
+                construct after whitespace, case and punctuation normalisation.
         """
-        # The keyed lists get this from `_no_covariate_named_twice`, which
-        # compares keys. There is no key here, so the comparison is on the
-        # normalised construct prose — a low bar that only catches a genuine
-        # repeat, which is the only thing worth catching: the length floors
-        # already make padding with prose expensive, and repeating one entry is
-        # the cheap way around them.
-        #
-        # PUNCTUATION IS PART OF THE NORMALISATION, and that is the whole reason
-        # `_norm_construct` exists rather than `_norm(...).casefold()`. `_norm`
-        # collapses whitespace and nothing else, so two entries identical up to a
-        # TRAILING PERIOD validated together — measured. Adding a period is
-        # cheaper than either of the two things this check is defending: the
-        # three prose floors above, and the requirement to say which construct
-        # the second search was for.
+        # The keyed lists get this from `_no_covariate_named_twice`. There is no
+        # key here, so the comparison is on the normalised construct prose — a
+        # low bar that catches only a genuine repeat, the cheap way around the
+        # length floors. Punctuation is normalised too (`_norm_construct`): with
+        # whitespace alone, two entries differing by a TRAILING PERIOD validated
+        # together — measured.
         seen: dict[str, int] = {}
         for i, entry in enumerate(self.sought_covariates):
             k = _norm_construct(entry.construct_sought)
             if k in seen:
                 raise ValueError(
                     f"sought_covariates[{i}] repeats the construct named in "
-                    f"sought_covariates[{seen[k]}] "
-                    f"({entry.construct_sought!r}). One "
-                    f"entry per construct — if the second search was for a "
+                    f"sought_covariates[{seen[k]}] ({entry.construct_sought!r}). "
+                    f"One entry per construct — if the second search was for a "
                     f"different construct, say which; if it was the same "
                     f"search, delete it and put every phrase you tried in the "
                     f"one entry's search_phrases.")
@@ -1393,30 +1500,36 @@ class ProtocolSpecification(BaseModel):
 
     @model_validator(mode="after")
     def _falsifier_is_detectable(self) -> ProtocolSpecification:
-        """A falsifier below the smallest detectable effect cannot be falsified by
-        the study it is attached to.
+        """Refuse a falsifier below the smallest effect this study can detect.
+
+        Such a falsifier cannot be falsified by the study it is attached to.
+
+        Returns:
+            The validated record.
+
+        Raises:
+            ValueError: If the threshold's unit differs from the curve's, the
+                record has a curve but no caller-independent bound, `at_n` is
+                not on that bound, `value` is null, or the threshold is below
+                the floor.
         """
         t, sde = self.falsifier_threshold, self.estimability.smallest_detectable_effect
+        if t is None:
+            return self
         # Read off a CURVE, not off `value`. The two are kept equal by
         # apply_tool_authority, but the curves are the environment's return value
         # and `value` is a scalar somebody could later edit; comparing against
         # the derived copy is how a check comes to be pointed at a different row
         # than the one the record discloses.
-        if t and (sde.curve or sde.worst_case_curve) and sde.at_n is not None:
-            # A UNIT MISMATCH IS A REFUSAL, NOT AN ABSTENTION. The comparison
-            # used to be guarded by `t.unit == sde.unit` and simply not happen
-            # otherwise, which made the whole floor check optional: any threshold
-            # in any other unit sailed past it in silence. Found in the first
-            # green live record, 2026-08-27 — Haiku wrote `0.68 odds ratio`
-            # against a percentage-point curve and the record was accepted with
-            # its falsifier never compared to anything.
-            #
-            # estimate_detectability computes a RISK DIFFERENCE and nothing else,
-            # so a threshold in any other unit is not checkable against this
-            # study's power. That is a real limit and the honest response is to
-            # say so, not to wave the record through: state the threshold as a
-            # risk difference, or state the falsifier in prose and leave
-            # falsifier_threshold null, which the schema allows.
+        if (sde.curve or sde.worst_case_curve) and sde.at_n is not None:
+            # A UNIT MISMATCH IS A REFUSAL, NOT AN ABSTENTION. The comparison was
+            # once guarded by `t.unit == sde.unit` and simply skipped otherwise,
+            # which made the floor check optional: the first green live record,
+            # 2026-08-27, had Haiku's `0.68 odds ratio` against a
+            # percentage-point curve and was accepted with its falsifier never
+            # compared to anything. estimate_detectability computes a RISK
+            # DIFFERENCE and nothing else, so the honest output is a threshold in
+            # that unit, or a prose falsifier with falsifier_threshold null.
             if sde.unit and t.unit != sde.unit:
                 raise ValueError(
                     f"falsifier_threshold is in {t.unit!r} but the detectable "
@@ -1429,20 +1542,16 @@ class ProtocolSpecification(BaseModel):
                     f"`falsifier` prose, which is the correct output for a "
                     f"model-comparison or ratio-scale falsifier.")
             # THE COMPARATOR IS THE CALLER-INDEPENDENT BOUND. `curve` is computed
-            # under an outcome frequency the caller asserted and nothing here can
-            # check, and the detectable effect shrinks as that frequency moves
-            # away from the maximising one — so a record checked against its own
-            # `curve` is a record grading itself on a floor it chose. Measured on
-            # the eight live records that existed on 2026-08-27: every one of
-            # them set its threshold at or a hair above its own asserted floor,
-            # and every one of them sits below this bound.
+            # under an outcome frequency the caller asserted, so a record checked
+            # against its own `curve` grades itself on a floor it chose. Measured
+            # on the eight live records of 2026-08-27: every one set its
+            # threshold at or a hair above its own asserted floor, and every one
+            # sits below this bound.
             bound = {pt.n: pt.sde_percentage_points for pt in sde.worst_case_curve}
             if not bound:
-                # A record with a disclosed curve but no bound cannot be gated at
-                # all. estimate_detectability returns both together, so this can
-                # only be a record that predates the bound or one edited by hand;
-                # either way the honest answer is that the check cannot run, not
-                # that it passed.
+                # estimate_detectability returns the curve and the bound
+                # together, so this is a record that predates the bound or was
+                # edited by hand. The check cannot run; that is not a pass.
                 raise ValueError(
                     "smallest_detectable_effect carries a curve but no "
                     "worst_case_curve, so the falsifier can only be compared "
@@ -1466,28 +1575,35 @@ class ProtocolSpecification(BaseModel):
                     f"the record chose. Raise the threshold, or name a larger n "
                     f"on the curve and disclose that larger claim.")
             return self
-        if t and sde.value is None:
-            # Found live: the model wrote the whole detectability curve into the
-            # free-text `assumptions` field and left `value` null, so this check
-            # had nothing to compare against and passed vacuously — a 13pp
-            # falsifier sailed through unexamined. A check that silently
-            # abstains is worse than no check, because the record then claims a
-            # falsifier that was never tested against the study's power.
+        if sde.value is None:
+            # Found live: the model wrote the whole curve into the free-text
+            # `assumptions` field and left `value` null, so a 13pp falsifier
+            # passed vacuously. A check that silently abstains is worse than no
+            # check: the record then claims a falsifier never tested.
             raise ValueError(
                 "falsifier_threshold is set but smallest_detectable_effect.value "
                 "is null, so the threshold cannot be checked against the study's "
                 "power. Call estimate_detectability and put the number for your "
                 "stated n in `value` with its `at_n` — prose in `assumptions` is "
                 "not a substitute.")
-        if t and sde.value is not None and sde.unit and t.unit == sde.unit:
-            if abs(t.value) < abs(sde.value):
-                raise ValueError(
-                    f"falsifier threshold {t.value} {t.unit} is below the smallest "
-                    f"detectable effect {sde.value} {sde.unit} at n={sde.at_n}")
+        # NOTE: unlike the curve path above, a unit mismatch here still skips
+        # the comparison. Making it refuse is a behaviour change, not a cleanup.
+        if sde.unit and t.unit == sde.unit and abs(t.value) < abs(sde.value):
+            raise ValueError(
+                f"falsifier threshold {t.value} {t.unit} is below the smallest "
+                f"detectable effect {sde.value} {sde.unit} at n={sde.at_n}")
         return self
 
     @model_validator(mode="after")
     def _status_matches_blockers(self) -> ProtocolSpecification:
+        """Require `status` to be what `derive_status` says it is.
+
+        Returns:
+            The validated record.
+
+        Raises:
+            ValueError: If `status` was set to anything else.
+        """
         expected = derive_status(self)
         if self.status is not expected:
             raise ValueError(
@@ -1498,6 +1614,15 @@ class ProtocolSpecification(BaseModel):
 
     @model_validator(mode="after")
     def _derivations_are_referenced_not_inlined(self) -> ProtocolSpecification:
+        """Require `derivation_ref` when an anchor is a derivation.
+
+        Returns:
+            The validated record.
+
+        Raises:
+            ValueError: If the exposure or outcome is a `DerivationRef` and
+                `derivation_ref` is empty.
+        """
         uses_derivation = any(isinstance(r, DerivationRef)
                               for r in (self.exposure, self.outcome))
         if uses_derivation and not self.derivation_ref:
@@ -1507,35 +1632,30 @@ class ProtocolSpecification(BaseModel):
 
     # --- k=5 selection ------------------------------------------------------ #
 
-    def canonical_form(self) -> dict:
+    def canonical_form(self) -> dict[str, object]:
         """The record reduced to its design decisions, for set-equality dedup.
 
         Five samples per enumerated pair are deduplicated on this, then ordered by
         gate status and estimability — never by model score. Prose outputs cannot
         be deduplicated this way, which is one concrete thing the typed record
         buys that a hypothesis paragraph does not.
+
+        Returns:
+            Anchors, direction, model spec and the three covariate lists as
+            sorted `(key, role)` pairs. No prose.
         """
-        # `sought_covariates` IS DELIBERATELY ABSENT. Three reasons, and the
-        # first is the one that decides it: this dict is prose-free by design and
-        # `test_canonical_form_ignores_prose_but_not_design` pins that, while a
-        # sought construct is nothing but prose — folding it in would make two
-        # samples that phrased the same gap differently into two designs. Second,
-        # it is not a design decision: the fitted model is identical whether or
-        # not the gap is written down. Third, every saved record carries its
-        # record_hash in its FILENAME, and adding a key here would change the
-        # hash of all 21 of them without any of their designs having changed.
-        # The cost, stated rather than hidden: two samples for one pair that
-        # differ ONLY in whether they disclose a gap hash IDENTICALLY, so dedup
-        # has to pick one. HASH ORDER CANNOT PICK IT — equal hashes have no
-        # order, and saying so was a false mechanism carried in three primaries
-        # at the time this field landed. The real selector was seed order, via
-        # `setdefault`: whichever sample arrived first won, and because `parked`
-        # iterates DISTINCT hashes the loser was not parked either, so a
-        # disclosing sample behind a silent one left the run entirely. That is
-        # settled in `specifier::specify` by `specifier::_twin_order`, not
-        # here — folding the field into this dict
-        # would cost the three properties above.
-        def cov(lst):
+        # `sought_covariates` IS DELIBERATELY ABSENT:
+        #   1. this dict is prose-free, and a sought construct is nothing but
+        #      prose — two phrasings of one gap would become two designs
+        #      (`test_canonical_form_ignores_prose_but_not_design`);
+        #   2. the fitted model is identical whether or not the gap is written;
+        #   3. every saved record carries its record_hash in its FILENAME, and a
+        #      new key would re-hash all of them with no design changed.
+        # The cost: a silent and a disclosing twin hash IDENTICALLY, and equal
+        # hashes have no order. `specifier::_twin_order` decides between them,
+        # in `specifier::specify`, so the disclosing sample is not lost to seed
+        # order.
+        def cov(lst: list[CausalAdjustment]) -> list[tuple[str, str]]:
             return sorted((_ref_key(e.variable), e.role.value) for e in lst)
         return {
             "exposure": _ref_key(self.exposure),
@@ -1550,17 +1670,25 @@ class ProtocolSpecification(BaseModel):
         }
 
     def record_hash(self) -> str:
-        return hashlib.sha256(
-            json.dumps(self.canonical_form(), sort_keys=True).encode()
-        ).hexdigest()[:16]
+        """Hash of `canonical_form`; also part of each saved record's filename.
+
+        Returns:
+            The first 16 hex digits of its SHA-256.
+        """
+        return _short_hash(self.canonical_form())
 
 
-def _ref_key(ref) -> str:
-    if isinstance(ref, VariableRef):
-        return ref.key
-    if isinstance(ref, DerivationRef):
-        return f"derivation:{ref.derivation_id}"
-    return f"area:{ref.measure_id}"
+def _short_hash(payload: object) -> str:
+    """Hash a JSON-serialisable payload the way every record hash is taken.
+
+    Args:
+        payload: Anything `json.dumps` accepts; keys are sorted.
+
+    Returns:
+        The first 16 hex digits of the SHA-256 of its JSON.
+    """
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
 
 
 # --------------------------------------------------------------------------- #
@@ -1568,26 +1696,29 @@ def _ref_key(ref) -> str:
 # --------------------------------------------------------------------------- #
 
 def derive_status(p: ProtocolSpecification) -> Status:
-    """Pure. The truth table, written down:
+    """Derive a record's status from its contents. Pure.
+
+    The truth table:
 
         n_source == unknown            -> draft
         blocked_on is non-empty        -> draft
         access.decision != pass        -> draft
         otherwise                      -> ready_for_review
 
-    blocked_on still varies protocol-to-protocol, but one of its members no
-    longer does: `outcome_prevalence_unconfirmed` is written onto every record
-    that called estimate_detectability, because calling it at all means asserting
-    an outcome frequency nothing here can confirm. That is deliberate and it has
-    a cost — a blocker present on everything discriminates between nothing — so
-    it is paid for in two places. `_a_threshold_on_an_unknown_n_discloses_it`
-    refuses to let it satisfy the n-gap admission, and the day co-completion
-    counts arrive is the day it stops being universal: a record whose frequency
-    was never confirmed would otherwise flip silently to ready_for_review
-    carrying a number the model supplied from its own prior. This blocker is what
-    makes that flip impossible, which is the failure it exists for — a future
-    one, not today's.
+    Args:
+        p: The record.
+
+    Returns:
+        `Status.draft` or `Status.ready_for_review`.
     """
+    # `outcome_prevalence_unconfirmed` is on every record that called
+    # estimate_detectability, so today that blocker alone keeps everything in
+    # draft — a blocker present on everything discriminates between nothing.
+    # It is kept for the day co-completion counts arrive: without it, a record
+    # whose outcome frequency was never confirmed would flip silently to
+    # ready_for_review carrying a number the model supplied from its own prior.
+    # `_a_threshold_on_an_unknown_n_discloses_it` stops it standing in for the
+    # n blocker meanwhile.
     if p.estimability.n_source is NSource.unknown:
         return Status.draft
     if p.blocked_on:
@@ -1597,30 +1728,14 @@ def derive_status(p: ProtocolSpecification) -> Status:
     return Status.ready_for_review
 
 
-def json_schema() -> dict:
-    return ProtocolSpecification.model_json_schema()
-
-
-if __name__ == "__main__":
-    s = json_schema()
-    print(json.dumps(s, indent=1)[:400], "...")
-    print(f"\n{len(s['properties'])} top-level properties, "
-          f"{len(s.get('$defs', {}))} nested definitions")
-    print("field order:", ", ".join(list(s["properties"])[:8]), "...")
-
-
 # --------------------------------------------------------------------------- #
 # The refusal path
 #
-# THE RATIONALE FOR THIS SECTION IS IN COMMENTS, NOT IN ITS DOCSTRINGS, and that
-# is a rule and not a style choice. §3 of the handoff says docstrings in this
-# module are prompt text because model_json_schema() copies them into
-# `description`. That was true of ProtocolSpecification only until 2026-08-28,
-# when agent/specifier.py started pasting NotSpecifiable's schema into a second
-# transduction call. The docstring this class carried until then explained that a
-# probe would read an invented key as recall — an instruction to the model to
-# behave differently on the exact measurement being taken. Comments are not
-# copied by model_json_schema(); docstrings are. Write the reasoning here.
+# NotSpecifiable's schema is pasted into a second transduction call
+# (agent/specifier.py, since 2026-08-28), so the module-docstring rule applies
+# here too: rationale in comments. The docstring NotSpecifiable carried before
+# then explained that a probe would read an invented key as recall — an
+# instruction to the model to behave differently on the very measurement.
 #
 # WHAT THIS SECTION IS FOR. Before it existed the output space was `valid
 # protocol` or `nothing`, and `exposure` is a required field. For a pair whose
@@ -1648,29 +1763,11 @@ class RefusalReason(str, Enum):
     access_gate_refused = "access_gate_refused"
 
 
-#: The lookups each reason requires, declared ONCE and read by three places:
-#: `_refusal_is_earned` below (does the RECORD cite them), agent/specifier.py's
-#: `_refusal_gate` (did the RUN actually make them), and the checklist the system
-#: prompt generates from it. It was a literal inside the validator until
-#: 2026-08-28, so the gate and the prompt would each have had to restate it —
-#: and a reason added to the enum without a matching restatement is a reason the
-#: gate does not know about. Same construction, and the same failure it avoids,
-#: as REQUIRED_CALLS and the role table in agent/specifier.py.
-REFUSAL_EVIDENCE: dict[RefusalReason, frozenset[str]] = {
-    RefusalReason.exposure_unresolvable: frozenset({"resolve_variable"}),
-    RefusalReason.outcome_unresolvable: frozenset({"resolve_variable"}),
-    RefusalReason.registry_empty: frozenset({"registry_coverage",
-                                             "resolve_variable"}),
-    RefusalReason.free_text_anchor: frozenset({"resolve_variable"}),
-    RefusalReason.no_signed_derivation: frozenset({"list_derivations"}),
-    RefusalReason.no_contrast_definable: frozenset({"get_contrast_convention"}),
-    RefusalReason.access_gate_refused: frozenset({"check_access"}),
-    RefusalReason.anchors_are_the_same_construct: frozenset({"resolve_variable"}),
-}
-
-
-# C15, 2026-08-28. REFUSAL_EVIDENCE above checks WHICH tools were called. It does
-# not check what they returned, and a validator that reads only tool names accepts
+#: Per reason, the tools whose calls force it and, per tool, the outcomes that
+#: entail it. The single declaration; `REFUSAL_EVIDENCE` is derived from it.
+#:
+# C15, 2026-08-28. Checking only WHICH tools were called does not check what
+# they returned, and a validator that reads only tool names accepts
 # a refusal contradicted by its own citation: measured on merged main, a
 # NotSpecifiable claiming access_gate_refused validated while citing
 # check_access -> "ok", a call in which the gate did not refuse. check_access is
@@ -1711,6 +1808,16 @@ REFUSAL_OUTCOMES: dict[RefusalReason, dict[str, frozenset[str] | None]] = {
     RefusalReason.no_signed_derivation: {"list_derivations": None},
     RefusalReason.no_contrast_definable: {"get_contrast_convention": None},
 }
+
+
+#: The lookups each reason requires — the tool names of `REFUSAL_OUTCOMES`. Read
+#: by three places: `_refusal_is_earned` below (does the RECORD cite them),
+#: agent/specifier.py's `_refusal_gate` (did the RUN actually make them), and the
+#: checklist the system prompt generates from it. Derived rather than written out
+#: so the two tables cannot drift; a reason added to the enum without an entry is
+#: one the gate refuses (`_refusal_is_earned`).
+REFUSAL_EVIDENCE: dict[RefusalReason, frozenset[str]] = {
+    reason: frozenset(tools) for reason, tools in REFUSAL_OUTCOMES.items()}
 
 
 class RefusalEvidence(BaseModel):
@@ -1757,12 +1864,19 @@ class NotSpecifiable(BaseModel):
 
     @model_validator(mode="after")
     def _refusal_is_earned(self) -> NotSpecifiable:
-        """The stated reason must be backed by a lookup that actually ran.
+        """Require the stated reason to be backed by lookups that entail it.
 
         Without this the refusal path is strictly easier than the work, and a
         model under any pressure will take it. The gate is symmetric with the
         one on protocols: a protocol must show the calls that support its
         assertions, and a refusal must show the calls that force it.
+
+        Returns:
+            The validated refusal.
+
+        Raises:
+            ValueError: If the reason has no declared evidence, a required tool
+                is not cited, or no cited outcome of a tool entails the reason.
         """
         need = REFUSAL_EVIDENCE.get(self.reason)
         if need is None:
@@ -1799,9 +1913,17 @@ class NotSpecifiable(BaseModel):
 
     @model_validator(mode="after")
     def _refusal_states_a_remedy(self) -> NotSpecifiable:
-        """`registry_empty` must name the artifact that would populate it, so a
-        refusal converts into a request the study team can act on rather than a
-        dead end.
+        """Require `registry_empty` to name the artifact that would populate it.
+
+        That turns the refusal into a request the study team can act on rather
+        than a dead end.
+
+        Returns:
+            The validated refusal.
+
+        Raises:
+            ValueError: If the reason is `registry_empty` and `blocked_on` is
+                empty.
         """
         if (self.reason is RefusalReason.registry_empty
                 and not self.blocked_on):
@@ -1812,9 +1934,21 @@ class NotSpecifiable(BaseModel):
         return self
 
     def record_hash(self) -> str:
-        payload = {"pair_id": self.pair_id, "reason": self.reason.value,
-                   "dictionary_version": self.dictionary_version,
-                   "evidence": sorted((e.tool, e.argument, e.outcome)
-                                      for e in self.evidence)}
-        return hashlib.sha256(
-            json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
+        """Hash of the pair, reason, dictionary version and cited evidence.
+
+        Returns:
+            The first 16 hex digits of its SHA-256.
+        """
+        return _short_hash({
+            "pair_id": self.pair_id, "reason": self.reason.value,
+            "dictionary_version": self.dictionary_version,
+            "evidence": sorted((e.tool, e.argument, e.outcome)
+                               for e in self.evidence)})
+
+
+if __name__ == "__main__":
+    s = ProtocolSpecification.model_json_schema()
+    print(json.dumps(s, indent=1)[:400], "...")
+    print(f"\n{len(s['properties'])} top-level properties, "
+          f"{len(s.get('$defs', {}))} nested definitions")
+    print("field order:", ", ".join(list(s["properties"])[:8]), "...")
