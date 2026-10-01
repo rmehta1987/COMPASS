@@ -1,5 +1,5 @@
 """Tests for the agent layer: registry gating, the mechanical gate, dedup, selection,
-and the invariants that keep the environment model-free.
+and the invariants that keep the environment offline and free of ungranted models.
 
 These test the control flow, which is the part deterministic code owns. Nothing
 here tests whether the model reasons well — that is unprovable without weights and
@@ -150,10 +150,43 @@ def test_the_grant_conditions_are_stated_once_and_cited_everywhere_else(
     agents = (ROOT / "AGENTS.md").read_text()
     assert "tests/test_specifier.py::ENV_MODEL_GRANT_CONDITIONS" in agents, (
         "AGENTS.md must cite the grant conditions by path::symbol, not restate them")
-    tools_doc = ast.get_docstring(ast.parse((ROOT / "env" / "tools.py").read_text()))
-    assert tools_doc and "tests/test_specifier.py::ENV_MODEL_GRANTS" in tools_doc, (
-        "env/tools.py's module docstring must say env/ loads a model only on a grant "
-        "in tests/test_specifier.py::ENV_MODEL_GRANTS")
+
+    stating = 0
+    for path, doc in _model_rule_docstrings():
+        retired = _RETIRED_MODEL_RULE.findall(doc)
+        assert not retired, (
+            f"{path} states the retired absolute rule {retired}; env/ loads a model "
+            "only on a grant in tests/test_specifier.py::ENV_MODEL_GRANTS")
+        if path.startswith("env/") and _STATES_MODEL_RULE.search(doc):
+            stating += 1
+            assert "tests/test_specifier.py::ENV_MODEL_GRANTS" in doc, (
+                f"{path}'s module docstring states the model rule without citing "
+                "tests/test_specifier.py::ENV_MODEL_GRANTS")
+    # env/tools.py and env/labels.py both state it; zero would mean the probe is blind.
+    assert stating >= 2, f"only {stating} env/ module docstring(s) state the model rule"
+
+
+#: The absolute wording the grant replaced: an unconditional "nothing in env/
+#: imports a model" and "model-free". A paraphrase this does not list is not caught.
+_RETIRED_MODEL_RULE = re.compile(
+    r"nothing in env/ (?:imports|loads) a model(?! unless| only)|model-free", re.I)
+#: A module docstring sentence about env/ importing or loading a model.
+_STATES_MODEL_RULE = re.compile(r"\b(?:imports?|loads?)\b[^.]{0,40}\bmodel\b", re.I)
+
+
+def _model_rule_docstrings() -> list[tuple[str, str]]:
+    """Return every module docstring that may state the env/ model rule.
+
+    Returns:
+        `(repo-relative path, whitespace-collapsed docstring)` for each `env/*.py`
+        module and for this file, whose own docstring describes the gate.
+    """
+    paths = [*sorted((ROOT / "env").rglob("*.py")), Path(__file__).resolve()]
+    out = []
+    for p in paths:
+        doc = ast.get_docstring(ast.parse(p.read_text())) or ""
+        out.append((p.relative_to(ROOT).as_posix(), " ".join(doc.split())))
+    return out
 
 
 def test_only_the_backend_module_opens_a_connection():

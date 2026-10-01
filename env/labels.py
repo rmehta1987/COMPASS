@@ -1,6 +1,7 @@
 """env/labels.py — a variable key cannot be shown to the model without its wording.
 
-INVARIANT: nothing in env/ imports a model or touches the network. This module is
+INVARIANT: nothing in env/ touches the network, and nothing in env/ loads a model
+unless it is granted in tests/test_specifier.py::ENV_MODEL_GRANTS. This module is
 stdlib-only and reads one generated file.
 
 THE MEASURED FAILURE THIS PREVENTS. In a traced live run, 6 of 44 tool calls (14%)
