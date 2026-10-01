@@ -96,13 +96,6 @@ from typing import Any
 
 from agent.schema import _dictionary_wording, _signed_derivations
 
-#: The tools whose return values own a field in the record. Kept separate from
-#: specifier.REQUIRED_CALLS because resolve_variable is required to be CALLED but
-#: owns no gate field — its authority is already enforced by _wording_is_verbatim
-#: against the dictionary, which is a stronger check than a log comparison.
-AUTHORITATIVE_TOOLS: tuple[str, ...] = (
-    "check_access", "estimate_n", "estimate_detectability")
-
 _MISSING = object()
 
 
