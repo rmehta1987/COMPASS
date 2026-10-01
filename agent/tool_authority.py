@@ -717,9 +717,10 @@ def apply_record_identity(record: dict[str, Any],
     transcription slip and discarding the sample would spend a model call to fix
     a copy-paste.
 
-    `selection_mode` and `screened_from` are here because SelectionRationale
-    says both "are written by the wrapper from the funnel counter, never by the
-    model — which has every incentive to keep the denominator small." A model
+    `selection_mode` and `screened_from` are here because SelectionRationale's
+    docstring tells the model the pipeline fills both in, and the comment above
+    that class says why: the model has every incentive to keep the denominator
+    small. A model
     that writes `selection_mode: externally_posed` for an enumerated pair stops
     `_denominator_required_when_enumerated` firing, so the record legally
     carries `screened_from: null` (seen in a live record).

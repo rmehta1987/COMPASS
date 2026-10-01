@@ -229,9 +229,9 @@ class DerivationRef(BaseModel):
         # 5's sibling: a derivation that does not match its signature is a recipe
         # invented mid-protocol, which is the one thing this class forbids.
         #
-        # The docstring above, and two tool return values, say "validate_protocol
-        # fails if the file is missing". No function of that name exists; this
-        # validator is the check they mean.
+        # The class docstring says a reference to a missing file "is rejected";
+        # this validator is the check that rejects it. (That sentence once named
+        # a `validate_protocol` function, which never existed.)
         signed = _signed_derivations()
         if not signed:
             # No curated/ in this tree; the same degradation _dictionary_wording
