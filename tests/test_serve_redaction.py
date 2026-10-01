@@ -258,7 +258,10 @@ def test_a_sibling_directory_sharing_the_prefix_is_not_served(tmp_path: Path) ->
 
     state = State(tmp_path / "deploy", site, tmp_path / "run")
     srv = build_server("127.0.0.1", 0, state)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    # `shutdown()` waits out one poll; the 0.5 s default cost every test
+    # that serves half a second on teardown.
+    threading.Thread(target=srv.serve_forever, kwargs={"poll_interval": 0.05},
+                     daemon=True).start()
     try:
         with socket.create_connection(srv.server_address, timeout=5) as s:
             s.sendall(b"GET /../site-old/secret.json HTTP/1.0\r\n\r\n")
@@ -1379,7 +1382,10 @@ def _serving(state: object) -> Iterator[Callable[[str, dict], tuple[int, dict]]]
     from serve.api import build_server
 
     srv = build_server("127.0.0.1", 0, state)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    # `shutdown()` waits out one poll; the 0.5 s default cost every test
+    # that serves half a second on teardown.
+    threading.Thread(target=srv.serve_forever, kwargs={"poll_interval": 0.05},
+                     daemon=True).start()
     host, port = srv.server_address[0], srv.server_address[1]
 
     def post(route: str, body: dict) -> tuple[int, dict]:

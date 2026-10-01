@@ -123,7 +123,10 @@ def _served(state: State) -> Iterator:
         `(post, get)`: callables returning `(status, body)`.
     """
     srv = build_server("127.0.0.1", 0, state)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    # `shutdown()` waits out one poll; the 0.5 s default cost every test
+    # that serves half a second on teardown.
+    threading.Thread(target=srv.serve_forever, kwargs={"poll_interval": 0.05},
+                     daemon=True).start()
     base = f"http://{srv.server_address[0]}:{srv.server_address[1]}"
 
     def post(route: str, body: dict) -> tuple[int, dict]:
