@@ -1914,10 +1914,11 @@ class NotSpecifiable(BaseModel):
         # Naming the tool is not enough: the call it names must have returned
         # something that entails the reason. Substring rather than equality
         # because the specifier stamps a descriptive outcome for the registry
-        # case ("linked: coverage none") and the raw field elsewhere.
-        wanted = REFUSAL_OUTCOMES.get(self.reason, {})
-        for tool, entailing in wanted.items():
-            if entailing is None or tool not in need:
+        # case ("linked: coverage none") and the raw field elsewhere. Every tool
+        # iterated here is in `need`, already checked cited above, because
+        # REFUSAL_EVIDENCE is these keys.
+        for tool, entailing in REFUSAL_OUTCOMES.get(self.reason, {}).items():
+            if entailing is None:
                 continue
             seen = [e.outcome for e in self.evidence if e.tool == tool]
             if not any(any(w in (o or "") for w in entailing) for o in seen):
