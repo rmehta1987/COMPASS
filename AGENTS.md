@@ -74,7 +74,7 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
   `tests/test_labels.py::test_wording_is_question_text_byte_for_byte_on_every_entry`).
 - A prompt's variable list is parsed from its body by the `string.Formatter` that renders
   it (`agent/specifier.py::PromptTemplate`); never a second list
-  (`tests/test_specifier.py::test_every_prompt_in_the_module_is_rendered_through_the_contract`).
+  (`tests/test_specifier.py::test_every_render_call_site_supplies_exactly_the_bodys_slots`).
 - Accepted tool args = advertised fields ∪ real signature (`agent/registry.py::SCHEMAS`;
   `tests/test_specifier.py::test_a_parameter_withheld_from_the_schema_is_still_accepted`).
 - `build.py` hashes files + the rule fingerprint (`build.py::_rule_fingerprint`) + n, not
