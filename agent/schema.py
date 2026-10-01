@@ -133,12 +133,19 @@ def _dictionary_wording() -> dict[str, str]:
     """Load the instrument's wording for every key, once per process.
 
     Returns:
-        Mapping of variable key to its `question_text`, read off
-        `env.labels`' citation index rather than a second parse of
-        `build/dictionary.json`. Empty when there is no build; the validators
-        that read it then skip.
+        Mapping of variable key to its `question_text`, a blank one included as
+        it stands. Read from the file `env.labels` reads. Empty when there is no
+        build; the validators that read it then skip.
     """
-    return {key: c.wording for key, c in labels._index().items()}
+    # NOT `labels._index()`: that builds a `Cited` per row, and `Cited` raises
+    # CitationUnavailable on a blank wording. That is a LookupError, not a
+    # ValueError, so pydantic lets it out of `_wording_is_verbatim` and `_emit`
+    # crashes instead of rejecting the record. A blank row here is compared as
+    # the empty string and rejected like any other mismatch.
+    p = labels.BUILD / "dictionary.json"
+    if not p.exists():
+        return {}
+    return {e["key"]: e["question_text"] for e in json.loads(p.read_text())["entries"]}
 
 
 @functools.cache

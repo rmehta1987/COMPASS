@@ -154,6 +154,34 @@ def test_specimen_pins_a_dictionary_version():
     assert p014().dictionary_version == DICT["version_hash"]
 
 
+def test_a_blank_dictionary_row_is_a_rejection_not_a_crash(monkeypatch, tmp_path):
+    """A blank `question_text` must reach `_wording_is_verbatim` as "", not raise.
+
+    `env.labels.Cited` refuses a blank wording with CitationUnavailable, a
+    LookupError. Read through `labels._index()`, one blank row made every
+    validation raise that from inside a model_validator, where pydantic does not
+    catch it, so `_emit`'s repair loop crashed instead of showing an error. No
+    row is blank today; this pins the tolerance before one is.
+    """
+    from agent import schema as S
+    from env import labels
+
+    raw = json.loads(json.dumps(DICT))
+    for e in raw["entries"]:
+        if e["key"] == "m1:Q5.5":          # a covariate of the specimen
+            e["question_text"] = ""
+    (tmp_path / "dictionary.json").write_text(json.dumps(raw))
+    monkeypatch.setattr(labels, "BUILD", tmp_path)
+    monkeypatch.setattr(labels, "_INDEX", None)
+    S._dictionary_wording.cache_clear()
+    try:
+        assert S._dictionary_wording()["m1:Q5.5"] == ""
+        with pytest.raises(ValidationError, match=r"m1:Q5\.5: got .*instrument says ''"):
+            p014()
+    finally:
+        S._dictionary_wording.cache_clear()
+
+
 # --- roles cannot wander between lists --------------------------------------- #
 
 def test_mediator_cannot_be_adjusted():
