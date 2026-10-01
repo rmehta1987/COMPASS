@@ -44,10 +44,9 @@ def _log(name: str, args: dict, outcome: str, ms: float, result=None) -> None:
     """Append one call to the research log.
 
     `result` is written because the log is the ONLY authentic record of what the
-    environment returned — the model's transcription of it is not evidence. An
-    earlier version stored only name/args/outcome, which made it impossible to
-    check a record's gate fields against what the gate actually said, and left
-    `access.budget: 0` in a record while check_access returned 3.
+    environment returned — the model's transcription of it is not evidence.
+    Without it a record's gate fields cannot be checked against what the gate
+    actually said.
     """
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with LOG_PATH.open("a") as f:

@@ -61,10 +61,8 @@ rejected it. And §5 rule 5 is explicit that a fabricated n must fail rather tha
 be quietly repaired.
 
 REJECTED ON MISMATCH — the ARGUMENTS. A verdict is only about the design it was
-computed over. Round 1 stamped the last successful call's return value into the
-record without ever asking whether that call named the design the record
-describes, and wrote the residual down as a comment instead of closing it. It is
-closed here: the authoritative call's key set must COVER every variable key the
+computed over, so stamping the last successful call's return value is not
+enough: the authoritative call's key set must COVER every variable key the
 record names in a position that uses it. Coverage, not equality, because a
 superset can only make both verdicts stricter — extra keys can add
 reconstruction load, add origin_unknown keys, and add modules to
@@ -247,10 +245,10 @@ def _governing_n(rows: dict[int, float], analytic_n: object,
             and analytic_n in rows:
         return analytic_n
     # Otherwise the record's own stated n governs — but only as a DISCLOSURE, not
-    # as a free comparator. Round 1 let any on-curve at_n through silently, so a
-    # model that named the largest candidate picked its own floor and a 3.0 pp
-    # threshold cleared a curve whose smallest-n value is 25.68 pp. What makes
-    # that safe now is not this line but the three around it: the whole curve is
+    # as a free comparator. Alone, an on-curve at_n lets a model that names the
+    # largest candidate pick its own floor (a 3.0 pp threshold once cleared a
+    # curve whose smallest-n value is 25.68 pp). What makes it safe is not this
+    # line but the three around it: the whole curve is
     # written into the record beside at_n, ProtocolSpecification refuses a
     # threshold that names no n at all, and a record resting on an uncomputed n
     # must carry its blocker and cannot leave draft.
@@ -350,30 +348,25 @@ def _sde_from_curve(sde: dict[str, Any], det: dict[str, Any],
 
     at_n = _governing_n(rows, analytic_n, at_n)
 
-    # THE WHOLE CURVE, not one point off it. SmallestDetectableEffect's own
-    # docstring has always said estimate_detectability "returns a curve, not a
-    # scalar — that is what lets this field stay honest while n is unknown", and
-    # the record then threw the curve away and kept one number. Writing it here
-    # is what lets `value` be a disclosed commitment rather than a hidden choice:
+    # THE WHOLE CURVE, not one point off it: estimate_detectability returns a
+    # curve so the field stays honest while n is unknown. Writing it here is
+    # what lets `value` be a disclosed commitment rather than a hidden choice:
     # a reader sees at a glance what the design buys at every other candidate n.
     return {"curve": [{"n": n, "sde_percentage_points": v}
                       for n, v in sorted(rows.items())],
-            # THE COMPARATOR, carried beside the disclosure. Until this was
-            # written the record held only the caller-asserted curve, so
-            # agent/schema.py had nothing to check a threshold against except a
-            # floor whose height the caller had set.
+            # THE COMPARATOR, carried beside the disclosure. Without it
+            # agent/schema.py could check a threshold only against a floor whose
+            # height the caller had set.
             "worst_case_curve": [{"n": n, "sde_percentage_points": v}
                                  for n, v in sorted(worst.items())],
-            # STRUCTURED, NOT A SUBSTRING. This used to survive only inside the
-            # `assumptions` sentence below, where no scorer could read it without
-            # parsing prose — and it is the one input that scales the entire
-            # curve.
+            # STRUCTURED, NOT A SUBSTRING. Inside the `assumptions` sentence
+            # below no scorer could read it without parsing prose — and it is
+            # the one input that scales the entire curve.
             "asserted_baseline_prevalence": _asserted_prevalence(det),
             "value": rows[at_n], "unit": "percentage points", "at_n": at_n,
             # The tool's own assumption set, verbatim, replaces the model's
-            # prose. In the live record that prose held the entire curve while
-            # `value` was null, which is how the falsifier check came to have
-            # nothing to compare against.
+            # prose, which can carry the whole curve while `value` stays null
+            # and leave the falsifier check nothing to compare against.
             "assumptions": "; ".join(f"{k}={v}" for k, v in
                                      det.get("assumptions", {}).items())}
 
@@ -459,9 +452,8 @@ def _reject_uncovered(tool: str, call: dict[str, Any],
     # THE REMEDY HAS TO BE ONE THIS READER CAN PERFORM. This text reaches the
     # transduction call, which has no tools at all, so "call the tool again" is
     # an instruction the only reader of the message cannot follow — the same
-    # class of defect as a constraint stated in no prompt. Found on the live run
-    # of 2026-08-26: Haiku added a covariate after its last estimate_n, and the
-    # first draft of this message sent the repair attempt after an impossible fix.
+    # class of defect as a constraint stated in no prompt. Live case 2026-08-26:
+    # Haiku added a covariate after its last estimate_n.
     raise GateMismatch(
         f"{tool} was called with {len(called)} key(s) but this record names "
         f"{len(required)} in positions that use them, and {len(missing)} were "
@@ -732,13 +724,12 @@ def apply_record_identity(record: dict[str, Any],
     transcription slip and discarding the sample would spend a model call to fix
     a copy-paste.
 
-    `selection_mode` and `screened_from` are here because SelectionRationale's
-    docstring has claimed since it was written that both "are written by the
-    wrapper from the funnel counter, never by the model — which has every
-    incentive to keep the denominator small," and no wrapper wrote them. The live
-    record's model wrote `selection_mode: externally_posed` for a pair the
-    enumerated funnel had handed it, and `_denominator_required_when_enumerated`
-    therefore never fired, so the record legally carried `screened_from: null`.
+    `selection_mode` and `screened_from` are here because SelectionRationale
+    says both "are written by the wrapper from the funnel counter, never by the
+    model — which has every incentive to keep the denominator small." A model
+    that writes `selection_mode: externally_posed` for an enumerated pair stops
+    `_denominator_required_when_enumerated` firing, so the record legally
+    carries `screened_from: null` (seen in a live record).
 
     Args:
         record: The transduced JSON object, as parsed.

@@ -116,9 +116,9 @@ RE_QUASI_IDENTIFIER = re.compile(
     r"|what is your (?:current )?age|age in years",
     re.I)
 
-#: A human-readable label for the rule generation, printed beside the hash. It is
-#: NO LONGER what provenance rests on — `_rule_fingerprint` is — so forgetting to
-#: bump it can no longer leave two different rule sets sharing one `version_hash`.
+#: A human-readable label for the rule generation, printed beside the hash.
+#: Provenance rests on `_rule_fingerprint`, not on this, so forgetting to bump it
+#: cannot leave two different rule sets sharing one `version_hash`.
 BUILD_RULES_VERSION = "3"
 
 

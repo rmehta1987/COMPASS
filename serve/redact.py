@@ -48,8 +48,7 @@ than a default someone may flip:
   * NEITHER LITERAL SET SEES A PARAPHRASE. They are substring tests on the
     instrument's own bytes; wording a model reworded below the run length is
     caught by the field name or not at all.
-  * IT DOES NOT STOP CORRELATION, AND THE SALT DOES NOT EITHER. An earlier
-    version of this paragraph claimed the salt bounds it; that was wrong. The
+  * IT DOES NOT STOP CORRELATION, AND THE SALT DOES NOT EITHER. The
     allowlisted scalars are properties of the target row, not of the salt:
     `module`, `fold_size` and `n_siblings` are invariant across restarts, and
     `cos` is deterministic for a given (query, target). Record that tuple, take
@@ -308,9 +307,9 @@ class Scrubber:
         """
         # `is_file` is checked for an EXPLICIT path too, not only for the
         # discovered one. A caller naming a path that does not exist is in the
-        # same position as a caller naming none -- scanning nothing -- and the
-        # first version raised FileNotFoundError there, which reads as a bug in
-        # the caller rather than as a refusal to certify.
+        # same position as a caller naming none -- scanning nothing -- and a
+        # FileNotFoundError there would read as a bug in the caller rather than
+        # as a refusal to certify.
         p = path or dictionary_path()
         if p is None or not p.is_file():
             raise DictionaryUnavailable(

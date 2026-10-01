@@ -14,13 +14,11 @@ protocol. Every comparison that has no mechanical definition says so
 (`REVIEW`), rather than being reduced to a match rate that would look like a
 result.
 
-WHERE A ROW GOES. `benchmark/design_key.py::DESIGN_KEY`, since C36 was
-authorised on 2026-09-14. One row per paper, BOTH sides, typed anchors, and
-that module is WITHHELD from every clone but the scoring one — which is the
-whole point of C36. Before it, the exposure column lived in
-`benchmark/scorability.py` in the clone where prompts, `agent/schema.py`
-docstrings and `env/tools.py` are edited, and the first row would have made the
-editing clone the clone holding the rediscovery answers. The FORM is the
+WHERE A ROW GOES. `benchmark/design_key.py::DESIGN_KEY` (C36, authorised
+2026-09-14). One row per paper, BOTH sides, typed anchors, and that module is
+WITHHELD from every clone but the scoring one, so the clone where prompts,
+`agent/schema.py` docstrings and `env/tools.py` are edited never holds the
+rediscovery answers. The FORM is the
 operator's (`TASKS.md`, C12 and C36) and this module does not reopen it:
 
     DESIGN_KEY: tuple[DesignKeyRow, ...] = (
@@ -43,9 +41,7 @@ lands; a key that names a battery or a construct is rejected with the key
 named, because a blocker that says only "a key did not resolve" leaves the
 operator to find which.
 
-BOTH SIDES ARE WITHHELD HERE, and that is a change. Before C36 the exposure
-column was readable in this clone and the outcome column was not, so the
-side-by-side was half-live. `benchmark.design_key` now lives in the scoring
+BOTH SIDES ARE WITHHELD HERE. `benchmark.design_key` lives in the scoring
 clone only, so NEITHER side is readable here. That is reported as an INCOMPLETE
 run (exit 2), never as a mismatch and never as a clean pass — the same
 three-way status `benchmark/contamination_check.py` uses and for the same
@@ -135,9 +131,8 @@ def design_key_present() -> bool:
 def validate(rows: tuple[DesignKeyRow, ...] | None = None) -> list[str]:
     """C12's ACCEPT criterion, run over the design key.
 
-    A THIN DELEGATION, on purpose. The checks used to live here as
-    `validate_exposure_keys` over a `dict[str, tuple[str, ...]]`; C36 moved them
-    to `benchmark/design_anchor.py::validate_design_key`, beside the type they
+    A THIN DELEGATION, on purpose. The checks live in
+    `benchmark/design_anchor.py::validate_design_key`, beside the type they
     check, so the anchor's `__post_init__` and the table's validator cannot
     drift apart and so both are testable in a clone without the rows. This
     module keeps the operator-facing entry point and the exit statuses.
@@ -178,8 +173,7 @@ class RecordedDesign:
         outcome_keys: The same for the outcome side.
         design_key_readable: False when `benchmark.design_key` is withheld from
             this clone, so EITHER side being empty says nothing. One flag, not
-            two, because since C36 both sides come from one table — before it
-            the exposure side was readable here and the outcome side was not.
+            two, because both sides come from one table.
     """
 
     pmid: str

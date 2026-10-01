@@ -189,8 +189,8 @@ class VariableRef(BaseModel):
 # Why recipes must be signed in advance: a construct is often many items — one
 # battery in m3 runs to 30 — with hundreds of defensible ways to combine them.
 # Search 200 recipes, keep the strongest association, and you find one whether
-# or not it exists. (The battery's name and item range used to sit in the
-# docstring, which put a construct and its keys into the prompt.)
+# or not it exists. (Never name the battery or its item range in the docstring:
+# that puts a construct and its keys into the prompt.)
 class DerivationRef(BaseModel):
     """A combined variable, by reference to a signed derivation.
 
@@ -258,11 +258,11 @@ class DerivationRef(BaseModel):
         return self
 
 
-# CONTAMINATION NOTE — do not restore the earliest docstring. It named specific
-# pollutant exposures and how many papers the benchmark scores, so every call
-# told the model both what the benchmark contains and which exposures the
-# cohort's own published work used. The note saying so then sat in the
-# docstring itself, in the prompt, until 2026-09-30. See the module docstring.
+# CONTAMINATION NOTE — the docstring below must never name a specific exposure
+# or how many papers the benchmark scores: every call would tell the model what
+# the benchmark contains and which exposures the cohort's own published work
+# used. This note stays a comment, because the docstring is prompt text. See the
+# module docstring.
 class AreaMeasureRef(BaseModel):
     """A linked place-based measure attached to a participant's area."""
 
@@ -358,10 +358,9 @@ _LIST_FOR_ROLE: dict[CausalRole, str] = {
 # role before writing the reasoning for it.
 #
 # Requiring the mechanism is the calibration guard that stops ancestor-level
-# permissiveness collapsing into "adjust for everything". The docstring used to
-# say a role without one "is coerced to unadjudicated"; nothing coerces —
-# `_floors_and_role_coherence` REJECTS it, and its message says to record the
-# entry as unadjudicated instead.
+# permissiveness collapsing into "adjust for everything". Nothing coerces a role
+# without one: `_floors_and_role_coherence` REJECTS it, and its message says to
+# record the entry as unadjudicated instead.
 class CausalAdjustment(BaseModel):
     """One covariate decision.
 
@@ -607,8 +606,7 @@ class FalsifierThreshold(BaseModel):  # noqa: D101
 
 # The word "estimability" is used for two different things in this project: the
 # funnel tags a PAIR `estimable` or `unknown` — asking whether a count could ever
-# be worked out — while this says where a count that exists came FROM. These four
-# were bare values until the definitions below were written.
+# be worked out — while this says where a count that exists came FROM.
 class NSource(str, Enum):
     """Where an analytic n came from, or why there is none.
 
@@ -934,9 +932,8 @@ class BlockedOn(str, Enum):  # noqa: D101
     #: detectable effect, so the floor is too low and errs toward accepting a
     #: falsifier the study could not falsify. The correction needs participants
     #: per cluster and an intracluster correlation; neither exists here, so the
-    #: gap is admitted rather than estimated. Added at the lane-a/lane-b merge
-    #: 2026-08-27: env/tools.py had begun telling the model to name this and
-    #: the enum refused it, so a live run produced no record at all.
+    #: gap is admitted rather than estimated. env/tools.py tells the model to
+    #: name this blocker, so the enum must accept it or the run yields no record.
     design_effect_for_community_area_clustering = (
         "design_effect_for_community_area_clustering")
 
@@ -1323,13 +1320,11 @@ class ProtocolSpecification(BaseModel):
             ValueError: If a gated field names a value label, an anchored scale
                 range, an n-point scale or a missing-code convention.
         """
-        # The rule was stated in agent/specifier.py::SYSTEM and repeated in
-        # resolve_variable's own return text since both were written, and
-        # enforced NOWHERE: VERIFIED 2026-08-27 and again on 2026-08-28 that
-        # three fabricated coding claims injected into a validating record were
-        # accepted by ProtocolSpecification and by apply_tool_authority alike.
-        # That is this codebase's signature failure and this is its fifth
-        # recorded instance.
+        # The rule is stated in agent/specifier.py::SYSTEM and in
+        # resolve_variable's own return text; this is where it is ENFORCED.
+        # Without it, three fabricated coding claims injected into a validating
+        # record were accepted by ProtocolSpecification and by
+        # apply_tool_authority alike (VERIFIED 2026-08-27 and 2026-08-28).
         #
         # REJECTION, NOT REPAIR. There is no correct value to substitute, the
         # way apply_tool_authority substitutes the run's own analytic_n: the
@@ -1530,12 +1525,11 @@ class ProtocolSpecification(BaseModel):
         # the derived copy is how a check comes to be pointed at a different row
         # than the one the record discloses.
         if (sde.curve or sde.worst_case_curve) and sde.at_n is not None:
-            # A UNIT MISMATCH IS A REFUSAL, NOT AN ABSTENTION. The comparison was
-            # once guarded by `t.unit == sde.unit` and simply skipped otherwise,
-            # which made the floor check optional: the first green live record,
-            # 2026-08-27, had Haiku's `0.68 odds ratio` against a
-            # percentage-point curve and was accepted with its falsifier never
-            # compared to anything. estimate_detectability computes a RISK
+            # A UNIT MISMATCH IS A REFUSAL, NOT AN ABSTENTION. Skipping the
+            # comparison on a mismatch makes the floor check optional (live
+            # 2026-08-27: a `0.68 odds ratio` against a percentage-point curve
+            # was accepted, its falsifier never compared to anything).
+            # estimate_detectability computes a RISK
             # DIFFERENCE and nothing else, so the honest output is a threshold in
             # that unit, or a prose falsifier with falsifier_threshold null.
             if sde.unit and t.unit != sde.unit:
@@ -1585,9 +1579,8 @@ class ProtocolSpecification(BaseModel):
                 "power. Call estimate_detectability and put the number for your "
                 "stated n in `value` with its `at_n` — prose in `assumptions` is "
                 "not a substitute.")
-        # The same refusal as on the curve path. This path used to skip the
-        # comparison on a unit mismatch — the abstention the curve path was
-        # fixed for on 2026-08-27, left open on the scalar fallback.
+        # The same refusal as on the curve path: an abstention here would
+        # reopen, on the scalar fallback, the hole the curve path closes.
         if sde.unit and t.unit != sde.unit:
             raise _unit_mismatch(t, sde)
         if sde.unit and abs(t.value) < abs(sde.value):
@@ -1756,16 +1749,16 @@ def derive_status(p: ProtocolSpecification) -> Status:
 # The refusal path
 #
 # NotSpecifiable's schema is pasted into a second transduction call
-# (agent/specifier.py, since 2026-08-28), so the module-docstring rule applies
-# here too: rationale in comments. The docstring NotSpecifiable carried before
-# then explained that a probe would read an invented key as recall — an
-# instruction to the model to behave differently on the very measurement.
+# (agent/specifier.py), so the module-docstring rule applies here too:
+# rationale in comments. Its docstring must never explain the measurement (e.g.
+# that a probe reads an invented key as recall) — that instructs the model to
+# behave differently on the very measurement.
 #
-# WHAT THIS SECTION IS FOR. Before it existed the output space was `valid
-# protocol` or `nothing`, and `exposure` is a required field. For a pair whose
-# exposure resolves nowhere, the only well-formed record was one naming a key
-# that satisfied KEY_PATTERN and existed in no registry. The structure rewarded
-# fabrication and then counted it as yield.
+# WHAT THIS SECTION IS FOR. Without it the output space is `valid protocol` or
+# `nothing`, and `exposure` is a required field. For a pair whose exposure
+# resolves nowhere, the only well-formed record would name a key that satisfies
+# KEY_PATTERN and exists in no registry: the structure would reward fabrication
+# and count it as yield.
 # --------------------------------------------------------------------------- #
 
 # There is deliberately no `insufficient_information` and no `too_uncertain`: a

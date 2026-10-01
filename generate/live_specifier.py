@@ -44,10 +44,9 @@ def run_identity(pair: object, version: str, screened_from: int,
                  anchors_proposed_by: str | None = None) -> RunIdentity:
     """Assemble what the driver knows before the model is called.
 
-    Every one of these was the empty string in the record of 2026-08-26, which
-    saved as `run/.<hash>.json` — a dotfile — because the filename is built from
-    protocol_id. None of them is a fact about the design, so none is the model's
-    to supply.
+    None of them is a fact about the design, so none is the model's to supply.
+    An empty protocol_id also saves the record as a dotfile, `run/.<hash>.json`,
+    because the filename is built from it.
 
     Args:
         pair: The funnel candidate handed to the model.
@@ -346,9 +345,8 @@ def main() -> None:
         screened_from, mode = 0, "externally_posed"
     else:
         # T7: the frame is walked in enumeration order and `--index` says
-        # where. The pair used to be named here by hand, which is a second,
-        # value-based selection on top of the funnel's that no denominator
-        # recorded.
+        # where. Naming the pair here by hand would be a second, value-based
+        # selection on top of the funnel's that no denominator records.
         pair = live_at(cands, args.index)
         screened_from, mode = counts["enumerated"], "enumerated_screen"
 

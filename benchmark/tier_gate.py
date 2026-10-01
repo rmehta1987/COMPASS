@@ -22,8 +22,8 @@ WHY THE METRIC IS PREMATURE AND THE GATE IS NOT. Three measurements, all
      neither is scorable against this instrument and the post-cutoff arm is
      empty of anything a gap could be read from. `outcomes_absent_from_instrument`
      below re-derives that from the bibliography rather than from a hand-picked
-     search list; the previous statement of it rested on searching five terms,
-     and one of those searches was misleading (see the note on `green space`).
+     search list, because a tool search can mislead (see the note on
+     `green space`).
 
   2. THERE IS NO TEXT TO COMPUTE SEVEN-GRAMS OVER. `cohort_papers.py` carries a
      one-line design per paper and says in its own docstring that expanding it
@@ -55,7 +55,7 @@ WHAT WOULD LIFT EACH BLOCKER, so this is a to-do and not a wall:
     vocabulary_overlap_undiagnosed  the Duan diagnostic, over real paper text
     cutoff_not_stated_by_model_card the target model's published cutoff
 
-A NOTE ON THE MEASUREMENT THIS REPLACES. The claim "searching `greenspace`
+A NOTE ON SEARCHING FOR ABSENCE. The claim "searching `greenspace`
 returns 0 hits" is right; `search_variables('green space')` returns 1, and that
 hit is `m1:Q2.5`, "What is your phone number?". `env/tools.py::search_variables`
 rewrites a phrase to an FTS `OR` of its words, so `space` matched `spaces` in
@@ -131,12 +131,8 @@ def outcomes_absent_from_instrument(paper: CohortPaper) -> tuple[str, ...]:
     Returns:
         The terms for which the instrument carries no word at all.
     """
-    # The word test moved to benchmark/instrument_terms.py on 2026-08-29, and
-    # the move IS the fix: the copy here dropped tokens under four characters,
-    # so `serum PSA` refuted while the instrument carried a PSA item. A second
-    # copy in scorability.py drifted from this one undetected because the test
-    # written to catch drift compared the two copies rather than either against
-    # the instrument.
+    # The one shared word test, never a local copy: two copies drift
+    # undetected (`benchmark/instrument_terms.py` docstring).
     return terms_absent_from_instrument(outcome_terms(paper))
 
 

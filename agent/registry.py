@@ -48,10 +48,9 @@ from env import tools as T
 
 Mode = Literal["generation", "benchmark", "curation"]
 
-#: Every tool benchmark mode is given, by name. An allowlist, not a denylist: the
-#: denylist this replaced named three tools that never existed, so a literature
-#: tool added under any fourth name would have entered benchmark mode silently.
-#: Equal, 2026-09-30, to everything `build_registry("benchmark")` returned before.
+#: Every tool benchmark mode is given, by name. An allowlist, not a denylist: a
+#: denylist cannot name a literature tool that has not been written yet, so one
+#: added under a new name would enter benchmark mode silently.
 BENCHMARK_TOOLS: frozenset[str] = frozenset({
     "browse_variables",
     "check_access",
@@ -276,27 +275,17 @@ _TOOLS: dict[str, tuple[str, type[BaseModel]]] = {
          "exist. Call it anyway — you need the modules_required list and the "
          "blocker for the record. Never invent an n."),
         EstimateNArgs),
-    # n_values is NOT advertised, on purpose. It used to be, and the one real
-    # record used it to evaluate at n=50, take the 37.8 pp floor that produced,
-    # and write a 40 pp "falsifier" just above it. The environment defines the
-    # floor a falsifier is measured against; a floor the caller picks is an
-    # assumption wearing a measurement's name. The tool still accepts the
-    # argument and refuses it in its log, so a caller that guesses it does not
-    # get a TypeError that would fail the whole gate.
+    # n_values, alpha and power are NOT advertised, on purpose: a parameter in
+    # the schema is an invitation whatever the tool does with it. The
+    # environment defines the floor a falsifier is measured against; a floor the
+    # caller picks is an assumption wearing a measurement's name, and a caller
+    # that never sees a parameter cannot launder a loosened one into
+    # `assumptions`, which apply_tool_authority stamps into the record as
+    # authoritative. The tool still accepts n_values and refuses it in its log,
+    # so a guessed argument costs a refusal, not a TypeError that fails the gate.
     #
-    # alpha and power left with it on 2026-08-27, for the reason this comment
-    # already gives one paragraph up. They were advertised because the tool
-    # honours them — but the tool honours n_values in no sense at all and that
-    # was never the argument; the argument is that a parameter in the schema is
-    # an invitation whatever the tool does with it. MEASURED before the fix:
-    # passing alpha=0.50, power=0.50 dropped the supposedly caller-independent
-    # bound at n=1000 from 8.86 pp to 2.13, six times the swing prevalence ever
-    # bought. The bound now fixes both, so the lever is closed in the code; this
-    # removes the invitation as well, because a caller that never sees the
-    # parameter cannot launder a loosened one into `assumptions`, which
-    # apply_tool_authority stamps into the record as authoritative.
-    #
-    # They are still ACCEPTED and still shape the caller's own disclosure curve.
+    # alpha and power are still ACCEPTED and still shape the caller's own
+    # disclosure curve.
     # Unlike a sample size or a prevalence, a significance level is not an
     # unknown the model might know something about — it is a convention — so
     # there is nothing here for the model to contribute and nothing lost by not

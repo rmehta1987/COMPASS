@@ -137,10 +137,7 @@ eventual power turns out to be. Established by calling the same live
 `resolve_variable` and `env.tools.check_access` this module uses for the
 refusal side, not by construction alone — see `_verify_answerable` below.
 
-DO NOT RUN THE REFUSAL PATH AGAINST THIS SET YET. C4 (wiring `NotSpecifiable`
-into the Specifier) is Lane A's work, in flight, unmerged at the time this file
-was written. This module only builds and pins the set; nothing here drives a
-model.
+DRIVES NO MODEL. This module only builds and pins the set.
 
 NOTHING PAPER-DERIVED. Every fact this file uses comes from
 `build/dictionary.json`, `curated/derivations/*.json` (recipe metadata: unit,

@@ -451,8 +451,7 @@ _PIPED_REFERENCE = re.compile(
 #: unprefixed rendering fired two numeric markers, both of them index positions
 #: and neither of them a figure. The numbers are deliberately not repeated here
 #: — `tests/test_contamination_surface.py::
-#: test_no_source_file_names_a_published_analysis` scans this file, and it
-#: caught the first draft of this comment naming one.
+#: test_no_source_file_names_a_published_analysis` scans this file.
 _INDEX_PREFIX = "i"
 
 #: Stripped from the FRONT of a wording. `agent/schema.py::_norm` does not do

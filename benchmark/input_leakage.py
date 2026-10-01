@@ -37,7 +37,8 @@ if all three hold:
   2. it is not in the prompt TEMPLATE, rendered against a blanked pair — the
      template's own design vocabulary (`exposure`, `outcome`, `covariate`,
      `falsifier`) is boilerplate every prompt carries, and deriving it from the
-     template rather than listing it keeps this correct when Lane A edits it;
+     template rather than listing it keeps this correct when the template is
+     edited;
   3. it is not a bare function word.
 
 What survives is answer-only: a method the environment does not name, an external
@@ -201,8 +202,8 @@ def template_text() -> str:
 
     Derived rather than listed. The template carries design vocabulary a paper's
     design line also uses — `exposure`, `outcome`, `covariate`, `unit of
-    analysis` — and hand-listing those would need editing every time Lane A
-    touches the prompt, which is the staleness this project keeps paying for.
+    analysis` — and hand-listing those would need editing every time the
+    prompt changes, which is the staleness this project keeps paying for.
     A real `Candidate` with blanked `Construct`s is used rather than a stand-in
     object so that a field ADDED to the prompt is rendered here too.
 
@@ -359,8 +360,7 @@ def enumerated_pairs() -> list[Candidate]:
     """Every pair the current frame produces.
 
     The frame is `generate/funnel.py::FRAMES[DEFAULT_FRAME]`, the one named and
-    hashed definition every driver walks (T7). This module used to carry its own
-    copy of the comprehension, pending exactly that.
+    hashed definition every driver walks (T7), never a local copy of it.
 
     Returns:
         The funnel's candidates over the frame, in enumeration order.

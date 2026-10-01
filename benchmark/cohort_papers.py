@@ -1,27 +1,20 @@
 """benchmark/cohort_papers.py — the COMPASS cohort bibliography, held out.
 
-WHY THIS FILE EXISTS AND WHY IT IS HERE, NOT IN THE HANDOFF
------------------------------------------------------------
-Until 2026-08-28 the design content of four cohort papers — their exposures,
-outcomes and realised sample sizes — sat in a table in
-`HANDOFF_AGENT_PIPELINE.md` §3. That document is read in full by every session
-and by every lane agent, and those same agents then author `curated/`,
-`agent/schema.py` docstrings and the prompts. Handoff §3's own rule is that a
-design choice must never reach those surfaces; putting the designs in the
-document that every author reads first made the rule harder to keep, not easier.
-
-So the table moved here. `benchmark/` is fenced from the tool layer by
+WHY THIS FILE EXISTS AND WHY IT IS HERE, NOT IN A HANDOFF
+---------------------------------------------------------
+Paper design content — exposures, outcomes, realised sample sizes — must not sit
+in a document every author reads first: those authors also write `curated/`,
+`agent/schema.py` docstrings and the prompts, which a design choice must never
+reach. `benchmark/` is fenced from the tool layer by
 `benchmark.contamination_check.check_holdout_not_reachable`, which fails if
-`env/tools.py` so much as names it. The handoff now points here instead of
-carrying the content.
+`env/tools.py` so much as names it.
 
 WHAT THIS IS NOT. It is not the answer key. The answer key needs, per paper, the
 exposure and outcome keys resolved against the instrument, the covariate set, the
 model form, the tier against a model's knowledge cutoff, and the
 environment-forced versus paper-free field partition that keeps a rediscovery
 score and a recall score different numbers. That is task C12 and it is not built.
-This file is the bibliography those rows will hang from, moved intact so nothing
-was lost in the cut.
+This file is the bibliography those rows will hang from.
 
 Sixteen records are indexed. Four were inventoried until 2026-08-27. That is the
 number to distrust: the search cannot see paywalled papers with no PMC deposit,

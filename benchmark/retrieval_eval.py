@@ -41,9 +41,7 @@ were written by a model that had seen each gold item's wording. What is enforced
 exactly: every `RecallReport` CARRIES that text verbatim and cannot be constructed
 without it, and every rendering LEADS with it, above the first recall figure. What
 is NOT enforced, because Python cannot: `evaluate().recall_at(10)` returns a bare
-float like any other, and nothing stops a caller quoting it alone. An earlier
-version of this docstring claimed "a number cannot be lifted out of this module
-without it", which was false in one line of code.
+float like any other, and nothing stops a caller quoting it alone.
 
 Run it: `python -m benchmark.retrieval_eval` from the repository root.
 """
@@ -294,9 +292,8 @@ class RecallReport:
     def scope(self) -> str:
         """The glob, the filter and the definitions behind every figure here.
 
-        An unstated denominator is not a number: two figures in an earlier handoff
-        were called irreproducible by a critic and were in fact exact, under a
-        scope nobody had written down.
+        An unstated denominator is not a number: a figure is checkable only
+        under a scope that is written down.
         """
         return "\n".join([
             f"fixture         {self.fixture_path}",
@@ -484,11 +481,10 @@ def load_fixture(path: Path = FIXTURE) -> QueryFixture:
     return QueryFixture.model_validate(json.loads(path.read_text()))
 
 
-#: What the scope line says when the caller passed rows rather than a file. The
-#: scope block existed because an unstated denominator is not a number, and it
-#: was naming the committed 224-row fixture for every subset and every
-#: hand-built row set an experiment scored. Better to name no file than the
-#: wrong one. The committed fixture's name is deliberately absent from this
+#: What the scope line says when the caller passed rows rather than a file. An
+#: unstated denominator is not a number, and naming the committed fixture for a
+#: subset or a hand-built row set states the wrong one; better to name no file.
+#: The committed fixture's name is deliberately absent from this
 #: string, including as the negative half of a "not X": a reader scanning the
 #: scope block for a filename finds it either way.
 UNNAMED_FIXTURE = "<rows supplied by the caller in memory; no file was read>"

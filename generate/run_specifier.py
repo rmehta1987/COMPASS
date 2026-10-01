@@ -202,12 +202,10 @@ REASON_CALLS_A = [
     tool_call("get_item_group", {"group_id": "group:m3:Q16.1"}, "c3"),
     tool_call("list_derivations", {}, "c4"),
 ]
-# FIXTURE FIXED, NOT THE RULE. Until 2026-08-26 both calls named six keys while
-# the record they justify names eleven: the exposure derivation's five component
-# keys collapsed to one, and the undetermined covariate was missing entirely. The
-# environment's access verdict and module list were then stamped onto a record
-# describing a larger design than the one the tools had seen. That is T3, and the
-# fixture was one of its instances rather than a bystander.
+# FIXTURE FIXED, NOT THE RULE. Both calls name every key the record they
+# justify names -- the exposure derivation's five component keys and the
+# undetermined covariate included -- so the environment's access verdict and
+# module list describe the design the record does, not a smaller one (T3).
 FIXTURE_DESIGN_KEYS = ["m3:Q16.1_1", "m3:Q16.1_2", "m3:Q16.1_3", "m3:Q16.1_4",
                        "m3:Q16.1_5", "m2:Q5.8", "m1:Q3.11", "m1:Q5.4",
                        "m1:Q5.5", "m1:Q3.10", "m1:Q4.1"]
@@ -228,13 +226,9 @@ def demo_script(good: str, shuffled: str) -> list[Reply]:
     its covariates, seed 3 never reaches check_access, and seed 4 never produces
     a valid object.
 
-    BROKEN FROM 2026-08-27 UNTIL 2026-08-28, and the break is why the last list
-    is generated. MAX_TRANSDUCE_ATTEMPTS went from 2 to 4 that day; seed 4's two
-    hand-written rejections then ran the ScriptedBackend dry on the third
-    attempt, and `python generate/run_specifier.py` — the command this module's
-    own docstring gives — died with "ScriptedBackend exhausted after 19 calls".
-    A count written by hand beside a bound that moves is a stale count waiting
-    to happen, so it is now read off the bound.
+    Seed 4's rejection count is read off MAX_TRANSDUCE_ATTEMPTS, not written by
+    hand: a hand count beside a bound that moves runs the ScriptedBackend dry
+    as soon as the bound rises.
 
     Args:
         good: The valid fixture record, as JSON.

@@ -27,6 +27,135 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
   the PromptTemplate rule cited a test that stays green when the rule breaks (`5a09969`),
   and `docs/loop-prompt.md` item 0a still sent `/loop` to the deleted §Parallel Lanes
   (`8e9e534`).
+- **In-code history moved here** (item 2 of the bloat review, user-approved 2026-09-30).
+  Dated "used to / until / found" passages in comments and non-model-visible docstrings
+  now read as a present-tense why at their site; MEASURED/VERIFIED lines that back a
+  number or rule stayed. No code, string literal, `agent/schema.py` docstring, `_TOOLS`
+  description or prompt changed (AST-equal to the parent with docstrings blanked). What
+  the sites used to say:
+  - `agent/sealed.py`: the module docstring once listed four cohort papers as "these
+    four" (sixteen, verified 2026-08-26), each an exemption the marker scan had to
+    ignore. `config_dir` read only `COMPASS_CLAUDE_CONFIG_DIR` until 2026-09-14, so an
+    inherited `CLAUDE_CONFIG_DIR` silently won and the manifest named `~/.claude` while
+    the child read `~/.claude-enterprise` (tighter than claimed; nothing leaked). Every
+    run before 2026-09-08 used the default config dir. Probe 1 named the survey platform
+    until 2026-08-26, and the first fact-scored run scored an echoing "NO" as a LEAK.
+    `_answered_yes` was once the whole scorer, wrong both ways; `inconclusive` did not
+    exist (every fact-free YES was `leaked`); `score`'s first draft named the platform
+    and was caught by `tests/test_contamination_surface.py`; the named-platform case
+    dates from 2026-08-27. `run` lacked the `is_error` check `cli_backend._run` had, so
+    "Not logged in" could score as a clean NO.
+  - `agent/cli_backend.py`: `_retarget_mcp_config` exists because lane worktrees failed
+    with `ENOENT: posix_spawn '.../lane-a/.venv/bin/python'`, which read as the model
+    refusing to work. `_tool_log_path` (and `Attempt.tool_log_path`) replaced one
+    `run/tool_log.jsonl` truncated per sample; VERIFIED 2026-08-26 the surviving log
+    disagreed with the record beside it (0.35 vs 0.30).
+  - `agent/registry.py`: the `BENCHMARK_TOOLS` denylist it replaced named three tools that
+    never existed (`0fcd6eb`); the allowlist was checked equal 2026-09-30 to the old
+    output. `n_values` was advertised until the one real record took the n=50 floor
+    (37.8 pp) and wrote a 40 pp falsifier; `alpha`/`power` left the schema 2026-08-27
+    after alpha=power=0.50 dropped the bound at n=1000 from 8.86 to 2.13 pp.
+  - `agent/specifier.py`: `MAX_TRANSDUCE_ATTEMPTS` 2 -> 4 on 2026-08-27; the REFUSAL
+    outlet added 2026-08-28; `MAX_STEPS`' comment said "11 tools" until 2026-08-31.
+    `_KEY_SET`: live 2026-08-26/27, a derivation id passed as a key and a stale
+    `estimate_n` let a verdict be stamped onto a larger design. `_WHY` renamed "the
+    curve" to the bound in Round 3. `prompt_hash`: every provenance field in the one
+    live record was empty; `TRANSDUCE_REFUSAL` hashed from 2026-08-28. `_gate` was a
+    set difference over tool names until 2026-09-01, passing errored calls.
+    `_render_log` stripped return values, causing a paraphrased `quoted_wording`
+    (2026-08-26) and `unit: "scale"` (2026-08-27). `_emit` extracted 2026-08-28; its
+    repair loop once sent "your previous attempt" with no attempt in context (both live
+    runs `gate=invalid_record`, 2026-08-26) and once appended ~10 kB per attempt.
+  - `agent/tool_authority.py`: Round 1 stamped the last successful return without a
+    coverage check, and let any on-curve `at_n` through (3.0 pp cleared a 25.68 pp
+    curve). The record kept one number, not the curve; `worst_case_curve` and a
+    structured `asserted_baseline_prevalence` were added; the live record held the
+    whole curve in `assumptions` with `value` null. The first missing-keys message
+    (2026-08-26) asked the tool-less transduction call to call a tool. No wrapper wrote
+    `selection_mode`/`screened_from`, so an enumerated pair carried `externally_posed`.
+  - `agent/schema.py` (comments only): the `DerivationRef` docstring once named a
+    battery and its range; the earliest `AreaMeasureRef` docstring named exposures and
+    the paper count, and the note against it sat in the docstring until 2026-09-30;
+    `CausalAdjustment` claimed coercion nothing did; `NSource` values were bare.
+    `design_effect_for_community_area_clustering` joined at the 2026-08-27 lane merge
+    after a live run produced no record. The coding-claim validator closed the fifth
+    recorded unenforced guarantee. The unit-mismatch skip let the first green live record
+    (2026-08-27) through unchecked; the scalar fallback kept the skip longer.
+    `NotSpecifiable` is sent to transduction since 2026-08-28; its earlier docstring
+    explained the measurement to the model.
+  - `env/tools.py`: `SEARCH_SCORE_FLOOR` read 0.52 until 2026-08-30. Until 2026-08-30
+    `_query_terms` dropped tokens silently and `search_variables` indexed the key
+    (`phrase='m1'` scored 142 items 1.000). The search log's ~1,100 constant chars were
+    cut 2026-08-31 (mean 2,071 -> 892 over the 224-query fixture), `bm25` moved to
+    `_TOOLS`; browse's 375-char tail (50,625 chars over 135 pages) moved likewise. The old
+    `DETECTABILITY_N_GRID` ended in a published analytic n, unscanned. The bound's
+    prevalence (`WORST_CASE_PREVALENCE`) and deviates (`BOUND_ALPHA`/`BOUND_POWER`) were
+    fixed in two halves on 2026-08-27; the deviates fell 76% at 0.50/0.50 while the log
+    said the bound depended on nothing asserted. `alpha` was once accepted, ignored and
+    echoed. `check_access` claimed a `measures` exclusion read zero times until
+    2026-08-31, which produced `test_no_tool_accepts_a_parameter_it_ignores`.
+  - `env/labels.py::_INDEX_PREFIX`: its first draft named a published figure and was
+    caught by `test_no_source_file_names_a_published_analysis`.
+  - `serve/api.py`: the request's model was taken verbatim; the `--enable-specify` prefix
+    match caught `/api/specify/status`, so `/api/pair` spent a call and 403'd every poll
+    (found 2026-09-15); `State.enable_specify` defaulted `True` (2026-09-15); sub-item
+    keys (407 of 1,353) were refused with 400; `PINNED_REASON` claimed "not inferred"
+    beside a mislabelled role; a third prose key was dropped silently; `_role_candidates`
+    returned an unread `surface`; pruned pairs had launch buttons; `_pair` once asked
+    twice for one pool; a second `_specify` caller blocked silently;
+    `_refuse_unsafe_site_dir` checked depth one (cleared a nested
+    `build/dictionary.json`, 2026-09-09); the `--help` docstring exported an unread
+    `COMPASS_SITE_DIR` and the wrong venv (removed 2026-09-15); `--site-dir` defaulted
+    to an external clone until `site/` moved in-tree; the `--show-instrument` guard was
+    dead code; `enable_specify` once defaulted to `loopback` (ON behind a tunnel).
+  - `serve/redact.py`: an earlier docstring claimed the salt bounds correlation;
+    `Scrubber.__init__` once raised `FileNotFoundError` for a missing explicit path.
+  - `mcp/compass_server.py::_log` logged only name/args/outcome, leaving
+    `access.budget: 0` unauditable against a returned 3.
+  - `generate/`: `Frame` was an unnamed comprehension copied per driver;
+    `run_specifier.py`'s fixture named six keys against the record's eleven until
+    2026-08-26 (T3), and `demo_script` broke 2026-08-27 -> 28 ("ScriptedBackend
+    exhausted after 19 calls") when the attempt bound rose; `live_specifier.py`'s
+    empty identity fields saved a dotfile record (2026-08-26) and its pair was once
+    hand-named (T7); `worked_example.py` hand-wrote an `at_n` on no grid.
+  - `benchmark/contamination_check.py`: until 2026-08-26 it sampled 5 of 11 tools and
+    missed `estimate_detectability`'s published-n default; `search_variables` was
+    unscanned until 2026-08-26, its single-term and `low_confidence` samples date from
+    2026-08-30, the third `estimate_detectability` sample from 2026-08-27. `MARKERS`
+    went from four papers to sixteen on 2026-08-28 (C1); the dictionary audit it claimed
+    did not run until 2026-08-31; exclusion counts were double-counted until 2026-08-31;
+    `602` fired on an arm D list position on 2026-09-02 and moved to `LEAK_FACTS`. A
+    list-literal n went unscanned for a month. `TRANSDUCE`, `REPAIR`,
+    `TRANSDUCE_REFUSAL` and the `NotSpecifiable` schema went unscanned until 2026-08-28.
+    `get_design_convention` contributed only `text`; the surface once fell by six
+    silently; `_instrument_text_by_module` first double-counted; `breast cancer` was
+    missing from `INSTRUMENT_CONTENT_EXCLUSIONS`; `check_provenance` claimed to catch
+    paraphrase until 2026-08-26; a sealed probe reached ListAgents on 2026-09-11.
+    Answer-key paths joined 2026-08-28 (`cohort_papers`, `input_leakage`, `scorability`)
+    and 2026-09-14 (`rediscovery`, `design_key`, C36). The `Q`-prefix collision fired
+    once browse printed keys. `--live` returned 2 with nothing scored until it implied
+    `--require-complete`; the C2 input section dates from 2026-08-28; a missing scorer
+    crashed live probes until 2026-09-11; the "held-out facts" label became
+    "volunteered"; only leaks were printed, hiding two mis-scored probes.
+  - `benchmark/`, elsewhere: `cohort_papers.py` replaced a paper-design table in
+    `HANDOFF_AGENT_PIPELINE.md` §3 (2026-08-28). `instrument_terms.py` replaced two
+    drifting copies of the word test (2026-08-29); the agreement test pinned their
+    shared bug (`MIN_CONTENT_WORD` 4 -> 5 left 348 tests green), and the four-character
+    rule refuted `PSA` and `HIV`. `tier_gate.py`'s empty-arm claim rested on a five-term
+    hand search. C36 (2026-09-14) moved `EXPOSURE_KEYS` out of the prompt-editing clone,
+    the design accessors into `prevalence_rows.py`, and `validate_exposure_keys` into
+    `design_anchor.py::validate_design_key`. `scorability.py`: `NO_DESIGN_KEY_ROW` was
+    `exposure_key_column_missing` (2026-09-14), `KEY_DOES_NOT_RESOLVE` was
+    `outcome_key_unresolved` (2026-08-29), `NO_KEY_TO_RESOLVE` split out 2026-09-14
+    (briefly `no_key_row_for_this_paper`); outcome refutation once read `ascertainment`,
+    then `instrument_region`, now an anchor; a side once confirmed on any key; `_side`
+    dropped `self_reported=`; the `area_measure` ordering was wrong until 2026-09-14.
+    `retrieval_eval.py` once claimed a number could not leave without its scope, and
+    named the 224-row fixture for every row set. `input_leakage.py` copied the frame
+    until T7 and named Lane A. `calibration_set.py` dropped a stale C4 warning (landed
+    `caebd03`, merged `d424acf`). `resolver_eval.py` grouped by `family_of` until the
+    `roster_family_size` column (build `c272da5de196`).
+  - `build.py::BUILD_RULES_VERSION`: reworded to present tense only.
 
 ## 2026-09-30
 

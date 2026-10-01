@@ -102,13 +102,10 @@ def main() -> ProtocolSpecification:
     print(f"  screened_from      {counts['enumerated']}")
 
     # ----- detectability: a real curve point, not an invented number -------- #
-    # A cold critic found value=2.1 at_n=1800 hand-written below: 1800 is on no
-    # DETECTABILITY_N_GRID this project has ever used, so it was a number no
-    # tool would return for any input — the exact fabrication
-    # agent/tool_authority.py's GateMismatch exists to catch, except this script
-    # never passes through the authority layer, so nothing caught it here. Pull
-    # the number from the same environment tool the live Specifier calls,
-    # instead of a constant that goes stale the moment the grid changes.
+    # Pulled from the same environment tool the live Specifier calls, never
+    # hand-written: this script bypasses agent/tool_authority.py's GateMismatch,
+    # so a constant off DETECTABILITY_N_GRID would go uncaught here and go
+    # stale the moment the grid changes.
     # analytic_n is None below (co-completion counts do not exist), so use the
     # SMALLEST candidate n on the curve — the same convention
     # agent/tool_authority.py applies when a record names no n.

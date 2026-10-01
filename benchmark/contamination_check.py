@@ -17,13 +17,10 @@ transduction call, and the return value of every tool in the registry — and sc
 that single blob. A marker that never appears in any source file can still reach
 the model, because tool output is generated, not stored.
 
-WHY EVERY TOOL, WITH REPRESENTATIVE ARGUMENTS. Until 2026-08-26 this sampled 5 of
-the 11 registry tools and reported "clean". `estimate_detectability` was one of
-the six it never called, and its default `n_values` grid ended in a published
-COMPASS analysis's realised analytic n — so the marker scan had a hole exactly
-where a leak was sitting, and the hole was invisible because the surface count
-and the hash both looked stable. Coverage is now checked: a tool present in
-`build_registry(mode)` that `tool_samples()` does not sample FAILS this command.
+WHY EVERY TOOL, WITH REPRESENTATIVE ARGUMENTS. An unsampled tool is a hole in
+the marker scan that neither the surface count nor the hash reveals. Coverage is
+checked: a tool present in `build_registry(mode)` that `tool_samples()` does
+not sample FAILS this command.
 Arguments are chosen to exercise a tool's real branches, because a tool sampled
 with arguments that dodge its leaky default is not sampled.
 
@@ -58,7 +55,7 @@ provenance rule and the coverage check narrow what a reader has to hold in their
 head. They do not replace the reader, and a check that looked like they did would
 be worse than the honest gap.
 
-ONE EXCEPTION, ADDED 2026-08-27, AND WHY IT IS NOT THE THING ARGUED AGAINST
+ONE EXCEPTION, AND WHY IT IS NOT THE THING ARGUED AGAINST
 ABOVE. `check_no_prevalence_figure_in_surface` does enumerate paper facts —
 every prevalence in `benchmark/prevalence_key.py` — and greps the surface for
 them. The objection above is to writing paper facts into a SCANNED file in order
@@ -88,13 +85,10 @@ ROOT = Path(__file__).resolve().parent.parent
 #: Named explicitly rather than caught broadly, so a genuine missing dependency
 #: still takes the run down instead of being reported as a withheld-key skip.
 #:
-#: `benchmark.design_key` joined on 2026-09-14 (C36). It is the design-arrow key
-#: -- one row per paper, both sides -- and it exists BECAUSE the column it
-#: replaces was in the wrong clone: `scorability.py::EXPOSURE_KEYS` sat in the
-#: clone where prompts, `agent/schema.py` docstrings and `env/tools.py` are
-#: edited, which was safe only while it was empty. The first row would have made
-#: the editing clone the clone holding the rediscovery answers. The shape lives
-#: in `benchmark/design_anchor.py`, which is NOT withheld and stores no rows.
+#: `benchmark.design_key` (C36) is the design-arrow key, one row per paper with
+#: both sides, so it must not sit in the clone where prompts are edited. Its
+#: shape lives in `benchmark/design_anchor.py`, which is NOT withheld and stores
+#: no rows.
 WITHHELD_MODULES = frozenset({"benchmark.prevalence_key", "benchmark.leak_facts",
                               "benchmark.design_key"})
 sys.path.insert(0, str(ROOT))
@@ -145,8 +139,7 @@ def _published_n_tokens() -> list[str]:
     """Realised analytic n from the bibliography, in both written forms.
 
     Both forms, because a scan that only caught `n=2,836` would miss the same
-    number inside a list literal — which is exactly how one survived here for a
-    month.
+    number inside a list literal.
 
     FOUR DIGITS AND UP ONLY, and this is the line C1 asks for. The environment
     legitimately emits small integers: `registry_coverage` returns per-registry
@@ -188,43 +181,27 @@ def _published_n_tokens() -> list[str]:
 # Traceable to the COMPASS cohort papers, to the earlier literature review, or to
 # project internals the model has no business seeing.
 #
-# EXTENDED 2026-08-28 FROM FOUR PAPERS TO SIXTEEN (C1). The hand-written half
-# below encoded the four-paper inventory; `benchmark/cohort_papers.py` has held
-# sixteen since 2026-08-27, so twelve papers' exposures, methods and sample sizes
-# were traceable and unscanned. The two derived halves close that and keep it
-# closed as the bibliography grows.
+# The two derived halves cover every paper in `benchmark/cohort_papers.py`, so
+# the list keeps up as the bibliography grows (C1).
 #
 # EVERY TOKEN ADDED HERE WAS AUDITED FIRST, against the model-visible surface,
-# against `curated/`, `env/` and `agent/`, and against `build/dictionary.json`.
-# THE DICTIONARY HALF OF THAT AUDIT NOW RUNS -- see
-# `check_markers_are_not_instrument_content`. Until 2026-08-31 it did not: this
-# file mentioned `build/dictionary.json` in three comments and READ IT NOWHERE,
-# and the sentence below still said "verified against build/dictionary.json
-# above" for a verification that did not exist. A guarantee stated in a comment
-# and enforced nowhere is this codebase's signature failure, and this was an
-# instance of it sitting inside the file that checks for the others.
+# against `curated/`, `env/` and `agent/`, and against `build/dictionary.json`;
+# `check_markers_are_not_instrument_content` runs the dictionary half.
 # The audit is the reason four obvious candidates are ABSENT: `uterine fibroid`,
 # `fibroid`, `bipolar` and `PSA` are the published designs of four of the twelve
 # AND they are instrument content, so marking them would fail the build on a
-# question the study asked.
-# COUNTS CORRECTED 2026-08-31. This comment used to read 2 / 4 / 5 / 2. Those
-# came from joining four text fields of which `searchable_text` is a measured
-# superset, so every occurrence was counted about twice. Under `searchable_text`,
-# whitespace-collapsed, case-insensitive, on build 6fcd02755bf3 the true counts
-# are `uterine fibroid` 2, `fibroid` 2, `bipolar` 2, `PSA` 1.
+# question the study asked. MEASURED 2026-08-31 under `searchable_text`,
+# whitespace-collapsed, case-insensitive, on build 6fcd02755bf3: `uterine
+# fibroid` 2, `fibroid` 2, `bipolar` 2, `PSA` 1.
 # `asthma`, `hypertension`, `tobacco`, `marijuana` and `breast cancer` are out
 # for the same measured reason. A marker that fires on the instrument is not a
 # contamination control, it is a reason someone deletes the check.
 MARKERS = [
     "2,836", "2836", "5,096", "5096", "2,387", "2387",                 # paper n
-    # `602` WAS retained here, below the four-digit rule, on the recorded
-    # ground that it had never fired. On 2026-09-02 it fired: arm D renders the
-    # instrument as a 1,400-item numbered list and `602` is one of the
-    # positions. That is the exact cry-wolf failure the four-digit rule exists
-    # to prevent — a three-digit numeral stopping a build on a coincidence —
-    # and the retention's own justification no longer holds. It is scored, as
-    # the other short n are, by `benchmark/leak_facts.py::LEAK_FACTS`, where a
-    # match prints the answer for a human instead of failing the build.
+    # No three-digit n such as `602`: arm D renders a 1,400-item numbered
+    # list, so a short n collides with a position and stops a build on a
+    # coincidence. `benchmark/leak_facts.py::LEAK_FACTS` scores the short n,
+    # printing a match for a human instead of failing the build.
     "PM2.5", "PM2·5", "NO2", "NDVI", "WQS", "MAPSCorps", "E2SFCA",     # exposures/methods
     "floating catchment", "published COMPASS papers", "PMID",
     # The twelve found on 2026-08-27. Distinctive phrases only: each names an
@@ -323,22 +300,21 @@ def tool_samples() -> dict[str, list[dict[str, Any]]]:
             {"key": "Q5.8"},              # ambiguous: bare qid, echoes candidates
             {"key": "linked:example_measure"},   # not_found: the empty registry
         ],
-        # The largest generated text block in the environment and, until
-        # 2026-08-26, entirely unscanned: the snippets are real question wording.
+        # The largest generated text block in the environment; the snippets
+        # are real question wording.
         # The default limit of 10 is kept — a smaller limit would shrink the very
         # text this sample exists to expose.
         "search_variables": [
             {"phrase": "high blood pressure"},   # the frame's outcome domain
-            # The frame's exposure domain, and — since 2026-08-30 — the
-            # single-term branch: one surviving term makes every hit score
-            # 1.000, so the result carries its own banner saying the score
-            # means nothing, text that appears in no other sample here.
+            # The frame's exposure domain, and the single-term branch: one
+            # surviving term makes every hit score 1.000, so the result
+            # carries its own banner saying the score means nothing, text
+            # that appears in no other sample here.
             {"phrase": "neighborhood"},
             {"phrase": "zzzqqq"},                # zero hits: the empty-result log
-            # The low_confidence branch. Added 2026-08-30 with the scored
-            # rewrite: its banner, its per-hit below_threshold flags and its
-            # "re-query, do not read this as absence" log exist in no other
-            # sample, so the branch was unscanned the moment it was written.
+            # The low_confidence branch: its banner, its per-hit
+            # below_threshold flags and its "re-query, do not read this as
+            # absence" log exist in no other sample.
             {"phrase": "green space"},
         ],
         # EVERY PAGE, not a sample of them. browse_variables is the only tool
@@ -374,18 +350,14 @@ def tool_samples() -> dict[str, list[dict[str, Any]]]:
             {"keys": ["m3:Q16.1_1", "m2:Q5.8"]},
             {"keys": ["m2:Q5.8", "m2:Q12.78"]},
         ],
-        # n_values is OMITTED from the first sample. Passing an explicit grid was
-        # the exact mistake that hid the default's contents from the scan, and
-        # the environment grid is now the ONLY grid, so this is what every real
-        # call returns. The second sample exercises the refusal branch, whose log
-        # text quotes the grid back and exists nowhere else in the surface.
-        # Third sample added 2026-08-27 for the reason the second one exists.
-        # Fixing the bound at BOUND_ALPHA/BOUND_POWER created a new branch whose
-        # log text — the note that a caller's alpha and power shape only its own
-        # curve — appears nowhere else in the surface, and no existing sample
-        # passed either argument, so the branch was unscanned the moment it was
-        # written. That is the estimate_detectability hole reopening in a
-        # smaller shape.
+        # n_values is OMITTED from the first sample: an explicit grid hides the
+        # default's contents from the scan, and the environment grid is the
+        # ONLY grid, so this is what every real call returns. The second
+        # sample exercises the refusal branch, whose log text quotes the grid
+        # back and exists nowhere else in the surface. The third passes alpha
+        # and power: with the bound fixed at BOUND_ALPHA/BOUND_POWER, the note
+        # that a caller's alpha and power shape only its own curve appears in
+        # no other sample.
         "estimate_detectability": [{"baseline_prevalence": 0.30},
                                    {"baseline_prevalence": 0.30,
                                     "n_values": [50, 100, 150]},
@@ -447,13 +419,9 @@ SECOND_CALL_FILL = "<runtime fill; scanned where it is produced>"
 def _second_call_surface() -> dict[str, str]:
     """The transduction call's prompts, captured as the backend receives them.
 
-    WHY CAPTURED AND NOT LISTED. Until 2026-08-28 this module scanned `SYSTEM`,
-    `user_prompt`, the protocol schema and the tool returns, and nothing else —
-    so `TRANSDUCE`, `REPAIR`, and then `TRANSDUCE_REFUSAL` and the
-    `NotSpecifiable` schema when the refusal path landed, all reached the model
-    with no scan over them. A hand-listed set of template names would have gone
-    stale the same way the last one did: the list grows whenever someone adds a
-    literal to the emission loop, and nothing reminds them. Driving
+    WHY CAPTURED AND NOT LISTED. A hand-listed set of template names goes stale
+    whenever someone adds a literal to the emission loop, and nothing reminds
+    them. Driving
     `agent/specifier.py::_emit` with a backend that records instead of answering
     collects whatever that loop actually sends, including text nobody thought to
     list — the emission system message is here for exactly that reason and
@@ -829,9 +797,8 @@ def model_visible_surface(mode: Mode = "benchmark") -> dict[str, str]:
         **_split_surface(),
     }
     # Tool RETURN VALUES. Generated, not stored — a file grep cannot see these.
-    # The whole return is scanned, not a chosen field: `get_design_convention`
-    # used to contribute only its "text", leaving its `log` — which the model
-    # reads in the same message — outside the scan.
+    # The whole return is scanned, not a chosen field: a tool's `log` reaches
+    # the model in the same message as its payload.
     for s in _sample_registry(mode):
         surface[s.key] = _dumps(s.value)
     return surface
@@ -842,8 +809,8 @@ def check_tool_coverage(mode: Mode = "benchmark") -> list[str]:
 
     This is the structural half of the marker scan. The scan can only see what
     was called, so an uncalled tool makes "clean" mean less than it reads, and
-    nothing in the old design made that visible — the surface count went down by
-    six with no complaint from anything.
+    nothing else makes that visible: the surface count can fall without a
+    complaint from anything.
 
     Args:
         mode: Registry mode to check coverage against.
@@ -880,10 +847,7 @@ def _instrument_text_by_module() -> dict[str, str]:
     ONLY `searchable_text`. MEASURED 2026-08-31 over build 6fcd02755bf3, it is a
     strict superset of the other three text fields: `question_text` sits inside
     it in 2,804 of 2,804 entries, and `stem_text` and `subitem_text` in 876 of
-    876 each. Joining all four counts every occurrence twice — the first cut of
-    this function did, and reported `hypertension` matching "22 times" when it
-    matches 11 questions. A scan that inflates its own counts is the wrong shape
-    in the file that polices counts.
+    876 each. Joining all four counts every occurrence twice.
 
     KEYED BY MODULE so the caller can tell PARTIAL blindness from health. A join
     that silently lost one module reads exactly like a clean scan, which is the
@@ -926,8 +890,7 @@ EXPECTED_MODULES: dict[str, int] = {"1": 5_000, "2": 100_000, "3": 15_000}
 #: Tokens deliberately ABSENT from `MARKERS` because they are instrument
 #: content, with the reason recorded in the comment above MARKERS. Every token
 #: that comment names is here: one recorded decision expiring unnoticed is the
-#: drift this tuple exists to prevent, and `breast cancer` was named there and
-#: missing here in the first cut of this check.
+#: drift this tuple exists to prevent.
 #:
 #: They are also this check's PROOF THAT IT READ SOMETHING. "No marker appears
 #: in the instrument" is exactly what a check that loads nothing reports, which
@@ -1212,11 +1175,11 @@ def check_no_platform_name_in_surface(surface: dict[str, str]) -> list[str]:
 def check_provenance() -> list[str]:
     """Every convention must declare where it came from.
 
-    NOT a defence against paraphrase, and it was described as one here until
-    2026-08-26. It catches an author who knows the source is a paper and writes
-    that down. `clustering_community_area.md` declared `authored-unconfirmed`,
-    passed this check every time it ran, and opened with a sentence lifted from
-    the cohort profile — because the author believed the declaration. This check
+    NOT a defence against paraphrase. It catches an author who knows the source
+    is a paper and writes that down. `clustering_community_area.md` declared
+    `authored-unconfirmed`, passed this check every time it ran, and opened with
+    a sentence lifted from the cohort profile — because the author believed the
+    declaration. This check
     establishes only that a source was named, and `study-team` may be named only
     after the study team confirms in writing.
 
@@ -1257,8 +1220,8 @@ def check_seal_config() -> list[str]:
         for t in ("Bash", "Read", "Glob", "Grep", "WebSearch", "WebFetch"):
             if t not in DENY_TOOLS:
                 bad.append(f"{t} is not denied")
-        # The check above could not see a built-in the deny list never named,
-        # which is how a sealed probe reached ListAgents on 2026-09-11.
+        # The check above cannot see a built-in the deny list never named, so
+        # every built-in must be switched off.
         argv = w.base_argv("claude-haiku-4-5")
         if "--tools" not in argv or argv[argv.index("--tools") + 1] != "":
             bad.append('built-in tools are not all switched off (--tools ""): '
@@ -1287,24 +1250,19 @@ def check_holdout_not_reachable() -> list[str]:
     # The answer keys, by name. A copy of one under curated/, env/ or agent/ is
     # not a near miss: curated/ is globbed by the tool layer, and agent/ ships
     # docstrings into the transduction prompt.
-    # `cohort_papers.py` and `input_leakage.py` joined the list on 2026-08-28.
-    # The first was already the bibliography and was simply not named here; the
-    # second reads two keys at once and is therefore the worst of the set to
-    # find on a tool path.
-    # `scorability.py` joined on 2026-08-28: it derives exposure and outcome
-    # terms from the bibliography's design lines, so a copy of it under curated/
-    # would put a published pairing on a globbed tool path.
-    # `rediscovery.py` joined on 2026-09-14: it ASSEMBLES a paper's recorded
-    # design — the bibliography's line, its printed n, and both key columns —
-    # into one object and prints it. It stores none of that, which is why it is
-    # not a key; it is named here anyway, because what a copy of it under
-    # curated/ would put on a tool path is the same content either way.
-    # `design_key.py` joined on 2026-09-14 (C36). It holds one row per paper
-    # naming BOTH sides of a published design arrow, so it is the most direct
-    # statement of the answer in the repository -- and unlike the others it is
-    # also in WITHHELD_MODULES, so it should not exist here at all. Named here
-    # anyway: this check is about where a file SITS, and a copy under curated/
-    # would be on a globbed tool path whichever clone it was copied in.
+    # `cohort_papers.py` is the bibliography; `input_leakage.py` reads two keys
+    # at once, the worst of the set to find on a tool path.
+    # `scorability.py` derives exposure and outcome terms from the
+    # bibliography's design lines, so a copy of it under curated/ would put a
+    # published pairing on a globbed tool path.
+    # `rediscovery.py` ASSEMBLES a paper's recorded design — the bibliography's
+    # line, its printed n, and both key columns — into one object and prints
+    # it. It stores none of that, so it is not a key, but a copy under curated/
+    # would put the same content on a tool path.
+    # `design_key.py` (C36) names BOTH sides of each published design arrow,
+    # the most direct statement of the answer in the repository. It is also in
+    # WITHHELD_MODULES; it is named here because this check is about where a
+    # file SITS, whichever clone it was copied in.
     for key in ("leak_facts.py", "prevalence_key.py", "unearned_assertions.py",
                 "cohort_papers.py", "input_leakage.py", "scorability.py",
                 "rediscovery.py", "design_key.py"):
@@ -1361,14 +1319,11 @@ def check_no_prevalence_figure_in_surface(
     # every key, `searchable_text` and `stem_text` in the built dictionary:
     # ELEVEN of the figures collide with a question id, in hundreds of places,
     # and every single collision is `Q`-prefixed — adding `Q` to this class
-    # removes all of them and nothing else. It was latent before
-    # `browse_variables` and would have fired the first time `search_variables`
-    # returned a hit from one of those batteries; the browse listings print the
-    # keys wholesale, so it fired immediately.
+    # removes all of them and nothing else. The `browse_variables` listings
+    # print those keys wholesale, so without `Q` the whole check goes red on
+    # instrument content: the cry-wolf failure the paragraph above names.
     #
-    # This is the cry-wolf failure the paragraph above already names, and the
-    # cost of leaving it would have been the whole check going red on
-    # instrument content. What it gives up is a leaked figure written as `Q4.7`,
+    # What it gives up is a leaked figure written as `Q4.7`,
     # which is a question id and not how a prevalence is ever written.
     # `tests/test_contamination_surface.py` pins both halves: the question-id
     # class does not fire, and a real figure in a surface still does.
@@ -1401,12 +1356,9 @@ def main() -> int:
     # has the key and so could never reach 0 -- a permanently red signal says
     # nothing about the edit that was just made.
     # `--live` IMPLIES it. AGENTS.md makes `--live` the gate before a benchmark
-    # run, and review found that a `--live` run in a clone without the keys
-    # returned 2 with the two answer-key scans unrun AND no seal probe scored --
-    # the probes were printed for a human, never verdicted. A pre-benchmark gate
-    # that accepts "nothing I could see is wrong, and I could not see
-    # everything" is the conflation this status split was meant to end, not
-    # reproduce.
+    # run, and without the keys that run leaves the answer-key scans unrun and
+    # no seal probe scored. A pre-benchmark gate cannot accept "nothing I could
+    # see is wrong, and I could not see everything".
     require_complete = ("--require-complete" in sys.argv
                         or "--live" in sys.argv)
     surface = model_visible_surface()
@@ -1426,7 +1378,7 @@ def main() -> int:
             lambda: check_markers_are_not_instrument_content(),
         "published prevalence figures in surface":
             lambda: check_no_prevalence_figure_in_surface(surface),
-        # The INPUT side, added 2026-08-28 (C2). Every section above scans what
+        # The INPUT side (C2). Every section above scans what
         # the environment says to the model; this one asks whether the question
         # already contains its own answer. A benchmark can be broken before the
         # model is invoked and nothing downstream repairs it — the tool
@@ -1492,10 +1444,10 @@ def main() -> int:
             try:
                 r = w.verify(model="claude-haiku-4-5")
             except ModuleNotFoundError as exc:
-                # The probes can run here; only their scorer is withheld. Until
-                # 2026-09-11 this crashed, which hid the answers as well, and
-                # the answers are the part a person can still read. Same rule as
-                # the sections above: a loud skip and a non-zero exit, never a pass.
+                # The probes can run here; only their scorer is withheld, and
+                # the unscored answers are still readable by a person. Same rule
+                # as the sections above: a loud skip and a non-zero exit, never
+                # a pass.
                 if exc.name not in WITHHELD_MODULES:
                     raise
                 skipped.append("live seal probes")
@@ -1513,16 +1465,15 @@ def main() -> int:
                        "inconclusive": "????"}[p["verdict"]]
                 print(f"    {tag}  {n}")
                 if p["facts"]:
-                    # Not "held-out facts" any more: a confabulated platform
-                    # name is volunteered and unearned but is nobody's held-out
-                    # fact, and it now arrives here with an `inconclusive`
+                    # "volunteered", not "held-out facts": a confabulated
+                    # platform name is volunteered and unearned but is nobody's
+                    # held-out fact, and arrives here with an `inconclusive`
                     # verdict. Labelling it a leak would misreport it.
                     print(f"          volunteered: {', '.join(p['facts'])}")
                 # EVERY answer is printed, not only the failures. A verdict of
                 # `inconclusive` is a request for a human to read the answer, and
                 # a verdict of `clean` is worth no more than the answer behind
-                # it — the previous version printed only leaks, so the two probes
-                # it was mis-scoring as clean were invisible.
+                # it, so a mis-scored `clean` stays visible.
                 print(f"          {p['answer'][:400]}".replace("\n", " "))
             # An inconclusive probe counts as a problem: `clean` is a
             # precondition for a benchmark run, not a score, and a run that could

@@ -41,11 +41,10 @@ counterpart on purpose — it records a REFUTATION, and the schema has no way to
 name a thing that is not there. `tests/test_design_anchor.py` pins both halves.
 
 FAIL CLOSED. `__post_init__` rejects every combination of `kind`, `key` and
-`blocked_on` that would let a half-filled anchor read as a filled one. That is
-the same complaint `benchmark/rediscovery.py::validate_exposure_keys` already
-raises for an empty tuple, moved to where it cannot be skipped, and the C32
-exemption that failed OPEN — swallowing a PMID and a published n — is the
-recorded cost of leaving a partial record looking whole.
+`blocked_on` that would let a half-filled anchor read as a filled one, at
+construction, where it cannot be skipped. The C32 exemption that failed OPEN —
+swallowing a PMID and a published n — is the recorded cost of leaving a partial
+record looking whole.
 
 C35, DECIDED 2026-09-14, answer C: an `area_measure` anchor is out of scope
 EXPLICITLY. It carries no key, it names the delivery that would change that,

@@ -83,8 +83,8 @@ MAX_K = 5
 #: so `/api/specify` reports which one answered rather than assuming this one.
 PIPELINE_MODEL = "claude-haiku-4-5"
 
-#: Models a REQUEST may name. The body used to be taken verbatim, so anyone
-#: holding the shared password chose what the operator's seat spent -- and a
+#: Models a REQUEST may name. Taking the body's model verbatim would let anyone
+#: holding the shared password choose what the operator's seat spends -- and a
 #: larger model reads as a better result. The operator widens this with
 #: `--allow-model`; a caller cannot.
 DEFAULT_MODELS = frozenset({PIPELINE_MODEL})
@@ -133,9 +133,9 @@ class Unresolvable(ValueError):
             f"Nothing was spent: this is checked before the model runs. Pass "
             f'"allow_unresolvable": true to drive the refusal path deliberately.')
 
-#: What KIND of run a ticket names. `--enable-specify` governs one route, but
-#: the gate used to match the path prefix `/api/specify`, which caught the
-#: shared status route and therefore both proposal routes' tickets as well. A
+#: What KIND of run a ticket names. `--enable-specify` governs one route, and a
+#: gate on the path prefix `/api/specify` would also catch the shared status
+#: route and therefore both proposal routes' tickets. A
 #: proposal is a different thing from a run: `/api/pair` and `/api/resolve` cost
 #: about $0.012 against `/api/specify`'s $0.118, they commit nothing -- every
 #: reply carries `not_a_selection` -- and they do not touch the Specifier. So
@@ -248,13 +248,7 @@ class State:
                 `main` requires it for any non-loopback bind.
             enable_specify: Allow `POST /api/specify`. Off unless `main` is
                 asked for it, because each run spends the operator's seat.
-                THE DEFAULT WAS `True` while this line already said "off",
-                which is the unenforced-guarantee shape `AGENTS.md` names as
-                this codebase's recurring defect. `main` has always passed it
-                explicitly, so no deployed endpoint was affected -- but every
-                other constructor got the expensive route enabled, and a test
-                asserting the 403 found a live Specifier run starting instead
-                (2026-09-15). A flag that spends a seat defaults to off.
+                A flag that spends a seat defaults to off.
             allowed_models: Models a REQUEST may name. Defaults to the pipeline
                 proxy alone; the operator widens it, never the caller.
             enable_compare: Allow `POST /api/compare`. Off by default for the
@@ -558,9 +552,9 @@ def _canonical_key(key: str, constructs: dict[str, Any], role: str,
         A SUB-ITEM KEY IS ACCEPTED AND TRANSLATED TO ITS CONSTRUCT. `/api/pair`
         proposes whatever the retriever offered, and that is the sub-item `key`
         field: MEASURED 2026-09-15, 407 of the 1,353 offerable keys are
-        sub-item keys, so a third of every proposal -- and the whole `derive`
-        path, the site's own demo request included -- was refused here with a
-        400 and the caller had to substitute the construct by hand. The mapping
+        sub-item keys, so refusing them would 400 a third of every proposal --
+        and the whole `derive` path, the site's own demo request included --
+        and leave the caller to substitute the construct by hand. The mapping
         needs no inference, since `deploy/retriever.py::_hit` already returns
         `construct_key` beside `key`. The translation is REPORTED, and reported
         apart from a case fix, because it changes the request's grain:
@@ -587,9 +581,9 @@ def _canonical_key(key: str, constructs: dict[str, Any], role: str,
 
 
 #: What a pinned anchor tells the human who confirms it. The KEY was named, so
-#: it was not inferred; the ROLE was, from position alone. This used to read
-#: "the request named this key, so it was not inferred" beside an outcome
-#: labelled exposure, which asks the confirmation step to trust a false claim.
+#: it was not inferred; the ROLE was, from position alone. Saying only "not
+#: inferred" beside an outcome labelled exposure would ask the confirmation step
+#: to trust a false claim.
 PINNED_REASON = ("the request named this key, so the key was not inferred. Its "
                  "role was assigned by position -- the first key named is the "
                  "exposure, the second the outcome -- not read from the "
@@ -632,8 +626,8 @@ def _pin_keys_from_prose(request: str, constructs: dict[str, Any]) -> dict[str, 
     here and in `PINNED_REASON`, which every pinned anchor carries to the human
     who confirms it.
 
-    More than two keys is refused, not truncated. A third key used to be dropped
-    without a word, and the route then answered a request the caller never made.
+    More than two keys is refused, not truncated: dropping a third key without
+    a word would answer a request the caller never made.
 
     Args:
         request: The researcher's prose.
@@ -693,13 +687,11 @@ def _role_candidates(state: State, request: str, role: str, k: int) -> dict[str,
         "rendered": str}` -- the pool, its scores, the keys no wording could be
         bound to, and the query the encoder actually saw.
 
-        NO `surface`. One was returned for as long as this function existed and
-        nothing ever read it: `_pair` builds its own, and it has to, because a
+        NO `surface`. `_pair` builds its own, and it has to, because a
         surface built here carries the framing for the role this call names
         while `_pair` offers the ONE pool to both roles. Reusing it would ask
         "which item serves as the EXPOSURE here?" and record the answer as the
-        outcome. It was dead weight that read like an optimisation someone had
-        forgotten to take, so it is gone rather than commented.
+        outcome.
 
     Raises:
         ValueError: When no candidate can be bound to wording.
@@ -991,10 +983,9 @@ def _enumerate(state: State, body: dict[str, Any]) -> dict[str, Any]:
              "outcome": c.outcome.construct_key if state.show_instrument else None,
              "exposure_stem": c.exposure.stem_text,
              "outcome_stem": c.outcome.stem_text,
-             # A pruned pair used to be indistinguishable from a live one here,
-             # and the page gave every row a launch button. Invisible while the
-             # slice was the head of the list -- the prunes sit at index 256 --
-             # and reachable the moment the slice spreads.
+             # Without `state` a pruned pair is indistinguishable from a live
+             # one and the page gives every row a launch button. The prunes sit
+             # at index 256, so this bites only once the slice spreads.
              "state": c.state,
              "stage": c.stage,
              "reason": c.reason}
@@ -1206,8 +1197,8 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
 
     # ONE POOL, OFFERED TO BOTH ROLES. `deploy/template.py:12` states it
     # outright -- "`role` is never rendered" -- so a per-role request builds the
-    # IDENTICAL query and the identical pool; asking twice bought nothing and I
-    # had assumed otherwise. MEASURED on "does cigarette smoking raise the risk
+    # IDENTICAL query and the identical pool; asking twice buys nothing.
+    # MEASURED on "does cigarette smoking raise the risk
     # of high blood pressure": at k=8 every candidate was a hypertension item
     # and the exposure came back `absent` -- correctly, because smoking was
     # never offered. At k=20 the smoking items appear at ranks 19-20. So the
@@ -1614,8 +1605,8 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
                      outcome=C.get(outcome) or stand_in(outcome))
 
     # Refuse rather than queue. A run holds this lock for minutes, so a second
-    # caller used to block silently and then hit their own client timeout with
-    # no idea why -- on a shared endpoint that reads as a broken page. Saying
+    # caller that blocked silently would hit their own client timeout with no
+    # idea why -- on a shared endpoint that reads as a broken page. Saying
     # "busy" immediately is the difference between a queue and a hang.
     if not state.model_lock.acquire(blocking=False):
         raise Busy("an Experiment Design run is already in progress on this endpoint. "
@@ -2411,15 +2402,12 @@ class Handler(BaseHTTPRequestHandler):
         if not self._gate():
             return
         route = self.path.split("?")[0]
-        # THE PREFIX MATCH WAS THE BUG. `route.startswith("/api/specify")` also
-        # caught `/api/specify/status`, the one route the cheap proposal routes
-        # share, so a single flag governed three routes with different costs:
-        # `/api/pair` accepted a request on a default bind, spent its model
-        # call, returned a ticket -- and every poll of it answered 403. It
-        # failed in the shape that reads as "the server is broken" rather than
-        # "this route is off" (found by running the site's own flow,
-        # 2026-09-15). So the expensive route is named exactly, and the status
-        # route is judged on the TICKET's kind, below, once the body is parsed.
+        # NAMED EXACTLY, NOT BY PREFIX. `route.startswith("/api/specify")` also
+        # catches `/api/specify/status`, the one route the cheap proposal routes
+        # share, so `/api/pair` would spend its model call, return a ticket, and
+        # answer 403 on every poll -- which reads as "the server is broken", not
+        # "this route is off". The status route is judged on the TICKET's kind,
+        # below, once the body is parsed.
         if route == "/api/specify" and not self.state.enable_specify:
             self._send(403, self._specify_disabled())
             return
@@ -2593,12 +2581,11 @@ def _refuse_unsafe_site_dir(site_dir: Path, run_dir: Path) -> str | None:
     Returns:
         The refusal message, or None when the directory is safe to serve.
     """
-    # DEPTH ONE WAS NOT ENOUGH. The old check tested `site_dir / marker` and
-    # nothing deeper, so a parent directory passed while the withheld material
-    # sat one level further down -- `--site-dir ~` with a clone inside it leaves
-    # `<clone>/build/dictionary.json` INSIDE site_dir, which is precisely what
-    # the static route's containment check certifies and then serves. Measured
-    # 2026-09-09: a tree holding `pages/deep/build/dictionary.json` was cleared.
+    # EVERY DEPTH, NOT `site_dir / marker`. `--site-dir ~` with a clone inside
+    # it leaves `<clone>/build/dictionary.json` INSIDE site_dir one level down,
+    # which is precisely what the static route's containment check certifies and
+    # then serves. Measured 2026-09-09: a depth-one check cleared a tree holding
+    # `pages/deep/build/dictionary.json`.
     #
     # So walk it, and FAIL CLOSED. A tree too large to certify is refused rather
     # than served: not finding a marker in the part we managed to look at is not
@@ -2686,23 +2673,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     Returns:
         The parsed arguments.
     """
-    # WHAT IS IN THAT DOCSTRING IS PRINTED BY `--help`, which is why two lines
-    # came out of it on 2026-09-15. It exported
-    # `COMPASS_SITE_DIR=/home/mehta5/compass-site/site` -- one occurrence in the
-    # tracked tree, so read by NO code (`argparse` owns that path, below) and
-    # naming a clone that has not held the page since `0606136` -- and it told
-    # the reader to run `./.venv/bin/python`, which cannot work: that venv has
-    # `ruff` and neither `pydantic` nor `pytest`.
+    # WHAT IS IN THAT DOCSTRING IS PRINTED BY `--help`, so it names no
+    # environment variable no code reads and no interpreter that cannot run it.
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8080)
-    # IN-TREE, not a sibling clone. This defaulted to
-    # `/home/mehta5/compass-site/site`, which was the only copy of the page that
-    # existed, so `python -m serve.api` exited 2 with "site dir not found" on any
-    # box but one and the server could not be started from a clean checkout. The
-    # page is 25 files; `site/` is now carried here and the pair of defaults is
-    # checked against `_refuse_unsafe_site_dir` by a test, because a `site/`
-    # inside the repository sits one directory from `build/dictionary.json`.
+    # IN-TREE, not a sibling clone: a default outside the repository exits 2
+    # with "site dir not found" on any other box, so a clean checkout could not
+    # start the server. The pair of defaults is checked against
+    # `_refuse_unsafe_site_dir` by a test, because a `site/` inside the
+    # repository sits one directory from `build/dictionary.json`.
     ap.add_argument("--site-dir", type=Path, default=ROOT / "site")
     ap.add_argument("--deploy-root", type=Path, default=ROOT / "deploy")
     ap.add_argument("--run-dir", type=Path, default=ROOT / "run" / "serve")
@@ -2804,18 +2784,17 @@ def main(argv: list[str]) -> int:
     # distributed by the study, so a named researcher who already holds the
     # dictionary learns nothing new. An ANONYMOUS socket is a different claim,
     # and auth is the line between the two.
-    # Reachable now. The previous form tested `not loopback and not auth`, which
-    # the auth gate above had already returned on, so it was dead code that read
-    # like a guarantee. `--no-auth` is the case it actually has to catch.
+    # `--no-auth` is the case this has to catch: the auth gate above has already
+    # returned on every other bind without auth.
     if a.show_instrument and a.no_auth and not loopback:
         print(f"refusing --show-instrument with --no-auth on {a.host}: wording "
               f"behind a password is a disclosure to named people; wording on "
               f"an unauthenticated socket is a publication.", file=sys.stderr)
         return 2
-    # OFF unless asked for, on every bind. It used to default to `loopback`,
-    # which meant it was ON behind a tunnel -- the one place where an anonymous
-    # caller could spend the operator's Claude seat and hold the lock for
-    # minutes. A route that expensive is not something to infer.
+    # OFF unless asked for, on every bind. Defaulting to `loopback` would turn
+    # it ON behind a tunnel -- the one place where an anonymous caller could
+    # spend the operator's Claude seat and hold the lock for minutes. A route
+    # that expensive is not something to infer.
     enable_specify = bool(a.enable_specify)
     scoring = a.scoring_clone.resolve() if a.scoring_clone else None
     if a.enable_compare:

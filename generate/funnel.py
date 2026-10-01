@@ -256,10 +256,9 @@ def run(exposures, outcomes) -> tuple[list[Candidate], dict]:
 class Frame:
     """A named slice of the instrument that the funnel enumerates.
 
-    The frame decides every reported denominator (`run`'s `enumerated`), and it
-    used to be an unnamed list comprehension copied into every driver. Named
-    here, and hashed over the exact constructs it enumerates, a denominator can
-    say which frame it came from.
+    The frame decides every reported denominator (`run`'s `enumerated`). Named
+    once here, and hashed over the exact constructs it enumerates, a denominator
+    can say which frame it came from.
 
     Attributes:
         name: The frame's name, a key of `FRAMES`.

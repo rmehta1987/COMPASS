@@ -1,28 +1,25 @@
 """benchmark/instrument_terms.py — can the built instrument supply this phrase?
 
-ONE IMPLEMENTATION, TWO CALLERS. `tier_gate.py` and `scorability.py` both need
-the same question answered and each had its own copy. The agreement test written
-to catch that drift pinned the SHARED BUG instead: raising `MIN_CONTENT_WORD`
-from 4 to 5 in one module alone left all 348 tests green, because the test
-compares two implementations rather than either one against the instrument.
-Extracting the function is what makes that class of drift unrepresentable.
+ONE IMPLEMENTATION, TWO CALLERS. `tier_gate.py` and `scorability.py` ask the
+same question and neither keeps a copy: a test comparing two copies pins their
+shared bug rather than catching drift, so there is one function, tested against
+the instrument.
 
-WHY THE OLD TEST WAS UNSAFE, MEASURED 2026-08-29. The previous rule tokenised a
-term into words of at least four characters and asked whether any occurred in
-`build/dictionary.json`. Two ways that refutes wrongly, which is the direction
-that matters — a false REFUTED discards a paper from the benchmark:
+WHY SHORT TOKENS ARE KEPT, MEASURED 2026-08-29. A rule that keeps only words of
+at least four characters and asks whether any occurs in `build/dictionary.json`
+refutes wrongly in two ways, which is the direction that matters — a false
+REFUTED discards a paper from the benchmark:
 
-  1. DROPPED SHORT TOKENS. `'serum PSA'` refuted, while the instrument carries
+  1. DROPPED SHORT TOKENS. `'serum PSA'` refutes, while the instrument carries
      `m2:Q6.3`, "How long has it been since you had a blood test for prostate
-     cancer, for example PSA?". `PSA` is three characters and was discarded,
+     cancer, for example PSA?". `PSA` is three characters and is discarded,
      leaving only `serum`. Dropping a token that IS present makes refutation
-     MORE likely, never less, so the discard was never safe.
+     MORE likely, never less, so the discard is never safe.
   2. VACUOUS ABSENCE. `any()` over an empty word list is False, so a term whose
-     every word is short was declared absent on no evidence at all:
-     `terms_absent_from_instrument(('PSA',))` returned `('PSA',)`, and `('HIV',)`
-     likewise, with both strings in the instrument.
+     every word is short is declared absent on no evidence at all: `('PSA',)`
+     and `('HIV',)` both come back absent, with both strings in the instrument.
 
-THE RULE NOW. A term is tokenised into runs of at least three characters. A long
+THE RULE. A term is tokenised into runs of at least three characters. A long
 token (>= MIN_CONTENT_WORD) matches as a substring, which is deliberately loose —
 `care` matching `healthcare` keeps a term OUT of the absent set, and failing to
 refute is the safe error. A short token matches only on a word boundary, so `PSA`
@@ -45,12 +42,9 @@ import re
 from benchmark.input_leakage import instrument_text
 
 #: At or above this length a token matches as a substring; below it, only on a
-#: word boundary. Four is inherited from `tier_gate.py`'s original `_MIN_WORD`,
-#: where the comment justified it as excluding `CRC` and `WQS` — "an acronym is
-#: a method or a data source". That reasoning holds for a method acronym and
-#: fails for `PSA` and `HIV`, which are constructs. Boundary-matching the short
-#: tokens keeps the method acronyms out of the instrument without discarding the
-#: constructs, so the exclusion no longer has to be guessed from length alone.
+#: word boundary. Four keeps method acronyms (`CRC`, `WQS`) from matching inside
+#: longer words, and boundary-matching the short tokens keeps constructs such as
+#: `PSA` and `HIV` findable, so the exclusion is not guessed from length alone.
 MIN_CONTENT_WORD = 4
 
 #: Runs of at least three characters, digits and dots allowed after the first so

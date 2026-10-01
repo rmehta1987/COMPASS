@@ -2229,12 +2229,11 @@ def candidate_facts(key: str) -> dict[str, object]:
     """
     entry = _entry(key)
     facts: dict[str, object] = {"module": str(entry["module"])}
-    # READ, not derived. This grouped by `family_of` until build c272da5de196
-    # gained the column: `agent/prompt_contract.py` names `roster_family_size`
+    # READ, not derived: `agent/prompt_contract.py` names `roster_family_size`
     # in prompt text and cannot import this module, so the value the model reads
-    # was computed somewhere the surface describing it could not see.
+    # must be the column the surface describing it can see.
     #
-    # The two definitions agree on all 1,520 roster rows and differ on five
+    # The column and `family_of` agree on all 1,520 roster rows; they differ on five
     # non-roster ones, where `family_of`'s tuple key groups three write-in slots
     # on `m1:Q3.10` and the two occurrences of `m2:Q785`. The column is null
     # there, which is right: none of those five is a question asked once per

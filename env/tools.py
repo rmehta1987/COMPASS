@@ -278,10 +278,8 @@ def get_item_group(group_id: str) -> dict:
 #: midpoint of the separating interval re-measured 2026-08-30 over the control
 #: set recorded in `search_variables`' docstring — highest known-bad top hit
 #: 0.477, lowest known-good top hit 0.569 — not a guessed constant, and not
-#: tuned to make any single query pass. It read 0.52 and called itself the
-#: midpoint until 2026-08-30; the midpoint of (0.477, 0.569) is 0.523, and
-#: `tests/test_search_scoring.py` now re-derives the word rather than leaving
-#: the claim unenforced beside a number that contradicts it.
+#: tuned to make any single query pass. `tests/test_search_scoring.py`
+#: re-derives the midpoint, so the word and the number cannot disagree.
 SEARCH_SCORE_FLOOR = 0.523
 
 #: How many collapsed sibling keys are echoed per hit. The full count is always
@@ -345,10 +343,9 @@ def _query_terms(phrase: str) -> tuple[list[str], list[str]]:
     The rewrite keeps alphabetic runs of three or more characters, which means
     numerals and one- or two-character words never reach the index. That rule is
     kept — a bare year is nearly always the caller illustrating rather than
-    searching — but until 2026-08-30 the drop was SILENT: a live run searched
-    'what year born 1900 1950 2000' and nothing in the return value said the
-    three years had been discarded. The dropped tokens are returned so the log
-    can name them.
+    searching — but the drop must not be silent, or a caller searching
+    'what year born 1900 1950 2000' cannot tell its three years were discarded.
+    The dropped tokens are returned so the log can name them.
 
     Args:
         phrase: The caller's raw search phrase.
@@ -412,10 +409,9 @@ def search_variables(phrase: str, limit: int = 10) -> dict:
 
     WORDING ONLY. The index covers question wording and nothing else: the
     variable key is stored `UNINDEXED`, so a term can never be earned by the key
-    it is printed under. It was indexed until 2026-08-30, and the consequence
-    was not cosmetic — `phrase='m1'`, a query a live run actually issued, matched
-    142 items on their key prefix and scored every one of them 1.000 while the
-    log promised the score measured wording coverage.
+    it is printed under. Indexing the key would let `phrase='m1'`, a query a
+    live run issued, match every m1 item on its key prefix at 1.000 — a score that
+    then measures the key, not wording coverage.
 
     SCORE. `score` is the fraction of the query's idf-weighted information that a
     hit's question wording covers:
@@ -620,15 +616,11 @@ def search_variables(phrase: str, limit: int = 10) -> dict:
     else:
         outcome = "ok"
         banner = ""
-    # This log paid ~1,100 characters PER CALL for text that was byte-identical
-    # on every call — what `score` and `bm25` are, what the floor and
-    # `score_discriminates=false` mean, that a key from here is a candidate.
-    # `agent/registry.py::_TOOLS["search_variables"]` says all of it once per
-    # prompt, so it was deleted here 2026-08-31 sentence by sentence, each
-    # checked as carried there first; `bm25` was the one that was not, and moved.
+    # Text identical on every call (what `score` and `bm25` are, what the floor
+    # and `score_discriminates=false` mean) is said once per prompt in
+    # `agent/registry.py::_TOOLS["search_variables"]`, not in this log.
     # `weak` is conditional because an `ok` page has no below-floor hit for
-    # "a result about THIS WORDING" to be about. Mean log over the 224-query
-    # fixture: 2,071 -> 892 chars.
+    # "a result about THIS WORDING" to be about.
     weak = (
         "This is a LOW-CONFIDENCE result about THIS WORDING: this tool cannot "
         "tell you whether the instrument holds the construct, and the hits are "
@@ -944,12 +936,9 @@ def browse_variables(module: str, section: str | None = None) -> dict:
     return {
         "outcome": "ok", "module": mod, "section": sect, "level": level,
         "n_rows": len(rows), "rows": rows, "listing_chars": _chars(rows),
-        # The 375-char constant tail this log used to carry — what search cannot
-        # tell you, the NULL response coding, and "a key from here is a
-        # CANDIDATE" — was identical on all 135 pages this tool can return, so
-        # it cost 50,625 characters of model-visible surface to say once. It is
-        # said once, in agent/registry.py::_TOOLS["browse_variables"]. What is
-        # left names THIS page: the level it is complete at, and the slice.
+        # Text identical on every page is said once, in
+        # agent/registry.py::_TOOLS["browse_variables"]. This log names only
+        # THIS page: the level it is complete at, and the slice.
         "log": (f"{body} COMPLETE at level={level}: nothing here is ranked, "
                 f"scored or cut off, so a wording absent from this page is "
                 f"absent from {where}.")}
@@ -1069,25 +1058,22 @@ def estimate_n(keys: list[str]) -> dict:
 # spacing is what makes the curve's shape readable, and three decades bracket any
 # analytic n this instrument could plausibly yield instead of approximating one.
 #
-# It is deliberately a series with no empirical referent. The previous default
-# ended in a realised analytic n lifted from a published analysis of this very
-# cohort, so a tool the model calls handed back one of the numbers the model is
-# supposed to reason without — and the scan that should have caught it never
-# called this tool. There is no instrument-derived alternative to reach for:
+# It is deliberately a series with no empirical referent: a realised analytic n
+# from a published analysis of this cohort would hand back, through a tool the
+# model calls, one of the numbers the model is supposed to reason without.
+# There is no instrument-derived alternative to reach for:
 # every count in build/dictionary.json counts ITEMS, not participants, and
 # borrowing one of those as an n would be a category error dressed as provenance.
 #
 # A candidate n at which to EVALUATE a formula is not an asserted analytic n. The
 # log line below has to say so, because a grid of round numbers cannot.
 #
-# THE GRID IS THE ENVIRONMENT'S, NOT THE CALLER'S. Scrubbing this constant was
-# only half a fix while `n_values` stayed a caller argument in the schema: the
-# one real record called estimate_detectability with n_values=[50,...,300], took
-# the 37.8 pp floor at n=50 for a cohort of thousands, and wrote a 40 pp
-# "falsifier" just above it. A floor a caller chooses is not a floor. The
-# parameter is gone from agent/registry.py's schema; the sink below exists only
-# so a caller that guesses the argument anyway gets a refusal in the log instead
-# of a TypeError that would fail the whole gate.
+# THE GRID IS THE ENVIRONMENT'S, NOT THE CALLER'S. A floor a caller chooses is
+# not a floor: a caller passing n_values=[50,...] can take the n=50 floor for a
+# cohort of thousands and write a "falsifier" just above it. `n_values` is not
+# in agent/registry.py's schema; the sink below exists only so a caller that
+# guesses the argument anyway gets a refusal in the log instead of a TypeError
+# that would fail the whole gate.
 DETECTABILITY_N_GRID: tuple[int, ...] = (100, 300, 1000, 3000, 10000)
 
 # p(1-p) is maximised at one half, so this is the prevalence at which the
@@ -1097,27 +1083,20 @@ DETECTABILITY_N_GRID: tuple[int, ...] = (100, 300, 1000, 3000, 10000)
 # its own floor. Reporting the curve at this prevalence alongside removes the
 # incentive: the bound holds whatever the true prevalence turns out to be.
 #
-# 2026-08-27: reporting it alongside was only half the fix, because the gate was
-# still comparing against the asserted curve. MEASURED over run/*.tool_log.jsonl
-# — 10 saved runs, one estimate_detectability call each, every one of them for
-# the same hypertension outcome: the caller chose 0.35 five times and 0.25, 0.28,
-# 0.30, 0.32 and 0.40 once each. sde is proportional to sqrt(p(1-p)), so that
-# spread is a 13.1% swing in the floor the caller is then judged against, and
-# nothing in the environment supplies a prevalence it could have used instead. So
-# the comparator is now the curve below and the asserted value is demoted to a
-# labelled assumption on the record. The log says which curve is judged, because
-# a tool whose text describes the previous contract is indistinguishable to the
-# caller from one that still implements it.
+# The gate COMPARES against this curve, not the asserted one; the asserted value
+# is a labelled assumption on the record. MEASURED 2026-08-27 over
+# run/*.tool_log.jsonl — 10 saved runs, one estimate_detectability call each,
+# all for the same hypertension outcome: the caller chose 0.35 five times and
+# 0.25, 0.28, 0.30, 0.32 and 0.40 once each. sde is proportional to
+# sqrt(p(1-p)), so that spread is a 13.1% swing in the floor, and nothing in the
+# environment supplies a prevalence the caller could use instead. The log says
+# which curve is judged.
 WORST_CASE_PREVALENCE: float = 0.5
 
-# 2026-08-27, SECOND HALF OF THE SAME DEFECT. Fixing the prevalence was not
-# enough, because the bound took z_a and z_b from the CALLER's alpha and power
-# and used them for both curves. MEASURED on the code as it stood, floor at
-# n=1000: the supposedly caller-independent bound fell from 8.86 pp at
-# alpha=0.05/power=0.80 to 4.05 at 0.20/0.50 and to 2.13 at 0.50/0.50 — a 76%
-# reduction, six times what the prevalence lever ever bought, through arguments
-# the schema was advertising. The tool's own log meanwhile said the bound "does
-# not depend on anything you assert", which was false.
+# The bound's z_a and z_b come from these, never from the caller's alpha and
+# power: a bound built from the caller's deviates falls at n=1000 from 8.86 pp
+# at 0.05/0.80 to 2.13 at 0.50/0.50 (MEASURED 2026-08-27), so the caller would
+# choose its own bar.
 #
 # alpha and power are the easiest of these to close, because they are NOT
 # unknowns. There is no true significance level to be ignorant of; they are
@@ -1164,9 +1143,7 @@ def estimate_detectability(baseline_prevalence: float, alpha: float = 0.05,
         alpha: Two-sided significance level, strictly between 0 and 1. HONOURED
             for `sde_by_n` — the caller's deviate is computed from it — and
             IGNORED for the bound, which uses BOUND_ALPHA. Not advertised in the
-            model-visible schema; see agent/registry.py for why. It used to be
-            accepted, ignored entirely, and then echoed back in `assumptions` as
-            though it had been used, which was a different bug in the same field.
+            model-visible schema; see agent/registry.py for why.
         power: Target power, strictly between 0 and 1. Same treatment as alpha.
         n_values: REFUSED. The grid is DETECTABILITY_N_GRID and is owned by the
             environment; a value here is recorded and discarded, never used.
@@ -1190,8 +1167,7 @@ def estimate_detectability(baseline_prevalence: float, alpha: float = 0.05,
     z_a: float = NormalDist().inv_cdf(1 - alpha / 2)
     z_b: float = NormalDist().inv_cdf(power)
     # The ENVIRONMENT's, for the bound. Not derived from anything the caller
-    # passed, which is the whole property the bound is supposed to have and did
-    # not have until 2026-08-27.
+    # passed, which is the whole property the bound is supposed to have.
     zb_a: float = NormalDist().inv_cdf(1 - BOUND_ALPHA / 2)
     zb_b: float = NormalDist().inv_cdf(BOUND_POWER)
     bound = _sde_curve(WORST_CASE_PREVALENCE, zb_a, zb_b)
@@ -1214,7 +1190,7 @@ def estimate_detectability(baseline_prevalence: float, alpha: float = 0.05,
                         "test": "two-proportion normal approximation"},
         "n_grid_source": "environment",
         "bound_parameter_source": "environment",
-        # Item 2, 2026-08-27. The formula below assumes independent
+        # The formula below assumes independent
         # observations. The design convention this environment serves instructs
         # the model to cluster. Both statements are true, they disagree, and the
         # disagreement has a direction — so the tool states it rather than
@@ -1323,10 +1299,9 @@ def check_access(keys: list[str]) -> dict:
     comes in and every location-bearing key in it is charged. Excluded variables
     consume no budget because the CALLER DOES NOT PASS THEM, and
     `agent/tool_authority.py` binds that by not requiring `excluded_variables`
-    keys in this call. Until 2026-08-31 this docstring claimed the exclusion was
-    checked HERE, with a `measures` parameter as the alibi — AST-parsed, it was
-    read ZERO times in the body. `tests/test_env_tools.py::
-    test_no_tool_accepts_a_parameter_it_ignores` fails on any such argument now.
+    keys in this call. No parameter here stands in for an exclusion check:
+    `tests/test_env_tools.py::test_no_tool_accepts_a_parameter_it_ignores`
+    fails on an argument the body never reads.
 
     Args:
         keys: Every key the protocol names in a position that uses it.

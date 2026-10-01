@@ -30,14 +30,11 @@ PubMed-indexed and span 2020-2026; they are almost certainly memorised, and no
 seal changes that. Contamination from that source is controlled by paper
 SELECTION and measured by the tier gap — never asserted by a prompt.
 
-This docstring used to list four of them by id, exposure and outcome, and said
-"these four" as though four were the population. Both halves were wrong. The
-count was verified as sixteen on 2026-08-26, and this file sits in a directory
-the marker scan reads, so every exposure named here was an exemption the scan had
-to be told to ignore. The inventory lives on the held-out side —
-`benchmark/`, which nothing on a tool path reaches — and that is the only place
-a paper's exposure, outcome, n or prevalence may be written down. Do not restore
-the list. A count is not paper content; a design is.
+Never list the papers here: this file sits in a directory the marker scan reads,
+so every exposure named here would be an exemption the scan must ignore. The
+inventory lives on the held-out side — `benchmark/`, which nothing on a tool path
+reaches — the only place a paper's exposure, outcome, n or prevalence may be
+written down. A count is not paper content; a design is.
 """
 
 from __future__ import annotations
@@ -77,7 +74,7 @@ DENY_TOOLS = ["Bash", "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep",
 BUILTIN_TOOLS = ""
 
 # Which Claude Code config directory a sealed run reads. Unset means the user's
-# default, which is what every run before 2026-09-08 used.
+# default.
 #
 # The config dir, NOT the flags, is what decides whether user skills, plugin
 # skills, ~/.claude/CLAUDE.md and project memory are reachable. VERIFIED
@@ -103,21 +100,10 @@ def config_dir() -> Path:
     this feeds `manifest`, `_claude_md_sources` and `reachable_skills`, and a
     manifest describing a directory the run never opened is not a disclosure.
 
-    Until 2026-09-14 this consulted `COMPASS_CLAUDE_CONFIG_DIR` and nothing
-    else, while `SealedWorktree.run` builds the child environment as
-    `{**os.environ, ...}` -- so an inherited `CLAUDE_CONFIG_DIR` silently won.
-    Claude Code's enterprise install exports one. MEASURED on the training
-    machine that day, override unset: the manifest named `~/.claude` and
-    reported `skills_reachable` `['adversarial-review', 'plugin:sparkrun']`,
-    while the child read `~/.claude-enterprise`, which holds no `skills/`, no
-    `plugins/cache/` and no `CLAUDE.md`. The seal was TIGHTER than the manifest
-    claimed, so nothing leaked -- but the error runs both ways, and a skill's
-    description enters the model's context whether or not it is ever invoked.
-
-    The module already carried the argument against this, in
-    `_claude_md_sources`: hardcoding a directory "would report on a directory
-    the run does not read". That reasoning was applied to this project's own
-    override and not to the CLI's.
+    An inherited `CLAUDE_CONFIG_DIR` must be read here because
+    `SealedWorktree.run` builds the child environment as `{**os.environ, ...}`,
+    so the child opens it whether or not this project set it (Claude Code's
+    enterprise install exports one).
 
     Returns:
         `COMPASS_CLAUDE_CONFIG_DIR` if set, else an inherited
@@ -151,20 +137,11 @@ def reachable_skills() -> list[str]:
 
 # Asked from inside the seal. A clean run answers no to all three.
 #
-# PROBE 1 WAS REWORDED 2026-08-26, and this is the one wording change worth
-# making. It used to name the survey platform outright — the single fact this
-# project has VERIFIED leaking, quoted in the module docstring above. A probe
-# that names the answer cannot detect the answer: a model that repeats the
-# question back is indistinguishable from one that knows. The very first live
-# run of the fact-based scorer proved it, scoring a flat "NO, I don't see any
-# recalled memories about <the three things you just listed>" as a LEAK, because
-# the tokens it echoed were on the answer key.
-#
-# The rewrite names nothing. It also disposes of the overloaded-acronym problem
-# for free: "COMPASS" is the name of at least one unrelated programme, so the old
-# probe could be answered YES honestly for the wrong reason. Asking about what
-# was loaded FROM DISK rather than about a named study targets exactly what the
-# seal controls — retrieved context — and nothing else.
+# PROBE 1 NAMES NOTHING. A probe that names the answer cannot detect the answer:
+# a model that repeats the question back is indistinguishable from one that
+# knows. Naming no study also sidesteps the overloaded acronym ("COMPASS" names
+# at least one unrelated programme), and asking what was loaded FROM DISK
+# targets exactly what the seal controls — retrieved context — and nothing else.
 #
 # Probe 3 keeps its wording. It names the cohort in full because it must: it
 # targets PRETRAINING, which no seal touches, and a question about "a cohort"
@@ -221,11 +198,10 @@ def _answered_no(text: str) -> bool:
 def _answered_yes(text: str) -> bool:
     """Did the probe answer YES?
 
-    TRIAGE ONLY, and it decides nothing on its own any more. As the whole scorer
-    it was wrong in both directions: 'YES. I have no idea what COMPASS is.'
-    scored as a leak, and so did two natural denials. `score()` below reads the
-    FACT the probe asked for; this only separates a fact-free denial from a
-    fact-free assertion.
+    TRIAGE ONLY: it decides nothing on its own. As a whole scorer it errs both
+    ways ('YES. I have no idea what COMPASS is.' is not a leak). `score()` below
+    reads the FACT the probe asked for; this only separates a fact-free denial
+    from a fact-free assertion.
 
     Args:
         text: The probe answer.
@@ -236,9 +212,9 @@ def _answered_yes(text: str) -> bool:
     return not _answered_no(text)
 
 
-#: The three states a probe can end in. `inconclusive` is the one that did not
-#: exist: every unparseable or fact-free YES used to be scored `leaked`, which
-#: put the seal check's credibility on the model's choice of opening word.
+#: The three states a probe can end in. `inconclusive` keeps an unparseable or
+#: fact-free YES out of `leaked`, so the seal check's credibility does not rest
+#: on the model's choice of opening word.
 CLEAN, LEAKED, INCONCLUSIVE = "clean", "leaked", "inconclusive"
 
 
@@ -248,8 +224,6 @@ def score(text: str, question: str = "") -> tuple[str, list[str]]:
     The fact is the signal and YES/NO is triage, in that order. A model that
     names a held-out fact while opening with "NO" has leaked; a model that opens
     with "YES" and names nothing has told us only that it misread the question.
-    (The scan in tests/test_contamination_surface.py caught the first draft of
-    this docstring naming the platform outright, which is the check working.)
 
     That ordering is also what handles the overloaded acronym. "COMPASS" names at
     least one unrelated programme, so probe 1 can be answered YES honestly for
@@ -263,7 +237,7 @@ def score(text: str, question: str = "") -> tuple[str, list[str]]:
         question: The probe that was asked. A fact the QUESTION named cannot
             count as volunteered — see `benchmark.leak_facts.facts_in`.
 
-    A NAMED SURVEY PLATFORM IS ITS OWN CASE, added 2026-08-27. The environment
+    A NAMED SURVEY PLATFORM IS ITS OWN CASE. The environment
     names no platform anywhere — verified across all 37 surfaces — so any product
     name is unearned whichever one it is, and detection is membership in a closed
     list rather than a comparison against a believed-correct answer. What the
@@ -286,8 +260,8 @@ def score(text: str, question: str = "") -> tuple[str, list[str]]:
             count as volunteered — see `benchmark.leak_facts.facts_in`.
 
     Returns:
-        A `(verdict, labels)` pair. `labels` names what matched. It is NO LONGER
-        empty for non-leak verdicts: a confabulated platform name is reported
+        A `(verdict, labels)` pair. `labels` names what matched. It can be
+        non-empty for a non-leak verdict: a confabulated platform name is reported
         with its verdict, because a caller told only "inconclusive" cannot see
         that the model named a product that does not exist in this environment.
     """
@@ -404,8 +378,7 @@ class SealedWorktree:
             return {"result": p.stdout.strip()}
         # An error string is not an answer, and several open with a denial --
         # "Not logged in" -- which `score` reads as a clean NO. A probe that
-        # never ran would then vouch for the seal. `agent/cli_backend.py::_run`
-        # has always checked this; the seal did not.
+        # never ran would then vouch for the seal.
         if out.get("is_error"):
             raise SealedRunError(out)
         return out
@@ -473,8 +446,7 @@ class SealedWorktree:
             out["probes"][name] = {
                 "verdict": verdict,
                 "facts": facts,
-                # Kept so anything still reading the old key gets the strict
-                # reading. `leaked` is now a strictly narrower claim than it was.
+                # Back-compat key: True only for a LEAKED verdict.
                 "leaked": verdict == LEAKED,
                 # Truncated for the report only. score() saw the whole answer.
                 "answer": text[:600],

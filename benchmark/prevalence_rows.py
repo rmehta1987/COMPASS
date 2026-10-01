@@ -8,11 +8,10 @@ C36 made `benchmark/design_key.py` the single answer key for a paper's design
 arrow — one row per paper, both sides, typed anchors. The strongest objection to
 adding a second answer key is that two keys which can disagree about one paper's
 outcome are worse than one key with a blank cell, and the mitigation has to be
-exclusivity rather than good intentions. These four accessors were the second
-reader: they live in the prevalence key and they answered "where does this
-paper's outcome sit", which is a design question. Moving them out of
-`benchmark/scorability.py` means the scoring path cannot reach them by
-accident — it does not import this module, and a test says so.
+exclusivity rather than good intentions. These accessors answer "where does
+this paper's outcome sit" from the prevalence key, which is a design question,
+so they live outside `benchmark/scorability.py`: the scoring path does not
+import this module, and a test says so.
 
 WHAT THE PREVALENCE KEY IS STILL FOR, and it loses nothing. `value`,
 `quantity`, `arm`, `role`, `instrument_key` and `instrument_region` all stay,
@@ -21,7 +20,7 @@ a variable. `benchmark/input_leakage.py` and
 `benchmark/contamination_check.py::check_no_prevalence_figure_in_surface` are
 its consumers, and neither is scoring a design.
 
-WHY THE ACCESSORS SURVIVE AT ALL rather than being deleted with their callers.
+WHY THE ACCESSORS ARE KEPT with no scoring caller.
 They carry two measured facts about the key's own data that are worth keeping
 under test: that every `instrument_region` parses (rather than an unrecognised
 value defaulting to unreachable), and that a covariate-role key is never

@@ -87,14 +87,11 @@ class ClaudeCliBackend:
     def _retarget_mcp_config(path: Path) -> Path:
         """Point the sealed MCP config at the interpreter that is actually running.
 
-        agent/sealed.py writes `ROOT/.venv/bin/python` as the server command. A
-        git worktree has no `.venv` of its own — lanes run the main venv by
-        absolute path — so `claude -p` failed to spawn the environment server
-        with `ENOENT: posix_spawn '.../lane-a/.venv/bin/python'`, every tool was
-        unreachable, and the model returned a well-formed BLOCKER analysis that
-        the gate then rejected for missing calls. The failure read as the model
-        refusing to work. Only the interpreter is rewritten, so the shape of the
-        config stays owned by sealed.py rather than being duplicated here.
+        agent/sealed.py writes `ROOT/.venv/bin/python` as the server command,
+        which does not exist in a git worktree. Then `claude -p` cannot spawn
+        the environment server, every tool is unreachable, and the run reads as
+        the model refusing to work. Only the interpreter is rewritten, so the
+        shape of the config stays owned by sealed.py rather than duplicated here.
 
         Args:
             path: The mcp_config.json the sealed worktree just wrote.
@@ -110,13 +107,10 @@ class ClaudeCliBackend:
     def _tool_log_path(self, sample: int) -> Path:
         """Where sample `sample` of this run writes its research log.
 
-        The predecessor was a single `run/tool_log.jsonl` truncated at the start
-        of every sample, so the only log that survived a k=5 run belonged to the
-        last sample, and no saved record could be audited against the calls that
-        produced it. VERIFIED 2026-08-26: the log on disk held 38 calls at
-        baseline_prevalence 0.35 while the record sitting beside it stated 0.30
-        and had been written two hours earlier. A per-sample filename is what
-        makes agent/tool_authority.py's comparison meaningful at all.
+        One file per sample, so every saved record can be audited against the
+        calls that produced it: a shared log is overwritten by the next sample,
+        and agent/tool_authority.py's comparison would then read another
+        sample's calls.
 
         Args:
             sample: Zero-based index of the reasoning call within this backend.

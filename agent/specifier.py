@@ -37,16 +37,14 @@ FLOW — two model calls, never one:
       |           filled before the falsifier check reads it.
       |
       +-- validate, up to MAX_TRANSDUCE_ATTEMPTS drafts, each re-prompted with
-      |           the rejected object AND the error. Raised from 2 to 4 on
-      |           2026-08-27: pydantic raises on the FIRST failing validator, so
-      |           five measured runs produced five different single-validator
-      |           rejections and zero records. Formatting only — no new facts.
+      |           the rejected object AND the error. The bound is measured; see
+      |           MAX_TRANSDUCE_ATTEMPTS. Formatting only — no new facts.
       |
       k=5 samples -> dedup by record_hash -> deterministic selection -> parked/
 
-REFUSAL — the second outlet, added 2026-08-28. Until it existed the output space
-was "valid protocol or nothing", so for a pair whose exposure resolves nowhere
-the only well-formed record was one that invented a key. Two things make it a
+REFUSAL — the second outlet. Without it the output space is "valid protocol or
+nothing", so for a pair whose exposure resolves nowhere the only well-formed
+record is one that invents a key. Two things make it a
 measurement rather than an escape hatch, and neither is a vote:
 
     adjudicate()  MECHANICAL, no model, and it runs BEFORE call 1. It asks the
@@ -249,14 +247,11 @@ def _template(name: str) -> PromptTemplate:
     return PromptTemplate(name=name, body=body)
 
 
-MAX_STEPS = 14  # In-process tool-loop bound. The comment here read "enough for 11
-                # tools plus retries" until 2026-08-31; the registry has carried 12
-                # since browse_variables landed, so the stated headroom was wrong by
-                # one. The VALUE is unchanged because nothing measures it: the saved
-                # logs record tool CALLS, not loop steps (22-109 calls across the 27
-                # logs under run/, measured 2026-08-31), no saved record carries a
-                # step count, and a call count is not a step count. Raise it on a
-                # measurement of steps, not on an argument from the tool count.
+MAX_STEPS = 14  # In-process tool-loop bound, UNMEASURED: the saved logs record
+                # tool CALLS, not loop steps (22-109 calls across the 27 logs
+                # under run/, measured 2026-08-31), and no saved record carries a
+                # step count. Raise it on a measurement of steps, not on an
+                # argument from the tool count.
 
 #: Transduction attempts per sample, the first plus its repairs. Bounded, and the
 #: bound is a measurement rather than a preference: at 2 (one repair) five live
@@ -399,19 +394,11 @@ add or remove a key, the pair of calls is stale — run both again.\
 """)
 
 
-# Found live 2026-08-26: Haiku passed the derivation id "social_cohesion_scale"
-# into estimate_n and check_access. estimate_n dropped it silently and reported
-# modules m1+m2 for a design that spans m3; check_access flagged it
-# origin_unknown and returned `refer`, which the record then overwrote with
-# `pass`. Both tools take VARIABLE keys and neither prompt line said so.
-#
-# Two instances of the same hole, one found in the repo and one found live on
-# 2026-08-27. In the scripted fixture both calls named 6 keys while the record
-# they justify names 11, and the environment's verdict was stamped on anyway. In
-# a live Haiku run the model called estimate_n with 9 keys, found a 10th
-# covariate afterwards, re-ran check_access alone, and left estimate_n stale.
-# Both calls are now bound to the record's own key set, so the checklist has to
-# say which keys that is and when to run them.
+# estimate_n and check_access take VARIABLE keys and are bound to the record's
+# own key set, so the checklist says which keys and when. Live cases: a
+# derivation id passed as a key (2026-08-26: estimate_n dropped it silently,
+# check_access returned `refer` and the record overwrote it with `pass`), and a
+# covariate added after estimate_n, leaving that call stale (2026-08-27).
 _KEY_SET = ("the exposure, the outcome, every adjusted covariate and every "
             "undetermined covariate — a derivation enters as its component "
             "keys, never as its id. Deliberately excluded variables are left "
@@ -419,9 +406,9 @@ _KEY_SET = ("the exposure, the outcome, every adjusted covariate and every "
 _WHY = {
     "resolve_variable": "every key you name, before you name it",
     "estimate_n": f"TOGETHER WITH check_access, LAST. {_KEY_SET}",
-    # Named as the BOUND, not "the curve". Round 3: the check moved off the
-    # caller-asserted curve onto sde_by_n_worst_case_prevalence, and a checklist
-    # line still pointing at "the curve" would send the model to the wrong one.
+    # Named as the BOUND, not "the curve": the falsifier is checked against
+    # sde_by_n_worst_case_prevalence, and "the curve" would send the model to
+    # the caller-asserted one.
     "estimate_detectability": ("to find the bound your falsifier is checked "
                                "against: sde_by_n_worst_case_prevalence, NOT "
                                "sde_by_n"),
@@ -622,13 +609,12 @@ def prompt_hash(pair: object) -> str:
     Returns:
         The first 16 hex characters of the SHA-256 of the four prompt bodies.
 
-    Every provenance field in the one live record was the empty string, and
     prompt_hash's job is to let an ablation tell "the component changed" from
     "someone edited a prompt and forgot". A literal "fixture" or "unset" does
     that job no better than "". All FOUR bodies are hashed, not just SYSTEM,
     because the transduction prompts and the pair rendering are prompt text the
-    model reads too. TRANSDUCE_REFUSAL joined them on 2026-08-28: it is sent
-    only on the refusal path, but a hash that omitted it would report two runs
+    model reads too. TRANSDUCE_REFUSAL is sent only on the refusal path, but a
+    hash that omitted it would report two runs
     as identically prompted while one of them could refuse and the other could
     not, which is the one comparison this field exists to make.
     """
@@ -686,10 +672,8 @@ class Attempt:
     error: str | None = None
     seed: int | None = None
     steps: int = 0
-    # The log file THIS sample wrote. Carried on the attempt because
-    # run/tool_log.jsonl used to be one path truncated per sample, so the only
-    # surviving log belonged to the last sample of the last run and no saved
-    # record could be audited against the calls that produced it.
+    # The log file THIS sample wrote, so each saved record can be audited
+    # against the calls that produced it.
     tool_log_path: str | None = None
     #: Transduction attempts spent, and the raw object the last one emitted.
     attempts: int = 0
@@ -915,15 +899,12 @@ def _referenced_keys(args: dict) -> frozenset[str]:
 def _gate(log: ToolLog, pair: _Pair) -> tuple[bool, str]:
     """Did the research log show the work a defensible record requires?
 
-    THREE FAILURES, NOT ONE. Until 2026-09-01 this was a set difference over
-    tool NAMES — `REQUIRED_CALLS - log.distinct()` — so a model that called
-    `check_access` with malformed arguments, received an error, and then asserted
-    an access decision passed. The log already carried what was needed to catch
-    that: `env/tools.py::ToolCall` records `outcome` (set to `error` when the
-    tool raised) and `args`, and neither was read.
-
-    So a required call now counts only when it BOTH returned a success outcome
-    for its own tool AND named a key belonging to this pair. The second half is
+    THREE FAILURES, NOT ONE. A set difference over tool NAMES would pass a
+    model that called `check_access` with malformed arguments, received an
+    error, and then asserted an access decision. `env/tools.py::ToolCall`
+    records `outcome` (set to `error` when the tool raised) and `args`, so a
+    required call counts only when it BOTH returned a success outcome for its
+    own tool AND named a key belonging to this pair. The second half is
     what separates a model that looked up its own anchors from one that looked up
     something else and asserted anyway; `_GATE_NO_KEY_ARGS` exempts the one
     required tool whose arguments carry no key.
@@ -1185,13 +1166,11 @@ def _render_log(log: ToolLog, raw_log: list[dict] | None) -> str:
         One line per call; for the tools whose output the record must quote, the
         return value follows.
 
-    TRANSDUCE has said since it was written that every key, wording and number
-    "must already appear in the analysis or the tool log", and then handed over a
-    log rendered as `name(args) -> outcome` with the return values stripped. The
-    sentence was false about its own prompt. Two live failures came straight out
-    of that gap — a paraphrased `quoted_wording` in the record of 2026-08-26, and
-    `unit: "scale"` for a signed unit on 2026-08-27 — and both look like the
-    model inventing a value when it had no way to read one.
+    Return values are shown because TRANSDUCE requires every key, wording and
+    number to "already appear in the analysis or the tool log": a log rendered
+    as `name(args) -> outcome` alone makes that impossible, and the model then
+    invents what it cannot read (live: a paraphrased `quoted_wording`,
+    2026-08-26; `unit: "scale"` for a signed unit, 2026-08-27).
     """
     if not raw_log:
         return "\n".join(f"{c.name}({json.dumps(c.args)[:160]}) -> {c.outcome}"
@@ -1220,10 +1199,9 @@ def _emit(backend: AnyBackend, schema: dict, body: str, seed: int | None,
           ) -> tuple[Any, str, str, int, str, list[dict]]:
     """Run one constrained emission with its bounded repair loop.
 
-    Shared by the protocol and the refusal transductions. Extracted rather than
-    copied on 2026-08-28: every comment in this loop records a live failure, and
-    a second copy of the loop is a second place for those failures to come back
-    one at a time.
+    Shared by the protocol and the refusal transductions, never copied: every
+    comment in this loop records a live failure, and a second copy of the loop
+    is a second place for those failures to come back one at a time.
 
     Args:
         backend: The reasoning backend.
@@ -1271,20 +1249,16 @@ def _emit(backend: AnyBackend, schema: dict, body: str, seed: int | None,
             # reports a validator name and nothing to read it against, and
             # diagnosing one costs another paid run.
             return None, err, kind, attempt + 1, r.content, repairs
-        # THE PREVIOUS ATTEMPT ITSELF, not just the error. Found 2026-08-26 by
-        # running the live driver twice: `claude -p` is a fresh session per call,
-        # so on this branch the model was handed "your previous attempt was
-        # rejected: m1:Q3.3 appears in both adjusted and excluded" with no
-        # previous attempt anywhere in its context. It regenerated from the same
-        # analysis, reproduced the same key in both lists, and both live runs
-        # ended `gate=invalid_record` on the identical error. The in-process
-        # branch above never had the bug — it appends the assistant turn to
-        # `msg` — which is why the repair loop looked like it worked.
-        # REBUILT FROM `base`, NEVER APPENDED TO THE LAST PROMPT. Appending grew
-        # the prompt by a whole ~10 kB record per attempt, so by the fourth try
-        # the model was reading three superseded drafts and three stale errors
-        # ahead of the one it was asked to fix, on top of a 20 kB schema. It has
-        # to see exactly one object and exactly one rejection: the current ones.
+        # THE PREVIOUS ATTEMPT ITSELF, not just the error: `claude -p` is a
+        # fresh session per call, so an error that names "your previous attempt"
+        # with no attempt in context is regenerated unchanged from the same
+        # analysis (live 2026-08-26). The in-process branch appends the
+        # assistant turn to `msg` instead.
+        # REBUILT FROM `base`, NEVER APPENDED TO THE LAST PROMPT. Appending
+        # grows the prompt by a ~10 kB record per attempt, so by the fourth try
+        # the model reads three superseded drafts and three stale errors ahead
+        # of the one it must fix. It sees exactly one object and exactly one
+        # rejection: the current ones.
         prompt = base + _template("REPAIR").render(attempt=r.content,
                                                    err=err)
         msg = [*msg[:2], {"role": "assistant", "content": r.content},
