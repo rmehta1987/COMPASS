@@ -456,7 +456,8 @@ def test_the_scope_names_the_fixture_that_was_actually_scored(report):
     against 224 rows that were never searched.
     """
     fx = ev.load_fixture()
-    subset = ev.evaluate(fixture=fx.model_copy(update={"queries": fx.queries[:8]}))
+    rows = fx.model_copy(update={"queries": fx.queries[:8]})
+    subset = ev.evaluate(fixture=rows)
     assert subset.n_queries == 8
     assert "retrieval_queries.json" not in subset.fixture_path, (
         "A caller-supplied 8-row fixture rendered a scope line naming the "
@@ -464,8 +465,10 @@ def test_the_scope_names_the_fixture_that_was_actually_scored(report):
     assert subset.fixture_path == ev.UNNAMED_FIXTURE
     assert ev.UNNAMED_FIXTURE in ev.format_report(subset)
 
-    # A caller that DOES know where its rows came from can say so.
-    named = ev.evaluate(fixture=fx, fixture_path=ev.FIXTURE)
+    # A caller that DOES know where its rows came from can say so. The label is
+    # what is under test, so the same 8 rows do: re-scoring all of them here
+    # bought nothing the `report` fixture had not already scored.
+    named = ev.evaluate(fixture=rows, fixture_path=ev.FIXTURE)
     assert named.fixture_path == report.fixture_path == \
         "benchmark/fixtures/retrieval_queries.json"
 
