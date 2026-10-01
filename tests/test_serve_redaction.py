@@ -1701,7 +1701,9 @@ def test_every_route_that_issues_a_ticket_declares_its_kind() -> None:
 
     Asserted on the AST `Call` nodes rather than a source substring
     (`AGENTS.md` §Testing Patterns): a comment naming the constant would
-    satisfy a grep and leave the wiring absent.
+    satisfy a grep and leave the wiring absent. Each route starts its job
+    through `_launch` under its own kind, and `_launch` hands that kind to
+    both labelling helpers.
     """
     import ast
 
@@ -1709,13 +1711,24 @@ def test_every_route_that_issues_a_ticket_declares_its_kind() -> None:
     fns = {n.name: n for n in ast.walk(ast.parse(src))
            if isinstance(n, ast.FunctionDef)}
 
+    def calls(node: ast.AST, name: str) -> list[ast.Call]:
+        return [c for c in ast.walk(node) if isinstance(c, ast.Call)
+                and isinstance(c.func, ast.Name) and c.func.id == name]
+
+    # The one launcher labels both ends, with the kind it was given.
+    for helper in ("_start_job", "_finish_job"):
+        found = calls(fns["_launch"], helper)
+        assert found, f"_launch does not route its job through {helper}"
+        assert all(any(isinstance(a, ast.Name) and a.id == "kind" for a in c.args)
+                   for c in found), f"_launch calls {helper} without its kind"
+
     for fn, kind in (("_pair", "JOB_PAIR"), ("_resolve", "JOB_RESOLVE"),
                      ("_specify", "JOB_SPECIFY")):
         node = fns[fn]
-        called = {c.func.id for c in ast.walk(node)
-                  if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)}
-        assert {"_start_job", "_finish_job"} <= called, (
-            f"{fn} does not route its job through the labelling helpers: {called}")
+        launched = calls(node, "_launch")
+        assert launched, f"{fn} does not start its job through _launch"
+        assert all(isinstance(c.args[1], ast.Name) and c.args[1].id == kind
+                   for c in launched), f"{fn} launches its job under another kind"
         names = {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
         assert kind in names, f"{fn} never names {kind}"
         wrong = {"JOB_PAIR", "JOB_RESOLVE", "JOB_SPECIFY"} - {kind}

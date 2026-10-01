@@ -60,7 +60,7 @@ import re
 import sys
 import threading
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -1243,132 +1243,122 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
     # the shared pool above whenever the split cannot be used.
     split_on = bool(body.get("split")) and len(pinned) < 2
 
-    if not state.model_lock.acquire(blocking=False):
-        raise Busy("a model run is already in progress on this endpoint.")
-    ticket = f"{time.strftime('%H%M%S')}-{os.urandom(3).hex()}"
-    _start_job(state, ticket, JOB_PAIR)
+    def _work(_ticket: str) -> dict[str, Any]:
+        from agent import prompt_contract as PC
+        from agent.cli_backend import ClaudeCliBackend
+        from env import labels
 
-    def _run() -> None:
-        try:
-            from agent import prompt_contract as PC
-            from agent.cli_backend import ClaudeCliBackend
-            from env import labels
-
-            backend = ClaudeCliBackend(model=model, mode="benchmark")
-            t0 = time.time()
-            # EVERY CALL'S COST, not the last one's. `last_cost` is per call, so
-            # reporting it alone printed one call's price for a run of three
-            # (split, exposure, outcome) -- and a default pick adds more. None
-            # anywhere means the total is unknown, never a partial sum.
-            costs: list[float | None] = []
-            out: dict[str, Any] = {}
-            pools: dict[str, Any] = dict(roles)
-            split_info: dict[str, Any] = {"status": "off"}
-            if split_on:
-                pools, split_info = _split_pools(state, backend, request, k,
-                                                 pools)
-                costs.append(backend.last_cost)
-            for role in ("exposure", "outcome"):
-                if role in pinned:
-                    key = pinned[role]
-                    out[role] = {
-                        "verdict": "pinned",
-                        "reason": PINNED_REASON,
-                        "proposed_indices": [],
-                        "pinned_key": key if state.show_instrument else None,
-                        "pinned_wording": labels.cite(key).wording,
-                        "candidates": [],
-                    }
-                    continue
-                pool = pools[role]
-                # `shared` is None only when both roles are pinned, and then
-                # `roles` is empty, so no loop pass reaches here without a pool.
-                assert pool is not None
-                # The role framing goes on the ASK, not the pool: one pool,
-                # two questions of it.
-                framed = PC.retrieval_contract(
-                    f"{request}\n\nWhich item serves as the {role.upper()} here?",
-                    pool["cands"])
-                chosen = PC.VariableSelection.model_validate_json(
-                    _first_json(str(backend.transduce(framed.render()).content)))
-                costs.append(backend.last_cost)
-                proposed = [i for i in chosen.indices if 1 <= i <= len(pool["cands"])]
-                default = None
-                if chosen.verdict == "ambiguous":
-                    default = _default_pick(backend, request, role,
-                                            chosen.missing_dimension,
-                                            pool["cands"])
-                    costs.append(backend.last_cost)
-                chosen_default = (default["index"] if default
-                                  and default["status"] == "chosen" else None)
+        backend = ClaudeCliBackend(model=model, mode="benchmark")
+        t0 = time.time()
+        # EVERY CALL'S COST, not the last one's. `last_cost` is per call, so
+        # reporting it alone printed one call's price for a run of three
+        # (split, exposure, outcome) -- and a default pick adds more. None
+        # anywhere means the total is unknown, never a partial sum.
+        costs: list[float | None] = []
+        out: dict[str, Any] = {}
+        pools: dict[str, Any] = dict(roles)
+        split_info: dict[str, Any] = {"status": "off"}
+        if split_on:
+            pools, split_info = _split_pools(state, backend, request, k,
+                                             pools)
+            costs.append(backend.last_cost)
+        for role in ("exposure", "outcome"):
+            if role in pinned:
+                key = pinned[role]
                 out[role] = {
-                    "verdict": chosen.verdict,
-                    "absent_scope": _absence_scope(chosen.verdict,
-                                                   len(pool["cands"])),
-                    "reason": chosen.reason,
-                    "recipe": chosen.recipe or None,
-                    "missing_dimension": chosen.missing_dimension or None,
-                    "proposed_indices": proposed,
-                    # The verdict above is left exactly as it came back; the
-                    # default is a separate answer, None when none was asked.
-                    "default_pick": default,
-                    "skipped_uncitable": pool["skipped"],
-                    **_abstention_note(pool),
-                    # THE ABSTENTION VERDICT, REPORTED ON THIS PATH TOO.
-                    # `/api/retrieve` calls `select`, which refuses below the
-                    # manifest's threshold and says `abstained`. This route
-                    # calls `search`, which does not -- so a construct the
-                    # deployed retriever would REFUSE was handed to the model
-                    # as a candidate and resolved. MEASURED 2026-09-16 on
-                    # "discriminated against": top cosine 0.7000 against a
-                    # threshold of 0.729476, and the model answered `resolved`
-                    # -- for a construct whose distinctive words occur ZERO
-                    # times in the build, which `scorability.py`'s docstring
-                    # already names as the word test's worst false survivor.
-                    #
-                    # REPORTED, NOT ENFORCED. Refusing here would change what
-                    # the model is asked, and the threshold was derived for
-                    # single-construct queries, not for a split phrase at a
-                    # share of k. So the number and the verdict travel with the
-                    # pool and the reader sees them; tightening it into a
-                    # refusal needs its own measurement.
-                    "candidates": _candidate_rows(
-                        state, pool, proposed, default_index=chosen_default,
-                        with_default=True),
+                    "verdict": "pinned",
+                    "reason": PINNED_REASON,
+                    "proposed_indices": [],
+                    "pinned_key": key if state.show_instrument else None,
+                    "pinned_wording": labels.cite(key).wording,
+                    "candidates": [],
                 }
-            rendered = shared["rendered"] if shared else request
-            done = {"status": "done", "run": {
-                "request": request,
-                # The same Intake fields `/api/retrieve` returns, so the Intake
-                # panel explains a pair resolve too. Without these it rendered
-                # its placeholder after an "Ask the model" run -- the panel that
-                # says what the encoder saw, blank on the route that most needs
-                # explaining, because the pool query never came back.
-                "rendered_query": rendered,
-                "pool_request": {"construct": request, "role": "exposure",
-                                 "instances": [], "population": None},
-                "dictionary_version": version,
-                "model_id": backend.name,
-                "elapsed_s": round(time.time() - t0, 2),
-                "cost_usd": (None if not costs or None in costs
-                             else round(sum(c for c in costs if c is not None), 6)),
-                "model_calls": len(costs),
-                "roles": out,
-                "split": split_info,
-                "anchors_proposed_by": "model",
-                "not_a_selection":
-                    "Proposals only. Nothing is committed: confirm each anchor "
-                    "before running Experiment Design. A pair proposed by a model "
-                    "is still externally posed -- screened_from stays 0 and it "
-                    "never enters a benchmark denominator.",
-            }}
-        except Exception as exc:
-            done = {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
-        finally:
-            state.model_lock.release()
-        _finish_job(state, ticket, done, JOB_PAIR)
+                continue
+            pool = pools[role]
+            # `shared` is None only when both roles are pinned, and then
+            # `roles` is empty, so no loop pass reaches here without a pool.
+            assert pool is not None
+            # The role framing goes on the ASK, not the pool: one pool,
+            # two questions of it.
+            framed = PC.retrieval_contract(
+                f"{request}\n\nWhich item serves as the {role.upper()} here?",
+                pool["cands"])
+            chosen = PC.VariableSelection.model_validate_json(
+                _first_json(str(backend.transduce(framed.render()).content)))
+            costs.append(backend.last_cost)
+            proposed = [i for i in chosen.indices if 1 <= i <= len(pool["cands"])]
+            default = None
+            if chosen.verdict == "ambiguous":
+                default = _default_pick(backend, request, role,
+                                        chosen.missing_dimension,
+                                        pool["cands"])
+                costs.append(backend.last_cost)
+            chosen_default = (default["index"] if default
+                              and default["status"] == "chosen" else None)
+            out[role] = {
+                "verdict": chosen.verdict,
+                "absent_scope": _absence_scope(chosen.verdict,
+                                               len(pool["cands"])),
+                "reason": chosen.reason,
+                "recipe": chosen.recipe or None,
+                "missing_dimension": chosen.missing_dimension or None,
+                "proposed_indices": proposed,
+                # The verdict above is left exactly as it came back; the
+                # default is a separate answer, None when none was asked.
+                "default_pick": default,
+                "skipped_uncitable": pool["skipped"],
+                **_abstention_note(pool),
+                # THE ABSTENTION VERDICT, REPORTED ON THIS PATH TOO.
+                # `/api/retrieve` calls `select`, which refuses below the
+                # manifest's threshold and says `abstained`. This route
+                # calls `search`, which does not -- so a construct the
+                # deployed retriever would REFUSE was handed to the model
+                # as a candidate and resolved. MEASURED 2026-09-16 on
+                # "discriminated against": top cosine 0.7000 against a
+                # threshold of 0.729476, and the model answered `resolved`
+                # -- for a construct whose distinctive words occur ZERO
+                # times in the build, which `scorability.py`'s docstring
+                # already names as the word test's worst false survivor.
+                #
+                # REPORTED, NOT ENFORCED. Refusing here would change what
+                # the model is asked, and the threshold was derived for
+                # single-construct queries, not for a split phrase at a
+                # share of k. So the number and the verdict travel with the
+                # pool and the reader sees them; tightening it into a
+                # refusal needs its own measurement.
+                "candidates": _candidate_rows(
+                    state, pool, proposed, default_index=chosen_default,
+                    with_default=True),
+            }
+        rendered = shared["rendered"] if shared else request
+        return {
+            "request": request,
+            # The same Intake fields `/api/retrieve` returns, so the Intake
+            # panel explains a pair resolve too. Without these it rendered
+            # its placeholder after an "Ask the model" run -- the panel that
+            # says what the encoder saw, blank on the route that most needs
+            # explaining, because the pool query never came back.
+            "rendered_query": rendered,
+            "pool_request": {"construct": request, "role": "exposure",
+                             "instances": [], "population": None},
+            "dictionary_version": version,
+            "model_id": backend.name,
+            "elapsed_s": round(time.time() - t0, 2),
+            "cost_usd": (None if not costs or None in costs
+                         else round(sum(c for c in costs if c is not None), 6)),
+            "model_calls": len(costs),
+            "roles": out,
+            "split": split_info,
+            "anchors_proposed_by": "model",
+            "not_a_selection":
+                "Proposals only. Nothing is committed: confirm each anchor "
+                "before running Experiment Design. A pair proposed by a model "
+                "is still externally posed -- screened_from stays 0 and it "
+                "never enters a benchmark denominator.",
+        }
 
-    threading.Thread(target=_run, daemon=True).start()
+    ticket = _launch(state, JOB_PAIR,
+                     "a model run is already in progress on this endpoint.", _work)
     return {"ticket": ticket, "status": "running", "poll_after_ms": POLL_MS,
             "pinned": {r: (k if state.show_instrument else "pinned")
                        for r, k in pinned.items()},
@@ -1420,48 +1410,38 @@ def _resolve(state: State, body: dict[str, Any]) -> dict[str, Any]:
     cands, rendered = pool["cands"], pool["rendered"]
     surface = PC.retrieval_contract(request, cands)
 
-    if not state.model_lock.acquire(blocking=False):
-        raise Busy("a model run is already in progress on this endpoint. "
-                   "Runs are serialised. Try again in a moment.")
-    ticket = f"{time.strftime('%H%M%S')}-{os.urandom(3).hex()}"
-    _start_job(state, ticket, JOB_RESOLVE)
+    def _work(_ticket: str) -> dict[str, Any]:
+        from agent.cli_backend import ClaudeCliBackend
+        backend = ClaudeCliBackend(model=model, mode="benchmark")
+        t0 = time.time()
+        raw = str(backend.transduce(surface.render()).content)
+        chosen = PC.VariableSelection.model_validate_json(_first_json(raw))
+        proposed = [i for i in chosen.indices if 1 <= i <= len(cands)]
+        return {
+            "request": request,
+            "rendered_query": rendered,
+            "model_id": backend.name,
+            "elapsed_s": round(time.time() - t0, 2),
+            "cost_usd": backend.last_cost,
+            "verdict": chosen.verdict,
+            "absent_scope": _absence_scope(chosen.verdict, len(cands)),
+            "reason": chosen.reason,
+            "recipe": chosen.recipe or None,
+            "missing_dimension": chosen.missing_dimension or None,
+            "proposed_indices": proposed,
+            "skipped_uncitable": pool["skipped"],
+            # EVERY candidate, always. The rule is candidates with wording,
+            # never one key: a verdict of `resolved` is a PROPOSAL the
+            # reader confirms, not a selection this route makes for them.
+            "candidates": _candidate_rows(state, pool, proposed),
+            "not_a_selection":
+                "Candidates only. This route never commits an anchor: pick "
+                "one yourself, including when the verdict is `resolved`.",
+        }
 
-    def _run() -> None:
-        try:
-            from agent.cli_backend import ClaudeCliBackend
-            backend = ClaudeCliBackend(model=model, mode="benchmark")
-            t0 = time.time()
-            raw = str(backend.transduce(surface.render()).content)
-            chosen = PC.VariableSelection.model_validate_json(_first_json(raw))
-            proposed = [i for i in chosen.indices if 1 <= i <= len(cands)]
-            done = {"status": "done", "run": {
-                "request": request,
-                "rendered_query": rendered,
-                "model_id": backend.name,
-                "elapsed_s": round(time.time() - t0, 2),
-                "cost_usd": backend.last_cost,
-                "verdict": chosen.verdict,
-                "absent_scope": _absence_scope(chosen.verdict, len(cands)),
-                "reason": chosen.reason,
-                "recipe": chosen.recipe or None,
-                "missing_dimension": chosen.missing_dimension or None,
-                "proposed_indices": proposed,
-                "skipped_uncitable": pool["skipped"],
-                # EVERY candidate, always. The rule is candidates with wording,
-                # never one key: a verdict of `resolved` is a PROPOSAL the
-                # reader confirms, not a selection this route makes for them.
-                "candidates": _candidate_rows(state, pool, proposed),
-                "not_a_selection":
-                    "Candidates only. This route never commits an anchor: pick "
-                    "one yourself, including when the verdict is `resolved`.",
-            }}
-        except Exception as exc:
-            done = {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
-        finally:
-            state.model_lock.release()
-        _finish_job(state, ticket, done, JOB_RESOLVE)
-
-    threading.Thread(target=_run, daemon=True).start()
+    ticket = _launch(state, JOB_RESOLVE,
+                     "a model run is already in progress on this endpoint. "
+                     "Runs are serialised. Try again in a moment.", _work)
     return {"ticket": ticket, "status": "running", "poll_after_ms": POLL_MS,
             "note": "A model reads the request and the candidate pool. Ask "
                     "/api/specify/status for this ticket."}
@@ -1600,49 +1580,79 @@ def _specify(state: State, body: dict[str, Any]) -> dict[str, Any]:
     pair = Candidate(exposure=C.get(exposure) or stand_in(exposure),
                      outcome=C.get(outcome) or stand_in(outcome))
 
-    # Refuse rather than queue. A run holds this lock for minutes, so a second
-    # caller that blocked silently would hit their own client timeout with no
-    # idea why -- on a shared endpoint that reads as a broken page. Saying
-    # "busy" immediately is the difference between a queue and a hang.
-    if not state.model_lock.acquire(blocking=False):
-        raise Busy("an Experiment Design run is already in progress on this endpoint. "
-                   "Runs are serialised because each one allocates a sealed "
-                   "worktree and an MCP server. Try again in a few minutes.")
+    def _work(ticket: str) -> dict[str, Any]:
+        backend = ClaudeCliBackend(model=model, mode="benchmark")
+        identity = run_identity(
+            pair, version, 0, backend.name, "externally_posed",
+            models={"resolver": resolver_model} if resolver_model else None,
+            anchors_proposed_by="model" if resolver_model else "person")
+        t0 = time.time()
+        res = specify(backend, pair, k=k, mode="benchmark",
+                      parked_dir=ROOT / "parked", identity=identity)
+        payload = _specify_payload(res, identity, version, model, canonical,
+                                   allow_unresolvable, backend,
+                                   round(time.time() - t0, 2))
+        payload["repairs"] = _keep_repairs(state, ticket, res)
+        return payload
 
-    # THE RUN OUTLIVES THE REQUEST. Cloudflare gives up on an origin after about
-    # 100 seconds and that ceiling cannot be raised on a quick tunnel, while a
-    # run takes 300-600. Held open, the request could never finish through the
-    # tunnel however healthy the run was -- and both times it was the request
-    # that died, not the run. So the POST starts a job and hands back a ticket.
-    ticket = f"{time.strftime('%H%M%S')}-{os.urandom(3).hex()}"
-    _start_job(state, ticket, JOB_SPECIFY)
-
-    def _run() -> None:
-        try:
-            backend = ClaudeCliBackend(model=model, mode="benchmark")
-            identity = run_identity(
-                pair, version, 0, backend.name, "externally_posed",
-                models={"resolver": resolver_model} if resolver_model else None,
-                anchors_proposed_by="model" if resolver_model else "person")
-            t0 = time.time()
-            res = specify(backend, pair, k=k, mode="benchmark",
-                          parked_dir=ROOT / "parked", identity=identity)
-            payload = _specify_payload(res, identity, version, model, canonical,
-                                       allow_unresolvable, backend,
-                                       round(time.time() - t0, 2))
-            payload["repairs"] = _keep_repairs(state, ticket, res)
-            done = {"status": "done", "run": payload}
-        except Exception as exc:
-            done = {"status": "error",
-                    "error": f"{type(exc).__name__}: {exc}"}
-        finally:
-            state.model_lock.release()
-        _finish_job(state, ticket, done, JOB_SPECIFY)
-
-    threading.Thread(target=_run, daemon=True).start()
+    ticket = _launch(state, JOB_SPECIFY,
+                     "an Experiment Design run is already in progress on this "
+                     "endpoint. Runs are serialised because each one allocates a "
+                     "sealed worktree and an MCP server. Try again in a few "
+                     "minutes.", _work)
     return {"ticket": ticket, "status": "running", "poll_after_ms": POLL_MS,
             "note": "A run takes minutes. Ask /api/specify/status for this "
                     "ticket; the run continues whatever happens to this page."}
+
+
+def _launch(state: State, kind: str, busy_msg: str,
+            work: Callable[[str], dict[str, Any]]) -> str:
+    """Start a model run as a job on its own thread, and hand back its ticket.
+
+    Refuse rather than queue. A run holds `model_lock` for minutes, so a second
+    caller that blocked silently would hit their own client timeout with no
+    idea why -- on a shared endpoint that reads as a broken page. Saying
+    "busy" immediately is the difference between a queue and a hang.
+
+    THE RUN OUTLIVES THE REQUEST. Cloudflare gives up on an origin after about
+    100 seconds and that ceiling cannot be raised on a quick tunnel, while a
+    Specifier run takes 300-600. Held open, the request could never finish
+    through the tunnel however healthy the run was -- and both times it was the
+    request that died, not the run. So the POST starts a job and hands back a
+    ticket.
+
+    The three routes each carried this sequence themselves; one copy means a
+    route cannot keep the lock past an error or land a job unlabelled.
+
+    Args:
+        state: Shared handles.
+        kind: One of `JOB_PAIR`, `JOB_RESOLVE`, `JOB_SPECIFY`.
+        busy_msg: What `Busy` says when another run holds the lock.
+        work: The run, given the ticket; returns the `run` of the done record.
+            Anything it raises becomes the record's `error`.
+
+    Returns:
+        The ticket the caller polls `/api/specify/status` with.
+
+    Raises:
+        Busy: When another model run holds the lock.
+    """
+    if not state.model_lock.acquire(blocking=False):
+        raise Busy(busy_msg)
+    ticket = f"{time.strftime('%H%M%S')}-{os.urandom(3).hex()}"
+    _start_job(state, ticket, kind)
+
+    def _run() -> None:
+        try:
+            done = {"status": "done", "run": work(ticket)}
+        except Exception as exc:
+            done = {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
+        finally:
+            state.model_lock.release()
+        _finish_job(state, ticket, done, kind)
+
+    threading.Thread(target=_run, daemon=True).start()
+    return ticket
 
 
 def _start_job(state: State, ticket: str, kind: str) -> None:
