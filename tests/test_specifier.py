@@ -24,7 +24,8 @@ sys.path.insert(0, str(ROOT))
 from agent import specifier as SP
 from agent.backends import OpenAICompatBackend, Reply, ScriptedBackend, tool_call
 from agent.registry import (
-    RETRIEVAL_TOOLS,
+    BENCHMARK_TOOLS,
+    GENERATION_ONLY_TOOLS,
     SCHEMAS,
     Mode,
     build_registry,
@@ -117,9 +118,52 @@ def test_only_the_backend_module_opens_a_connection():
 # registry: contamination control is structural
 # --------------------------------------------------------------------------- #
 
-def test_benchmark_registry_contains_no_retrieval_tool():
-    calls, _ = build_registry("benchmark")
-    assert RETRIEVAL_TOOLS & set(calls) == set()
+#: Benchmark mode's tool set, written out a second time on purpose: widening
+#: `BENCHMARK_TOOLS` must also edit this literal, so it is never a one-line change.
+_BENCHMARK_TOOLS_LITERAL = {
+    "browse_variables", "check_access", "estimate_detectability", "estimate_n",
+    "get_contrast_convention", "get_derivation", "get_design_convention",
+    "get_item_group", "list_derivations", "registry_coverage", "resolve_variable",
+    "search_variables",
+}
+
+
+def test_benchmark_registry_is_exactly_the_allowlist():
+    """Benchmark mode gets the named tools and nothing else, callables and schemas.
+
+    The denylist this replaced subtracted three tools that never existed, so a
+    literature tool under any other name would have entered benchmark mode.
+    """
+    calls, schemas = build_registry("benchmark")
+    assert set(calls) == BENCHMARK_TOOLS == _BENCHMARK_TOOLS_LITERAL
+    assert {s["function"]["name"] for s in schemas} == _BENCHMARK_TOOLS_LITERAL
+
+
+def test_every_tool_is_classified_in_exactly_one_mode_set():
+    """Each `env/tools.py::TOOLS` entry is benchmark or generation-only, never both."""
+    assert BENCHMARK_TOOLS.isdisjoint(GENERATION_ONLY_TOOLS)
+    assert BENCHMARK_TOOLS | GENERATION_ONLY_TOOLS == set(T.TOOLS)
+
+
+@pytest.mark.parametrize("mode", typing.get_args(Mode))
+def test_an_unclassified_tool_stops_every_mode(monkeypatch, mode):
+    """A new tool nobody placed raises instead of reaching any registry."""
+    monkeypatch.setitem(T.TOOLS, "search_literature", lambda: None)
+    with pytest.raises(ValueError, match="search_literature"):
+        build_registry(mode)
+
+
+def test_a_generation_only_tool_is_withheld_from_benchmark(monkeypatch):
+    """The generation-only set is live: placed there, a tool leaves benchmark mode.
+
+    `GENERATION_ONLY_TOOLS` is empty today, so without this probe the
+    withholding path would never execute under test.
+    """
+    monkeypatch.setitem(T.TOOLS, "search_literature", lambda: None)
+    monkeypatch.setattr("agent.registry.GENERATION_ONLY_TOOLS",
+                        frozenset({"search_literature"}))
+    assert "search_literature" in build_registry("generation")[0]
+    assert "search_literature" not in build_registry("benchmark")[0]
 
 
 def test_mode_has_no_default():

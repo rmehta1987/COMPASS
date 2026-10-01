@@ -4,8 +4,10 @@ Contamination control is an architectural property, not a prompt instruction. If
 three call sites each assemble their own toolset, the fourth one added later will
 quietly include `search_literature` in benchmark mode and every benchmark number
 after that is unfalsifiable. So there is one construction site, mode is a required
-argument with no default, and a test asserts the benchmark registry contains none
-of the retrieval tools.
+argument with no default, and benchmark mode is an ALLOWLIST: `BENCHMARK_TOOLS`
+names every tool it gets, `GENERATION_ONLY_TOOLS` names every tool it withholds,
+and a tool in neither makes `build_registry` raise in every mode. A denylist of
+tools that did not exist could not have caught a new one under another name.
 
 The registry also emits the OpenAI-style function schemas the served model sees.
 The tool-level `description` is still authored by hand: it is the actual control
@@ -46,10 +48,39 @@ from env import tools as T
 
 Mode = Literal["generation", "benchmark", "curation"]
 
-# Tools that read anything outside the fixed instrument. Present in generation,
-# absent in benchmark. They do not exist yet; naming them here is the point —
-# the exclusion has to be written down before the tool is written, not after.
-RETRIEVAL_TOOLS = {"search_literature", "check_prior_work", "judge_predicate"}
+#: Every tool benchmark mode is given, by name. An allowlist, not a denylist: the
+#: denylist this replaced named three tools that never existed, so a literature
+#: tool added under any fourth name would have entered benchmark mode silently.
+#: Equal, 2026-09-30, to everything `build_registry("benchmark")` returned before.
+BENCHMARK_TOOLS: frozenset[str] = frozenset({
+    "browse_variables",
+    "check_access",
+    "estimate_detectability",
+    "estimate_n",
+    "get_contrast_convention",
+    "get_derivation",
+    "get_design_convention",
+    "get_item_group",
+    "list_derivations",
+    "registry_coverage",
+    "resolve_variable",
+    "search_variables",
+})
+
+#: Tools present in generation mode and withheld from benchmark mode — anything
+#: that reads outside the fixed instrument (literature, prior work, a judge).
+#: Empty today. A new tool must be placed here or in `BENCHMARK_TOOLS` before
+#: `build_registry` will construct any mode.
+GENERATION_ONLY_TOOLS: frozenset[str] = frozenset()
+
+
+def _unclassified_tools() -> list[str]:
+    """Name every `env/tools.py::TOOLS` entry that is in neither mode set.
+
+    Returns:
+        Sorted names of tools classified as neither benchmark nor generation-only.
+    """
+    return sorted(set(T.TOOLS) - BENCHMARK_TOOLS - GENERATION_ONLY_TOOLS)
 
 
 # --------------------------------------------------------------------------- #
@@ -438,14 +469,21 @@ def build_registry(mode: Mode) -> tuple[dict[str, Callable], list[dict]]:
         The callables for this mode and the schemas the model is shown.
 
     Raises:
-        ValueError: On an unknown mode.
+        ValueError: On an unknown mode, or on a tool in `env/tools.py::TOOLS`
+            that is in neither `BENCHMARK_TOOLS` nor `GENERATION_ONLY_TOOLS`.
     """
     if mode not in ("generation", "benchmark", "curation"):
         raise ValueError(f"unknown mode {mode!r}")
+    # Fail closed in every mode, not only benchmark: an unplaced tool would
+    # otherwise be usable in generation and its omission noticed by nobody.
+    if unplaced := _unclassified_tools():
+        raise ValueError(
+            f"tool(s) {unplaced} are in neither BENCHMARK_TOOLS nor "
+            "GENERATION_ONLY_TOOLS; place each in exactly one in agent/registry.py")
 
     names = set(T.TOOLS)
     if mode == "benchmark":
-        names -= RETRIEVAL_TOOLS
+        names &= BENCHMARK_TOOLS
     elif mode == "curation":
         names -= {"estimate_detectability", "estimate_n"}
 
