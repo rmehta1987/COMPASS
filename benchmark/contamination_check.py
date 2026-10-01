@@ -536,7 +536,7 @@ def _resolver_surface() -> dict[str, str]:
             row, row.pool)
     row = next(r for r in fx.queries if r.narrowing is not None)
     samples = (RE.Shortlist(items=(RE.ResolvedItem(
-        key=row.pool[0], wording=T._BY_KEY[row.pool[0]]["question_text"]),)),)
+        key=row.pool[0], wording=LB.cite(row.pool[0]).wording),)),)
     agreed = RE.agreement(samples, RE.MIN_SAMPLES)
     # BOTH prompt arms. `with_family_rule` carries a block `unaided` does not,
     # and a scan over one arm is a scan over a prompt the other never sends.
