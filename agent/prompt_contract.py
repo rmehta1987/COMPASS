@@ -498,6 +498,39 @@ def _in_order(entry: str, request: str) -> bool:
     return bool(want) and all(w in words for w in want)
 
 
+def strip_fence(raw: str) -> str:
+    """Drop markdown code fences from a model reply and trim its ends.
+
+    Args:
+        raw: The reply as the model returned it.
+
+    Returns:
+        The reply with every json-tagged and bare triple-backtick fence
+        removed.
+    """
+    return raw.replace("```json", "").replace("```", "").strip()
+
+
+def json_object_span(raw: str) -> str | None:
+    """Slice the outermost JSON object out of a model reply.
+
+    First `{` to last `}` of the unfenced reply, so prose on either side of the
+    object is dropped. Nothing is parsed or validated here; each caller keeps
+    its own refusal, because what an unreadable reply means differs by caller.
+
+    Args:
+        raw: The reply, which may carry a fence or prose around the object.
+
+    Returns:
+        The candidate object text, or None when the reply holds no `{...}`.
+    """
+    text = strip_fence(raw)
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    return text[start:end + 1]
+
+
 def parse_split(request: str, raw: str) -> RequestSplit:
     """Read a splitter reply and refuse any split the request does not support.
 
@@ -521,11 +554,11 @@ def parse_split(request: str, raw: str) -> RequestSplit:
             and `unsplittable` disagree. pydantic's `ValidationError` is also a
             `ValueError`, so a caller catching that catches every refusal.
     """
-    text = raw.replace("```json", "").replace("```", "").strip()
-    start, end = text.find("{"), text.rfind("}")
-    if start < 0 or end <= start:
-        raise SplitRejected(f"no JSON object in the reply: {text[:120]!r}")
-    split = RequestSplit.model_validate(json.loads(text[start:end + 1]))
+    span = json_object_span(raw)
+    if span is None:
+        raise SplitRejected(
+            f"no JSON object in the reply: {strip_fence(raw)[:120]!r}")
+    split = RequestSplit.model_validate(json.loads(span))
     invented = [p for p in (*split.exposures, *split.outcomes)
                 if not _in_order(p, request)]
     if invented:

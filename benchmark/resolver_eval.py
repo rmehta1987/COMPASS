@@ -908,11 +908,11 @@ def _parse[M: BaseModel](raw: str, model: type[M]) -> M:
             silently, because a silently retried call turns a malformed-output
             rate into zero.
     """
-    text = raw.replace("```json", "").replace("```", "").strip()
-    start, end = text.find("{"), text.rfind("}")
-    if start < 0 or end <= start:
-        raise ValueError(f"no JSON object in reply: {text[:200]!r}")
-    return model.model_validate(json.loads(text[start:end + 1]))
+    span = contract.json_object_span(raw)
+    if span is None:
+        raise ValueError(
+            f"no JSON object in reply: {contract.strip_fence(raw)[:200]!r}")
+    return model.model_validate(json.loads(span))
 
 
 def _unusable(items: Sequence[ResolvedItem],

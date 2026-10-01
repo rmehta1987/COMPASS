@@ -314,6 +314,24 @@ def test_a_split_that_contradicts_itself_is_refused() -> None:
     assert PC.parse_split("tell me about the survey", _reply([], [], True)).unsplittable
 
 
+@pytest.mark.parametrize(("raw", "span"), [
+    ('{"a": 1}', '{"a": 1}'),
+    ('```json\n{"a": {"b": 2}}\n```', '{"a": {"b": 2}}'),
+    ('Here it is: {"a": 1} -- and {"b": 2} too.', '{"a": 1} -- and {"b": 2}'),
+    ("I cannot split this.", None),
+    ("} backwards {", None),
+    ("```\n```", None),
+])
+def test_json_object_span_slices_first_brace_to_last(raw: str,
+                                                     span: str | None) -> None:
+    """The one fence-strip-and-slice both reply readers share.
+
+    `parse_split` and `benchmark/resolver_eval.py::_parse` each inlined it;
+    a reader that sliced differently would accept a reply the other refuses.
+    """
+    assert PC.json_object_span(raw) == span
+
+
 def test_the_split_prompt_carries_the_request_and_nothing_else_retrieved() -> None:
     """The splitter reads the sentence alone: no candidates, no instrument text."""
     prompt = PC.split_prompt(_REQ)
