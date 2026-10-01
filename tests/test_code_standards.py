@@ -66,7 +66,12 @@ def _tool(name: str) -> Path | None:
 # attr-defined errors in agent/specifier.py and one arg-type in each driver.
 # `agent/backends.py::CliBackend` and `specifier::_drives_own_loop` type the two
 # paths apart. (27b6949 had raised the count 59 -> 62; bee2890 restored it.)
-RUFF_CEILING: int = 232
+#
+# LOWERED 2026-10-01, ruff 232 -> 182, to the count `ruff check .` measured at
+# the end of the simplify G4 batch (branch simplify-schema-docstrings). The 50
+# had been cleared by earlier commits without the ceiling following them down.
+# mypy measured 54, so MYPY_CEILING stays. Re-measure at merge, never relay.
+RUFF_CEILING: int = 182
 MYPY_CEILING: int = 54
 
 
