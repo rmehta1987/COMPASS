@@ -43,12 +43,12 @@ thing to avoid.
 from __future__ import annotations
 
 import json
-import re
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 
 from pydantic import BaseModel, Field
 
+from agent.prompt_contract import json_object_span
 from agent.specifier import PromptTemplate
 
 #: `(prompt) -> raw model text`. One argument, for the reason
@@ -84,9 +84,6 @@ POOL_CAP_COST: dict[int, int] = {
 #: Reciprocal-rank-fusion's rank offset. The conventional 60, carried as a
 #: constant because it is a tuning knob and an unnamed one drifts.
 RRF_K = 60
-
-_FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$")
-
 
 class Phrasings(BaseModel):
     """Alternative ways of asking for the same variable.
@@ -194,12 +191,11 @@ def parse_phrasings(raw: str) -> tuple[str, ...] | None:
     Returns:
         The phrasings, or None when the text carries no schema-shaped object.
     """
-    text = _FENCE.sub("", raw.strip())
-    start, end = text.find("{"), text.rfind("}")
-    if start == -1 or end <= start:
+    span = json_object_span(raw)
+    if span is None:
         return None
     try:
-        parsed = Phrasings.model_validate_json(text[start:end + 1])
+        parsed = Phrasings.model_validate_json(span)
     except ValueError:
         return None
     return _dedupe(parsed.phrasings)

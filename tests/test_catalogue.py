@@ -285,3 +285,28 @@ def test_the_rendered_surface_offers_every_candidate(catalogue):
         catalogue=labels.render_catalogue(catalogue))
     assert f"Candidates ({len(catalogue.options)})" in text
     assert not _KEY_SHAPE.findall(text)
+
+
+def test_arm_d_reads_a_selection_with_the_shared_span():
+    """`arm_d.parse_selection` inlined first-`{` to last-`}` slicing.
+
+    Two slicers drift: a reply one reader accepts the other refuses. It now
+    calls `agent/prompt_contract.py::json_object_span`.
+    """
+    import inspect
+
+    from generate.arm_d import parse_selection
+
+    tree = ast.parse(inspect.getsource(parse_selection))
+    called = {n.func.id if isinstance(n.func, ast.Name) else
+              getattr(n.func, "attr", "")
+              for n in ast.walk(tree) if isinstance(n, ast.Call)}
+    assert "json_object_span" in called
+    assert not called & {"find", "rfind"}, (
+        "parse_selection slices the reply itself again")
+    reply = '{"verdict": "resolved", "indices": [2], "reason": "r"}'
+    for raw in (reply, f"```json\n{reply}\n```", f"Here: {reply} -- done."):
+        sel = parse_selection(raw)
+        assert sel is not None and sel.indices == (2,), raw
+    assert parse_selection("no object here") is None
+    assert parse_selection('{"verdict": "maybe"}') is None

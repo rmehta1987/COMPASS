@@ -244,3 +244,26 @@ def test_the_outcome_label_is_reported_but_never_a_stopping_signal():
     assert "SEARCH_SCORE_FLOOR" not in compared
     assert "below_threshold" not in source, (
         "reading below_threshold is one edit away from branching on it")
+
+
+def _calls(fn: object) -> set[str]:
+    tree = ast.parse(inspect.getsource(fn))  # type: ignore[arg-type]
+    return {n.func.id if isinstance(n.func, ast.Name) else
+            getattr(n.func, "attr", "")
+            for n in ast.walk(tree) if isinstance(n, ast.Call)}
+
+
+def test_the_phrasing_reader_slices_with_the_shared_span():
+    """`parse_phrasings` sliced first-`{` to last-`}` itself, behind its own fence regex.
+
+    Two slicers drift: a reply one reader accepts the other refuses. It now
+    calls `agent/prompt_contract.py::json_object_span`, as `parse_split` does.
+    """
+    called = _calls(QR.parse_phrasings)
+    assert "json_object_span" in called
+    assert not called & {"find", "rfind", "sub"}, (
+        "parse_phrasings slices or strips the reply itself again")
+    # A fence that is not the reply's first or last line: the old anchored
+    # regex left it, and the shared slicer reads it the same way either way.
+    raw = 'Sure.\n```json\n{"phrasings": ["who lives with you"]}\n```\nDone.'
+    assert QR.parse_phrasings(raw) == ("who lives with you",)

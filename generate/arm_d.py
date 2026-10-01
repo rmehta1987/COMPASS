@@ -53,6 +53,7 @@ from agent.prompt_contract import (
     VariableSelection,
     candidates_from_keys,
     catalogue_contract,
+    json_object_span,
 )
 from benchmark import retrieval_eval as R
 from env import labels
@@ -152,18 +153,20 @@ def user_turn(request: str) -> str:
 def parse_selection(raw: str) -> VariableSelection | None:
     """Recover a selection from the model's reply.
 
+    Sliced by `agent/prompt_contract.py::json_object_span`, the one slicer the
+    prompt contract's own parsers use, so a fenced reply reads the same here.
+
     Args:
         raw: The model's text.
 
     Returns:
         The selection, or None when the text carries no valid one.
     """
-    text = raw.strip()
-    start, end = text.find("{"), text.rfind("}")
-    if start == -1 or end <= start:
+    span = json_object_span(raw)
+    if span is None:
         return None
     try:
-        return VariableSelection.model_validate_json(text[start:end + 1])
+        return VariableSelection.model_validate_json(span)
     except ValueError:
         return None
 
