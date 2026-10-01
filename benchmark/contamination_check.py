@@ -982,9 +982,14 @@ def check_markers(surface: dict[str, str]) -> list[str]:
     Returns:
         One string per (surface, marker) hit; empty when the surface is clean.
     """
+    # Masked once per surface, not once per (surface, marker): the mask is a
+    # pure function of the text, and inside the marker loop it re-ran over
+    # every surface once per marker.
+    masked = ((where, _without_harness_indices(text))
+              for where, text in surface.items())
     return [f"{where}  ->  {m!r}"
-            for where, text in surface.items()
-            for m in MARKERS if _marker_hit(m, _without_harness_indices(text))]
+            for where, text in masked
+            for m in MARKERS if _marker_hit(m, text)]
 
 
 #: A marker made only of digits and thousands separators. These are figures, and
@@ -1132,8 +1137,12 @@ def _marker_hit(marker: str, text: str) -> bool:
         True on an occurrence. Numeric markers need a number boundary on both
         sides; every other marker matches as a substring.
     """
+    # A boundary match is a substring match first, so the plain test decides
+    # every absent marker without compiling or running the regex.
+    if marker not in text:
+        return False
     if not _NUMERIC_MARKER.match(marker):
-        return marker in text
+        return True
     return re.search(r"(?<!\w)" + re.escape(marker) + r"(?!\d)",
                      text) is not None
 
