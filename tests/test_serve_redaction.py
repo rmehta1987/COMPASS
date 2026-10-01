@@ -19,6 +19,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import re
 import shutil
 import sys
 import types
@@ -471,6 +472,41 @@ def test_key_matching_is_case_insensitive_on_both_paths() -> None:
     for variant in ("m1:1_Q6.2", "M1:1_Q6.2", "m1:1_q6.2", "M1:1_q6.2"):
         assert s.hits(f"I turned down {variant} because it is the wrong construct"), \
             f"{variant} slipped both the regex and the literal sweep"
+
+
+def test_the_literal_sweep_alone_finds_every_key_in_every_case(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every instrument key planted in prose is found with `KEY_RE` switched off.
+
+    `KEY_RE` full-matches every variable and construct key, so a test planting
+    one of those cannot tell the literal sweep from the regex: SEEDED 2026-10-01,
+    skipping any one of the sweep's head-to-colon groups in `Scrubber.hits` left
+    every serve test green. `group_key`s are outside the regex's grammar
+    entirely, so for them the sweep is the only key cover there is. Every key
+    rather than a sample, so a skipped group fails naming its keys.
+    """
+    import serve.redact as R
+
+    dic = _dictionary_or_skip()
+    s = Scrubber(path=dic)
+    monkeypatch.setattr(R, "KEY_RE", re.compile(r"(?!)"))
+    # Anti-vacuity both ways: the regex really is off, and the sweep is not
+    # firing on anything key-shaped.
+    assert not s.hits("I turned down m1:Q9999.9999_9 here"), (
+        "a key the instrument does not contain was reported, so either the "
+        "regex is still live or the literal sweep matches too much")
+    entries = json.loads(dic.read_text(encoding="utf-8"))["entries"]
+    for field in ("key", "construct_key", "group_key"):
+        assert any(e.get(field) in s.keys for e in entries), (
+            f"no {field} reached the literal key set")
+    missed = []
+    for i, k in enumerate(sorted(s.keys)):
+        variant = (k, k.upper(), k.lower())[i % 3]
+        if f"key {k}" not in s.hits(f"I turned down {variant} here"):
+            missed.append(variant)
+    assert not missed, (
+        f"{len(missed)} of {len(s.keys)} instrument keys slipped the literal "
+        f"sweep with the regex off, e.g. {missed[:5]}")
 
 
 def test_a_redaction_mark_never_reprints_what_it_removed() -> None:

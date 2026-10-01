@@ -170,6 +170,31 @@ def _grams(text: str) -> set[tuple[str, ...]]:
     return {tuple(w[i:i + RUN]) for i in range(len(w) - RUN + 1)}
 
 
+def _key_groups(keys: frozenset[str],
+                ) -> tuple[tuple[str, tuple[tuple[str, str], ...]], ...]:
+    """Keys with their case-folded form, grouped by the folded head to the colon.
+
+    The head is a substring of every folded key in its group, so a text that
+    lacks the head cannot contain any of them and the group is skipped whole.
+    A key with no colon is its own head, which keeps the skip exact rather than
+    assuming the `m<n>:` grammar the literal set exists to back up. Pairs, not
+    folded keys alone: two keys differing only in case must each be reported.
+
+    Args:
+        keys: The instrument's own variable keys.
+
+    Returns:
+        `(head, ((key, folded), ...))` groups; together they hold every key once.
+    """
+    groups: dict[str, list[tuple[str, str]]] = {}
+    for key in sorted(keys):
+        folded = key.casefold()
+        colon = folded.find(":")
+        head = folded[:colon + 1] if colon >= 0 else folded
+        groups.setdefault(head, []).append((key, folded))
+    return tuple((head, tuple(members)) for head, members in groups.items())
+
+
 def dictionary_path() -> Path | None:
     """Locate the built dictionary, preferring an explicit override.
 
@@ -339,7 +364,10 @@ class Scrubber:
         # this set is exhaustive by construction and cannot drift when a new
         # shape is built. The regex stays as the backstop for a key-shaped
         # string the dictionary does not contain.
-        self.keys = keys
+        self.keys = frozenset(keys)
+        # Built once here rather than per string: `hits` used to sort and
+        # case-fold every key on every call that saw a colon.
+        self._key_groups = _key_groups(self.keys)
         # Same construction, same reason, for the other thing a regex cannot
         # reach: the run rule's own blind spot below five words. Built from the
         # instrument rather than declared, so it tracks the build instead of
@@ -359,9 +387,12 @@ class Scrubber:
         # The literal sweep is 3,005 substring tests, so it is skipped for text
         # that cannot contain a key at all: every key has the form `m<n>:...`.
         # Case-folded on both sides for the same reason `KEY_RE` is IGNORECASE.
+        # A group whose head is absent holds no key that could be present.
         if ":" in text:
             low = text.casefold()
-            found += [f"key {k}" for k in sorted(self.keys) if k.casefold() in low]
+            found += [f"key {key}" for head, members in self._key_groups
+                      if head in low
+                      for key, folded in members if folded in low]
         found += [" ".join(g) for g in sorted(_grams(text) & self.corpus)]
         # Field-name-independent cover for wording the run rule cannot see. Six
         # substring tests on this build, so no guard is worth the branch.
