@@ -11,10 +11,10 @@ fact that it validates is the evidence that the schema can express this design.
 
 from __future__ import annotations
 
-import json
 import math
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -41,18 +41,41 @@ from agent.schema import (  # noqa: E402
     UnitOfAnalysis,
     VariableRef,
 )
+from env.labels import cite  # noqa: E402
 from env.tools import estimate_detectability  # noqa: E402
 from generate.funnel import DEFAULT_FRAME, FRAMES, load_constructs, run  # noqa: E402
 
-DICT = json.loads((ROOT / "build" / "dictionary.json").read_text())
-WORDING = {e["key"]: e["question_text"] for e in DICT["entries"]}
-
 
 def V(key: str) -> VariableRef:
-    return VariableRef(key=key, quoted_wording=WORDING[key])
+    """A reference to one variable, quoting its wording verbatim.
+
+    The wording is `env/labels.py::cite`'s, the only maker of it, and is read
+    at call time: importing this module (or `generate/run_specifier.py`, which
+    shares it) does not need `build/`.
+
+    Args:
+        key: A fully qualified variable key.
+
+    Returns:
+        The reference, carrying `question_text` byte for byte.
+    """
+    return VariableRef(key=key, quoted_wording=cite(key).wording)
 
 
-def adj(key, role, mech, just, **kw):
+def adj(key: str, role: CausalRole, mech: str, just: str,
+        **kw: Any) -> CausalAdjustment:
+    """One adjustment decision about `key`, its wording quoted by `V`.
+
+    Args:
+        key: The variable's key.
+        role: Its causal role.
+        mech: The mechanism.
+        just: The justification.
+        **kw: Further `CausalAdjustment` fields, e.g. `proxy_for`.
+
+    Returns:
+        The adjustment.
+    """
     return CausalAdjustment(variable=V(key), mechanism=mech, justification=just,
                             role=role, **kw)
 

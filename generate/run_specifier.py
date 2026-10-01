@@ -16,7 +16,6 @@ which cannot be proven without weights and is exactly what the benchmark is for.
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -26,7 +25,6 @@ sys.path.insert(0, str(ROOT))
 from agent.backends import Reply, ScriptedBackend, tool_call  # noqa: E402
 from agent.schema import (  # noqa: E402
     Access,
-    CausalAdjustment,
     CausalRole,
     Comparator,
     DerivationRef,
@@ -44,21 +42,11 @@ from agent.schema import (  # noqa: E402
     SmallestDetectableEffect,
     Status,
     UnitOfAnalysis,
-    VariableRef,
 )
 from agent.specifier import MAX_TRANSDUCE_ATTEMPTS, specify  # noqa: E402
 from generate.funnel import DEFAULT_FRAME, FRAMES, load_constructs, run  # noqa: E402
 from generate.live_specifier import run_identity  # noqa: E402
-
-DICT = json.loads((ROOT / "build" / "dictionary.json").read_text())
-W = {e["key"]: e["question_text"] for e in DICT["entries"]}
-V = lambda k: VariableRef(key=k, quoted_wording=W[k])                  # noqa: E731
-
-
-def adj(k, role, mech, just, **kw):
-    return CausalAdjustment(variable=V(k), mechanism=mech, justification=just,
-                            role=role, **kw)
-
+from generate.worked_example import V, adj  # noqa: E402
 
 # --------------------------------------------------------------------------- #
 # the fixture record — what a correct transduction of the analysis looks like
