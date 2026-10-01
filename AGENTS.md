@@ -39,9 +39,9 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
   `aiohttp`, `litellm` or an `importlib` call still passes — rule binding, test partial
   (`tests/test_specifier.py::test_env_never_touches_the_network`). `env/` is stdlib-only.
 - `env/` may load a model only on a grant in `tests/test_specifier.py::ENV_MODEL_GRANTS`;
-  only the user extends it. If retrieval needs an embedding, ask.
-- A grant needs all four, reviewer-judged: vendored pinned weights, deterministic output,
-  inspectable text for the surface scan, logged disagreement with the lexical order.
+  only the user extends it. If retrieval needs an embedding, ask. A grant must meet
+  every condition in `tests/test_specifier.py::ENV_MODEL_GRANT_CONDITIONS`,
+  reviewer-judged.
 - No participant data and no analysis executed — estimability, never soundness.
 - `agent/registry.py::build_registry(mode)` builds every tool dict; `mode` has no default.
 - Never invent an n: `env/tools.py::estimate_n` returns null + `unknown` + a blocker.

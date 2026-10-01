@@ -60,16 +60,26 @@ def _good_script(record: str) -> list:
 
 
 # --------------------------------------------------------------------------- #
-# the environment stays model-free
+# the environment stays offline, and loads no ungranted model
 # --------------------------------------------------------------------------- #
 
 #: Model libraries `env/` is permitted to import. **Empty by default, and only the
-#: user may add to it** — `AGENTS.md` §Hard Constraints. A lane that needs one asks;
+#: user may add to it** — `AGENTS.md` §Hard Constraints. An agent that needs one asks;
 #: it does not edit this. The blanket no-model ban was lifted 2026-08-31 because it
 #: was being engineered around rather than tested, but a grant still has to satisfy
-#: the four properties AGENTS.md lists: offline, deterministic, auditable, and
-#: selection-neutral-or-measured. This set is where the grant is visible.
+#: every one of `ENV_MODEL_GRANT_CONDITIONS`. This set is where the grant is visible.
 ENV_MODEL_GRANTS: frozenset[str] = frozenset()
+
+#: The conditions a grant in `ENV_MODEL_GRANTS` must meet, all of them, judged by a
+#: reviewer. This tuple is the one statement of them: `AGENTS.md` cites it by name,
+#: and the gate's failure message prints it. They were worded three ways before,
+#: and two of those wordings named different conditions.
+ENV_MODEL_GRANT_CONDITIONS: tuple[str, ...] = (
+    "vendored pinned weights",
+    "deterministic output",
+    "inspectable text for the surface scan",
+    "logged disagreement with the lexical order",
+)
 
 _NETWORK_IMPORTS = r"requests|httpx|urllib|socket|http|aiohttp"
 _MODEL_IMPORTS = r"openai|anthropic|torch|transformers|vllm|sentence_transformers|litellm"
@@ -92,19 +102,58 @@ def test_env_never_touches_the_network():
 def test_env_model_imports_are_operator_granted():
     """A model under `env/` is allowed only if the operator wrote it down.
 
-    Not a ban — a ratchet. The failure this prevents is a lane deciding on its own
+    Not a ban — a ratchet. The failure this prevents is an agent deciding on its own
     that an embedding index is fine, landing weights inside the environment the
     benchmark is measured against, and nothing recording that the decision was ever
     made. Adding a name here is a reviewable act; importing one is not.
     """
+    _assert_model_imports_granted(ROOT / "env")
+
+
+def _assert_model_imports_granted(env_dir: Path) -> None:
+    """Fail on any ungranted model import under `env_dir`, naming the conditions.
+
+    Args:
+        env_dir: The package directory to scan.
+
+    Raises:
+        AssertionError: A file imports a model library not in `ENV_MODEL_GRANTS`.
+    """
     banned = re.compile(rf"^\s*(?:import|from)\s+({_MODEL_IMPORTS})\b", re.M)
-    for p in (ROOT / "env").rglob("*.py"):
+    for p in env_dir.rglob("*.py"):
         ungranted = set(banned.findall(p.read_text())) - ENV_MODEL_GRANTS
         assert not ungranted, (
             f"{p.name} imports {sorted(ungranted)}, which is not in ENV_MODEL_GRANTS. "
             "Only the user may grant a model to env/, and the grant must satisfy "
-            "AGENTS.md §Hard Constraints: offline, deterministic, auditable, "
-            "selection-neutral or measured.")
+            "all of tests/test_specifier.py::ENV_MODEL_GRANT_CONDITIONS: "
+            + "; ".join(ENV_MODEL_GRANT_CONDITIONS) + ".")
+
+
+def test_the_grant_conditions_are_stated_once_and_cited_everywhere_else(
+        tmp_path: Path) -> None:
+    """Every place that states the env/ model rule points at the one tuple.
+
+    The rule was worded three ways that disagreed: AGENTS.md named four conditions,
+    this gate's failure message named five different adjectives, and the
+    env/tools.py module docstring said env/ imports no model at all. A red here
+    means one of those sites has gone back to restating the rule — or the gate
+    message has stopped printing a condition the reviewer is meant to judge.
+    """
+    (tmp_path / "probe.py").write_text("import torch\n")
+    with pytest.raises(AssertionError) as raised:
+        _assert_model_imports_granted(tmp_path)
+    message = str(raised.value)
+    assert ENV_MODEL_GRANT_CONDITIONS, "the grant has no conditions"
+    missing = [c for c in ENV_MODEL_GRANT_CONDITIONS if c not in message]
+    assert not missing, f"the gate's failure message omits {missing}"
+
+    agents = (ROOT / "AGENTS.md").read_text()
+    assert "tests/test_specifier.py::ENV_MODEL_GRANT_CONDITIONS" in agents, (
+        "AGENTS.md must cite the grant conditions by path::symbol, not restate them")
+    tools_doc = ast.get_docstring(ast.parse((ROOT / "env" / "tools.py").read_text()))
+    assert tools_doc and "tests/test_specifier.py::ENV_MODEL_GRANTS" in tools_doc, (
+        "env/tools.py's module docstring must say env/ loads a model only on a grant "
+        "in tests/test_specifier.py::ENV_MODEL_GRANTS")
 
 
 def test_only_the_backend_module_opens_a_connection():

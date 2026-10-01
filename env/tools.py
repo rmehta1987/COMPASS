@@ -1,7 +1,8 @@
 """env/tools.py — the deterministic tool layer the Specifier calls.
 
-INVARIANT: nothing in env/ imports a model or touches the network. A test greps
-this whole package for import forms. If a component needs a model call it is not
+INVARIANT: nothing in env/ touches the network, and nothing in env/ loads a model
+unless it is granted in tests/test_specifier.py::ENV_MODEL_GRANTS. Tests grep this
+whole package for import forms. An ungranted component that needs a model is not
 environment, and it belongs on the other side of the line.
 
 Every tool either fills a field of the protocol record with a looked-up fact, or
