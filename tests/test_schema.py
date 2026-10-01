@@ -1552,3 +1552,50 @@ def test_every_causal_role_belongs_in_exactly_one_covariate_list() -> None:
     assert {field for field, _, _ in _COVARIATE_LISTS} <= fields
     for field, _, roles in _COVARIATE_LISTS:
         assert all(_LIST_FOR_ROLE[r] == field for r in roles)
+
+
+def test_an_excluded_anchor_is_pointed_at_the_field_that_exists() -> None:
+    """The repair message names `excluded_variables`, the list's real field.
+
+    It used to build "<label>_covariates", sending the repair loop to an
+    `excluded_covariates` field the schema does not have.
+    """
+    p = p014()
+    dup = adj("m3:Q16.2", CausalRole.mediator,
+              "Deliberately re-naming the exposure as an excluded variable.",
+              "Should be refused because it is an anchor of this design.")
+    with pytest.raises(ValidationError) as exc:
+        p014(excluded_variables=[*p.excluded_variables, dup])
+    msg = str(exc.value)
+    assert "cannot also appear in excluded_variables" in msg
+    assert "excluded_covariates" not in msg
+
+
+def test_a_scalar_threshold_in_another_unit_is_refused_not_skipped() -> None:
+    """The scalar fallback refuses a unit mismatch, as the curve path does.
+
+    `p014` carries no curve, so its falsifier is compared against `value`. A
+    threshold in a unit the detectable effect is not in used to skip that
+    comparison and validate — the abstention the curve path was fixed for.
+    """
+    assert p014().falsifier_threshold.unit == "MET-hours/week"     # anti-vacuity
+    with pytest.raises(ValidationError, match="cannot be checked against the study"):
+        p014(falsifier_threshold=FalsifierThreshold(
+            value=0.68, unit="odds ratio", comparator=Comparator.lte))
+
+
+#: Phrases that only a maintainer note would carry. Each was in a model or enum
+#: docstring, and so in the prompt, until 2026-09-30.
+MAINTAINER_ONLY = ("CONTAMINATION NOTE", "model_json_schema", "17,922",
+                   "validate_protocol", "ablation", "coerced", "ungrammared",
+                   "physical activity", "Q2.33", "M-bias", "escape hatch")
+
+
+def test_no_maintainer_note_reaches_either_prompt_schema() -> None:
+    """Class docstrings are prompt text; why a class is shaped so is a comment."""
+    from agent.schema import NotSpecifiable
+
+    for model in (ProtocolSpecification, NotSpecifiable):
+        s = json.dumps(model.model_json_schema())
+        found = [m for m in MAINTAINER_ONLY if m in s]
+        assert not found, f"{model.__name__} schema carries {found}"

@@ -31,8 +31,9 @@ schema that is pasted into the transduction prompt. So:
 * those docstrings carry no study design, exposure, outcome, paper count, cohort
   figure or prevalence, and no maintainer rationale — that goes in comments;
 * a class that has no docstring must not gain one casually: it adds prompt text.
-  Those classes carry `# noqa: D101` for that reason, and the three model
-  docstrings that are not in Google layout carry `# noqa: D205`;
+  Those classes carry `# noqa: D101` for that reason. A model or enum docstring
+  says what the model needs to fill the record; why the class is shaped that
+  way goes in a comment directly above it;
 * `ValueError` messages are read by the model in the repair loop, so they are
   prompt text too.
 
@@ -156,20 +157,21 @@ def _signed_derivations() -> dict[str, dict]:
 # references — a tagged union, never a bare VariableRef
 # --------------------------------------------------------------------------- #
 
+# At the grammar layer `quoted_wording` is emitted as an enum keyed off `key`,
+# which makes fabrication structurally impossible rather than detectable after
+# the fact; `ProtocolSpecification._wording_is_verbatim` is the fallback for
+# ungrammared generation.
+#
+# The honest limit, stated so it is not mistaken for verification: comparing
+# wording to the dictionary catches INVENTED quotes only. It cannot catch a
+# correct quote attached to the wrong identifier — a verbatim paste scores
+# perfectly while a correct plain-language construct label scores near zero, so
+# it rewards pasting and punishes thinking. It is named `quote_fabrication_check`
+# for that reason and never gates on similarity.
 class VariableRef(BaseModel):
     """A single instrument variable, resolved by set membership in a registry.
 
-    `quoted_wording` is verbatim dictionary text. At the grammar layer it is
-    emitted as an enum keyed off `key`, which makes fabrication structurally
-    impossible rather than detectable after the fact. The validator here is the
-    fallback for ungrammared generation.
-
-    The honest limit, stated so it is not mistaken for verification: comparing
-    wording to the dictionary catches INVENTED quotes only. It cannot catch a
-    correct quote attached to the wrong identifier — a verbatim paste scores
-    perfectly while a correct plain-language construct label scores near zero, so
-    it rewards pasting and punishes thinking. It is named
-    `quote_fabrication_check` for that reason and never gates on similarity.
+    `quoted_wording` is the instrument's text for `key`, verbatim.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -184,15 +186,18 @@ class VariableRef(BaseModel):
         return self.key.split(":", 1)[0]
 
 
+# Why recipes must be signed in advance: a construct is often many items — one
+# battery in m3 runs to 30 — with hundreds of defensible ways to combine them.
+# Search 200 recipes, keep the strongest association, and you find one whether
+# or not it exists. (The battery's name and item range used to sit in the
+# docstring, which put a construct and its keys into the prompt.)
 class DerivationRef(BaseModel):
-    """A combined variable. Inline recipes are forbidden.
+    """A combined variable, by reference to a signed derivation.
 
-    A derivation is a reviewable, signed, versioned object in
-    curated/derivations/, and validate_protocol fails if the file is missing — so
-    a recipe cannot be invented mid-protocol. This matters because there is no
-    single "physical activity" item: there are 30 (m3:Q2.33-Q2.62), and hundreds
-    of defensible ways to combine them. Search 200 recipes, keep the strongest
-    association, and you find one whether or not it exists.
+    A derivation is a reviewable, signed, versioned file in curated/derivations/.
+    A reference to a file that does not exist, or one whose `component_keys` or
+    `unit` differ from the file's, is rejected: a recipe cannot be invented
+    mid-protocol. Inline recipes are forbidden.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -253,18 +258,13 @@ class DerivationRef(BaseModel):
         return self
 
 
+# CONTAMINATION NOTE — do not restore the earliest docstring. It named specific
+# pollutant exposures and how many papers the benchmark scores, so every call
+# told the model both what the benchmark contains and which exposures the
+# cohort's own published work used. The note saying so then sat in the
+# docstring itself, in the prompt, until 2026-09-30. See the module docstring.
 class AreaMeasureRef(BaseModel):
-    """A linked place-based measure attached to a participant's area.
-
-    CONTAMINATION NOTE — do not restore the earlier docstring. Pydantic copies
-    class docstrings into `description` fields of model_json_schema(), and that
-    schema (17,922 chars) is pasted verbatim into the transduction prompt. The
-    previous text named specific pollutant exposures and "the eight benchmark
-    papers", so every transduce call was telling the model both what the
-    benchmark contains and which exposures the cohort's own published work
-    used. Keep docstrings in this module free of study designs, exposures,
-    outcomes and paper counts: anything written here is prompt text.
-    """
+    """A linked place-based measure attached to a participant's area."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -302,18 +302,18 @@ def _ref_key(ref: VariableRef | DerivationRef | AreaMeasureRef) -> str:
 # causal roles
 # --------------------------------------------------------------------------- #
 
+# `collider` is deliberately absent. Asserting it requires naming two parent
+# constructs, one an ancestor of the exposure and one of the outcome, with
+# evidence — an escalation, never a default. And no exclusion decision needs it:
+# a true M-bias collider is neither a cause nor an effect of either anchor, so it
+# lands in `not_a_cause_of_either` and is correctly excluded on evidence we
+# actually have.
 class CausalRole(str, Enum):
     """One shared vocabulary across all three covariate lists.
 
-    `collider` is deliberately absent. Asserting it requires naming two parent
-    constructs, one an ancestor of the exposure and one of the outcome, with
-    evidence — an escalation, never a default. And no exclusion decision needs
-    it: a true M-bias collider is neither a cause nor an effect of either anchor,
-    so it lands in `not_a_cause_of_either` and is correctly excluded on evidence
-    we actually have.
-
-    `exposure` and `outcome` are also absent. They are positions in the design,
-    not roles.
+    There is no `collider`: a covariate that is neither a cause nor an effect of
+    either anchor is `not_a_cause_of_either`. There is no `exposure` or
+    `outcome` either; they are positions in the design, not roles.
     """
 
     # -> adjusted
@@ -353,18 +353,21 @@ _LIST_FOR_ROLE: dict[CausalRole, str] = {
     role: field for field, _, roles in _COVARIATE_LISTS for role in roles}
 
 
+# Declaration order is the point: `mechanism` and `justification` are emitted
+# BEFORE `role`, so a constrained grammar cannot let the model commit to a causal
+# role before writing the reasoning for it.
+#
+# Requiring the mechanism is the calibration guard that stops ancestor-level
+# permissiveness collapsing into "adjust for everything". The docstring used to
+# say a role without one "is coerced to unadjudicated"; nothing coerces —
+# `_floors_and_role_coherence` REJECTS it, and its message says to record the
+# entry as unadjudicated instead.
 class CausalAdjustment(BaseModel):
     """One covariate decision.
 
-    Declaration order is the point: `mechanism` and `justification` are emitted
-    BEFORE `role`, so a constrained grammar cannot let the model commit to a
-    causal role before writing the reasoning for it.
-
     `mechanism` is one sentence naming intermediate constructs if the path is
-    indirect. It is required, and a role asserted without one is coerced to
-    `unadjudicated` rather than accepted — that coercion is the calibration guard
-    that stops ancestor-level permissiveness collapsing into "adjust for
-    everything".
+    indirect. It is required: a covariate whose mechanism you cannot state is
+    recorded with role `unadjudicated`.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -560,9 +563,11 @@ class Direction(str, Enum):  # noqa: D101
 
 
 class ExpectedDirection(BaseModel):
-    """Direction is theory-derived and fabrication-free; magnitude is not. They
-    do not share a field, and a magnitude without a source is refused.
-    """  # noqa: D205
+    """The expected direction of the effect, and optionally its magnitude.
+
+    Direction is theory-derived; magnitude is not, so they do not share a field,
+    and a magnitude without a `magnitude_source` is refused.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -600,14 +605,12 @@ class FalsifierThreshold(BaseModel):  # noqa: D101
     comparator: Comparator
 
 
+# The word "estimability" is used for two different things in this project: the
+# funnel tags a PAIR `estimable` or `unknown` — asking whether a count could ever
+# be worked out — while this says where a count that exists came FROM. These four
+# were bare values until the definitions below were written.
 class NSource(str, Enum):
     """Where an analytic n came from, or why there is none.
-
-    These four were bare values with nothing saying what they mean, and the
-    word "estimability" is used for two different things in this project: the
-    funnel tags a PAIR `estimable` or `unknown` -- asking whether a count could
-    ever be worked out -- while this says where a count that exists came FROM.
-    A reader who met both met one word and two vocabularies.
 
     computed_from_counts -- derived from the study's own exported counts.
     synthetic_cohort     -- from a simulated cohort, never from participants.
@@ -638,34 +641,31 @@ class SdePoint(BaseModel):
     sde_percentage_points: float
 
 
+# Why a curve and not a scalar: estimate_detectability returns the smallest
+# detectable effect at a set of candidate n values, which is what lets this stay
+# honest while n is unknown. Collapsing an unknown-n design to a single floor
+# forces a choice no one can defend: the lowest candidate makes every falsifier
+# absurdly large, the highest makes the check vacuous, and both assert a sample
+# size in a system whose first rule about sample sizes is never to invent one.
+# `at_n` is a disclosure, not a comparator picked freely: it must be on the
+# curve, the whole curve sits beside it, and while n is unknown the record
+# cannot leave draft.
+#
+# TWO CURVES, AND ONLY ONE OF THEM IS THE COMPARATOR. `curve` is computed under
+# an outcome frequency the caller supplied, which nothing here can confirm, and
+# the detectable effect shrinks as that frequency moves away from the value that
+# maximises it — so a caller who understates it lowers the bar it is then judged
+# against, the same "choose your own floor" hole `at_n` and the candidate n grid
+# were each closed for. `worst_case_curve` is the same formula at the maximising
+# frequency, which no caller can influence. `curve` stays as the disclosed
+# reasoning a reviewer needs; it is evidence, not a yardstick.
 class SmallestDetectableEffect(BaseModel):
-    """Structured so the falsifier comparison is actually computable.
+    """The smallest effect this study could detect, as a curve over candidate n.
 
-    estimate_detectability returns a curve, not a scalar — smallest detectable
-    effect at a set of candidate n values, with the assumption set recorded. That
-    is what lets this field stay honest while n is unknown, and the record
-    therefore carries the whole curve rather than one point off it. Collapsing an
-    unknown-n design to a single floor forces a choice no one can defend: the
-    lowest candidate makes every falsifier absurdly large, the highest makes the
-    check vacuous, and both assert a sample size in a system whose first rule
-    about sample sizes is never to invent one.
-
-    `at_n` is the point this design commits to being falsifiable at. It is a
-    disclosure, not a comparator the model may pick freely: it must be a point on
-    `curve`, the whole curve sits beside it, and while the analytic n is unknown
-    the record cannot leave draft.
-
-    TWO CURVES, AND ONLY ONE OF THEM IS THE COMPARATOR. `curve` is computed under
-    an outcome frequency the caller of estimate_detectability supplied, and this
-    environment holds no data that could confirm or refute it. Because the
-    detectable effect shrinks as that frequency moves away from the value that
-    maximises it, a caller who understates it lowers the bar it is then judged
-    against — the same "choose your own floor" hole that `at_n` and the candidate
-    n grid were each closed for. `worst_case_curve` is the same formula at the
-    frequency that MAXIMISES the detectable effect, which no caller can
-    influence, so it is what the falsifier is checked against. `curve` stays in
-    the record because it is the disclosed reasoning a reviewer needs to see; it
-    is evidence, not a yardstick.
+    `curve` and `worst_case_curve` come from estimate_detectability. `at_n` is
+    the point on the curve this design commits to being falsifiable at. The
+    falsifier threshold is checked against `worst_case_curve` at `at_n`, not
+    against `curve`.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -696,12 +696,15 @@ class SmallestDetectableEffect(BaseModel):
     assumptions: str
 
 
+# Cross-module pairs are the normal case — diagnoses live in module 2 and
+# behaviours in module 3 — and the co-completion counts do not exist, so
+# `unknown` is the expected value on day one, not a defect.
 class Estimability(BaseModel):
-    """A fabricated n is worse than an admitted gap.
+    """Whether this design can be estimated, and with how many participants.
 
-    Cross-module pairs are the normal case here — diagnoses live in module 2 and
-    behaviours in module 3 — and the co-completion counts do not exist, so
-    `unknown` is the expected value on day one, not a defect.
+    A fabricated n is worse than an admitted gap: when no count exists,
+    `n_source` is `unknown` and `analytic_n` is null, and that is the expected
+    value for a pair that spans modules, not a defect.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -755,18 +758,17 @@ class GateDecision(str, Enum):  # noqa: D101
     fail = "fail"
 
 
+# The gate returns its working, not just a verdict. Location precision is grouped
+# by the place being located, the finest precision taken per place, then summed
+# across places — because residence-tract plus residence-ZIP narrows to one area
+# while residence-tract plus workplace-ZIP narrows to an area AND a building, and
+# additive scoring calls those equal. Excluded variables must still resolve and
+# have their wording checked, but consume no budget: penalising a protocol for
+# stating its exclusions punishes the behaviour the schema exists to encourage.
 class Access(BaseModel):
-    """Returns its working, not just a verdict.
+    """The access gate's decision, with the working that produced it.
 
-    Location precision is grouped by the place being located, the finest
-    precision taken per place, then summed across places — because
-    residence-tract plus residence-ZIP narrows to one area while residence-tract
-    plus workplace-ZIP narrows to an area AND a building, and additive scoring
-    calls those equal.
-
-    Deliberately excluded variables must still resolve and have their wording
-    checked, but consume no budget: penalising a protocol for stating its
-    exclusions punishes the behaviour the schema exists to encourage.
+    Excluded variables count toward no budget.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -790,13 +792,16 @@ class SelectionMode(str, Enum):  # noqa: D101
     hand_specified = "hand_specified"
 
 
+# The model has every incentive to keep the denominator small, so the wrapper
+# writes both fields from the funnel counter. Selection from a screened space is
+# part of any eventual inference, and disclosure is what makes agnostic
+# screening sound rather than suspect.
 class SelectionRationale(BaseModel):
-    """Both `screened_from` and `selection_mode` are written by the wrapper from
-    the funnel counter, never by the model — which has every incentive to keep
-    the denominator small. Selection from a screened space is part of any
-    eventual inference, and disclosure is what makes agnostic screening sound
-    rather than suspect.
-    """  # noqa: D205
+    """How this pair was selected, and from how many screened.
+
+    `selection_mode` and `screened_from` are filled in by the pipeline, not by
+    you.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -838,15 +843,18 @@ class ModelStage(StrEnum):
     splitter = "splitter"
 
 
+# Without these an ablation cannot distinguish a component's effect from a prompt
+# edit someone forgot about. All four required fields were the empty string in
+# the first live record, which is the same as not having them: an ablation cannot
+# tell two runs apart on a field that is "" in both. The driver knows every one
+# of them before the model is called, so the wrapper writes them and they are
+# floored here.
 class Provenance(BaseModel):
-    """Without these an ablation cannot distinguish a component's effect from a
-    prompt edit someone forgot about.
+    """What produced this record: dictionary, prompt, models and tool calls.
 
-    All four required fields were the empty string in the one live record, which
-    is the same as not having them: an ablation cannot tell two runs apart on a
-    field that is "" in both. The driver knows every one of them before the model
-    is called, so they are written by the wrapper and floored here.
-    """  # noqa: D205
+    The four required fields and `tool_calls` are filled in by the pipeline,
+    not by you.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -1081,11 +1089,11 @@ class ProtocolSpecification(BaseModel):
     excluded or undetermined covariate — is an identifier drawn from a fixed
     cohort instrument, so referential validity is decided by set membership
     rather than by a model judging text.
-
-    Absent deliberately: no `novelty` field (that is the reviewer's job), no
-    self-reported `confidence` (uncalibrated), no free-text `notes`.
-    `extra="forbid"` is what stops this becoming a tangle.
     """
+
+    # Absent deliberately: no `novelty` field (that is the reviewer's job), no
+    # self-reported `confidence` (uncalibrated), no free-text `notes`.
+    # `extra="forbid"` is what stops this becoming a tangle.
 
     model_config = ConfigDict(extra="forbid")
 
@@ -1358,16 +1366,16 @@ class ProtocolSpecification(BaseModel):
         Raises:
             ValueError: If the exposure or outcome appears in a covariate list.
         """
-        # The message builds "<label>_covariates", which for the excluded list
-        # names `excluded_covariates` — not a field; the field is
-        # `excluded_variables`. Left as is: message text is prompt text.
+        # The message names the FIELD. It once built "<label>_covariates",
+        # which for the excluded list pointed the repair loop at
+        # `excluded_covariates`, a field that does not exist.
         anchors = {_ref_key(self.exposure), _ref_key(self.outcome)}
-        for _, name, _, lst in self._covariate_lists():
+        for field, _, _, lst in self._covariate_lists():
             for entry in lst:
                 if _ref_key(entry.variable) in anchors:
                     raise ValueError(
                         f"{_ref_key(entry.variable)} is an anchor of this design "
-                        f"and cannot also appear in {name}_covariates")
+                        f"and cannot also appear in {field}")
         return self
 
     @model_validator(mode="after")
@@ -1531,16 +1539,7 @@ class ProtocolSpecification(BaseModel):
             # DIFFERENCE and nothing else, so the honest output is a threshold in
             # that unit, or a prose falsifier with falsifier_threshold null.
             if sde.unit and t.unit != sde.unit:
-                raise ValueError(
-                    f"falsifier_threshold is in {t.unit!r} but the detectable "
-                    f"effect this study can reach is in {sde.unit!r}, so the "
-                    f"threshold cannot be checked against the study's power and "
-                    f"would pass unexamined. Either restate the threshold as a "
-                    f"difference in {sde.unit} — the quantity "
-                    f"estimate_detectability computes — or drop "
-                    f"falsifier_threshold entirely and put the criterion in the "
-                    f"`falsifier` prose, which is the correct output for a "
-                    f"model-comparison or ratio-scale falsifier.")
+                raise _unit_mismatch(t, sde)
             # THE COMPARATOR IS THE CALLER-INDEPENDENT BOUND. `curve` is computed
             # under an outcome frequency the caller asserted, so a record checked
             # against its own `curve` grades itself on a floor it chose. Measured
@@ -1586,9 +1585,12 @@ class ProtocolSpecification(BaseModel):
                 "power. Call estimate_detectability and put the number for your "
                 "stated n in `value` with its `at_n` — prose in `assumptions` is "
                 "not a substitute.")
-        # NOTE: unlike the curve path above, a unit mismatch here still skips
-        # the comparison. Making it refuse is a behaviour change, not a cleanup.
-        if sde.unit and t.unit == sde.unit and abs(t.value) < abs(sde.value):
+        # The same refusal as on the curve path. This path used to skip the
+        # comparison on a unit mismatch — the abstention the curve path was
+        # fixed for on 2026-08-27, left open on the scalar fallback.
+        if sde.unit and t.unit != sde.unit:
+            raise _unit_mismatch(t, sde)
+        if sde.unit and abs(t.value) < abs(sde.value):
             raise ValueError(
                 f"falsifier threshold {t.value} {t.unit} is below the smallest "
                 f"detectable effect {sde.value} {sde.unit} at n={sde.at_n}")
@@ -1678,6 +1680,28 @@ class ProtocolSpecification(BaseModel):
         return _short_hash(self.canonical_form())
 
 
+def _unit_mismatch(t: FalsifierThreshold, sde: SmallestDetectableEffect) -> ValueError:
+    """The refusal for a threshold in a unit the detectable effect is not in.
+
+    Args:
+        t: The record's falsifier threshold.
+        sde: The record's smallest detectable effect.
+
+    Returns:
+        The error to raise; one message for the curve and the scalar path.
+    """
+    return ValueError(
+        f"falsifier_threshold is in {t.unit!r} but the detectable "
+        f"effect this study can reach is in {sde.unit!r}, so the "
+        f"threshold cannot be checked against the study's power and "
+        f"would pass unexamined. Either restate the threshold as a "
+        f"difference in {sde.unit} — the quantity "
+        f"estimate_detectability computes — or drop "
+        f"falsifier_threshold entirely and put the criterion in the "
+        f"`falsifier` prose, which is the correct output for a "
+        f"model-comparison or ratio-scale falsifier.")
+
+
 def _short_hash(payload: object) -> str:
     """Hash a JSON-serialisable payload the way every record hash is taken.
 
@@ -1744,13 +1768,13 @@ def derive_status(p: ProtocolSpecification) -> Status:
 # fabrication and then counted it as yield.
 # --------------------------------------------------------------------------- #
 
+# There is deliberately no `insufficient_information` and no `too_uncertain`: a
+# reason no tool can check is a reason that can be asserted at will, which turns
+# this path into an escape hatch from the work.
 class RefusalReason(str, Enum):
     """Why a stated pair cannot be specified against this instrument.
 
-    Every value names a condition a tool in this environment can confirm. There
-    is deliberately no `insufficient_information` and no `too_uncertain`: a
-    reason no tool can check is a reason that can be asserted at will, which
-    turns this path into an escape hatch from the work.
+    Every value names a condition a tool in this environment can confirm.
     """
 
     exposure_unresolvable = "exposure_unresolvable"
@@ -1841,10 +1865,7 @@ class NotSpecifiable(BaseModel):
     the design would need. It is a legitimate result, not a failed one.
 
     It carries NO design — no covariates, no model form, no expected direction,
-    no threshold. A record that speculates about the study it would have written
-    is not this; it is a protocol with a disclaimer, and it lets unsupported
-    reasoning back in through the door this shuts. State only what the lookups
-    in `evidence` establish.
+    no threshold. State only what the lookups in `evidence` establish.
     """
 
     model_config = ConfigDict(extra="forbid")
