@@ -180,7 +180,7 @@ def test_the_ceiling_is_not_vacuous() -> None:
 #: Withheld modules already reachable from a published ref, as repo-relative
 #: paths. A record of a known breach, not permission for another. Remediating one
 #: means rewriting published history and force-pushing, and a rewrite does not
-#: un-distribute what was already fetched -- the user's call, not a lane's
+#: un-distribute what was already fetched -- the user's call
 #: (`TASKS.md` §Known-open defects). DIRECTION: this set may only SHRINK.
 KNOWN_PUBLIC_EXPOSURE = frozenset({"benchmark/leak_facts.py"})
 
@@ -264,8 +264,7 @@ def test_no_new_withheld_module_is_reachable_from_a_published_ref() -> None:
         f"withheld module(s) {sorted(new)} are reachable from a published ref "
         f"({', '.join(refs)}). Deleting the file does not help: the adding "
         f"commit is still an ancestor. Treat the key as disclosed and tell the "
-        f"user -- a history rewrite and force-push is theirs to decide, not a "
-        f"lane's.")
+        f"user -- a history rewrite and force-push is theirs to decide.")
 
     healed = KNOWN_PUBLIC_EXPOSURE - exposed
     assert not healed, (

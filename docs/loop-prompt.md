@@ -77,12 +77,9 @@ Do exactly one item per iteration, in this order. Skip nothing silently: if an i
 blocked, say so, record why, and move to the next.
 
 **Tier 0 — preconditions. Status as of 2026-09-10; do not re-do the DONE ones.**
-- 0a  **NOT BLOCKING — note only.** `serve/` is in no lane (`AGENTS.md` §Parallel Lanes),
-      so it may not be dispatched to parallel lanes. This loop is SERIAL — one item per
-      iteration — so nothing can collide and the rule's purpose is not engaged. Do not
-      stop for it. It must be settled before anyone dispatches lanes again; the collision
-      it guards is C29a (`agent/prompt_contract.py`, Lane A) against C29/C31
-      (`serve/api.py`, unassigned).
+- 0a  **RETIRED 2026-10-01.** It guarded a parallel-lane collision, C29a
+      (`agent/prompt_contract.py`) against C29/C31 (`serve/api.py`), under lane file
+      assignments that `5ec1e01` retired. Merging parallel branches: `AGENTS.md` §Review.
 - 0b  **GRANTED by the operator 2026-09-10: the build hash may move to whatever value is
       necessary.** Not needed yet, and the premise was inverted — MEASURED the same day
       with `build.py::_version_hash`, baseline reproducing `3dc8415eccfe` exactly: adding

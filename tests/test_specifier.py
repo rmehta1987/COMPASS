@@ -696,7 +696,7 @@ def test_every_blocked_on_member_is_classified_and_none_is_a_disclosure() -> Non
     assert not disclosures, (
         f"BlockedOn member(s) {disclosures} are classified as disclosures. "
         f"AGENTS.md §Hard Constraints: no BlockedOn member for disclosure. "
-        f"Changing that sentence is a user amendment, not a lane's.")
+        f"Changing that sentence is a user amendment.")
 
     for m, (kind, deliverable) in sorted(_BLOCKER_KIND.items()):
         assert kind in (DELIVERABLE, DISCLOSURE), f"{m}: unknown kind {kind!r}"
