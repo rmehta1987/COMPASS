@@ -368,11 +368,13 @@ def collapse_cardinality() -> int:
     return len({normalise(e["searchable_text"]) for e in tools._load()["entries"]})
 
 
-def _entry(key: str) -> dict:
+def _entry(key: str, misread_as: str = "a miss") -> dict:
     """The dictionary entry for one key, or a diagnosis of why there is none.
 
     Args:
         key: A fully qualified variable key.
+        misread_as: What the caller would wrongly score a stale row as, so the
+            diagnosis names the caller's own failure.
 
     Returns:
         The entry.
@@ -386,8 +388,8 @@ def _entry(key: str) -> dict:
         raise KeyError(
             f"{key!r} is not in build/dictionary.json "
             f"({tools.dictionary_version()}). A fixture row pointing at a key the "
-            f"dictionary no longer holds is a stale fixture, not a miss, and "
-            f"scoring it as a miss would report a rebuild as a regression.")
+            f"dictionary no longer holds is a stale fixture, not {misread_as}, and "
+            f"scoring it as one would report a rebuild as a regression.")
     return entry
 
 

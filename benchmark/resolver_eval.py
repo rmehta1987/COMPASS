@@ -82,6 +82,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from agent import prompt_contract as contract
+from benchmark import retrieval_eval
 from env import labels, tools
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -400,16 +401,7 @@ def _entry(key: str) -> dict:
     Raises:
         KeyError: If the key is not in the built dictionary.
     """
-    tools._load()
-    entry = tools._BY_KEY.get(key)
-    if entry is None:
-        raise KeyError(
-            f"{key!r} is not in build/dictionary.json "
-            f"({tools.dictionary_version()}). A fixture row pointing at a key "
-            f"the dictionary no longer holds is a stale fixture, not a resolver "
-            f"error, and scoring it as one would report a rebuild as a "
-            f"regression.")
-    return entry
+    return retrieval_eval._entry(key, misread_as="a resolver error")
 
 
 @functools.cache
@@ -1366,25 +1358,9 @@ def evaluate_pools(arm: str = "frozen", fixture: ResolverFixture | None = None,
             results.append(PoolOutcome(
                 id=q.id, kind=q.kind, size=len(keys),
                 reachable=None if not q.gold else rank is not None, rank=rank))
-    return PoolReport(arm=arm, fixture_path=_fixture_label(FIXTURE),
+    return PoolReport(arm=arm, fixture_path=retrieval_eval._fixture_label(FIXTURE),
                       dictionary_version=tools.dictionary_version(),
                       known_bias=fx.known_bias, results=tuple(results))
-
-
-def _fixture_label(path: Path) -> str:
-    """The fixture path as a report should print it.
-
-    Args:
-        path: The fixture file that was read.
-
-    Returns:
-        The path relative to the repository root, or absolute when it lies
-        outside.
-    """
-    try:
-        return str(path.relative_to(ROOT))
-    except ValueError:
-        return str(path)
 
 
 # --------------------------------------------------------------------------- #
@@ -1683,7 +1659,7 @@ def evaluate(model: ModelFn, arm: str = "frozen", n_samples: int = 3,
             results.append(_run_row(model, q, fn(q), n_samples, prompt_arm))
     return ResolverReport(
         arm=arm, prompt_arm=prompt_arm, model_name=model_name,
-        n_samples=n_samples, fixture_path=_fixture_label(FIXTURE),
+        n_samples=n_samples, fixture_path=retrieval_eval._fixture_label(FIXTURE),
         dictionary_version=tools.dictionary_version(),
         known_bias=fx.known_bias, answer_rule=fx.answer_rule,
         results=tuple(results), sampling_note=sampling_note)
@@ -1913,7 +1889,7 @@ def evaluate_single(model: ModelFn, arm: str = "deployed",
                 q, keys, 1, verdict, score_query(q, verdict, keys), ""))
     return ResolverReport(
         arm=arm, prompt_arm=SINGLE_CALL_ARM, model_name=model_name, n_samples=1,
-        fixture_path=_fixture_label(FIXTURE),
+        fixture_path=retrieval_eval._fixture_label(FIXTURE),
         dictionary_version=tools.dictionary_version(),
         known_bias=fx.known_bias, answer_rule=fx.answer_rule,
         results=tuple(results), sampling_note=sampling_note)
