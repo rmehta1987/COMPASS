@@ -233,23 +233,28 @@ from generate.funnel import (  # noqa: E402
 
 
 def winning_attempt(res: Result) -> Attempt | None:
-    """The attempt that produced the selected record, found by identity.
+    """The attempt that produced the run's record, protocol or refusal, by identity.
 
     Not by `record_hash`. `sought_covariates` sits outside `canonical_form`, so a
     silent sample and its disclosing twin hash identically, and a hash match
     returned whichever arrived first. When the disclosing twin won, the saved
     record got the silent twin's tool log, audit and repairs. `specify` selects
     an attempt's own protocol object, so identity names exactly one attempt.
+    A refusal is found the same way: `specify` keeps one sample's own refusal
+    object per hash, and k refusals of one pair routinely share that hash.
 
     Args:
         res: What `specify` returned.
 
     Returns:
-        The attempt whose protocol was selected, or None if none was.
+        The attempt whose protocol was selected, else the attempt whose refusal
+        was upheld, or None when the run has neither.
     """
-    if res.selected is None:
-        return None
-    return next((a for a in res.attempts if a.protocol is res.selected), None)
+    if res.selected is not None:
+        return next((a for a in res.attempts if a.protocol is res.selected), None)
+    if res.refusal is not None:
+        return next((a for a in res.attempts if a.refusal is res.refusal), None)
+    return None
 
 
 def save_repairs(out: Path, attempt: Attempt, log_records: list[dict]) -> Path:
@@ -407,9 +412,7 @@ def main() -> None:
         # The refusing sample's OWN log, copied beside the record, for the same
         # reason the protocol path does it: a record auditable only against
         # whichever log was last written is not auditable.
-        won = next((a for a in res.attempts
-                    if a.refusal is not None and a.tool_log_path
-                    and a.refusal.record_hash() == r.record_hash()), None)
+        won = winning_attempt(res)
         src = won.tool_log_path if won else None
         recs: list[dict] = []
         if src and Path(src).exists():

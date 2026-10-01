@@ -1810,11 +1810,9 @@ def _example_refusal(state: State) -> str | None:
 def _record_attempt(res: Any) -> Any:
     """The attempt whose record the run selected, protocol or refusal.
 
-    By identity, for the reason `generate/live_specifier.py::winning_attempt`
-    gives: `specify` selects an attempt's own object, while two samples can
-    share a `record_hash`. That function covers the protocol; a refusal is
-    found the same way, since `specify` keeps the first sample's refusal object
-    for each hash.
+    By identity, through `generate/live_specifier.py::winning_attempt`, so the
+    endpoint and the live driver find a winner in one place: `specify` selects
+    an attempt's own object, while two samples can share a `record_hash`.
 
     Args:
         res: The `agent.specifier.Result`.
@@ -1824,11 +1822,7 @@ def _record_attempt(res: Any) -> Any:
     """
     from generate.live_specifier import winning_attempt
 
-    if res.selected is not None:
-        return winning_attempt(res)
-    if res.refusal is not None:
-        return next((a for a in res.attempts if a.refusal is res.refusal), None)
-    return None
+    return winning_attempt(res)
 
 
 def _keep_repairs(state: State, ticket: str, res: Any) -> dict[str, Any]:

@@ -3635,6 +3635,35 @@ def test_the_live_driver_finds_its_winner_through_winning_attempt() -> None:
     called = {n.func.id for n in ast.walk(tree)
               if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
     assert "winning_attempt" in called
+    # The refusal branch matched its winner inline by `record_hash`; no
+    # comparison in main may read a hash again.
+    by_hash = [n for n in ast.walk(tree) if isinstance(n, ast.Compare)
+               and any(isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)
+                       and c.func.attr == "record_hash" for c in ast.walk(n))]
+    assert not by_hash, "main looks a winner up by record_hash again"
+
+
+def test_a_refusals_winner_is_found_by_identity_not_by_hash(unspecifiable) -> None:
+    """Two refusals of one pair share a `record_hash`; only one was upheld.
+
+    The live driver looked the refusing sample up by hash, so the first sample
+    with an equal hash supplied the tool log and repairs saved beside the
+    record, whichever sample's refusal the run kept.
+    """
+    from generate.live_specifier import winning_attempt
+
+    p, version = unspecifiable
+    first, second = (SP.specify_once(ScriptedBackend(_refuses(version)), p, seed=s)
+                     for s in (0, 1))
+    assert first.refused and second.refused
+    assert first.refusal is not second.refusal
+    assert first.refusal.record_hash() == second.refusal.record_hash()
+
+    res = SP.Result(None, [], [first, second], "", refusal=second.refusal)
+    assert winning_attempt(res) is second, "the refusal's winner was found by hash"
+    res = SP.Result(None, [], [first, second], "", refusal=first.refusal)
+    assert winning_attempt(res) is first
+    assert winning_attempt(SP.Result(None, [], [first, second], "")) is None
 
 
 # --------------------------------------------------------------------------- #
