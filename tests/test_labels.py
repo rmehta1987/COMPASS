@@ -271,14 +271,39 @@ def test_a_missing_build_gives_an_empty_index_and_a_raise_naming_the_fix():
 # (b) and (c) round-trip and factoring
 # --------------------------------------------------------------------------- #
 
-def test_flat_matches_schema_norm_on_every_entry():
+def test_schema_norm_is_a_delegation_to_labels_flat():
     """The render's whitespace collapse must be the one `_wording_is_verbatim` uses.
 
     A second, subtly different implementation of a normalisation rule is how a
     model ends up quoting exactly what it was shown and failing the validator.
+    `_norm` now returns `labels._flat(...)`, so comparing the two outputs would
+    check a function against itself and stay green whatever either did. What can
+    regress is the delegation, so that is what is asserted, on the AST: a `_norm`
+    given its own body again is the second implementation this rule forbids.
     """
-    for e in _entries():
-        assert labels._flat(e["question_text"]) == _norm(e["question_text"])
+    import ast
+
+    tree = ast.parse((ROOT / "agent" / "schema.py").read_text())
+    norm = [n for n in tree.body
+            if isinstance(n, ast.FunctionDef) and n.name == "_norm"]
+    assert len(norm) == 1, "agent/schema.py must define exactly one _norm"
+    imports_labels = any(
+        isinstance(n, ast.ImportFrom) and n.module == "env"
+        and any(a.name == "labels" and a.asname is None for a in n.names)
+        for n in tree.body)
+    assert imports_labels, "agent/schema.py must `from env import labels`"
+    body = [s for s in norm[0].body
+            if not (isinstance(s, ast.Expr) and isinstance(s.value, ast.Constant))]
+    ret = body[-1] if body else None
+    assert len(body) == 1 and isinstance(ret, ast.Return), (
+        "_norm must be one `return labels._flat(...)`, not its own collapse")
+    call = ret.value
+    assert (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
+            and call.func.attr == "_flat"
+            and isinstance(call.func.value, ast.Name)
+            and call.func.value.id == "labels"), (
+        "_norm must return labels._flat(...): a second whitespace collapse is "
+        "how a quote of the rendered wording fails _wording_is_verbatim")
 
 
 def test_the_roster_index_pattern_has_one_definition():

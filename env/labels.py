@@ -458,7 +458,7 @@ _INDEX_PREFIX = "i"
 #: this and `Cited.wording` must never do it; it happens here because two roster
 #: members of one question are one selectable item, not two. The one definition:
 #: `env/tools.py::_ROSTER_INDEX` imports it, since this module cannot import that.
-_LEADING_ROSTER =re.compile(r"^\s*\d+\s*-\s*")
+_LEADING_ROSTER = re.compile(r"^\s*\d+\s*-\s*")
 
 
 @dataclass(frozen=True, slots=True)
