@@ -36,25 +36,30 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 - 🛑 `env/` may never make a network call — the leak channel the argument rests on. The ban
   is on `env/` code CALLING out, not on a closure holding such a package (`8042f4d`).
 - That check is literal-import regex: transitive blindness is CORRECT scoping, not a hole;
-  `aiohttp`, `litellm` or an `importlib` call still passes — rule binding, test partial
+  a `litellm` or `importlib` call still passes — rule binding, test partial
   (`tests/test_specifier.py::test_env_never_touches_the_network`). `env/` is stdlib-only.
 - `env/` may load a model only on a grant in `tests/test_specifier.py::ENV_MODEL_GRANTS`;
   only the user extends it. If retrieval needs an embedding, ask. A grant must meet
   every condition in `tests/test_specifier.py::ENV_MODEL_GRANT_CONDITIONS`,
   reviewer-judged.
 - No participant data and no analysis executed — estimability, never soundness.
-- `agent/registry.py::build_registry(mode)` builds every tool dict; `mode` has no default.
-- Never invent an n: `env/tools.py::estimate_n` returns null + `unknown` + a blocker.
+- `agent/registry.py::build_registry(mode)` builds every tool dict; `mode` has no default
+  (`tests/test_specifier.py::test_mode_has_no_default`).
+- Never invent an n: `env/tools.py::estimate_n` returns null + `unknown` + a blocker
+  (`tests/test_specifier.py::test_estimate_n_never_fabricates_a_number`).
 - `agent/schema.py` docstrings are prompt text via `model_json_schema()`: no design,
   exposure, outcome, paper count, cohort figure or prevalence there.
 - Every response-coding gate pattern must require a numeral: absence-prose names none.
 - The model never chooses what happens next: `agent/specifier.py::_rank` is a pure
-  function of the record, AST-tested against backend, score, judge and rating references.
+  function of the record (`tests/test_specifier.py::test_selection_never_consults_the_model`).
 - Changing `_rank`, a Hard Constraint or its AST test is a user amendment.
-- No `BlockedOn` member for disclosure: `_rank` sorts on `len(blocked_on)` ASCENDING,
-  ranking an honest record below a silent twin. Denylist and its size: `agent/schema.py`.
-- `sought_covariates` sits OUTSIDE `canonical_form`, so silent and disclosing records hash
-  identically; dedup tie-breaks on the record, never seed order.
+- No `BlockedOn` member for disclosure
+  (`tests/test_specifier.py::test_every_blocked_on_member_is_classified_and_none_is_a_disclosure`).
+  Denylist and its size: `agent/schema.py`.
+- `sought_covariates` sits OUTSIDE `canonical_form`
+  (`tests/test_schema.py::test_recording_a_gap_does_not_change_the_design`); dedup
+  tie-breaks on the record, never seed order
+  (`tests/test_specifier.py::test_twins_with_equal_gap_counts_are_not_decided_by_seed_order`).
 - Paper content never enters `curated/`, `env/`, an `agent/` docstring or a prompt;
   study-team-sourced instrument metadata may — `DESIGN.md` §5.2.
 - Conventions stay `authored-unconfirmed`; only the user upgrades one, in writing.
@@ -62,24 +67,28 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
   (`generate/live_specifier.py`); never swap in a larger model to pass a run.
   `agent/cli_backend.py::ClaudeCliBackend` defaults to sonnet, so pass it explicitly.
 - A bare key is unrepresentable: `Cited` needs the wording, `env/labels.py::cite` is its
-  only maker, and it raises `CitationUnavailable` rather than citing empty (`49da51b`).
+  only maker, and it raises `CitationUnavailable` rather than citing empty (`49da51b`;
+  `tests/test_labels.py::test_a_cited_cannot_be_built_without_wording`).
 - Wording is `question_text` byte for byte — never rebuilt from stem + subitem, never
-  collapsed, roster prefix never stripped (`49da51b`).
+  collapsed, roster prefix never stripped (`49da51b`;
+  `tests/test_labels.py::test_wording_is_question_text_byte_for_byte_on_every_entry`).
 - A prompt's variable list is parsed from its body by the `string.Formatter` that renders
-  it (`agent/specifier.py::PromptTemplate`); never a second list.
-- Accepted tool args = advertised fields ∪ real signature (`agent/registry.py::SCHEMAS`).
-- `build.py` hashes files + the rule fingerprint + n, not entries: any regex, shape-table
-  or parsing-function change moves `version_hash` on its own.
-  `BUILD_RULES_VERSION` is a label now, not the provenance.
+  it (`agent/specifier.py::PromptTemplate`); never a second list
+  (`tests/test_specifier.py::test_every_prompt_in_the_module_is_rendered_through_the_contract`).
+- Accepted tool args = advertised fields ∪ real signature (`agent/registry.py::SCHEMAS`;
+  `tests/test_specifier.py::test_a_parameter_withheld_from_the_schema_is_still_accepted`).
+- `build.py` hashes files + the rule fingerprint (`build.py::_rule_fingerprint`) + n, not
+  entries: any regex, shape-table or parsing-function change moves `version_hash` on its
+  own. `BUILD_RULES_VERSION` is a label now, not the provenance.
 - `version_hash` does not see the column set or unhashed code, so the build's OUTPUT is
   hashed too: `build.py::content_hash` covers every entry and column, is printed on the
   build's second line, and is pinned once in `tests/test_dictionary.py::CONTENT_HASH`.
-- Every module-level function in `build.py` is hashed or in `_NOT_HASHED` with a reason;
+- Every module-level function in `build.py` is hashed or in `_NOT_HASHED` with a reason
+  (`tests/test_dictionary.py::test_every_module_level_function_is_either_hashed_or_allowlisted`);
   `build`, `read_module` and `compose_retrieval_text` are gaps in `version_hash` only —
   the rows they decide are in `content_hash`.
 - A key never reaches a model as a string it must copy back: `agent/prompt_contract.py`
-  offers candidates by index and resolves the index itself. Three model tiers read one
-  delimiter rule three ways before this existed.
+  offers candidates by index and resolves the index itself (why: `DESIGN.md` §3).
 
 ## Verification Discipline
 - Legend: VERIFIED = re-executed, with date and command. INHERITED = from an earlier
@@ -175,8 +184,8 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 - Google-style docstrings on every public module, class and function: summary, blank line,
   `Args:` / `Returns:` / `Raises:`. Every parameter and return annotated.
 - Inline comments explain *why*, never *what* — see `env/tools.py::_load`.
-- Read `RUFF_CEILING` and `MYPY_CEILING` from `tests/test_code_standards.py`, never a
-  document; they may only go down, raising one is a review failure, new files are clean.
+- `RUFF_CEILING` and `MYPY_CEILING` live in `tests/test_code_standards.py`; raising one is
+  a review failure, and new files are clean (direction: §Testing Patterns).
 
 ## Efficiency and Commits
 - Use `rg` for search; scope with `git status --short` before rereading files.
@@ -195,9 +204,8 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
 ./.venv/bin/python -m benchmark.retrieval_eval
 ./.venv/bin/python -m benchmark.contamination_check
 ```
-- `contamination_check` exits 2 in this clone and that is not a failure; only 1 is. Pass
-  `--require-complete` when every section must run. `pytest -ra` prints the reason each
-  skip gives — a skipped test is not a passing one (`tests/withheld.py`).
+- `contamination_check`'s exit codes: §Contamination Practice. `pytest -ra` prints the
+  reason each skip gives — a skipped test is not a passing one (`tests/withheld.py`).
 - Run all six from the repo root, paste real output, and trust no number in any document.
   In the public tree only `ruff check .` runs: `pytest`, `mypy` and `pydantic` are
   undeclared and not installed, `build.py` needs the withheld `raw/`, and the two
@@ -207,9 +215,6 @@ Operating rules, model-agnostic. Document roles: `DESIGN.md` §1.
   `3dc8415eccfe`, or the content hash moved off its pin in
   `tests/test_dictionary.py::CONTENT_HASH`. A grown test count and a moved
   `surface_hash` are progress. All three are evaluable on the training machine only.
-- The build hash is now a function of the RULES, not of a version string
-  (`build.py::_rule_fingerprint`), so it moves whenever a regex, the shape table or
-  a hashed parsing function's source changes; a column change moves only the content
-  hash. Moving either deliberately is allowed and is a user amendment; each pin lives
-  once, in `tests/test_dictionary.py::BUILD_HASH` or `::CONTENT_HASH`, with its history
-  beside it.
+- What moves each hash: §Hard Constraints. Moving either deliberately is allowed and is a
+  user amendment; each pin lives once, in `tests/test_dictionary.py::BUILD_HASH` or
+  `::CONTENT_HASH`, with its history beside it.

@@ -5,7 +5,7 @@
 🛑 **Never remove the `@AGENTS.md` import above.** It loads the rules at session start and
 re-expands them after compaction; a "read it first" pointer loads nothing.
 
-Claude Code specifics only; this file ranks below `AGENTS.md`. Rules: `AGENTS.md`.
+Claude Code specifics only; rank: `AGENTS.md` §Source of Truth. Rules: `AGENTS.md`.
 Architecture: `DESIGN.md`. Backlog: `TASKS.md`. History: `CHANGELOG.md`.
 
 ## Why project rules are safe in this file
@@ -20,7 +20,6 @@ Architecture: `DESIGN.md`. Backlog: `TASKS.md`. History: `CHANGELOG.md`.
 
 - Seed a subagent with the PRIMARY, never your summary — hand it verbatim via
   `git show <rev>:<path>` where it moved. Subagents have caught orchestrator paraphrase.
-- Re-derive a subagent's load-bearing claims before relaying them (`AGENTS.md` §Review).
 - `/code-review ultra` (branch or PR#) is user-triggered and billed; never run it.
 - `/compass-contam` (a command) works the backlog; `compass-prose` (a skill, invoked via
   the Skill tool) sets the rules for prose addressed to a person
@@ -40,12 +39,9 @@ Architecture: `DESIGN.md`. Backlog: `TASKS.md`. History: `CHANGELOG.md`.
 
 ## Critical anchors
 
-Preserve these three if all else is lost; bodies in `AGENTS.md` §Hard Constraints and
-§Testing Patterns.
+Preserve these three pointers if all else is lost; the rules are stated only in
+`AGENTS.md`.
 
-1. `agent/schema.py` docstrings are prompt text — `model_json_schema()` copies them into
-   transduction. No study design, exposure, outcome, paper count, cohort figure or
-   prevalence there.
-2. Nothing under `env/` touches the network, and no participant data ever enters: the
-   system computes estimability, never soundness.
-3. Write the test in the same commit as the guarantee.
+1. §Hard Constraints: the `agent/schema.py` docstring rule.
+2. §Hard Constraints: the `env/` network ban and the participant-data rule.
+3. §Testing Patterns: the same-commit test rule.

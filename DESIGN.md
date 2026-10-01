@@ -5,8 +5,8 @@ What the system is. Operating rules: `AGENTS.md`. Open work: `TASKS.md`.
   survey instrument alone, and separately whether it is doing that or recalling papers.
 - Input is one enumerated exposure–outcome pair; output is a protocol — exposure, outcome,
   covariates split adjusted/excluded/undetermined, model form, falsification threshold
-  (`agent/schema.py::ProtocolSpecification`). No analysis is ever executed and no
-  participant data exists: the system computes **estimability**, never soundness.
+  (`agent/schema.py::ProtocolSpecification`). The system computes **estimability**; the
+  no-data, no-analysis rule is `AGENTS.md` §Hard Constraints.
 
 ## 1. Related Documents
 | Document | Role |
@@ -23,9 +23,8 @@ What the system is. Operating rules: `AGENTS.md`. Open work: `TASKS.md`.
 | `deploy/manifest.json` | The deployed retriever's conventions, checksums and threshold; the authority on what ships |
 | `arm_hybrid_e_D.md`, `docs/` | The arm C16/D/E/hybrid measurement reports |
 
-- The `## N.` numbers are stable IDs: append-only, never renumbered. Cite prose `doc §N`,
-  code `path::symbol`, never line numbers.
-- `AGENTS.md` wins on a rule, the owning module or test on a number; never trust a doc.
+- The `## N.` numbers are stable IDs: append-only, never renumbered. Citation form and
+  authority order: `AGENTS.md` §Source of Truth.
 
 ## 2. Core decisions
 - **Two model calls, never one.** Call 1 reasons in unconstrained prose with tools; call 2
@@ -59,9 +58,9 @@ enumeration (Python) -> one pair
   validate + repair -> k samples -> dedup by record_hash -> selection -> parked/
 ```
 
-- Keep `agent/specifier.py::_rank` a pure function of the record; a test AST-parses it
-  against any backend, score, judge or rating reference. A model ranking its own outputs
-  on soundness has no measured skill, and a same-family judge inflates its own kin.
+- `agent/specifier.py::_rank` is a pure function of the record (rule and test:
+  `AGENTS.md` §Hard Constraints) because a model ranking its own outputs on soundness
+  has no measured skill, and a same-family judge inflates its own kin.
 - The gate reads OUTCOMES, not names: a required call counts only if it succeeded and
   named a key of the pair under specification. Replaying the logs in `run/logs/`, one run
   in twelve had asserted a detectable effect from a tool that only ever errored.
@@ -82,9 +81,9 @@ enumeration (Python) -> one pair
 | `agent/tool_authority.py` | Overwrites env fields from the log; writes `screened_from` |
 | `agent/sealed.py` | Disposable `mkdtemp` cwd; cuts memory, settings, plugins, state |
 | `agent/cli_backend.py` | Headless `claude -p` over MCP; withholds built-in tools |
-| `env/tools.py` | The environment tools. No network; a model only on operator grant |
-| `env/labels.py` | Binds each key to its verbatim wording; `cite()` is the only maker |
-| `agent/registry.py` | `build_registry(mode)` — the one construction site for a toolset |
+| `env/tools.py` | The environment tools; import limits in `AGENTS.md` §Hard Constraints |
+| `env/labels.py` | Binds each key to its verbatim wording through `cite()` |
+| `agent/registry.py` | `build_registry(mode)` — builds each mode's toolset |
 | `mcp/compass_server.py` | Tools over stdio JSON-RPC; logs calls WITH return values |
 | `agent/prompt_contract.py` | A model-visible surface as a typed record; selection by index |
 | `benchmark/` | Held-out keys, contamination check, `benchmark/retrieval_eval.py` gate |
@@ -122,11 +121,13 @@ Three routes by which a published analysis reaches the model. **Only one closes.
   `tests/test_schema.py::test_the_transduce_schema_carries_no_study_content`.
 
 ### 5.2 The line
-- **Instrument metadata** — what the cohort measured, registry contents, cohort size — may
-  enter the environment if study-team sourced, so provenance is auditable.
+The rule this section defines is in `AGENTS.md` §Hard Constraints (paper content).
+
+- **Instrument metadata** — what the cohort measured, registry contents, cohort size. The
+  rule's condition is study-team sourcing, because that keeps its provenance auditable.
 - 🛑 **Design choices** — the pairing, the adjustment set, model form, a realised n, a
-  reported prevalence — are what the benchmark measures; they never enter `curated/`,
-  `env/`, an `agent/` docstring or a prompt.
+  reported prevalence — are what the benchmark measures, which is why they count as the
+  paper content that rule keeps out.
 - **A paper-derived bound may never set the environment's floor.** Per
   `benchmark/unearned_assertions.py::PROVENANCE_TIERS`: theory-derived values may set one
   anywhere; general-literature and cohort-paper values are `benchmark/`-only.
