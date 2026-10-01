@@ -281,6 +281,27 @@ def test_flat_matches_schema_norm_on_every_entry():
         assert labels._flat(e["question_text"]) == _norm(e["question_text"])
 
 
+def test_the_roster_index_pattern_has_one_definition():
+    """`search_variables`' collapse and the selectable-item rule strip one prefix.
+
+    `env/tools.py` held a byte-identical copy of `_LEADING_ROSTER`; two copies
+    are how a roster edit moves the search collapse but not the label factoring.
+    An identity check would be vacuous: `re.compile` caches by pattern string, so
+    a second copy compiles to the very same object. The source is read instead.
+    """
+    import ast
+
+    from env import tools
+    assert tools._ROSTER_INDEX.pattern == labels._LEADING_ROSTER.pattern
+    tree = ast.parse((ROOT / "env" / "tools.py").read_text())
+    copies = [n.lineno for n in ast.walk(tree)
+              if isinstance(n, ast.Constant)
+              and n.value == labels._LEADING_ROSTER.pattern]
+    assert not copies, (
+        f"env/tools.py spells the roster pattern out again at line(s) {copies}; "
+        f"import `env.labels._LEADING_ROSTER` instead")
+
+
 def test_render_mark_occurs_in_no_wording():
     """The key/wording separator must never appear inside an instrument string."""
     assert all(MARK.strip() not in e["question_text"] for e in _entries())

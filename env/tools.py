@@ -33,6 +33,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from statistics import NormalDist
 
+from env.labels import _LEADING_ROSTER
+
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build"
 CURATED = ROOT / "curated"
@@ -311,7 +313,8 @@ SEARCH_COLLAPSE_KEYS_SHOWN = 4
 #: Returning ten of them spends the whole result budget on one question:
 #: measured 2026-08-30, collapsing them moved the item a live run was actually
 #: looking for from position 32 to position 9 for one of its queries.
-_ROSTER_INDEX = re.compile(r"^\s*\d+\s*-\s*")
+#: Defined once in `env/labels.py`, which cannot import this module.
+_ROSTER_INDEX = _LEADING_ROSTER
 
 _CONTENT_TOKEN = re.compile(r"[A-Za-z]{3,}")
 _ANY_TOKEN = re.compile(r"[A-Za-z0-9]+")
@@ -573,7 +576,7 @@ def search_variables(phrase: str, limit: int = 10) -> dict:
     representative: dict[str, dict] = {}
     n_collapsed = 0
     for neg, _, key, excerpt, bm25, matched in scored:
-        norm = _ROSTER_INDEX.sub("", _BY_KEY[key]["searchable_text"]).strip()
+        norm = _norm_wording(_BY_KEY[key]["searchable_text"])
         rep = representative.get(norm)
         if rep is not None:
             rep["collapsed_n"] += 1

@@ -327,7 +327,7 @@ class RecallReport:
 def normalise(text: str) -> str:
     """Reduce one searchable text to its wording, the gold rule's unit of equality.
 
-    Delegates to `env.tools`' own roster regex. That coupling is deliberate:
+    Delegates to `env.tools._norm_wording`. That coupling is deliberate:
     `search_variables` collapses roster repeats under exactly this normalisation,
     and a scorer holding a second copy of the definition would keep scoring the old
     rule after the tool changed it. It is a seam, not a second definition — it
@@ -340,7 +340,7 @@ def normalise(text: str) -> str:
     Returns:
         The text with any leading roster index stripped.
     """
-    return tools._ROSTER_INDEX.sub("", text).strip()
+    return tools._norm_wording(text)
 
 
 def collapse_cardinality() -> int:
