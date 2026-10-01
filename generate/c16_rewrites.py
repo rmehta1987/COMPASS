@@ -99,25 +99,6 @@ def requests_from_fixture() -> tuple[str, ...]:
     return tuple(out)
 
 
-def sealed_model(worktree: SealedWorktree, model: str = MODEL) -> ModelFn:
-    """A `(prompt) -> raw text` callable running inside one seal.
-
-    Args:
-        worktree: The sealed cwd every call runs in.
-        model: The model id.
-
-    Returns:
-        The `ModelFn` the rewriter calls.
-    """
-    def call(prompt: str) -> str:
-        out = worktree.run([*worktree.base_argv(model), prompt], timeout=240.0)
-        if out.get("is_error"):
-            raise RuntimeError(f"claude -p reported an error: "
-                               f"{str(out.get('result'))[:400]}")
-        return str(out.get("result", ""))
-    return call
-
-
 class PerThreadSeal:
     """One `SealedWorktree` per worker thread, shared by nobody.
 
@@ -192,17 +173,15 @@ class PerThreadSeal:
             The parsed JSON the CLI wrote.
 
         Raises:
-            RuntimeError: If the CLI reported an error.
+            RuntimeError: If the CLI exited non-zero, or `SealedRunError` (a
+                `RuntimeError`) if it reported `is_error`; both are raised by
+                `SealedWorktree.run`, which is why this does not re-check.
         """
         wt = self._worktree()
         argv = [*wt.base_argv(self.model)]
         if self.system:
             argv += ["--append-system-prompt", self.system]
-        out = wt.run([*argv, prompt], timeout=timeout)
-        if out.get("is_error"):
-            raise RuntimeError(f"claude -p reported an error: "
-                               f"{str(out.get('result'))[:400]}")
-        return out
+        return wt.run([*argv, prompt], timeout=timeout)
 
     def manifest(self) -> dict:
         """The seal every call ran under.
