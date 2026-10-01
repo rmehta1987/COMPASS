@@ -1165,6 +1165,39 @@ def _abstention_note(pool: dict[str, Any]) -> dict[str, Any]:
             "below_threshold": bool(top is not None and thr and top < thr)}
 
 
+def _candidate_rows(state: State, pool: dict[str, Any], proposed: list[int],
+                    *, default_index: int | None = None,
+                    with_default: bool = False) -> list[dict[str, Any]]:
+    """Every candidate of a pool as a prose route reports it, proposed or not.
+
+    Args:
+        state: Shared handles; `show_instrument` decides whether keys travel.
+        pool: A pool as `_role_candidates` or `_union_pools` returns it.
+        proposed: The indices the model proposed, already range-checked.
+        default_index: The index a default pick chose, or None.
+        with_default: Whether each row carries a `default` flag. `/api/pair`
+            asks for a default pick and reports it; `/api/resolve` does not,
+            and its rows carry no such field.
+
+    Returns:
+        One row per candidate, in the pool's order.
+    """
+    rows = []
+    for c in pool["cands"]:
+        row: dict[str, Any] = {"index": c.index,
+                               "key": c.key if state.show_instrument else None,
+                               "wording": c.wording,
+                               "proposed": c.index in proposed}
+        if with_default:
+            row["default"] = c.index == default_index
+        # Keyed, not zipped: `cands` is shorter than the retriever's hits
+        # whenever a key is skipped as uncitable, and zipping the two would
+        # misalign every cosine after the skip.
+        row["cos"] = pool["cos"][c.key]
+        rows.append({**row, **c.facts})
+    return rows
+
+
 def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
     """Propose BOTH anchors from one piece of prose. The human confirms.
 
@@ -1299,15 +1332,9 @@ def _pair(state: State, body: dict[str, Any]) -> dict[str, Any]:
                     # share of k. So the number and the verdict travel with the
                     # pool and the reader sees them; tightening it into a
                     # refusal needs its own measurement.
-                    "candidates": [
-                        {"index": c.index,
-                         "key": c.key if state.show_instrument else None,
-                         "wording": c.wording,
-                         "proposed": c.index in proposed,
-                         "default": c.index == chosen_default,
-                         "cos": pool["cos"][c.key],
-                         **c.facts}
-                        for c in pool["cands"]],
+                    "candidates": _candidate_rows(
+                        state, pool, proposed, default_index=chosen_default,
+                        with_default=True),
                 }
             rendered = shared["rendered"] if shared else request
             done = {"status": "done", "run": {
@@ -1385,33 +1412,12 @@ def _resolve(state: State, body: dict[str, Any]) -> dict[str, Any]:
             f"model {model!r} is not offered by this endpoint. Allowed: "
             f"{', '.join(sorted(state.allowed_models))}.")
 
-    r = state.retriever()
-    from retriever import RetrievalRequest, VariableRole
-    from template import covered  # noqa: F401  (kept beside the other import)
-
-    req = RetrievalRequest(construct=request, role=VariableRole.EXPOSURE)
-    rendered = req.to_query()
-    hits = r.search(rendered, k=k)
-
     from agent import prompt_contract as PC
-    from env import labels
 
-    keys, facts, skipped, cos_by_key = [], {}, [], {}
-    for h in hits:
-        key = h["key"]
-        try:
-            labels.cite(key)          # the only maker of a bound citation
-        except Exception:
-            skipped.append(key)
-            continue
-        keys.append(key)
-        cos_by_key[key] = h["cos"]
-        facts[key] = {"module": h["module"], "roster_family_size": h["fold_size"]}
-    if not keys:
-        raise ValueError("no candidate in the pool could be bound to wording; "
-                         "nothing can be offered for selection")
-
-    cands = PC.candidates_from_keys(keys, facts)
+    # The single-construct pool is the role pool: `role` never reaches the
+    # encoder (`_role_candidates`), so `exposure` here only fills the field.
+    pool = _role_candidates(state, request, "exposure", k)
+    cands, rendered = pool["cands"], pool["rendered"]
     surface = PC.retrieval_contract(request, cands)
 
     if not state.model_lock.acquire(blocking=False):
@@ -1440,21 +1446,11 @@ def _resolve(state: State, body: dict[str, Any]) -> dict[str, Any]:
                 "recipe": chosen.recipe or None,
                 "missing_dimension": chosen.missing_dimension or None,
                 "proposed_indices": proposed,
-                "skipped_uncitable": skipped,
+                "skipped_uncitable": pool["skipped"],
                 # EVERY candidate, always. The rule is candidates with wording,
                 # never one key: a verdict of `resolved` is a PROPOSAL the
                 # reader confirms, not a selection this route makes for them.
-                "candidates": [
-                    {"index": c.index,
-                     "key": c.key if state.show_instrument else None,
-                     "wording": c.wording,
-                     "proposed": c.index in proposed,
-                     # Keyed, not zipped: `cands` is shorter than `hits`
-                     # whenever a key is skipped as uncitable, and zipping the
-                     # two would misalign every cosine after the skip.
-                     "cos": cos_by_key[c.key],
-                     **c.facts}
-                    for c in cands],
+                "candidates": _candidate_rows(state, pool, proposed),
                 "not_a_selection":
                     "Candidates only. This route never commits an anchor: pick "
                     "one yourself, including when the verdict is `resolved`.",

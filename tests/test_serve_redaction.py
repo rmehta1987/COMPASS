@@ -1303,6 +1303,70 @@ def test_both_prose_routes_state_the_scope_of_absent() -> None:
             f"{fn.__name__} returns a verdict without saying what `absent` covers")
 
 
+def test_resolve_takes_its_pool_from_role_candidates_not_a_copy(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`_resolve` retrieved, cited and scored its pool with its own copy of that loop.
+
+    Driven with `_role_candidates` replaced, so the route needs no deployed
+    bundle: a route still carrying its own retrieval reaches `state.retriever()`
+    and the run never starts. The rows keep `/api/resolve`'s shape, which has
+    no `default` field, and the cosine is the pool's, keyed by candidate.
+    """
+    import ast
+    import inspect
+    import time
+
+    from agent import cli_backend
+    from agent import prompt_contract as PC
+    from agent.backends import Reply
+    from serve import api
+
+    keys = ["m3:Q4.2", "m2:Q5.8"]
+    pool = {"cands": PC.candidates_from_keys(keys), "skipped": ["zz:uncitable"],
+            "cos": {"m3:Q4.2": 0.81, "m2:Q5.8": 0.72}, "rendered": "the query",
+            "min_cos": 0.5}
+    asked: list[tuple] = []
+
+    def fake_pool(*a: object) -> dict:
+        asked.append(a[1:])
+        return pool
+
+    class _Says:
+        """A backend that proposes the first candidate."""
+
+        name = "says"
+        last_cost = 0.25
+
+        def __init__(self, **_: object) -> None:
+            pass
+
+        def transduce(self, *_: object) -> Reply:
+            return Reply(content='{"verdict": "resolved", "indices": [1], "reason": "r"}')
+
+    monkeypatch.setattr(cli_backend, "ClaudeCliBackend", _Says)
+    monkeypatch.setattr(api, "_role_candidates", fake_pool)
+    st = api.State(tmp_path / "deploy", tmp_path / "site", tmp_path / "run")
+    ticket = api._resolve(st, {"request": "smoking", "k": 5})["ticket"]
+    deadline = time.time() + 30
+    while st.jobs[ticket]["status"] == "running" and time.time() < deadline:
+        time.sleep(0.05)
+    done = st.jobs[ticket]
+    assert done["status"] == "done", done
+    assert asked == [("smoking", "exposure", 5)]
+    run_ = done["run"]
+    assert run_["rendered_query"] == "the query"
+    assert run_["skipped_uncitable"] == ["zz:uncitable"]
+    assert [list(c)[:5] for c in run_["candidates"]] == [
+        ["index", "key", "wording", "proposed", "cos"]] * 2
+    assert [(c["proposed"], c["cos"]) for c in run_["candidates"]] == [
+        (True, 0.81), (False, 0.72)]
+
+    tree = ast.parse(inspect.getsource(api._resolve))
+    attrs = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
+    assert not attrs & {"search", "retriever"}, (
+        "_resolve retrieves for itself again instead of through _role_candidates")
+
+
 def test_a_resolver_model_is_accepted_only_as_a_model_id() -> None:
     """C17: it lands in a record, so it is held to the shape of a model id."""
     from serve.api import _resolver_model
