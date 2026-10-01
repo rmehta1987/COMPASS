@@ -36,8 +36,11 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
   - `agent/sealed.py`: the module docstring once listed four cohort papers as "these
     four" (sixteen, verified 2026-08-26), each an exemption the marker scan had to
     ignore. `config_dir` read only `COMPASS_CLAUDE_CONFIG_DIR` until 2026-09-14, so an
-    inherited `CLAUDE_CONFIG_DIR` silently won and the manifest named `~/.claude` while
-    the child read `~/.claude-enterprise` (tighter than claimed; nothing leaked). Every
+    inherited `CLAUDE_CONFIG_DIR` silently won. MEASURED 2026-09-14 on the training
+    machine, override unset: the manifest named `~/.claude` and reported
+    `skills_reachable` `['adversarial-review', 'plugin:sparkrun']` while the child read
+    `~/.claude-enterprise`, which holds no `skills/`, no `plugins/cache/` and no
+    `CLAUDE.md` (tighter than claimed; nothing leaked). Every
     run before 2026-09-08 used the default config dir. Probe 1 named the survey platform
     until 2026-08-26, and the first fact-scored run scored an echoing "NO" as a LEAK.
     `_answered_yes` was once the whole scorer, wrong both ways; `inconclusive` did not
@@ -123,12 +126,15 @@ What landed, newest first. Nothing here is a task; the open backlog is `TASKS.md
     unscanned until 2026-08-26, its single-term and `low_confidence` samples date from
     2026-08-30, the third `estimate_detectability` sample from 2026-08-27. `MARKERS`
     went from four papers to sixteen on 2026-08-28 (C1); the dictionary audit it claimed
-    did not run until 2026-08-31; exclusion counts were double-counted until 2026-08-31;
+    did not run until 2026-08-31; exclusion counts read 2 / 4 / 5 / 2 until 2026-08-31,
+    double-counted from four joined text fields (MEASURED that day under
+    `searchable_text`: 2 / 2 / 2 / 1);
     `602` fired on an arm D list position on 2026-09-02 and moved to `LEAK_FACTS`. A
     list-literal n went unscanned for a month. `TRANSDUCE`, `REPAIR`,
     `TRANSDUCE_REFUSAL` and the `NotSpecifiable` schema went unscanned until 2026-08-28.
     `get_design_convention` contributed only `text`; the surface once fell by six
-    silently; `_instrument_text_by_module` first double-counted; `breast cancer` was
+    silently; `_instrument_text_by_module` first double-counted (`hypertension`
+    reported matching "22 times" when it matches 11 questions); `breast cancer` was
     missing from `INSTRUMENT_CONTENT_EXCLUSIONS`; `check_provenance` claimed to catch
     paraphrase until 2026-08-26; a sealed probe reached ListAgents on 2026-09-11.
     Answer-key paths joined 2026-08-28 (`cohort_papers`, `input_leakage`, `scorability`)

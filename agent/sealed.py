@@ -99,6 +99,8 @@ def config_dir() -> Path:
     Resolved in the order the CHILD resolves it, which is the whole point:
     this feeds `manifest`, `_claude_md_sources` and `reachable_skills`, and a
     manifest describing a directory the run never opened is not a disclosure.
+    The error runs both ways: a skill's description enters the model's context
+    whether or not the skill is ever invoked.
 
     An inherited `CLAUDE_CONFIG_DIR` must be read here because
     `SealedWorktree.run` builds the child environment as `{**os.environ, ...}`,
