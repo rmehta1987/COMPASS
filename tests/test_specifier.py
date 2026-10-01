@@ -3809,7 +3809,8 @@ def test_the_live_driver_saves_a_record_with_only_its_own_samples_log(
 
     A sibling `.tool_log.jsonl` left by an earlier run of the same record is
     not this sample's log; reading it would audit the record against another
-    run's calls.
+    run's calls. Not reading it was not enough: left on disk beside the new
+    record, `design_quality.read_log` still paired the two.
     """
     from generate import live_specifier as LS
 
@@ -3824,6 +3825,8 @@ def test_the_live_driver_saves_a_record_with_only_its_own_samples_log(
     a.tool_log_path = None
     assert LS._save_beside(out, a.refusal, a) is None
     assert json.loads(out.read_text())["reason"] == a.refusal.reason.value
+    # Nor may it stay on disk, where design_quality.read_log would find it.
+    assert not out.with_suffix(".tool_log.jsonl").exists()
     assert out.with_suffix(".repairs.json").is_file()
 
     log = tmp_path / "own.jsonl"

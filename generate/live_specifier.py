@@ -313,16 +313,22 @@ def _save_beside(out: Path, record: ProtocolSpecification | NotSpecifiable,
         attempt: The sample that produced it (`winning_attempt`), or None.
 
     Returns:
-        The copied log's entries, or None when this sample left no log. A
-        record with no log is not a record whose log is empty.
+        The copied log's entries, or None when this sample left no log, in
+        which case any sibling log from an earlier run is deleted. A record
+        with no log is not a record whose log is empty.
     """
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(record.model_dump_json(indent=2))
     print(f"\n  written       {out.relative_to(ROOT)}   (saved before printing)")
     src = attempt.tool_log_path if attempt else None
     log_recs = None
-    if src and Path(src).exists():
-        saved = out.with_suffix(".tool_log.jsonl")
+    saved = out.with_suffix(".tool_log.jsonl")
+    if not (src and Path(src).exists()):
+        # A sibling left by an earlier run of the same record would otherwise
+        # sit beside this one, and design_quality.load_corpus would audit this
+        # record against that run's calls.
+        saved.unlink(missing_ok=True)
+    else:
         shutil.copyfile(src, saved)
         print(f"  tool log      {saved.relative_to(ROOT)}   (this record's own log)")
         # Read only after THIS copy: a sibling left by an earlier run of the
