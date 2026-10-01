@@ -2624,6 +2624,23 @@ def test_every_role_the_validator_places_is_placed_in_the_prompt():
         r.value for r in set(CausalRole) - placed)
 
 
+def test_the_role_table_is_read_off_the_one_covariate_list_declaration(monkeypatch):
+    """`_role_table` renders `schema._COVARIATE_LISTS`, not its own triple.
+
+    It once typed out ("adjusted", ADJUSTED_ROLES), ("excluded", ...), ... beside
+    the declaration the validator and its messages read, so a label or list
+    changed there would leave the prompt naming one the validator does not. A
+    patched declaration must therefore move the table.
+    """
+    from agent import schema as S
+    swapped = tuple((f, f"lbl_{label}", roles)
+                    for f, label, roles in reversed(S._COVARIATE_LISTS))
+    monkeypatch.setattr(S, "_COVARIATE_LISTS", swapped)
+    lines = SP._role_table().splitlines()
+    assert lines == [f"  {label:14} {', '.join(sorted(r.value for r in roles))}"
+                     for _, label, roles in swapped]
+
+
 def test_a_role_in_the_wrong_list_is_told_where_it_belongs():
     """A rejection the reader cannot act on costs the whole sample."""
     from pydantic import ValidationError as VE

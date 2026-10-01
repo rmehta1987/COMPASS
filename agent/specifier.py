@@ -429,12 +429,13 @@ def _role_table() -> str:
     Returns:
         One line per covariate list, naming the roles it accepts.
     """
-    from agent.schema import ADJUSTED_ROLES, EXCLUDED_ROLES, UNDETERMINED_ROLES
+    # Read off the one declaration of (field, label, roles), not a second
+    # triple typed out here: a label or list changed there must move this table
+    # with it, or the prompt names a list the validator's messages do not.
+    from agent.schema import _COVARIATE_LISTS
     return "\n".join(
-        f"  {name:14} {', '.join(sorted(r.value for r in roles))}"
-        for name, roles in (("adjusted", ADJUSTED_ROLES),
-                            ("excluded", EXCLUDED_ROLES),
-                            ("undetermined", UNDETERMINED_ROLES)))
+        f"  {label:14} {', '.join(sorted(r.value for r in roles))}"
+        for _, label, roles in _COVARIATE_LISTS)
 
 
 # GENERATED FROM agent/schema.py's REFUSAL_EVIDENCE, for the same reason the role
