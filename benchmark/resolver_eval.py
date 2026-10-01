@@ -1363,8 +1363,7 @@ def evaluate_pools(arm: str = "frozen", fixture: ResolverFixture | None = None,
     # A 22-row sweep through the lexical arm would otherwise land 22 entries in
     # the shared tool log and read, in a live run's audit trail, as calls the
     # Specifier made. Measuring is not running.
-    depth = len(tools.LOG.calls)
-    try:
+    with tools.LOG.unrecorded():
         for q in fx.queries:
             keys = fn(q)
             rank: int | None = None
@@ -1375,8 +1374,6 @@ def evaluate_pools(arm: str = "frozen", fixture: ResolverFixture | None = None,
             results.append(PoolOutcome(
                 id=q.id, kind=q.kind, size=len(keys),
                 reachable=None if not q.gold else rank is not None, rank=rank))
-    finally:
-        del tools.LOG.calls[depth:]
     return PoolReport(arm=arm, fixture_path=_fixture_label(FIXTURE),
                       dictionary_version=tools.dictionary_version(),
                       known_bias=fx.known_bias, results=tuple(results))
@@ -1689,12 +1686,9 @@ def evaluate(model: ModelFn, arm: str = "frozen", n_samples: int = 3,
     fx = fixture if fixture is not None else load_fixture()
     fn = pool if pool is not None else POOL_ARMS[arm]
     results: list[QueryResult] = []
-    depth = len(tools.LOG.calls)
-    try:
+    with tools.LOG.unrecorded():
         for q in fx.queries:
             results.append(_run_row(model, q, fn(q), n_samples, prompt_arm))
-    finally:
-        del tools.LOG.calls[depth:]
     return ResolverReport(
         arm=arm, prompt_arm=prompt_arm, model_name=model_name,
         n_samples=n_samples, fixture_path=_fixture_label(FIXTURE),
@@ -1908,8 +1902,7 @@ def evaluate_single(model: ModelFn, arm: str = "deployed",
     fx = fixture if fixture is not None else load_fixture()
     fn = pool if pool is not None else POOL_ARMS[arm]
     results: list[QueryResult] = []
-    depth = len(tools.LOG.calls)
-    try:
+    with tools.LOG.unrecorded():
         for q in fx.queries:
             keys = fn(q)
             if not keys:
@@ -1926,8 +1919,6 @@ def evaluate_single(model: ModelFn, arm: str = "deployed",
                 continue
             results.append(_single_result(
                 q, keys, 1, verdict, score_query(q, verdict, keys), ""))
-    finally:
-        del tools.LOG.calls[depth:]
     return ResolverReport(
         arm=arm, prompt_arm=SINGLE_CALL_ARM, model_name=model_name, n_samples=1,
         fixture_path=_fixture_label(FIXTURE),

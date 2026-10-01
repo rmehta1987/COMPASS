@@ -2422,6 +2422,24 @@ def test_a_log_with_no_captured_results_still_renders():
     assert SP._render_log(log, None) == 'resolve_variable({"key": "m2:Q5.8"}) -> ok'
 
 
+def test_an_unrecorded_block_leaves_the_log_as_it_found_it():
+    """Calls inside `unrecorded` never reach the log, even when the block raises.
+
+    Four evaluation sweeps each hand-rolled the trim; one shared manager means a
+    sweep that raises mid-way cannot leave half its calls in an audit trail.
+    """
+    log = T.ToolLog()
+    log.record("resolve_variable", {"key": "m2:Q5.8"}, "ok", 0.0)
+    before = list(log.calls)
+    with log.unrecorded():
+        log.record("search_variables", {"phrase": "x"}, "ok", 0.0)
+    assert log.calls == before
+    with pytest.raises(LookupError), log.unrecorded():
+        log.record("search_variables", {"phrase": "y"}, "ok", 0.0)
+        raise LookupError("a sweep that fails mid-way")
+    assert log.calls == before
+
+
 def test_each_repair_sees_one_object_and_one_rejection(pair):
     """The repair prompt is rebuilt, not accumulated.
 

@@ -21,13 +21,14 @@ mode is doing the wrong thing, not omitting the right one.
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import json
 import math
 import re
 import sqlite3
 import time
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from statistics import NormalDist
@@ -97,6 +98,23 @@ class ToolLog:
     def distinct(self) -> set[str]:
         """The set of tools called at least once."""
         return set(self.names)
+
+    @contextlib.contextmanager
+    def unrecorded(self) -> Iterator[None]:
+        """Drop every call made inside the block, even when the block raises.
+
+        Measuring is not running: an evaluation sweep would otherwise land its
+        calls in the shared log, and a live run's audit trail would read them
+        as calls the Specifier made.
+
+        Yields:
+            Nothing; the log is trimmed back to its entry depth on exit.
+        """
+        depth = len(self.calls)
+        try:
+            yield
+        finally:
+            del self.calls[depth:]
 
 
 LOG = ToolLog()

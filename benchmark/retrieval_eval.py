@@ -562,11 +562,8 @@ def evaluate(search: SearchFn | None = None,
     # A 224-query sweep would otherwise land 224 entries in the shared tool log and
     # appear in a live run's audit trail as calls the Specifier made. Measuring is
     # not running; the log is trimmed back to what it held on entry.
-    log_depth = len(tools.LOG.calls)
-    try:
+    with tools.LOG.unrecorded():
         results = tuple(_score_row(fn, row, limit) for row in fx.queries)
-    finally:
-        del tools.LOG.calls[log_depth:]
 
     return RecallReport(
         fixture_path=label,
