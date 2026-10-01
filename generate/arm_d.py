@@ -56,7 +56,7 @@ from agent.prompt_contract import (
 )
 from benchmark import retrieval_eval as R
 from env import labels
-from generate.c16_rewrites import PerThreadSeal
+from generate.c16_rewrites import PerThreadSeal, requests_from_fixture
 
 ROOT = Path(__file__).resolve().parent.parent
 RUN = ROOT / "run"
@@ -204,21 +204,6 @@ def _ask(call: PerThreadSeal, request: str, attempts: int = 2) -> dict:
     return {"request": request, "verdict": "", "indices": [], "recipe": "",
             "missing_dimension": "", "reason": "", "malformed": True,
             "raw": last, "usage": {}, "cost_usd": None, "seconds": 0.0}
-
-
-def requests_from_fixture() -> tuple[str, ...]:
-    """Every distinct request in the committed retrieval fixture.
-
-    Returns:
-        The requests, in fixture order, deduplicated.
-    """
-    seen: set[str] = set()
-    out: list[str] = []
-    for row in R.load_fixture().queries:
-        if row.query not in seen:
-            seen.add(row.query)
-            out.append(row.query)
-    return tuple(out)
 
 
 def _write(path: Path, surface: Surface, digest: str, started: float,

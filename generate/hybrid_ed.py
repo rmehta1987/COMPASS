@@ -52,8 +52,8 @@ from agent.prompt_contract import (
 )
 from benchmark import retrieval_eval as R
 from env import labels
-from generate.arm_d import parse_selection, user_turn
-from generate.c16_rewrites import PerThreadSeal
+from generate.arm_d import _rate, parse_selection, user_turn
+from generate.c16_rewrites import PerThreadSeal, requests_from_fixture
 
 ROOT = Path(__file__).resolve().parent.parent
 RUN = ROOT / "run"
@@ -150,7 +150,7 @@ def build_pools(config: str, depth: int = max(DEPTHS)) -> Path:
     else:
         D = E.encode(pairs, tok_d, mod_d, cfg["pool"], 256, "cpu", pair=True)
 
-    requests = _requests()
+    requests = requests_from_fixture()
     Q = E.encode([cfg["q_prefix"] + q for q in requests],
                  tok_q, mod_q, cfg["pool"], 64, "cpu")
     sims = Q @ D.T
@@ -170,21 +170,6 @@ def build_pools(config: str, depth: int = max(DEPTHS)) -> Path:
                   for i, q in enumerate(requests)},
     }, indent=1))
     return path
-
-
-def _requests() -> list[str]:
-    """Every distinct fixture request, in fixture order.
-
-    Returns:
-        The requests.
-    """
-    seen: set[str] = set()
-    out: list[str] = []
-    for row in R.load_fixture().queries:
-        if row.query not in seen:
-            seen.add(row.query)
-            out.append(row.query)
-    return out
 
 
 def render_pool(targets: Sequence[dict]) -> str:
@@ -317,7 +302,7 @@ def produce(config: str, depth: int) -> Path:
     if path.exists():
         done = {q: v for q, v in json.loads(path.read_text())["rows"].items()
                 if not v["malformed"]}
-    todo = [q for q in _requests() if q not in done]
+    todo = [q for q in requests_from_fixture() if q not in done]
     started = time.time()
     call = PerThreadSeal(MODEL)
     try:
@@ -402,19 +387,6 @@ def score(config: str, depth: int) -> tuple[list[dict], dict]:
             "singleton": len(targets[gold - 1]["members"]) == 1 if gold else False,
         })
     return out, doc
-
-
-def _rate(hits: int, n: int) -> str:
-    """Render `hits/n  pp.p%`.
-
-    Args:
-        hits: Numerator.
-        n: Denominator.
-
-    Returns:
-        The rendered rate.
-    """
-    return f"{hits:>3}/{n:<3} {100 * hits / n:5.1f}%" if n else "  n/a"
 
 
 def measure(config: str) -> int:
