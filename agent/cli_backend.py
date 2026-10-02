@@ -44,6 +44,57 @@ ROOT = Path(__file__).resolve().parent.parent
 # without this the research log is a fiction.
 DENY = DENY_TOOLS  # single definition, in agent/sealed.py
 
+#: Where an operator sets an effort level for every backend a process builds,
+#: so a server or benchmark run can be given one without each call site taking
+#: a new argument. Same shape as `agent/sealed.py::CONFIG_DIR_ENV`.
+EFFORT_ENV = "COMPASS_CLAUDE_EFFORT"
+
+#: The levels `claude -p --effort` takes.
+EFFORT_LEVELS = frozenset({"low", "medium", "high", "xhigh", "max"})
+
+#: Models the API gives no effort control. The CLI accepts `--effort` for them
+#: on exit 0 and drops it, so a name stamped with the level would claim a
+#: setting that never applied. VERIFIED 2026-10-01: `claude -p --model
+#: claude-haiku-4-5 --effort high` returned is_error false.
+NO_EFFORT_MODELS = frozenset({"claude-haiku-4-5", "claude-sonnet-4-5"})
+
+
+def resolve_effort(model: str, effort: str | None) -> str | None:
+    """The effort level a backend for `model` runs at, or None for the CLI's own.
+
+    UNSET IS NOT `high`. With no `--effort`, `claude-sonnet-5-5` on CLI 2.1.287
+    spent output tokens in the range `--effort low` did, not `--effort high`
+    (2026-10-01, two calls per arm on one prompt), and the default can move
+    with the CLI version. So a level is either passed and named, or absent and
+    the name says nothing — never assumed.
+
+    Args:
+        model: The model the backend runs.
+        effort: The level asked for, or None to read `EFFORT_ENV`.
+
+    Returns:
+        The level to pass, or None when none is set or `model` has no effort
+        control and the level came from the environment.
+
+    Raises:
+        ValueError: If the level is not one the CLI takes, or it was asked for
+            explicitly on a model in `NO_EFFORT_MODELS`.
+    """
+    explicit = effort is not None
+    level = effort if explicit else (os.environ.get(EFFORT_ENV) or None)
+    if level is None:
+        return None
+    if level not in EFFORT_LEVELS:
+        raise ValueError(f"effort {level!r} is not one of {sorted(EFFORT_LEVELS)}")
+    if model in NO_EFFORT_MODELS:
+        if explicit:
+            raise ValueError(f"{model} has no effort control; the CLI would "
+                             f"drop --effort {level} and the name would claim it")
+        # From the environment, one setting serves every model a server offers,
+        # so the pinned Haiku proxy runs as it always has, unstamped.
+        return None
+    return level
+
 
 class ClaudeCliBackend:
     """Drives its own tool loop, so the Specifier hands it the whole turn.
@@ -61,8 +112,14 @@ class ClaudeCliBackend:
                  # 24 turns was not enough headroom: a live run on 2026-08-26
                  # made 49 tool calls on covariate discovery and never reached
                  # check_access, so the whole sample was discarded by the gate.
-                 max_turns: int = 40, timeout: float = 900.0):
-        self.name = f"claude-cli:{model}"
+                 max_turns: int = 40, timeout: float = 900.0,
+                 effort: str | None = None):
+        self.effort = resolve_effort(model, effort)
+        # The level is part of the name because the name is what a record
+        # stores as `model_id`: two runs of one model at different effort are
+        # different runs, and a record that cannot tell them apart hides it.
+        self.name = (f"claude-cli:{model}" if self.effort is None
+                     else f"claude-cli:{model}@{self.effort}")
         self.model = model
         self.mode = mode
         self.worktree = SealedWorktree(mode=mode, keep=True)
@@ -126,6 +183,14 @@ class ClaudeCliBackend:
         """
         return self.tool_log_dir / f"tool_log.{self.run_id}.{sample:02d}.jsonl"
 
+    def _effort_args(self) -> list[str]:
+        """The `--effort` flag both calls carry, or nothing when none is set.
+
+        Returns:
+            `["--effort", level]`, or an empty list.
+        """
+        return [] if self.effort is None else ["--effort", self.effort]
+
     def _run(self, argv: list[str]) -> str:
         env = {**os.environ, "COMPASS_MODE": self.mode,
                "COMPASS_TOOL_LOG": str(self.tool_log)}
@@ -180,6 +245,7 @@ class ClaudeCliBackend:
             "--tools", BUILTIN_TOOLS,
             "--max-turns", str(self.max_turns),
             "--output-format", "json",
+            *self._effort_args(),
         ]))
 
     def transduce(self, prompt: str) -> Reply:
@@ -195,6 +261,7 @@ class ClaudeCliBackend:
             "--disallowed-tools", ",".join(DENY),
             "--tools", BUILTIN_TOOLS,
             "--output-format", "json",
+            *self._effort_args(),
         ]))
 
     def read_tool_log(self) -> list[dict]:

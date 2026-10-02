@@ -963,6 +963,86 @@ def test_both_cli_calls_replace_the_system_prompt_rather_than_append(
     assert seen[0][seen[0].index("--system-prompt") + 1] == "SPECIFIER SYSTEM"
 
 
+def _cli_argvs(tmp_path: Path, **kwargs: object) -> tuple[str, list[list[str]]]:
+    """Build a backend that records argv, make both calls, return name and argvs."""
+    import shutil
+
+    from agent.cli_backend import ClaudeCliBackend
+
+    seen: list[list[str]] = []
+
+    class NoSubprocess(ClaudeCliBackend):
+        """Records the argv instead of running `claude -p`."""
+
+        def _run(self, argv: list[str]) -> str:
+            seen.append(argv)
+            return "{}"
+
+    b = NoSubprocess(tool_log_dir=tmp_path, **kwargs)  # type: ignore[arg-type]
+    try:
+        b.reason("SYSTEM", "prompt", ["resolve_variable"])
+        b.transduce("prompt")
+    finally:
+        shutil.rmtree(b.sandbox, ignore_errors=True)
+    return b.name, seen
+
+
+def test_an_effort_level_reaches_both_cli_calls_and_the_record_name(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A level is passed on both calls and named, or absent from both and unnamed.
+
+    Unset is the CLI's own default, which on 2026-10-01 behaved like `low` for
+    claude-sonnet-5-5, not the API's `high`. A record whose `model_id` carried
+    no level could not say which of those ran, so the level is in the name.
+    """
+    from agent.cli_backend import EFFORT_ENV
+    monkeypatch.delenv(EFFORT_ENV, raising=False)
+
+    name, argvs = _cli_argvs(tmp_path, model="claude-sonnet-5-5", effort="high")
+    assert name == "claude-cli:claude-sonnet-5-5@high"
+    assert len(argvs) == 2
+    for argv in argvs:
+        assert argv[argv.index("--effort") + 1] == "high", argv
+
+    name, argvs = _cli_argvs(tmp_path, model="claude-sonnet-5-5")
+    assert name == "claude-cli:claude-sonnet-5-5"
+    for argv in argvs:
+        assert "--effort" not in argv, argv
+
+
+def test_the_effort_environment_default_skips_a_model_without_effort(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """One server setting serves every model it offers; Haiku stays unstamped.
+
+    The CLI accepts `--effort` for claude-haiku-4-5 and drops it, so stamping
+    the pinned proxy `@high` would claim a setting that never applied.
+    """
+    from agent.cli_backend import EFFORT_ENV
+    monkeypatch.setenv(EFFORT_ENV, "high")
+
+    name, argvs = _cli_argvs(tmp_path, model="claude-sonnet-5-5")
+    assert name == "claude-cli:claude-sonnet-5-5@high"
+    assert all("--effort" in argv for argv in argvs)
+
+    name, argvs = _cli_argvs(tmp_path, model="claude-haiku-4-5")
+    assert name == "claude-cli:claude-haiku-4-5"
+    assert not any("--effort" in argv for argv in argvs)
+
+
+def test_an_effort_the_model_cannot_take_is_refused_not_dropped(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Explicitly asked for, an effort that would not apply raises."""
+    from agent.cli_backend import EFFORT_ENV, resolve_effort
+    monkeypatch.delenv(EFFORT_ENV, raising=False)
+    with pytest.raises(ValueError, match="no effort control"):
+        resolve_effort("claude-haiku-4-5", "high")
+    with pytest.raises(ValueError, match="not one of"):
+        resolve_effort("claude-sonnet-5-5", "extreme")
+    monkeypatch.setenv(EFFORT_ENV, "extreme")
+    with pytest.raises(ValueError, match="not one of"):
+        resolve_effort("claude-sonnet-5-5", None)
+
+
 def test_headless_backend_denies_every_context_bypassing_builtin():
     from agent.cli_backend import DENY
     for t in ("Bash", "Read", "Glob", "Grep", "WebSearch", "WebFetch", "Task"):
