@@ -98,7 +98,7 @@ Answers (operator, 2026-10-02):
 - **Recall@20:** kept as a hard requirement, ≥99% Recall@20 with the construct (1,080) as the unit, measured on the existing retrieval fixture (an upper bound, B25).
 - **"Available questions":** every entry except the 43 direct identifiers.
 - **Survey date:** not in the codebook. Any age restriction names "survey date" in `missing` and cites birthday year m1:Q2.15_3. The canonical birthday is m1:Q2.15_*.
-- **Dictionary:** fix the 444 mismatched embedded ids and the 178 truncated stems in `build.py` before M1. How each is fixed is decided at M1 from the raw codebook. The fix moves the build hash off 3dc8415eccfe, which the operator authorised on 2026-10-02.
+- **Dictionary:** fix the 444 mismatched embedded ids and the 178 truncated stems in `build.py` before M1. How each is fixed is decided at M1 from the raw codebook. The fix moves the build hash off 3dc8415eccfe, which the operator authorised on 2026-10-02. This is the user amendment AGENTS.md §Verify current state allows ("Moving it deliberately is allowed and is a user amendment"): the commit that moves the hash also updates `tests/test_dictionary.py::BUILD_HASH` and the history beside it, so AGENTS.md's stop condition ("the build hash moved off `3dc8415eccfe`") is read against the new pin. A builder that stops on the old literal has not read this line.
 
 ## 4. Output contract
 ≤8 fields, each with its meaning and how it is checked. Every field is required;
@@ -215,7 +215,7 @@ Proposal table — post it, then end your turn:
 - **Candidate, only on evidence:** semantic or hybrid search (the earlier brief's BM25 + vector). Add it only if P07-type failures are classified as missing information, since "cohesion" has 0 lexical hits (C10). It would be a change to `search_codebook`'s interface, so it goes through this table.
 - Input names are chosen to be unambiguous (`query_text`, `handles`, not `q`/`id`). Handles are run-unique (codebook entries r1, r2…; papers p1, p2…), and the model cites handles, never keys or paper ids (§4).
 - Errors: an empty or overlong `query_text` is retryable ("shorten to ≤200 chars and retry"). An unknown module or unknown handle is terminal.
-- Injection pattern: **action-selector** (proposal). Reason: both tools are read-only with no side effects, so no tool return, including survey-authored question text, can trigger a consequential action. The only harm possible is a wrong design, which §4 and §5 grade. If a write or send tool is ever added, this must be revisited, e.g. to plan-then-execute. Approved by the operator on 2026-10-02. `search_literature` is read-only too, and paper titles and abstracts are untrusted data, like survey-authored text.
+- Injection pattern: **action-selector** (proposal). Reason: all three tools are read-only with no side effects, so no tool return can trigger a tool-side action. Two of them return untrusted text, though: survey-authored question text (`search_codebook`, `get_entry`) and open-world abstracts (`search_literature`). So the consequential output is the design itself, and a planted instruction could only steer what the fields say. The checks that stop it are the §4 field checks and §5's universal criteria U-a to U-e: every handle was issued as a match this run, none resolves to a direct identifier, no field states a count, prevalence or sample size, and no free-text field cites literature. If a write or send tool is ever added, this must be revisited, e.g. to plan-then-execute. The operator approved action-selector on 2026-10-02 on a two-tool reason ("both tools are read-only"). Abstracts and a third tool were added after it, so the approval is REOPENED for the operator to confirm against this text. `search_literature` is read-only too, and paper titles and abstracts are untrusted data, like survey-authored text.
 - No code-executing tool is proposed, so no sandbox is needed now.
 
 Rules:
@@ -241,7 +241,7 @@ Rules:
    never off a tool's self-declared hints. Lifting it per tool needs my sign-off.
    (There are no write/send tools in the starting set, so the allowlist starts empty.)
 3. Validate the final output; on failure return the error to the model as a tool
-   result, **≤2** times, inside the §2 budget. (Reason: one retry fixes most schema slips and a second covers a handle typo. More retries would eat the 12-call budget.)
+   result, **≤2** times, inside the §2 budget. (Reason: one retry fixes most schema slips and a second covers a handle typo. More retries would eat into the §2 tool-call budget.)
 4. Force the final no-tools turn when a budget is hit.
 Code never runs several samples, ranks, chooses the model's input, adds a second
 model call, or overwrites a field. If code can compute a value, a tool returns it —
@@ -279,7 +279,7 @@ Out until M3 (proposal; reason: [wording withheld] has a resource in §3, or eac
 
 Dropped, not deferred (operator, 2026-10-02): the rediscovery benchmark of DESIGN.md §6, and the contamination machinery that exists to serve it.
 
-Rules file: `RULES.md`, ≤40 lines; a new rule replaces one. (Reason: this is a short project with two tools, and a tight cap forces replacement over accretion.)
+Rules file: `RULES.md`, ≤40 lines; a new rule replaces one. (Reason: this is a short project with three tools, and a tight cap forces replacement over accretion.)
 No review pass without a change to the running system in between; a finding that
 flips no §5 item is not filed. Done = M3; after that, nothing new without asking.
 
